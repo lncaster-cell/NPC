@@ -5,13 +5,16 @@
 - Area activation on first player, deactivation on last player/leave.
 - Single area-level delayed tick loop with token invalidation.
 - Dense NPC registry add/remove/swap-remove.
-- Slot compute and dispatch (`RESYNC`, `SLOT_0..5`).
+- Slot compute with canonical `al_slot_offset_min` support.
+- Slot dispatch (`RESYNC`, `SLOT_0..5`) is still area-global in Stage 1.
 - OnUserDefined bus foundation and event namespace.
+- `al_mode` kept as reserved runtime field (no canonical enum, no Stage 1 runtime behavior).
 
 ## Stage 2: Route execution
 - Parse slot route assignment (`alwp0..alwp5`).
 - Waypoint traversal by engine action queue.
 - `ROUTE_REPEAT` runtime loop handling.
+- Introduce per-NPC offset-aware runtime dispatch path (coupled with routine runtime).
 
 ## Stage 3: Multi-step slot routines
 - Step-level state machine from waypoint contract (`al_step`, `al_activity`, `al_dur_sec`).

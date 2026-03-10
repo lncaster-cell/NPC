@@ -2,6 +2,8 @@
 #define AL_EVENTS_INC_NSS
 
 // Ambient Life internal event namespace for OnUserDefined.
+// Ambient Life owns canonical range 1100-1299.
+// Other internal subsystems must not allocate events in this range unless coordinated.
 // Reserved compact range avoids collision with common low-index custom events.
 const int AL_EVENT_BASE = 1100;
 
@@ -17,6 +19,7 @@ const int AL_EVENT_SLOT_5 = AL_EVENT_BASE + 15;
 const int AL_EVENT_ROUTE_REPEAT = AL_EVENT_BASE + 20;
 
 // Reserved reaction window (future): 1200-1299.
+// Keep untouched by non-Ambient-Life systems.
 const int AL_EVENT_REACT_BASE = 1200;
 const int AL_EVENT_REACT_MAX = 1299;
 
