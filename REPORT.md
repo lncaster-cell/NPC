@@ -19,6 +19,7 @@
 
 ## Intentionally deferred
 - Route runtime execution.
+- Per-NPC offset-aware routine dispatch (`al_slot_offset_min` is contract-only in Stage 1).
 - Multi-step slot routine runtime.
 - Sleep docking/runtime behavior.
 - OnBlocked/OnDisturbed reactions.
@@ -35,3 +36,8 @@
 - Lifecycle loop runs at area level only while players are present.
 - OnUserDefined used as internal dispatch bus.
 - Core stores orchestration state only and does not replace action queue semantics.
+
+## Clarifications after Stage 1
+- Stage 1 slot dispatch is area-global; `al_slot_offset_min` is canonical content data but not yet a full runtime dispatch driver.
+- `al_mode` remains runtime-reserved; mode enum values are intentionally deferred to later runtime stages.
+- Ambient Life event ranges `1100..1199` and `1200..1299` are reserved and must not be reused by unrelated internal systems.

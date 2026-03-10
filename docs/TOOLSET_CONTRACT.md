@@ -22,7 +22,7 @@
 ### Runtime-state locals (system-owned, do not set manually)
 - `al_last_slot` (int)
 - `al_last_area` (object)
-- `al_mode` (int, reserved runtime mode)
+- `al_mode` (int, reserved runtime mode; enum values are intentionally deferred and must not be authored in toolset)
 
 ## Route waypoint contract
 Waypoint locals (data-level contract):

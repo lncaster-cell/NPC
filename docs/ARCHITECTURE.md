@@ -53,26 +53,16 @@ Ambient Life does **not** reimplement action queue mechanics.
 - `al_debug_inc.nss`: optional diagnostics.
 
 ## Event namespace (OnUserDefined bus)
-- Ambient Life canonical namespace root: `1100..1299`.
-- Occupied now (Stage 1):
-  - `1101`: `AL_EVENT_RESYNC`.
-  - `1110..1115`: `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`.
-  - `1120`: `AL_EVENT_ROUTE_REPEAT` (declared hook; runtime behavior deferred).
-- Reserved by Ambient Life (do not use for unrelated internal systems):
-  - `1100..1199`: Ambient Life core/routine expansion window.
-  - `1200..1299`: Ambient Life reaction window.
-- Internal subsystems outside Ambient Life must allocate events outside `1100..1299` unless explicitly coordinated.
+Ambient Life event namespace is **exclusive** for Ambient Life internals. Other internal subsystems must not emit arbitrary events inside these ranges.
 
-## Toolset contract fields vs Stage 1 runtime status
-- `al_slot_offset_min`:
-  - Part of canonical NPC contract already.
-  - Stage 1 slot computation reads this local and can produce offset-aware slot value.
-  - Stage 1 dispatch remains area-global (`SLOT_0..SLOT_5` as shared event), so full per-NPC offset-aware dispatch is intentionally deferred.
-  - Full behavior (offset-aware routine/runtime dispatch and route execution coupling) is planned for next stage.
-- `al_mode`:
-  - Reserved runtime field in canonical contract.
-  - No canonical enum and no runtime mode switch implementation in Stage 1.
-  - May be specified later when routine/runtime behavior is introduced.
+- `1100..1199` — Ambient Life core/routine namespace.
+  - Implemented in Stage 1:
+    - `AL_EVENT_RESYNC = 1101`
+    - `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5 = 1110..1115`
+    - `AL_EVENT_ROUTE_REPEAT = 1120` (reserved runtime hook)
+  - Remaining values in this range are reserved for future Ambient Life routine events.
+- `1200..1299` — reserved for Ambient Life reaction events (future stages).
+- Values outside these ranges are out of Ambient Life contract scope.
 
 ## Fallback policy
 - Missing route/activity handlers: keep NPC in default/no-op behavior.
@@ -83,6 +73,16 @@ Ambient Life does **not** reimplement action queue mechanics.
 - Interrupt sources (blocked, disturbed, reactions, crime) are modeled as layer-specific state transitions.
 - Core remains stateless about detailed behavior, only maintains deterministic dispatch cadence.
 - Resume targets slot-consistent activity state, not arbitrary action queue rewrites.
+
+## Stage 1 scope clarifications
+- `al_slot_offset_min` is canonical NPC contract data, but Stage 1 dispatch remains **area-global by current slot**.
+- Per-NPC offset-aware routine dispatch is intentionally deferred to routine runtime stages (route execution + multi-step routines).
+- This is a deliberate Stage 1 scope boundary, not a core lifecycle defect.
+
+## `al_mode` status
+- `al_mode` is a runtime-owned local reserved for routine/reaction/sleep mode switching.
+- Stage 1 does not implement mode logic.
+- Canonical enum values are intentionally deferred and will be fixed together with routine/reaction runtime in later stages.
 
 ## Canonical sleep contract (fixed now, implemented later)
 - Sleep route references bed id and uses two waypoint tags:

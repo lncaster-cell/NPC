@@ -2,9 +2,10 @@
 #define AL_EVENTS_INC_NSS
 
 // Ambient Life internal event namespace for OnUserDefined.
-// Ambient Life owns canonical range 1100-1299.
-// Other internal subsystems must not allocate events in this range unless coordinated.
-// Reserved compact range avoids collision with common low-index custom events.
+// Namespace ownership rule:
+// - 1100..1199 is owned by Ambient Life core/routine events.
+// - 1200..1299 is reserved for Ambient Life reaction events.
+// Other internal subsystems must not emit arbitrary events in these ranges.
 const int AL_EVENT_BASE = 1100;
 
 const int AL_EVENT_RESYNC = AL_EVENT_BASE + 1;
