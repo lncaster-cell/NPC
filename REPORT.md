@@ -1,43 +1,52 @@
-# Ambient Life Stage 2 Report
+# Ambient Life — Stage B Report (Core Lifecycle Runtime)
 
-## Done
-- Implemented slot-based route selection from NPC locals `alwp0..alwp5`.
-- Implemented deterministic route-step model:
-  - waypoint collection by route tag,
-  - explicit ordering by `al_step`,
-  - support for 1+ steps.
-- Implemented minimal route runtime state on NPC:
-  - `al_route_tag`,
-  - `al_route_active`,
-  - `al_route_index`,
-  - `al_route_step_count` + step object cache,
-  - `al_route_dwell_until` (lightweight marker).
-- Implemented route execution that remains event-driven:
-  - slot/resync events start route,
-  - `AL_EVENT_ROUTE_REPEAT` advances step sequence,
-  - sequencing uses engine action queue (`ActionMoveToObject`, `ActionWait`, `ActionDoCommand`).
-- Implemented waypoint activity source-of-truth (`al_activity`) with safe fallback chain:
-  - waypoint activity,
-  - `al_default_activity`,
-  - idle fallback.
-- Implemented dwell support via waypoint `al_dur_sec` in action queue.
-- Implemented clean fallback policy:
-  - empty/broken route => route skipped + fallback activity,
-  - missing step waypoint => activity at current NPC position,
-  - invalid activity => safe fallback.
-- Updated architecture/contract/roadmap docs to Stage 2 runtime reality.
+## Реализовано
+- Area lifecycle:
+  - активация на первом PC (`al_player_count: 0 -> 1`),
+  - деактивация на последнем выходе PC и на module leave,
+  - runtime учитывает только area-level состояние и locals контракта.
+- Один area-level tick loop:
+  - ровно один DelayCommand loop на area,
+  - token invalidation через `al_tick_token`,
+  - stale delayed ticks отбрасываются,
+  - loop работает только при `al_player_count > 0`.
+- Dense registry:
+  - регистрация NPC на spawn,
+  - удаление на death,
+  - swap-remove для O(1) удаления по хвосту,
+  - хранение `al_npc_count` + `al_npc_<idx>`,
+  - редкая compact-cleanup при area activation.
+- Slot orchestration backbone:
+  - вычисление `al_slot` по времени зоны,
+  - dispatch только при реальной смене слота,
+  - `RESYNC` dispatch при activation.
+- OnUserDefined internal bus:
+  - `AL_EVENT_RESYNC`,
+  - `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`,
+  - `AL_EVENT_ROUTE_REPEAT` оставлен как reserved hook.
+- NPC OnUD baseline:
+  - приём внутренних событий,
+  - обновление `al_last_slot`,
+  - базовый `RESYNC` handler,
+  - чистые hooks/stubs для следующих stage.
 
-## Intentionally deferred
-- Sleep docking/profile runtime.
-- OnBlocked/OnDisturbed reaction logic.
-- Crime/alarm and social propagation.
-- Rest subsystem.
-- Perception-driven monolithic AI behavior.
+## Сознательно отложено
+- Per-NPC offset-aware dispatch/runtime (`al_slot_offset_min` остаётся canonical полем, но dispatch Stage B area-global).
+- Route cache/runtime и multi-step routines.
+- Sleep runtime.
+- Reactions (blocked/disturbed/crime/alarm).
 
-## Fixed invariants
-- Event-driven orchestration only.
-- No heartbeat.
-- No per-NPC periodic timers.
-- No polling-based movement tracking.
-- No AssignCommand as orchestration backbone.
-- Runtime state is orchestration/bookkeeping only; engine action queue remains canonical for ordinary sequencing.
+## Соблюдённые инварианты
+- Event-driven orchestration.
+- Нет NPC heartbeat.
+- Нет per-NPC periodic timers.
+- Один area-level tick loop на активную area.
+- Нет repeated area full-scan в hot path.
+- Нет `AssignCommand` как backbone.
+- Нет `DelayCommand` как heartbeat substitute для NPC.
+- Нет `rest` / `OnRested` / `AnimActionRest` / `ActionInteractObject`-sleep runtime.
+
+## Учтённые engine constraints
+- DelayCommand stale-call race закрыт token invalidation pattern.
+- OnUD доставка реализована через `SignalEvent(EventUserDefined(...))`.
+- Registry cleanup сделан редким и lifecycle-driven, без отдельной фоновой системы.

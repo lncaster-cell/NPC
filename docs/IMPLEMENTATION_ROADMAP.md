@@ -5,10 +5,11 @@
 - Зафиксировать архитектурные принципы (event-driven, dense registry, slot model, caching policy).
 - Подготовить skeleton include/entry scripts без runtime logic.
 
-## Stage B — Core Lifecycle
-- Подключить entry scripts к core dispatcher.
-- Реализовать area/npc lifecycle обработку (spawn/death/enter/exit/leave).
-- Добавить безопасные fallback переходы mode/state.
+## Stage B — Core Lifecycle (implemented)
+- Подключены entry scripts к core dispatcher.
+- Реализованы area/npc lifecycle обработчики (spawn/death/enter/exit/leave).
+- Реализованы single area-level tick loop, dense registry и internal OnUserDefined bus.
+- Slot dispatch работает как area-global orchestration backbone (per-NPC offset-aware dispatch отложен на следующие стадии).
 
 ## Stage C — Route Cache + Route Execution
 - Реализовать агрессивный route cache без full-scan в hot path.
