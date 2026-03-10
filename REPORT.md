@@ -11,6 +11,11 @@
   - RESYNC dispatch on activation,
   - dense NPC registry + periodic cleanup.
 - Implemented internal OnUserDefined bus constants and routing hooks.
+- Clarified Stage 1 contract/runtime boundaries:
+  - `al_slot_offset_min` is canonical and read by slot computation, while runtime dispatch is still global-area slot based.
+  - full per-NPC offset-aware dispatch is deferred with routine runtime / route execution.
+  - `al_mode` remains reserved without canonical enum/runtime semantics in Stage 1.
+- Clarified Ambient Life OnUserDefined namespace ownership for `1100..1299`.
 
 ## Intentionally deferred
 - Route runtime execution.
