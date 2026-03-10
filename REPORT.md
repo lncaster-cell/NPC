@@ -15,8 +15,8 @@
   - запускается на `AL_EVENT_RESYNC` и slot-change событиях,
   - использует action queue sequence (`move -> baseline activity`) без polling arrival tracking.
 - Minimal activity baseline:
-  - источник активности — waypoint `al_activity`,
-  - fallback на `al_default_activity`,
+  - источник активности — waypoint `al_activity` (int),
+  - fallback на `al_default_activity` (int),
   - при невалидной активности — safe idle.
 
 ## Интеграция с Stage B/C backbone
@@ -44,3 +44,13 @@ Normal hot path использует уже построенный cache и не
 - Route layer маленький и cache-first.
 - Route execution ограничен `HOT` tier и не размывает LOD.
 - Контракты Stage A/B/C соблюдены, а Stage D даёт стабильную базу для richer routines без переписывания основы.
+
+
+## Activity contract alignment fix
+- Stage D activity baseline приведён к canonical int-contract:
+  - `al_activity` читается как `int`,
+  - `al_default_activity` читается как `int`,
+  - string activity names удалены из runtime model.
+- Временный минимальный Stage D baseline-кодсет:
+  - `0` idle, `1` stand, `2` sit, `3` guard.
+- Это осознанно минимальный слой без расширения scope в rich activity abstraction.

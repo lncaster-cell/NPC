@@ -1,4 +1,9 @@
-// Ambient Life Stage D minimal activity baseline.
+// Ambient Life Stage D minimal activity baseline (int-based contract).
+
+const int AL_ACTIVITY_IDLE = 0;
+const int AL_ACTIVITY_STAND = 1;
+const int AL_ACTIVITY_SIT = 2;
+const int AL_ACTIVITY_GUARD = 3;
 
 void AL_ActivityApplyIdleFallback(object oNpc)
 {
@@ -11,7 +16,7 @@ void AL_ActivityApplyIdleFallback(object oNpc)
     SetLocalString(oNpc, "al_mode", "idle");
 }
 
-void AL_ActivityApplyBaseline(object oNpc, string sActivity, int nDurSec)
+void AL_ActivityApplyBaseline(object oNpc, int nActivity, int nDurSec)
 {
     if (!GetIsObjectValid(oNpc))
     {
@@ -23,20 +28,14 @@ void AL_ActivityApplyBaseline(object oNpc, string sActivity, int nDurSec)
         nDurSec = 6;
     }
 
-    if (sActivity == "")
-    {
-        AL_ActivityApplyIdleFallback(oNpc);
-        return;
-    }
-
-    if (sActivity == "stand")
+    if (nActivity == AL_ACTIVITY_STAND)
     {
         ActionWait(IntToFloat(nDurSec));
         SetLocalString(oNpc, "al_mode", "stand");
         return;
     }
 
-    if (sActivity == "sit")
+    if (nActivity == AL_ACTIVITY_SIT)
     {
         ActionSit(OBJECT_INVALID);
         ActionWait(IntToFloat(nDurSec));
@@ -44,7 +43,7 @@ void AL_ActivityApplyBaseline(object oNpc, string sActivity, int nDurSec)
         return;
     }
 
-    if (sActivity == "guard")
+    if (nActivity == AL_ACTIVITY_GUARD)
     {
         ActionWait(IntToFloat(nDurSec));
         SetLocalString(oNpc, "al_mode", "guard");

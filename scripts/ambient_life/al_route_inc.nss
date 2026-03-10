@@ -188,11 +188,6 @@ void AL_RouteExecuteBaseline(object oNpc, int nSlot, int bForceRebuild)
         return;
     }
 
-    if (oNpc != OBJECT_SELF)
-    {
-        return;
-    }
-
     object oArea = GetArea(oNpc);
     if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
     {
@@ -201,9 +196,9 @@ void AL_RouteExecuteBaseline(object oNpc, int nSlot, int bForceRebuild)
 
     if (!AL_RouteEnsureCache(oNpc, nSlot, bForceRebuild))
     {
-        string sFallback = GetLocalString(oNpc, "al_default_activity");
+        int nFallback = GetLocalInt(oNpc, "al_default_activity");
         ClearAllActions(TRUE);
-        AL_ActivityApplyBaseline(oNpc, sFallback, 6);
+        AL_ActivityApplyBaseline(oNpc, nFallback, 6);
         return;
     }
 
@@ -211,16 +206,16 @@ void AL_RouteExecuteBaseline(object oNpc, int nSlot, int bForceRebuild)
     if (!GetIsObjectValid(oTarget))
     {
         AL_RouteInvalidateCache(oNpc);
-        string sFallback = GetLocalString(oNpc, "al_default_activity");
+        int nFallback = GetLocalInt(oNpc, "al_default_activity");
         ClearAllActions(TRUE);
-        AL_ActivityApplyBaseline(oNpc, sFallback, 6);
+        AL_ActivityApplyBaseline(oNpc, nFallback, 6);
         return;
     }
 
-    string sActivity = GetLocalString(oTarget, "al_activity");
-    if (sActivity == "")
+    int nActivity = GetLocalInt(oTarget, "al_activity");
+    if (nActivity <= AL_ACTIVITY_IDLE)
     {
-        sActivity = GetLocalString(oNpc, "al_default_activity");
+        nActivity = GetLocalInt(oNpc, "al_default_activity");
     }
 
     int nDur = GetLocalInt(oTarget, "al_dur_sec");
@@ -231,5 +226,5 @@ void AL_RouteExecuteBaseline(object oNpc, int nSlot, int bForceRebuild)
 
     ClearAllActions(TRUE);
     ActionMoveToObject(oTarget, TRUE, 1.5);
-    AL_ActivityApplyBaseline(oNpc, sActivity, nDur);
+    AL_ActivityApplyBaseline(oNpc, nActivity, nDur);
 }

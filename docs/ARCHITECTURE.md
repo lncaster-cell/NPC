@@ -55,7 +55,7 @@ Core принимает entry-события и управляет lifecycle:
 - controlled cache build/rebuild;
 - deterministic ordering только по `al_step`;
 - baseline execution через action queue без polling arrival tracking;
-- минимальные activity semantics (`al_activity` + fallback в `al_default_activity`).
+- минимальные activity semantics (`al_activity` int code + fallback в `al_default_activity` int code).
 
 ### 2.6 Future layers (Stage E+)
 - Rich multi-step routines.
@@ -131,8 +131,18 @@ Core принимает entry-события и управляет lifecycle:
 ### 6.4 Fallback-first safety
 Если маршрут/шаг/активность невалидны:
 1. Без краша и без repeated search loop.
-2. Fallback к `al_default_activity`.
-3. Если fallback невалиден — safe idle.
+2. Fallback к `al_default_activity` (int).
+3. Если fallback невалиден — safe idle (`AL_ACTIVITY_IDLE`).
+
+
+
+### 6.5 Stage D temporary activity codes (int-based)
+- Stage D использует минимальный временный набор int кодов без новой activity-системы:
+  - `0` = `AL_ACTIVITY_IDLE` (safe fallback),
+  - `1` = `AL_ACTIVITY_STAND`,
+  - `2` = `AL_ACTIVITY_SIT`,
+  - `3` = `AL_ACTIVITY_GUARD`.
+- Это baseline для Stage D; richer activity semantics остаются на следующих стадиях.
 
 ---
 
