@@ -103,7 +103,7 @@ Core принимает entry-события и управляет lifecycle:
 ### 5.5 Fallback-first safety
 Если маршрут/шаг/точка сна не найдены:
 1. Не падать и не запускать дорогое сканирование в loop.
-2. Перейти в безопасный fallback (`al_default_activity` или sleep on place).
+2. Перейти в безопасный fallback (`al_default_activity` как int activity ID или sleep on place).
 3. Проставить debug-сигнал для диагностики.
 
 ---
