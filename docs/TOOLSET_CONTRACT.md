@@ -1,70 +1,74 @@
 # Ambient Life — Toolset Contract (Stage A)
 
-Документ фиксирует locals-контракт, который настраивается в toolset для Area/NPC/Waypoint.
-На этом этапе задаются только имена и семантика, без runtime-реализации.
+Stage A фиксирует **только контракт данных и именование locals**, без runtime-логики.
+Ниже приведён канонический минимум, согласованный для toolset/runtime.
 
-## 1) Area Locals
+## 1) NPC locals (canonical)
 
-| Local | Type | Назначение |
-|---|---|---|
-| `AL_AREA_ENABLED` | int (0/1) | Глобальный флаг включения Ambient Life для зоны. |
-| `AL_AREA_PROFILE` | string | Идентификатор профиля зоны (правила рутины/плотности). |
-| `AL_AREA_ROUTE_SET` | string | Набор маршрутов, используемый route layer. |
-| `AL_AREA_SLEEP_SET` | string | Набор sleep waypoints для зоны. |
-| `AL_AREA_DEBUG` | int (0/1) | Локальный оверрайд debug-режима. |
-| `AL_AREA_CACHE_VER` | int | Версия area cache (служебное поле ядра). |
-| `AL_AREA_PLAYERS` | int | Текущее число игроков в зоне (служебное поле ядра). |
-| `AL_AREA_NPC_COUNT` | int | Размер dense registry (служебное поле ядра). |
-
-## 2) NPC Locals
+### 1.1 Toolset-configured
 
 | Local | Type | Назначение |
 |---|---|---|
-| `AL_NPC_ENABLED` | int (0/1) | Участвует ли NPC в Ambient Life. |
-| `AL_NPC_SCHEDULE` | string | Идентификатор slot profile для NPC. |
-| `AL_NPC_TIME_OFFSET` | int | Персональный временной offset NPC. |
-| `AL_NPC_HOME_AREA` | string | Идентификатор домашней area/группы. |
-| `AL_NPC_ROLE` | string | Роль NPC (merchant/guard/civilian/etc) для маршрутизации политик. |
-| `AL_NPC_ACTIVITY_SET` | string | Набор activity routines. |
-| `AL_NPC_SLEEP_SET` | string | Набор sleep routines (approach/pose chains). |
-| `AL_NPC_SLOT_ACTIVE` | int | Текущий активный слот (служебно). |
-| `AL_NPC_ROUTINE_STATE` | string | Текущая стадия routine (служебно). |
-| `AL_NPC_CACHE_VER` | int | Версия npc cache (служебно). |
-| `AL_NPC_REG_INDEX` | int | Индекс в dense area registry (служебно). |
+| `alwp0` | string | Базовый waypoint/tag для слота 0. |
+| `alwp1` | string | Базовый waypoint/tag для слота 1. |
+| `alwp2` | string | Базовый waypoint/tag для слота 2. |
+| `alwp3` | string | Базовый waypoint/tag для слота 3. |
+| `alwp4` | string | Базовый waypoint/tag для слота 4. |
+| `alwp5` | string | Базовый waypoint/tag для слота 5. |
+| `al_slot_offset_min` | int | Персональный временной offset NPC в минутах. |
+| `al_sleep_profile` | string | Идентификатор sleep-профиля NPC (для выбора bed/поведения сна). |
+| `al_default_activity` | string | Активность по умолчанию при отсутствии валидного route шага. |
 
-## 3) Waypoint Locals
-
-### 3.1 Общие
+### 1.2 Runtime-owned (не редактируются вручную)
 
 | Local | Type | Назначение |
 |---|---|---|
-| `AL_WP_KIND` | string | Тип waypoint: `activity`, `sleep_approach`, `sleep_pose`, `route_anchor`, `react`. |
-| `AL_WP_SET` | string | Идентификатор набора (route/activity/sleep set). |
-| `AL_WP_GROUP` | string | Подгруппа внутри набора. |
-| `AL_WP_ORDER` | int | Порядок узла в цепочке/маршруте. |
-| `AL_WP_AREA_PROFILE` | string | Ограничение по профилю зоны (опционально). |
+| `al_last_slot` | int | Последний обработанный слот NPC. |
+| `al_last_area` | object/string | Последняя area, в которой NPC обработан системой. |
+| `al_mode` | string/int | Текущий режим NPC (служебное состояние core/runtime). |
 
-### 3.2 Sleep-specific
+---
+
+## 2) Waypoint locals (canonical)
 
 | Local | Type | Назначение |
 |---|---|---|
-| `AL_SLEEP_NODE_TYPE` | string | `approach` или `pose`. |
-| `AL_SLEEP_POSE` | string | Идентификатор позы/анимации сна. |
-| `AL_SLEEP_NEXT` | string | Явный следующий node tag (опционально). |
+| `al_step` | int | Порядковый номер шага в маршруте/рутине. |
+| `al_activity` | string | Тип активности для данного шага. |
+| `al_dur_sec` | int | Желаемая длительность шага (секунды). |
+| `al_bed_id` | string | Идентификатор кровати/точки сна для sleep pipeline. |
 
-## 4) Toolset Setup Rules
+---
 
-1. Для зоны достаточно `AL_AREA_ENABLED=1` + базовый profile/set.
-2. NPC должен иметь минимум:
-   - `AL_NPC_ENABLED=1`
-   - `AL_NPC_SCHEDULE`
-   - `AL_NPC_TIME_OFFSET` (может быть 0)
-3. Сон настраивается только через waypoint chains `sleep_approach -> sleep_pose`.
-4. Нельзя использовать `rest`/`OnRested` как часть Ambient Life contract.
-5. Runtime locals (`*_CACHE_VER`, `*_REG_INDEX`, `*_SLOT_ACTIVE`) не редактируются вручную в toolset после запуска.
+## 3) Sleep contract (canonical)
 
-## 5) Backward/Forward Compatibility
+Sleep работает через waypoint-пару по `al_bed_id`:
+- `<bed_id>_approach`
+- `<bed_id>_pose`
 
-- Новые locals добавляются только с префиксом `AL_`.
-- Удаление/переименование существующих locals требует миграционного шага в roadmap.
-- Неизвестные `AL_*` locals должны игнорироваться, если модуль их не поддерживает.
+Правила:
+1. Базовый путь сна: `approach -> pose`.
+2. Если валидная пара не найдена — fallback: sleep on place.
+3. `ActionInteractObject` не используется как основа sleep runtime.
+
+---
+
+## 4) Area locals (canonical)
+
+| Local | Type | Назначение |
+|---|---|---|
+| `al_player_count` | int | Количество игроков в зоне. |
+| `al_tick_token` | int/string | Токен/маркер текущего tick-цикла area. |
+| `al_slot` | int | Текущий глобальный slot зоны. |
+| `al_sync_tick` | int | Служебный sync-счётчик тика. |
+| `al_npc_count` | int | Размер dense registry для area. |
+| `al_npc_<idx>` | object/string | Плотный индексный список NPC в area registry. |
+| `al_debug` | int (0/1) | Флаг диагностического режима для зоны. |
+
+---
+
+## 5) Stage A boundaries
+
+- Контракт фиксируется как есть, без введения новых naming systems.
+- Любые runtime-owned locals обновляются только runtime-слоем.
+- Новые поля/переименования не вводятся на этапе A.

@@ -1,36 +1,36 @@
 # Ambient Life — Implementation Roadmap
 
-## Stage A — Architecture & Contracts (текущий)
-- Зафиксировать архитектурный канон и event namespace.
-- Зафиксировать locals contract для Area/NPC/Waypoint.
-- Подготовить модульный каркас include/entry scripts без runtime логики.
+## Stage A — Contracts + Skeleton (текущий)
+- Зафиксировать канонические locals contracts (Area/NPC/Waypoint).
+- Зафиксировать архитектурные принципы (event-driven, dense registry, slot model, caching policy).
+- Подготовить skeleton include/entry scripts без runtime logic.
 
-## Stage B — Core Lifecycle Skeleton
+## Stage B — Core Lifecycle
 - Подключить entry scripts к core dispatcher.
-- Реализовать базовую обработку lifecycle событий area/npc/mod.
-- Ввести безопасные noop/fallback переходы.
+- Реализовать area/npc lifecycle обработку (spawn/death/enter/exit/leave).
+- Добавить безопасные fallback переходы mode/state.
 
-## Stage C — Registry + Route/Cache Foundation
-- Реализовать dense area registry.
-- Реализовать area/npc cache версии и invalidation протокол.
-- Реализовать route descriptor cache и lookup без full-scan в hot path.
+## Stage C — Route Cache + Route Execution
+- Реализовать агрессивный route cache без full-scan в hot path.
+- Реализовать route lookup по slot anchors (`alwp0..alwp5`).
+- Реализовать базовое route execution с invalidation/rebuild политикой.
 
-## Stage D — Multi-step Activity Routines
-- Добавить activity routines как многошаговые state machines.
-- Синхронизировать routines со slot transitions и route descriptors.
-- Добавить базовую телеметрию routine-step.
+## Stage D — Multi-step Routines
+- Реализовать multi-step routines внутри активного slot.
+- Поддержать шаги по waypoint locals: `al_step`, `al_activity`, `al_dur_sec`.
+- Добавить переходы между шагами и fallback на `al_default_activity`.
 
-## Stage E — Sleep Pipeline
-- Реализовать sleep через `approach -> pose` waypoint chains.
-- Добавить валидацию sleep chains и fallback при неполной конфигурации.
-- Исключить `ActionInteractObject`/rest-подходы из ядра.
+## Stage E — Sleep Runtime
+- Реализовать sleep pipeline по канону `<bed_id>_approach -> <bed_id>_pose`.
+- Поддержать `al_bed_id` и валидацию sleep цепочки.
+- Реализовать fallback sleep on place при неполной конфигурации.
 
-## Stage F — Reactive Layer
-- Реализовать события реакций (`AL_EVT_REACT_*`) и приоритеты.
-- Интегрировать реакции с текущей routine state без heartbeat-модели.
-- Добавить cooldown/debounce политику для шумных событий.
+## Stage F — Blocked / Disturbed Reactions
+- Реализовать реактивный слой для blocked/disturbed ситуаций.
+- Добавить приоритеты реакций поверх текущего mode.
+- Добавить debounce/cooldown для шумных событий.
 
 ## Stage G+ — Crime / Alarm / Extensions
-- Реализовать crime/alarm вертикаль как расширение реактивного слоя.
-- Добавить контекст area-security roles, escalation policy.
-- Подготовить extension points для фракций, погоды, праздников и пр.
+- Интегрировать crime/alarm реакции.
+- Добавить расширения для контекстных систем мира.
+- Сохранить совместимость с каноническим contract.
