@@ -1,8 +1,9 @@
-# Ambient Life — Architecture Canon (Stage A)
+# Ambient Life — Architecture Canon (Stage A contracts, Stage B core runtime)
 
-## 1) Scope Stage A
+## 1) Scope (Stage A + Stage B status)
 
-Stage A фиксирует архитектуру и контракты без runtime-реализации.
+Stage A зафиксировал архитектуру и contracts.
+Stage B реализовал минимальный core lifecycle runtime поверх этого канона (без route/sleep/reaction runtime).
 
 Обязательные принципы:
 - Event-driven оркестрация.
@@ -30,7 +31,7 @@ Stage A фиксирует архитектуру и контракты без r
 - `al_npc_ondeath`
 - `al_npc_onud`
 
-На Stage A это только точки входа/маршрутизация, без runtime логики.
+На Stage B эти entry scripts подключены к core dispatcher для lifecycle/tick/OnUD baseline.
 
 ### 2.2 Core layer
 Core принимает entry-события и управляет lifecycle:
@@ -63,10 +64,21 @@ Core принимает entry-события и управляет lifecycle:
 - `AL_EVT_REACT_*` — реакции (blocked/disturbed/crime/alarm).
 - `AL_EVT_DEBUG_*` — диагностика.
 
+### 3.1 Canonical internal IDs (implemented in Stage B)
+
+Внутренний OnUserDefined namespace Ambient Life Stage B закреплён в диапазоне `3100..3107`:
+- `3100..3105` — `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5` (заняты).
+- `3106` — `AL_EVENT_RESYNC` (занят).
+- `3107` — `AL_EVENT_ROUTE_REPEAT` (зарезервирован под Stage C+ route runtime, без реализации в Stage B).
+
+Правило namespace discipline:
+- Другие внутренние подсистемы модуля не должны произвольно использовать `3100..3107`.
+- Расширения Ambient Life вне Stage B должны использовать отдельные выделенные диапазоны/резервы с явной фиксацией в docs перед использованием.
+
 Требования:
 1. Все внутренние сигналы Ambient Life передаются event-driven способом.
 2. Entry scripts не содержат feature runtime.
-3. В Stage A определяются только namespace и точки связности.
+3. Stage B реализует только lifecycle/slot orchestration backbone; feature runtime остаётся на следующих стадиях.
 
 ---
 
@@ -94,6 +106,8 @@ Core принимает entry-события и управляет lifecycle:
 
 ### 5.3 NPC runtime cache
 - `al_last_slot`, `al_last_area`, `al_mode` считаются runtime-owned кэшем состояния.
+- На Stage B `al_mode` используется как строковое поле; baseline-значение при spawn — `"idle"`.
+- Полноценная canonical mode-модель не вводится на Stage B и откладывается на следующие стадии.
 - Эти поля используются для дешёвых проверок перехода, без повторного вычисления/поиска.
 
 ### 5.4 Route/sleep cache
@@ -116,10 +130,10 @@ Core принимает entry-события и управляет lifecycle:
 
 ---
 
-## 7) Non-goals Stage A
+## 7) Non-goals (Stage B boundary)
 
 - Нет runtime route execution.
 - Нет runtime routine execution.
 - Нет runtime sleep execution.
 - Нет runtime реакций.
-- Есть только архитектурный канон + contracts + skeleton.
+- Нет возврата к legacy монолитной runtime-модели; Stage B остаётся минимальным orchestration фундаментом.
