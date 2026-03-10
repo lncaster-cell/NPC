@@ -36,6 +36,7 @@ void AL_RouteInvalidateCache(object oNpc)
     }
 
     DeleteLocalString(oNpc, "al_route_cache_tag");
+    DeleteLocalObject(oNpc, "al_route_cache_area");
     SetLocalInt(oNpc, "al_route_cache_slot", -1);
     SetLocalInt(oNpc, "al_route_cache_steps", 0);
     SetLocalInt(oNpc, "al_route_cache_valid", FALSE);
@@ -46,6 +47,12 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
     AL_RouteInvalidateCache(oNpc);
 
     if (!GetIsObjectValid(oNpc) || sRouteTag == "" || nSlot < 0 || nSlot > 5)
+    {
+        return FALSE;
+    }
+
+    object oNpcArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oNpcArea))
     {
         return FALSE;
     }
@@ -65,6 +72,11 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
 
         nSearchIdx = nSearchIdx + 1;
         if (GetObjectType(oWp) != OBJECT_TYPE_WAYPOINT)
+        {
+            continue;
+        }
+
+        if (GetArea(oWp) != oNpcArea)
         {
             continue;
         }
@@ -146,6 +158,7 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
     }
 
     SetLocalString(oNpc, "al_route_cache_tag", sRouteTag);
+    SetLocalObject(oNpc, "al_route_cache_area", oNpcArea);
     SetLocalInt(oNpc, "al_route_cache_slot", nSlot);
     SetLocalInt(oNpc, "al_route_cache_steps", nFound);
     SetLocalInt(oNpc, "al_route_cache_valid", TRUE);
@@ -172,7 +185,9 @@ int AL_RouteEnsureCache(object oNpc, int nSlot, int bForceRebuild)
         int bValid = GetLocalInt(oNpc, "al_route_cache_valid");
         int nCachedSlot = GetLocalInt(oNpc, "al_route_cache_slot");
         string sCachedTag = GetLocalString(oNpc, "al_route_cache_tag");
-        if (bValid && nCachedSlot == nSlot && sCachedTag == sRouteTag)
+        object oCachedArea = GetLocalObject(oNpc, "al_route_cache_area");
+        object oCurrentArea = GetArea(oNpc);
+        if (bValid && nCachedSlot == nSlot && sCachedTag == sRouteTag && oCachedArea == oCurrentArea)
         {
             return TRUE;
         }

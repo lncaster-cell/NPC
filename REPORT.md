@@ -4,6 +4,7 @@
 - Route cache subsystem (`scripts/ambient_life/al_route_inc.nss`):
   - slot -> route tag resolve через `alwp0..alwp5`,
   - controlled invalidation/rebuild,
+  - area-scoped step selection (только waypoint из current NPC area),
   - cached ordered step references (`al_route_step_<idx>`),
   - minimal descriptor (`tag`, `slot`, `step_count`, `valid`).
 - Deterministic route ordering:
@@ -34,7 +35,10 @@ Rebuild/refresh выполняется только контролируемо:
 
 Normal hot path использует уже построенный cache и не пересобирает route на каждом проходе.
 
+Stage D route cache намеренно area-scoped: это сознательная граница этапа, а не недоработка.
+
 ## Сознательно отложено (граница Stage D)
+- Cross-area routing / linked-area route traversal.
 - Полноценный multi-step routine engine (Stage E).
 - Sleep runtime (`al_bed_id`, bed pipeline) (Stage F).
 - Reactions / crime / alarm runtime.

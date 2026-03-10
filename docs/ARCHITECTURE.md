@@ -106,7 +106,7 @@ Core принимает entry-события и управляет lifecycle:
    - cached slot,
    - шаги (`al_route_step_<idx>`),
    - valid marker (`al_route_cache_valid`).
-5. Rebuild кэша допускается только контролируемо: `RESYNC`, slot change, route tag change, force rebuild/invalidate.
+5. Rebuild кэша допускается только контролируемо: `RESYNC`, slot change, route tag change, area mismatch (NPC moved), force rebuild/invalidate.
 
 ---
 
@@ -124,6 +124,7 @@ Core принимает entry-события и управляет lifecycle:
 
 ### 6.3 Route cache strategy (Stage D)
 - Cache build использует route tag из текущего slot.
+- Stage D cache area-scoped: waypoint считается валидным только если находится в текущей area NPC.
 - Waypoints собираются и сортируются только по `al_step`.
 - Неконсистентный route (missing/duplicate/non-contiguous step chain) сбрасывается в fallback.
 - В normal hot path используется уже cached route descriptor.
@@ -149,6 +150,7 @@ Core принимает entry-события и управляет lifecycle:
 ## 7) Stage D boundary (explicit)
 
 Stage D **не** включает:
+- cross-area routing / linked-area route traversal;
 - full multi-step routine engine;
 - sleep runtime;
 - reactions/crime/alarm;
