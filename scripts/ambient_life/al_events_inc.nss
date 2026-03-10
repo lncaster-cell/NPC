@@ -20,6 +20,7 @@ const int AL_EVENT_SLOT_5 = AL_EVENT_BASE + 15;
 const int AL_EVENT_ROUTE_REPEAT = AL_EVENT_BASE + 20;
 
 // Reserved reaction window (future): 1200-1299.
+// Keep untouched by non-Ambient-Life systems.
 const int AL_EVENT_REACT_BASE = 1200;
 const int AL_EVENT_REACT_MAX = 1299;
 
