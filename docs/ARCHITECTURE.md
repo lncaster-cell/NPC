@@ -1,10 +1,11 @@
-# Ambient Life — Architecture Canon (Stage A contracts, Stage B core runtime, Stage C LOD)
+# Ambient Life — Architecture Canon (Stage A contracts, Stage B core runtime, Stage C LOD, Stage D route baseline)
 
-## 1) Scope (Stage A + Stage B + Stage C status)
+## 1) Scope (Stage A + Stage B + Stage C + Stage D status)
 
 Stage A зафиксировал архитектуру и contracts.
-Stage B реализовал минимальный core lifecycle runtime поверх этого канона (без route/sleep/reaction runtime).
-Stage C добавил area graph linkage contract и area simulation LOD policy как обязательный промежуточный слой перед route runtime.
+Stage B реализовал минимальный core lifecycle runtime поверх этого канона.
+Stage C добавил area graph linkage contract и area simulation LOD policy.
+Stage D добавил минимальный route layer (cache + baseline execution) строго в рамках `HOT` tier.
 
 Обязательные принципы:
 - Event-driven оркестрация.
@@ -13,10 +14,9 @@ Stage C добавил area graph linkage contract и area simulation LOD policy
 - Dense registry на уровне area (`al_npc_count`, `al_npc_<idx>`).
 - `OnUserDefined` используется как внутренняя шина событий.
 - Слотная модель времени (базовые слоты через `alwp0..alwp5`).
-- Персональный временной offset (`al_slot_offset_min`) на NPC.
-- Агрессивное кэширование и отсутствие повторных area full-scan в hot path.
-- Sleep через `approach/pose` waypoints (`<bed_id>_approach`, `<bed_id>_pose`).
-- Никакого `rest`/`OnRested` в core.
+- Персональный временной offset (`al_slot_offset_min`) остаётся canonical field; full per-NPC offset-dispatch остаётся следующими стадиями.
+- Агрессивное кэширование и отсутствие repeated area full-scan в hot path.
+- Stage D route runtime исполняется только в `HOT` areas.
 
 ---
 
@@ -32,34 +32,35 @@ Stage C добавил area graph linkage contract и area simulation LOD policy
 - `al_npc_ondeath`
 - `al_npc_onud`
 
-На Stage B/C эти entry scripts подключены к core dispatcher для lifecycle/tick/OnUD baseline.
-
 ### 2.2 Core layer
 Core принимает entry-события и управляет lifecycle:
 - area lifecycle;
 - npc lifecycle;
-- запуск slot processing;
-- переходы mode/state через runtime-owned locals (`al_last_slot`, `al_last_area`, `al_mode`).
+- slot events/resync dispatch;
+- route baseline запуском только для `HOT` area;
+- переходами mode/state через runtime-owned locals (`al_last_slot`, `al_last_area`, `al_mode`).
 
 ### 2.3 Area Graph + Simulation LOD layer (Stage C)
 Минимальный слой интереса зоны:
 - area linkage contract через `al_link_count` + `al_link_<idx>`;
-- canonical Stage C linkage resolution: по area tag (`al_link_<idx>`) через object lookup (`GetObjectByTag`) с валидацией, что получен именно area object;
-- если движковые ограничения покажут, что такой lookup ненадёжен для отдельных окружений, будет сделан точечный technical swap механизма резолва без изменения 3-tier policy;
-- depth 0 / depth 1 policy (current area + directly linked areas);
-- simulation tier на area (`FREEZE`, `WARM`, `HOT`);
-- grace/hysteresis через warm retention marker.
-
-Этот слой обязателен перед route runtime, чтобы в городе с несколькими улицами/районами и множеством интерьеров не тиковались все области сразу.
+- `FREEZE`/`WARM`/`HOT` policy с hysteresis;
+- route runtime разрешён только в `HOT`.
 
 ### 2.4 Registry/Cache layer
 Отвечает за плотный registry area и кэши, чтобы hot path не сканировал зону повторно.
 
-### 2.5 Feature routes/routines/sleep/reactions
-- Routes: выбор и исполнение route steps (после Stage C, только поверх `HOT`).
-- Routines: multi-step поведение внутри активного slot.
-- Sleep: отдельный pipeline через `approach -> pose`.
-- Reactions: blocked/disturbed/crime/alarm события на следующих этапах.
+### 2.5 Route baseline layer (Stage D)
+Минимальный route foundation:
+- slot -> route tag resolve через `alwp0..alwp5`;
+- controlled cache build/rebuild;
+- deterministic ordering только по `al_step`;
+- baseline execution через action queue без polling arrival tracking;
+- минимальные activity semantics (`al_activity` + fallback в `al_default_activity`).
+
+### 2.6 Future layers (Stage E+)
+- Rich multi-step routines.
+- Sleep runtime (`<bed_id>_approach -> <bed_id>_pose`).
+- Reactions (blocked/disturbed/crime/alarm).
 
 ---
 
@@ -67,116 +68,81 @@ Core принимает entry-события и управляет lifecycle:
 
 Транспорт: `OnUserDefined`.
 
-Минимальные namespace-группы:
-- `AL_EVT_AREA_*` — события area lifecycle/tick.
-- `AL_EVT_NPC_*` — события NPC lifecycle.
-- `AL_EVT_SLOT_*` — переходы и обработка slot.
-- `AL_EVT_ROUTE_*` — route/cache/invalidation.
-- `AL_EVT_SLEEP_*` — sleep pipeline.
-- `AL_EVT_REACT_*` — реакции (blocked/disturbed/crime/alarm).
-- `AL_EVT_DEBUG_*` — диагностика.
-
-### 3.1 Canonical internal IDs (implemented in Stage B)
-
-Внутренний OnUserDefined namespace Ambient Life Stage B закреплён в диапазоне `3100..3107`:
-- `3100..3105` — `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5` (заняты).
-- `3106` — `AL_EVENT_RESYNC` (занят).
-- `3107` — `AL_EVENT_ROUTE_REPEAT` (зарезервирован под route runtime, без реализации в Stage B/C).
-
-Правило namespace discipline:
-- Другие внутренние подсистемы модуля не должны произвольно использовать `3100..3107`.
-- Расширения Ambient Life вне Stage B/C должны использовать отдельные выделенные диапазоны/резервы с явной фиксацией в docs перед использованием.
+Внутренний namespace Ambient Life в диапазоне `3100..3107`:
+- `3100..3105` — `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`.
+- `3106` — `AL_EVENT_RESYNC`.
+- `3107` — `AL_EVENT_ROUTE_REPEAT` (Stage D baseline поддерживает обработку, но без rich repeat engine).
 
 Требования:
 1. Все внутренние сигналы Ambient Life передаются event-driven способом.
 2. Entry scripts не содержат feature runtime.
-3. Stage B/C реализуют lifecycle + area LOD orchestration backbone; feature runtime остаётся на следующих стадиях.
+3. Route runtime не исполняется в `WARM`/`FREEZE`.
 
 ---
 
-## 4) Area simulation tiers (mandatory Stage C)
+## 4) Area simulation tiers (mandatory)
 
-Используются только 3 уровня:
 1. `FREEZE`
    - area спит;
    - нет area tick runtime progression;
-   - нет route/runtime progression;
-   - хранится только состояние.
+   - нет route/runtime progression.
 2. `WARM`
    - area прогрета как соседняя/быстро достижимая;
-   - без полноценной симуляции;
+   - без route execution;
    - разрешена только лёгкая поддержка cache/state readiness.
 3. `HOT`
    - area, где реально находится игрок;
-   - полный runtime текущего доступного уровня системы.
-
-Policy на Stage C:
-- current player area => `HOT`;
-- directly linked areas => `WARM`;
-- everything else => `FREEZE`.
-
-Hysteresis:
-- краткий warm retention нужен, чтобы area не дёргалась мгновенно при переходах через двери/границы;
-- downgrade делается постепенно: `HOT -> WARM -> FREEZE`.
+   - route baseline runtime Stage D разрешён.
 
 ---
 
-## 5) Slot model + routines
+## 5) Slot model + route baseline
 
 1. Глобальный slot хранится на area в `al_slot`.
 2. Для NPC базовые slot-якоря заданы через `alwp0..alwp5`.
-3. Индивидуальное смещение NPC задаётся `al_slot_offset_min`.
-4. Внутри одного slot допускаются multi-step routines (через `al_step`, `al_activity`, `al_dur_sec`).
-5. Runtime должен отслеживать последний обработанный слот через `al_last_slot`.
-
-На Stage C slot progression остаётся только для `HOT` area.
+3. Runtime отслеживает последний обработанный слот в `al_last_slot`.
+4. Stage D route cache хранит:
+   - активный route tag,
+   - cached slot,
+   - шаги (`al_route_step_<idx>`),
+   - valid marker (`al_route_cache_valid`).
+5. Rebuild кэша допускается только контролируемо: `RESYNC`, slot change, route tag change, force rebuild/invalidate.
 
 ---
 
 ## 6) Caching policy (mandatory)
 
 ### 6.1 Hot path rules
-- Никаких повторных area full-scan в каждом тике.
+- Никаких repeated area full-scan в каждом тике.
+- Никаких repeated nearest/tag search как baseline стратегии исполнения route.
 - Работа только через registry/cache структуры.
-- Invalidation выполняется событиями lifecycle, а не периодическим пересканом.
 
 ### 6.2 Area dense registry
 - `al_npc_count` хранит размер плотного пула.
 - `al_npc_<idx>` хранит индексные ссылки на NPC.
-- Обновление registry только на событиях enter/leave/spawn/death.
+- Dispatch событий выполняется через area registry.
 
-### 6.3 NPC runtime cache
-- `al_last_slot`, `al_last_area`, `al_mode` считаются runtime-owned кэшем состояния.
-- На Stage B `al_mode` используется как строковое поле; baseline-значение при spawn — `"idle"`.
-- Полноценная canonical mode-модель не вводится на Stage B/C и откладывается на следующие стадии.
-- Эти поля используются для дешёвых проверок перехода, без повторного вычисления/поиска.
+### 6.3 Route cache strategy (Stage D)
+- Cache build использует route tag из текущего slot.
+- Waypoints собираются и сортируются только по `al_step`.
+- Неконсистентный route (missing/duplicate/non-contiguous step chain) сбрасывается в fallback.
+- В normal hot path используется уже cached route descriptor.
 
-### 6.4 Route/sleep cache
-- Разрешён кэш route/sleep lookup результатов.
-- При невалидности кэша сначала invalidation/rebuild, затем fallback.
-
-### 6.5 Fallback-first safety
-Если маршрут/шаг/точка сна не найдены:
-1. Не падать и не запускать дорогое сканирование в loop.
-2. Перейти в безопасный fallback (`al_default_activity` как int activity ID или sleep on place).
-3. Проставить debug-сигнал для диагностики.
+### 6.4 Fallback-first safety
+Если маршрут/шаг/активность невалидны:
+1. Без краша и без repeated search loop.
+2. Fallback к `al_default_activity`.
+3. Если fallback невалиден — safe idle.
 
 ---
 
-## 7) Sleep policy
+## 7) Stage D boundary (explicit)
 
-- Канон сна: `<bed_id>_approach -> <bed_id>_pose`.
-- При отсутствии валидной пары — sleep on place.
-- `ActionInteractObject` не используется как базовый механизм сна.
+Stage D **не** включает:
+- full multi-step routine engine;
+- sleep runtime;
+- reactions/crime/alarm;
+- polling-based arrival tracking;
+- превращение route runtime в монолитный AI.
 
----
-
-## 8) Non-goals (Stage C boundary)
-
-- Нет runtime route execution в Stage C.
-- Нет runtime routine execution в Stage C.
-- Нет runtime sleep execution в Stage C.
-- Нет runtime реакций в Stage C.
-- Нет 4-tier модели на этом этапе.
-- Нет deep BFS/graph/path prediction.
-- Нет возврата к legacy монолитной runtime-модели; Stage C остаётся LOD-слоем между core lifecycle и route runtime.
+Stage D специально оставляет activity semantics минимальными, чтобы Stage E/F строились поверх устойчивого cache-first foundation.
