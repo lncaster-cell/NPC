@@ -1,43 +1,43 @@
-# Ambient Life Stage 1 Report
+# Ambient Life Stage 2 Report
 
 ## Done
-- Fixed canonical architecture documents: layering, module boundaries, event namespace, contracts.
-- Added modular script structure under `scripts/ambient_life/` with clear single responsibility per file.
-- Implemented working core lifecycle:
-  - area activation/deactivation by player presence,
-  - single area-level tick loop,
-  - tick token invalidation,
-  - slot computation and slot-change dispatch,
-  - RESYNC dispatch on activation,
-  - dense NPC registry + periodic cleanup.
-- Implemented internal OnUserDefined bus constants and routing hooks.
-- Clarified Stage 1 contract/runtime boundaries:
-  - `al_slot_offset_min` is canonical and read by slot computation, while runtime dispatch is still global-area slot based.
-  - full per-NPC offset-aware dispatch is deferred with routine runtime / route execution.
-  - `al_mode` remains reserved without canonical enum/runtime semantics in Stage 1.
-- Clarified Ambient Life OnUserDefined namespace ownership for `1100..1299`.
+- Implemented slot-based route selection from NPC locals `alwp0..alwp5`.
+- Implemented deterministic route-step model:
+  - waypoint collection by route tag,
+  - explicit ordering by `al_step`,
+  - support for 1+ steps.
+- Implemented minimal route runtime state on NPC:
+  - `al_route_tag`,
+  - `al_route_active`,
+  - `al_route_index`,
+  - `al_route_step_count` + step object cache,
+  - `al_route_dwell_until` (lightweight marker).
+- Implemented route execution that remains event-driven:
+  - slot/resync events start route,
+  - `AL_EVENT_ROUTE_REPEAT` advances step sequence,
+  - sequencing uses engine action queue (`ActionMoveToObject`, `ActionWait`, `ActionDoCommand`).
+- Implemented waypoint activity source-of-truth (`al_activity`) with safe fallback chain:
+  - waypoint activity,
+  - `al_default_activity`,
+  - idle fallback.
+- Implemented dwell support via waypoint `al_dur_sec` in action queue.
+- Implemented clean fallback policy:
+  - empty/broken route => route skipped + fallback activity,
+  - missing step waypoint => activity at current NPC position,
+  - invalid activity => safe fallback.
+- Updated architecture/contract/roadmap docs to Stage 2 runtime reality.
 
 ## Intentionally deferred
-- Route runtime execution.
-- Per-NPC offset-aware routine dispatch (`al_slot_offset_min` is contract-only in Stage 1).
-- Multi-step slot routine runtime.
-- Sleep docking/runtime behavior.
-- OnBlocked/OnDisturbed reactions.
-- Crime/alarm systems.
+- Sleep docking/profile runtime.
+- OnBlocked/OnDisturbed reaction logic.
+- Crime/alarm and social propagation.
+- Rest subsystem.
+- Perception-driven monolithic AI behavior.
 
 ## Fixed invariants
 - Event-driven orchestration only.
-- No NPC heartbeat.
-- No per-NPC periodic DelayCommand.
-- No AssignCommand-based orchestration core.
-- Action queue remains engine responsibility.
-
-## Engine constraints respected
-- Lifecycle loop runs at area level only while players are present.
-- OnUserDefined used as internal dispatch bus.
-- Core stores orchestration state only and does not replace action queue semantics.
-
-## Clarifications after Stage 1
-- Stage 1 slot dispatch is area-global; `al_slot_offset_min` is canonical content data but not yet a full runtime dispatch driver.
-- `al_mode` remains runtime-reserved; mode enum values are intentionally deferred to later runtime stages.
-- Ambient Life event ranges `1100..1199` and `1200..1299` are reserved and must not be reused by unrelated internal systems.
+- No heartbeat.
+- No per-NPC periodic timers.
+- No polling-based movement tracking.
+- No AssignCommand as orchestration backbone.
+- Runtime state is orchestration/bookkeeping only; engine action queue remains canonical for ordinary sequencing.

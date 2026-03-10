@@ -1,25 +1,27 @@
 # Ambient Life Implementation Roadmap
 
-## Stage 1 (current): Core lifecycle
+## Stage 1 (done): Core lifecycle
 - Event-driven area lifecycle.
 - Area activation on first player, deactivation on last player/leave.
 - Single area-level delayed tick loop with token invalidation.
 - Dense NPC registry add/remove/swap-remove.
-- Slot compute and dispatch (`RESYNC`, `SLOT_0..5`) at area-global level.
-- `al_slot_offset_min` contract is fixed, while offset-aware per-NPC runtime dispatch is deferred.
+- Slot compute with canonical `al_slot_offset_min` support.
+- Slot dispatch (`RESYNC`, `SLOT_0..5`) as area bus events.
 - OnUserDefined bus foundation and event namespace.
-- `al_mode` kept as reserved runtime field (no canonical enum, no Stage 1 runtime behavior).
 
-## Stage 2: Route execution
+## Stage 2 (done): Ambient route baseline
 - Parse slot route assignment (`alwp0..alwp5`).
-- Introduce per-NPC offset-aware routine dispatch on top of Stage 1 area tick.
-- Waypoint traversal by engine action queue.
-- `ROUTE_REPEAT` runtime loop handling.
-- Introduce per-NPC offset-aware runtime dispatch path (coupled with routine runtime).
+- Build ordered route steps by `al_step` (deterministic ordering).
+- Apply waypoint `al_activity` as step source of truth.
+- Support dwell by waypoint `al_dur_sec` through engine action queue.
+- Runtime route bookkeeping (`route tag`, `active flag`, `step index`, lightweight dwell marker).
+- Route continuation through `AL_EVENT_ROUTE_REPEAT` without heartbeat/polling.
+- Fallback policy for empty routes, missing waypoints, invalid activity.
 
-## Stage 3: Multi-step slot routines
-- Step-level state machine from waypoint contract (`al_step`, `al_activity`, `al_dur_sec`).
-- Per-slot composite behavior with deterministic transitions.
+## Stage 3: Multi-step slot routines expansion
+- Broader activity vocabulary.
+- Slot-level composite routine branching.
+- Richer fallback profiles per NPC archetype.
 
 ## Stage 4: Sleep subsystem
 - Sleep profile evaluation.

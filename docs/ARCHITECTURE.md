@@ -1,4 +1,4 @@
-# Ambient Life Architecture Canon (Stage 1)
+# Ambient Life Architecture Canon (Stage 2)
 
 ## System model
 Ambient Life is an event-driven orchestration system for NPC daily life in NWN2.
@@ -10,10 +10,11 @@ Core principle: the engine executes actions; Ambient Life coordinates *when* and
    - Single area-level tick while players are present.
    - Area dense NPC registry.
    - Slot changes and RESYNC broadcasts over OnUserDefined.
-2. **Routine layer** (future stage 2/3)
-   - Route execution.
-   - Multi-step slot activities.
-   - Interrupt/resume-aware routine state transitions.
+2. **Routine layer** (Stage 2 baseline)
+   - Route selection by slot (`alwp0..alwp5`).
+   - Ordered route steps by `al_step`.
+   - Waypoint-driven activity (`al_activity`) + dwell (`al_dur_sec`).
+   - Route repeat via `AL_EVENT_ROUTE_REPEAT` in OnUserDefined bus.
 3. **Reaction layer** (future stage 5+)
    - OnBlocked / OnDisturbed reactions.
    - Crime/alarm and social escalation.
@@ -24,7 +25,8 @@ Core principle: the engine executes actions; Ambient Life coordinates *when* and
 
 ## System responsibilities (owned state)
 - Runtime orchestration state (slot markers, active token, registry membership).
-- Dispatch decisions (RESYNC/SLOT events).
+- Route bookkeeping state (`al_route_tag`, `al_route_index`, `al_route_active`, step cache count, dwell-until marker).
+- Dispatch decisions (RESYNC/SLOT/ROUTE_REPEAT events).
 - Fallback and guard policies.
 
 Ambient Life does **not** reimplement action queue mechanics.
@@ -46,33 +48,41 @@ Ambient Life does **not** reimplement action queue mechanics.
 - `al_registry_inc.nss`: dense add/remove/swap-remove and cleanup.
 - `al_schedule_inc.nss`: time-slot derivation.
 - `al_events_inc.nss`: internal OnUserDefined event namespace.
-- `al_route_inc.nss`: route subsystem hooks (future runtime).
-- `al_activity_inc.nss`: multi-step slot activity hooks.
-- `al_sleep_inc.nss`: sleep contract and runtime hooks.
-- `al_react_inc.nss`: reaction subsystem hooks.
+- `al_route_inc.nss`: route subsystem runtime (selection, step ordering, step execution, repeat).
+- `al_activity_inc.nss`: activity sanitization and action-queue activity application.
+- `al_sleep_inc.nss`: sleep contract and runtime hooks (deferred).
+- `al_react_inc.nss`: reaction subsystem hooks (deferred).
 - `al_debug_inc.nss`: optional diagnostics.
 
 ## Event namespace (OnUserDefined bus)
-Ambient Life event namespace is **exclusive** for Ambient Life internals. Other internal subsystems must not emit arbitrary events inside these ranges.
+- Ambient Life canonical namespace root: `1100..1299`.
+- Occupied now:
+  - `1101`: `AL_EVENT_RESYNC`.
+  - `1110..1115`: `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`.
+  - `1120`: `AL_EVENT_ROUTE_REPEAT`.
+- Reserved by Ambient Life (do not use for unrelated internal systems):
+  - `1100..1199`: Ambient Life core/routine expansion window.
+  - `1200..1299`: Ambient Life reaction window.
+- Internal subsystems outside Ambient Life must allocate events outside `1100..1299` unless explicitly coordinated.
 
-- `1100..1199` — Ambient Life core/routine namespace.
-  - Implemented in Stage 1:
-    - `AL_EVENT_RESYNC = 1101`
-    - `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5 = 1110..1115`
-    - `AL_EVENT_ROUTE_REPEAT = 1120` (reserved runtime hook)
-  - Remaining values in this range are reserved for future Ambient Life routine events.
-- `1200..1299` — reserved for Ambient Life reaction events (future stages).
-- Values outside these ranges are out of Ambient Life contract scope.
+## Stage 2 routine guarantees
+- Active route is selected from NPC slot locals `alwp<slot>`.
+- Route steps are collected by route tag and ordered deterministically via `al_step`.
+- `al_activity` on waypoint is source of truth for step activity.
+- `al_dur_sec` on waypoint is source of truth for dwell duration.
+- Ordinary step sequencing is action-queue driven and chained by `AL_EVENT_ROUTE_REPEAT`; no arrival polling.
 
 ## Fallback policy
-- Missing route/activity handlers: keep NPC in default/no-op behavior.
-- Stale registry references: cleaned by periodic area-level sync cleanup.
-- Invalid delayed tick: dropped via token mismatch.
+- Missing route tag or empty/broken route => route is skipped and fallback activity is used.
+- Missing current waypoint object => activity is executed on current NPC position.
+- Invalid `al_activity` => fallback to `al_default_activity`, then to safe idle.
+- Sleep metadata (`al_bed_id`) is contract-only in Stage 2 and not used for docking runtime.
+- Stale registry references are cleaned by periodic area-level sync cleanup.
+- Invalid delayed area tick is dropped via token mismatch.
 
-## Interrupt/resume policy (concept)
-- Interrupt sources (blocked, disturbed, reactions, crime) are modeled as layer-specific state transitions.
-- Core remains stateless about detailed behavior, only maintains deterministic dispatch cadence.
-- Resume targets slot-consistent activity state, not arbitrary action queue rewrites.
+## Interrupt/resume policy (deferred)
+- Interrupt sources (blocked, disturbed, reactions, crime) are modeled as layer-specific state transitions in later stages.
+- Stage 2 keeps routine loop narrow and deterministic without reaction integration.
 
 ## Stage 1 scope clarifications
 - `al_slot_offset_min` is canonical NPC contract data, but Stage 1 dispatch remains **area-global by current slot**.
