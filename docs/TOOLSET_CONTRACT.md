@@ -64,6 +64,9 @@ Sleep работает через waypoint-пару по `al_bed_id`:
 | `al_area_kind` | string | Опциональная семантика area (`street`, `interior`, `district`, ...); используется для authoring/документации, не для сложной graph-логики. |
 | `al_debug` | int (0/1) | Флаг диагностического режима для зоны. |
 
+Stage C canonical linkage assumption: linked area резолвится runtime-слоем по area tag через object lookup (`GetObjectByTag`) с проверкой, что результат — объект area.
+Если в конкретной сборке движка этот lookup окажется недостаточно надёжным для area object, механизм резолва может быть скорректирован на следующем техническом шаге **без изменения 3-tier LOD модели** и без изменения semantics `FREEZE/WARM/HOT`.
+
 ### 4.2 Runtime-owned
 
 | Local | Type | Назначение |

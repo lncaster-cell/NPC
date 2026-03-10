@@ -44,6 +44,8 @@ Core принимает entry-события и управляет lifecycle:
 ### 2.3 Area Graph + Simulation LOD layer (Stage C)
 Минимальный слой интереса зоны:
 - area linkage contract через `al_link_count` + `al_link_<idx>`;
+- canonical Stage C linkage resolution: по area tag (`al_link_<idx>`) через object lookup (`GetObjectByTag`) с валидацией, что получен именно area object;
+- если движковые ограничения покажут, что такой lookup ненадёжен для отдельных окружений, будет сделан точечный technical swap механизма резолва без изменения 3-tier policy;
 - depth 0 / depth 1 policy (current area + directly linked areas);
 - simulation tier на area (`FREEZE`, `WARM`, `HOT`);
 - grace/hysteresis через warm retention marker.
