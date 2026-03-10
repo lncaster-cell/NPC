@@ -55,7 +55,7 @@ void AL_OnNpcUserDefined(object oNpc)
 
     if (nEvent == AL_EVENT_ROUTE_REPEAT)
     {
-        // Reserved hook for Stage C+ route runtime.
+        // Reserved hook for Stage D+ route runtime.
         return;
     }
 }

@@ -1,7 +1,7 @@
-# Ambient Life — Toolset Contract (Stage A)
+# Ambient Life — Toolset Contract (Stage A + Stage C)
 
-Stage A фиксирует **только контракт данных и именование locals**, без runtime-логики.
-Ниже приведён канонический минимум, согласованный для toolset/runtime.
+Stage A зафиксировал базовый контракт locals.
+Stage C расширяет его cheap area-linkage и simulation tier policy (без route/runtime DSL).
 
 ## 1) NPC locals (canonical)
 
@@ -55,20 +55,52 @@ Sleep работает через waypoint-пару по `al_bed_id`:
 
 ## 4) Area locals (canonical)
 
+### 4.1 Toolset-configured
+
+| Local | Type | Назначение |
+|---|---|---|
+| `al_link_count` | int | Количество прямых linked areas (depth 1 interest). |
+| `al_link_<idx>` | string | Tag связанной area по индексу `0..al_link_count-1` (улица/интерьер/соседний район). |
+| `al_area_kind` | string | Опциональная семантика area (`street`, `interior`, `district`, ...); используется для authoring/документации, не для сложной graph-логики. |
+| `al_debug` | int (0/1) | Флаг диагностического режима для зоны. |
+
+### 4.2 Runtime-owned
+
 | Local | Type | Назначение |
 |---|---|---|
 | `al_player_count` | int | Количество игроков в зоне. |
 | `al_tick_token` | int/string | Токен/маркер текущего tick-цикла area. |
-| `al_slot` | int | Текущий глобальный slot зоны. |
-| `al_sync_tick` | int | Служебный sync-счётчик тика. |
+| `al_slot` | int | Текущий глобальный slot зоны (обновляется только в `HOT`). |
+| `al_sync_tick` | int | Служебный sync-счётчик area runtime. |
 | `al_npc_count` | int | Размер dense registry для area. |
 | `al_npc_<idx>` | object/string | Плотный индексный список NPC в area registry. |
-| `al_debug` | int (0/1) | Флаг диагностического режима для зоны. |
+| `al_sim_tier` | int | Текущий simulation tier area (`0=FREEZE`, `1=WARM`, `2=HOT`). |
+| `al_warm_until_sync` | int | Hysteresis marker: до какого `al_sync_tick` area удерживается в `WARM` после потери игрока/соседнего interest. |
 
 ---
 
-## 5) Stage A boundaries
+## 5) Stage C LOD policy contract
 
-- Контракт фиксируется как есть, без введения новых naming systems.
-- Любые runtime-owned locals обновляются только runtime-слоем.
-- Новые поля/переименования не вводятся на этапе A.
+Используется только 3 tiers:
+- `FREEZE`: area спит, runtime progression не идёт.
+- `WARM`: area прогрета/быстро достижима, только лёгкая runtime maintenance без rich route execution.
+- `HOT`: area с игроком, полный доступный runtime текущей стадии.
+
+Depth model на Stage C:
+1. Current player area => `HOT`.
+2. Directly linked areas => `WARM`.
+3. Всё остальное => `FREEZE`.
+
+Ограничения Stage C:
+- Нет deep BFS/path prediction.
+- Нет recursive graph warming.
+- Нет отдельной graph DSL.
+- Нет route/sleep/reaction runtime в рамках LOD этапа.
+
+---
+
+## 6) Contract boundaries
+
+- Контракт остаётся простым и дешёвым для контент-автора.
+- Runtime-owned locals обновляются только runtime-слоем.
+- Ввод linked areas делается через простые indexed locals, без сложных конфигурационных моделей.
