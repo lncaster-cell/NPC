@@ -1,4 +1,5 @@
 #include "al_events_inc"
+#include "al_route_inc"
 
 void main()
 {
@@ -6,8 +7,10 @@ void main()
 
     if (nEvent == AL_EVENT_RESYNC)
     {
-        // Core lifecycle hook: reset slot marker so next SLOT event is always accepted.
-        SetLocalInt(OBJECT_SELF, "al_last_slot", -1);
+        object oArea = GetArea(OBJECT_SELF);
+        int nSlot = GetLocalInt(oArea, "al_slot");
+        SetLocalInt(OBJECT_SELF, "al_last_slot", nSlot);
+        AL_StartSlotRoute(OBJECT_SELF, nSlot);
         return;
     }
 
@@ -17,14 +20,14 @@ void main()
         if (GetLocalInt(OBJECT_SELF, "al_last_slot") != nSlot)
         {
             SetLocalInt(OBJECT_SELF, "al_last_slot", nSlot);
-            // Route/activity execution is intentionally deferred to next stages.
+            AL_StartSlotRoute(OBJECT_SELF, nSlot);
         }
         return;
     }
 
     if (nEvent == AL_EVENT_ROUTE_REPEAT)
     {
-        // Reserved hook for route execution loop.
+        AL_HandleRouteRepeat(OBJECT_SELF);
         return;
     }
 }
