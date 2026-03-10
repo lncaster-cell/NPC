@@ -84,6 +84,16 @@ Ambient Life does **not** reimplement action queue mechanics.
 - Interrupt sources (blocked, disturbed, reactions, crime) are modeled as layer-specific state transitions in later stages.
 - Stage 2 keeps routine loop narrow and deterministic without reaction integration.
 
+## Stage 1 scope clarifications
+- `al_slot_offset_min` is canonical NPC contract data, but Stage 1 dispatch remains **area-global by current slot**.
+- Per-NPC offset-aware routine dispatch is intentionally deferred to routine runtime stages (route execution + multi-step routines).
+- This is a deliberate Stage 1 scope boundary, not a core lifecycle defect.
+
+## `al_mode` status
+- `al_mode` is a runtime-owned local reserved for routine/reaction/sleep mode switching.
+- Stage 1 does not implement mode logic.
+- Canonical enum values are intentionally deferred and will be fixed together with routine/reaction runtime in later stages.
+
 ## Canonical sleep contract (fixed now, implemented later)
 - Sleep route references bed id and uses two waypoint tags:
   - `sleep_approach`: `<bed_id>_approach`
