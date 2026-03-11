@@ -39,6 +39,13 @@
 - Sleep runtime остаётся HOT-only, без heartbeat/polling/per-NPC timer архитектур.
 - `ActionInteractObject` и `rest`/`OnRested`/`AnimActionRest` сознательно не используются.
 
-## Stage H — Blocked/Disturbed + Crime/Alarm Reactions (next)
+## Stage H — Activity Subsystem / Canonical Activity Semantics (implemented)
+- Выделена отдельная activity subsystem в `al_activity_inc.nss` (без ad-hoc логики в route/transition).
+- Сохранён int-based контракт `al_activity`/`al_default_activity`.
+- Canonical activity ID set синхронизирован с таблицей PycukSystems (см. ARCHITECTURE/TOOLSET_CONTRACT).
+- Stage D/E/F/G интегрированы через общий execution layer `AL_ActivityApplyStep`.
+- Sleep и transition сохранены как отдельные special-case подсистемы.
+
+## Stage I — Blocked/Disturbed + Crime/Alarm Reactions (next)
 - Реализовать реактивный слой и приоритеты реакций.
 - Добавить debounce/cooldown для шумных событий.

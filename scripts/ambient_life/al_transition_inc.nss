@@ -97,10 +97,6 @@ int AL_TransitionQueueAreaHelper(object oNpc, object oStep, object oSrc, object 
     }
 
     int nActivity = GetLocalInt(oStep, "al_activity");
-    if (nActivity <= AL_ACTIVITY_IDLE)
-    {
-        nActivity = GetLocalInt(oNpc, "al_default_activity");
-    }
 
     int nDur = GetLocalInt(oStep, "al_dur_sec");
     if (nDur <= 0)
@@ -111,7 +107,7 @@ int AL_TransitionQueueAreaHelper(object oNpc, object oStep, object oSrc, object 
     ClearAllActions(TRUE);
     ActionMoveToObject(oSrc, TRUE, 1.5);
     ActionJumpToLocation(GetLocation(oDst));
-    AL_ActivityApplyBaseline(oNpc, nActivity, nDur);
+    AL_ActivityApplyStep(oNpc, nActivity, nDur);
     ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
 
     SetLocalInt(oNpc, AL_TransitionRtActiveKey(), TRUE);
@@ -135,10 +131,6 @@ int AL_TransitionQueueIntraTeleport(object oNpc, object oStep, object oSrc, obje
     }
 
     int nActivity = GetLocalInt(oStep, "al_activity");
-    if (nActivity <= AL_ACTIVITY_IDLE)
-    {
-        nActivity = GetLocalInt(oNpc, "al_default_activity");
-    }
 
     int nDur = GetLocalInt(oStep, "al_dur_sec");
     if (nDur <= 0)
@@ -149,7 +141,7 @@ int AL_TransitionQueueIntraTeleport(object oNpc, object oStep, object oSrc, obje
     ClearAllActions(TRUE);
     ActionMoveToObject(oSrc, TRUE, 1.5);
     ActionJumpToLocation(GetLocation(oDst));
-    AL_ActivityApplyBaseline(oNpc, nActivity, nDur);
+    AL_ActivityApplyStep(oNpc, nActivity, nDur);
     ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
 
     SetLocalInt(oNpc, AL_TransitionRtActiveKey(), TRUE);
