@@ -9,6 +9,7 @@ const int AL_EVENT_SLOT_5 = 3105;
 const int AL_EVENT_RESYNC = 3106;
 const int AL_EVENT_ROUTE_REPEAT = 3107; // Stage E/F bounded step-advance hook (normal route + transition step)
 const int AL_EVENT_BLOCKED_RESUME = 3108; // Stage I.0 bounded OnBlocked local-unblock resume hook
+const int AL_EVENT_REACT_RESUME = 3109; // Stage I.1 bounded OnDisturbed resume/resync hook
 
 int AL_IsSlotEvent(int nEvent)
 {

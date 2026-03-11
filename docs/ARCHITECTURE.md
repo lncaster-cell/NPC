@@ -11,6 +11,7 @@
 - Stage G: отдельная sleep subsystem поверх Stage E/F (special routine case).
 - Stage H: отдельная canonical activity subsystem для ordinary non-sleep/non-transition шагов.
 - Stage I.0: локальный `OnBlocked` unblock layer (door-first + bounded fallback/resync).
+- Stage I.1: отдельный `OnDisturbed` inventory/theft disturbance foundation (bounded local override + resume/resync).
 
 Обязательные принципы:
 - Event-driven оркестрация через `OnUserDefined`.
@@ -34,6 +35,7 @@
 - `al_npc_ondeath`
 - `al_npc_onud`
 - `al_npc_onblocked`
+- `al_npc_ondisturbed`
 
 ### 2.2 Core layer
 Управляет area/npc lifecycle и dispatch:
@@ -70,17 +72,19 @@
 
 ### 2.7 Future layers
 - Stage I.0 local runtime unblock (`OnBlocked`: door-first + bounded fallback/resync).
-- Stage I.x reactions (disturbed/crime/alarm), deferred.
+- Stage I.1 inventory/theft disturbed layer (implemented, bounded).
+- Stage I.2 crime/alarm escalation layer (deferred intentionally).
 
 ---
 
 ## 3) Event model
 
-Internal namespace `3100..3108`:
+Internal namespace `3100..3109`:
 - `3100..3105` — `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`.
 - `3106` — `AL_EVENT_RESYNC`.
 - `3107` — `AL_EVENT_ROUTE_REPEAT` (bounded step-advance hook для Stage E/F/G).
 - `3108` — `AL_EVENT_BLOCKED_RESUME` (Stage I.0 local OnBlocked resume hook после door-first попытки).
+- `3109` — `AL_EVENT_REACT_RESUME` (Stage I.1 local OnDisturbed resume/resync hook).
 
 Требования:
 1. Внутренние сигналы только event-driven.
@@ -98,7 +102,7 @@ Internal namespace `3100..3108`:
    - поддержание readiness/caches;
    - без route/transition execution.
 3. `HOT`
-   - активный runtime Stage D/E/F/G/H/I.0.
+   - активный runtime Stage D/E/F/G/H/I.0/I.1.
 
 ---
 
@@ -198,4 +202,17 @@ Source of truth для activity IDs/имен:
 - First-line policy: попытка door/open через `GetBlockingDoor()` и `ActionOpenDoor(...)`, затем resume текущего route-step.
 - Если local-unblock не удался: bounded fallback (одна локальная попытка resume), затем safe resync через `AL_EVENT_RESYNC`.
 - Без heartbeat, без per-NPC periodic timers, без polling/retry-loop machine.
-- `OnDisturbed` и crime/alarm сознательно отложены на следующие sub-stages.
+- `OnDisturbed` отделён от `OnBlocked` и реализован как inventory/theft-only bounded reaction layer.
+- Crime/alarm escalation сознательно отложен на следующий sub-stage (Stage I.2).
+
+
+## 9) Stage I.1 boundary (implemented, theft/inventory foundation)
+
+- `OnDisturbed` трактуется строго как inventory disturbance (`added`/`removed`/`stolen`) через NWScript API:
+  - `GetLastDisturbed()`
+  - `GetInventoryDisturbType()`
+  - `GetInventoryDisturbItem()`
+- Вводится отдельный bounded reaction override, не смешанный с `OnBlocked` navigation helper.
+- Override временно прерывает ordinary route/activity execution, затем выполняется resume текущего шага или safe resync.
+- Runtime state минимален и расширяем: `al_react_active`, `al_react_type`, `al_react_resume_flag`, `al_react_last_source`, `al_react_last_item`.
+- Глобальная crime/alarm propagation и world-wide police logic в Stage I.1 не реализуются и переносятся в Stage I.2.

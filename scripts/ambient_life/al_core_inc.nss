@@ -86,12 +86,20 @@ void AL_OnNpcUserDefined(object oNpc)
         SetLocalInt(oNpc, "al_blocked_rt_active", FALSE);
         return;
     }
+
+    if (nEvent == AL_EVENT_REACT_RESUME)
+    {
+        AL_OnNpcReactResume(oNpc);
+        return;
+    }
+
 }
 
 void AL_OnNpcSpawn(object oNpc)
 {
     AL_RegisterNPC(oNpc);
     AL_RouteBlockedRuntimeReset(oNpc);
+    AL_ReactRuntimeClear(oNpc);
     SetLocalString(oNpc, "al_mode", "idle");
 }
 

@@ -7,6 +7,8 @@
 
 const int AL_ROUTE_MAX_STEPS = 16;
 
+void AL_ReactRuntimeClear(object oNpc);
+
 string AL_RouteRtActiveKey() { return "al_route_rt_active"; }
 string AL_RouteRtIdxKey() { return "al_route_rt_idx"; }
 string AL_RouteRtLeftKey() { return "al_route_rt_left"; }
@@ -73,6 +75,7 @@ void AL_RouteRuntimeClear(object oNpc)
     AL_TransitionRuntimeClear(oNpc);
     AL_SleepRuntimeClear(oNpc);
     AL_RouteBlockedRuntimeReset(oNpc);
+    AL_ReactRuntimeClear(oNpc);
 }
 
 void AL_RouteFallbackToDefault(object oNpc)
