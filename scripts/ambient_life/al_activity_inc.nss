@@ -137,6 +137,26 @@ int AL_ShouldLoopCustomAnimation(int nActivity, string sAnimToken)
     return FALSE;
 }
 
+int AL_CustomTokenToLocateWrapperAnim(string sAnimToken)
+{
+    string sToken = AL_TrimToken(sAnimToken);
+    if (sToken == "")
+    {
+        return -1;
+    }
+
+    if (sToken == "lookleft" || sToken == "lookright" || sToken == "shrug") return 91;
+    if (sToken == "bored" || sToken == "scratchhead" || sToken == "yawn") return 92;
+    if (sToken == "sitfidget" || sToken == "sitidle" || sToken == "sittalk" || sToken == "sittalk01" || sToken == "sittalk02") return 93;
+    if (sToken == "kneelidle" || sToken == "kneeltalk") return 94;
+    if (sToken == "chuckle" || sToken == "nodno" || sToken == "nodyes" || sToken == "talk01" || sToken == "talk02" || sToken == "talklaugh") return 95;
+    if (sToken == "craft01" || sToken == "dustoff" || sToken == "forge01" || sToken == "openlock") return 96;
+    if (sToken == "meditate") return 97;
+    if (sToken == "disableground" || sToken == "sleightofhand" || sToken == "sneak") return 98;
+
+    return -1;
+}
+
 int AL_PlayCustomAnimation(object oNpc, int nActivity, int nDurSec)
 {
     if (!GetIsObjectValid(oNpc))
@@ -150,11 +170,22 @@ int AL_PlayCustomAnimation(object oNpc, int nActivity, int nDurSec)
         return FALSE;
     }
 
-    // Engine-compatible custom token bridge: preserve selected token for downstream systems.
+    int nWrapperAnim = AL_CustomTokenToLocateWrapperAnim(sToken);
+    if (nWrapperAnim <= 0)
+    {
+        return FALSE;
+    }
+
+    int bLoop = AL_ShouldLoopCustomAnimation(nActivity, sToken);
+
+    // Engine-compatible custom token playback via canonical locate-wrapper animation ids.
+    AssignCommand(oNpc, ActionPlayAnimation(nWrapperAnim, bLoop, 1.0));
+    AssignCommand(oNpc, ActionWait(IntToFloat(nDurSec)));
+
+    // Preserve the selected token for metadata/debug and higher-level behavior tracking.
     SetLocalString(oNpc, "al_activity_custom_anim", sToken);
-    SetLocalInt(oNpc, "al_activity_custom_loop", AL_ShouldLoopCustomAnimation(nActivity, sToken));
+    SetLocalInt(oNpc, "al_activity_custom_loop", bLoop);
     SetLocalString(oNpc, "al_mode", "custom:" + sToken);
-    ActionWait(IntToFloat(nDurSec));
 
     return TRUE;
 }
@@ -178,8 +209,8 @@ int AL_PlayNumericAnimation(object oNpc, int nActivity, int nDurSec)
         return FALSE;
     }
 
-    ActionPlayAnimation(nAnim, FALSE, 1.0);
-    ActionWait(IntToFloat(nDurSec));
+    AssignCommand(oNpc, ActionPlayAnimation(nAnim, FALSE, 1.0));
+    AssignCommand(oNpc, ActionWait(IntToFloat(nDurSec)));
 
     SetLocalInt(oNpc, "al_activity_numeric_anim", nAnim);
     SetLocalString(oNpc, "al_mode", "numeric:" + IntToString(nAnim));
