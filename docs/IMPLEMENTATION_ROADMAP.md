@@ -46,6 +46,16 @@
 - Stage D/E/F/G интегрированы через общий execution layer `AL_ActivityApplyStep`.
 - Sleep и transition сохранены как отдельные special-case подсистемы.
 
-## Stage I — Blocked/Disturbed + Crime/Alarm Reactions (next)
-- Реализовать реактивный слой и приоритеты реакций.
-- Добавить debounce/cooldown для шумных событий.
+## Stage I.0 — OnBlocked Local Unblock / Door Handling (implemented)
+- Добавлен отдельный узкий `OnBlocked` path как local navigation/runtime helper.
+- Реализована door-first политика: `GetBlockingDoor()` + штатное `ActionOpenDoor(...)` + bounded resume текущего route шага.
+- Если local-unblock не сработал: bounded fallback (single retry) и safe resync через `AL_EVENT_RESYNC`.
+- Добавлен минимальный runtime state: `al_blocked_rt_active`, `al_blocked_rt_retry`.
+- Границы: без giant reaction layer, без heartbeat/polling/per-NPC timers.
+
+## Stage I.1 — OnDisturbed Reaction Layer (next)
+- Отдельный слой реакции на disturbed events (вне `OnBlocked`).
+- Дебаунс/кулдауны для шумных сигналов.
+
+## Stage I.2 — Crime/Alarm Reactions (later)
+- Отдельная интеграция crime/alarm без смешивания с локальным unblock path.

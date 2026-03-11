@@ -12,6 +12,17 @@ string AL_RouteRtIdxKey() { return "al_route_rt_idx"; }
 string AL_RouteRtLeftKey() { return "al_route_rt_left"; }
 string AL_RouteRtCycleKey() { return "al_route_rt_cycle"; }
 
+void AL_RouteBlockedRuntimeReset(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    SetLocalInt(oNpc, "al_blocked_rt_active", FALSE);
+    SetLocalInt(oNpc, "al_blocked_rt_retry", 0);
+}
+
 string AL_RouteStepKey(int nIdx)
 {
     return "al_route_step_" + IntToString(nIdx);
@@ -61,6 +72,7 @@ void AL_RouteRuntimeClear(object oNpc)
     SetLocalInt(oNpc, AL_RouteRtLeftKey(), 0);
     AL_TransitionRuntimeClear(oNpc);
     AL_SleepRuntimeClear(oNpc);
+    AL_RouteBlockedRuntimeReset(oNpc);
 }
 
 void AL_RouteFallbackToDefault(object oNpc)
@@ -308,6 +320,28 @@ int AL_RouteQueueStep(object oNpc, int nStepIdx)
     return TRUE;
 }
 
+int AL_RouteRoutineResumeCurrent(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    {
+        return FALSE;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    {
+        return FALSE;
+    }
+
+    if (!GetLocalInt(oNpc, AL_RouteRtActiveKey()))
+    {
+        return FALSE;
+    }
+
+    int nCurrent = GetLocalInt(oNpc, AL_RouteRtIdxKey());
+    return AL_RouteQueueStep(oNpc, nCurrent);
+}
+
 void AL_RouteRoutineStart(object oNpc, int nSlot, int bForceRebuild)
 {
     if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
@@ -333,6 +367,8 @@ void AL_RouteRoutineStart(object oNpc, int nSlot, int bForceRebuild)
         AL_RouteRuntimeClear(oNpc);
         return;
     }
+
+    AL_RouteBlockedRuntimeReset(oNpc);
 
     SetLocalInt(oNpc, AL_RouteRtLeftKey(), nSteps);
     SetLocalInt(oNpc, AL_RouteRtCycleKey(), GetLocalInt(oNpc, AL_RouteRtCycleKey()) + 1);

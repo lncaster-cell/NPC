@@ -6,6 +6,7 @@
 #include "al_route_inc"
 #include "al_sleep_inc"
 #include "al_react_inc"
+#include "al_blocked_inc"
 
 void AL_NpcHandleResync(object oNpc)
 {
@@ -68,7 +69,21 @@ void AL_OnNpcUserDefined(object oNpc)
 
     if (nEvent == AL_EVENT_ROUTE_REPEAT)
     {
+        AL_RouteBlockedRuntimeReset(oNpc);
         AL_RouteRoutineAdvance(oNpc);
+        return;
+    }
+
+    if (nEvent == AL_EVENT_BLOCKED_RESUME)
+    {
+        if (!AL_RouteRoutineResumeCurrent(oNpc))
+        {
+            AL_RouteBlockedRuntimeReset(oNpc);
+            SignalEvent(oNpc, EventUserDefined(AL_EVENT_RESYNC));
+            return;
+        }
+
+        SetLocalInt(oNpc, "al_blocked_rt_active", FALSE);
         return;
     }
 }
@@ -76,6 +91,7 @@ void AL_OnNpcUserDefined(object oNpc)
 void AL_OnNpcSpawn(object oNpc)
 {
     AL_RegisterNPC(oNpc);
+    AL_RouteBlockedRuntimeReset(oNpc);
     SetLocalString(oNpc, "al_mode", "idle");
 }
 
