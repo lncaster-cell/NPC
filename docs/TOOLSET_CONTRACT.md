@@ -1,10 +1,11 @@
-# Ambient Life — Toolset Contract (Stage A + C + D/E + F transitions + G sleep)
+# Ambient Life — Toolset Contract (Stage A + C + D/E + F transitions + G sleep + H activity semantics)
 
 Stage A зафиксировал базовый контракт locals.
 Stage C добавил cheap area-linkage и simulation tier policy.
 Stage D/E добавили area-scoped route cache и bounded routine.
 Stage F добавляет отдельный transition subsystem (без смешивания с обычными route steps).
 Stage G добавляет отдельный sleep runtime subsystem поверх Stage E/F.
+Stage H добавляет отдельный canonical activity subsystem для ordinary шагов (int-code mapping).
 
 ## 1) NPC locals (canonical)
 
@@ -28,7 +29,8 @@ Stage G добавляет отдельный sleep runtime subsystem повер
 |---|---|---|
 | `al_last_slot` | int | Последний обработанный слот NPC. |
 | `al_last_area` | object/string | Последняя area, в которой NPC обработан системой. |
-| `al_mode` | string | Текущий режим NPC (Stage B baseline: `"idle"`). |
+| `al_mode` | string | Текущий режим NPC (canonical activity name / `idle`). |
+| `al_activity_current` | int | Stage H текущий ordinary activity code (для диагностики runtime). |
 | `al_route_rt_active` | int (0/1) | Stage E marker активного bounded routine цикла. |
 | `al_route_rt_idx` | int | Stage E текущий индекс шага в route cache. |
 | `al_route_rt_left` | int | Stage E сколько шагов осталось в текущем bounded cycle. |
@@ -41,6 +43,24 @@ Stage G добавляет отдельный sleep runtime subsystem повер
 | `al_sleep_rt_phase` | int | Stage G фаза (`0=none`, `1=place`, `2=approach`, `3=pose`). |
 
 ---
+
+### 1.3 Canonical activity IDs (Stage H)
+
+Source of truth: `lncaster-cell/PycukSystems` canonical activity list (`al_acts_inc.nss` + activity table).
+
+Stage H реализует ordinary Ambient Life subset:
+- `1 ActOne`
+- `3 Dinner`
+- `7 Agree`
+- `8 Angry`
+- `20 Read`
+- `21 Sit`
+- `23 StandChat`
+- `28 Cheer`
+- `39 KneelTalk`
+- `43 Guard`
+
+Sleep-коды (`4`, `5`, `31`, `32`) зарезервированы как Stage G special-case и не исполняются ordinary activity path.
 
 ## 2) Waypoint locals (canonical)
 

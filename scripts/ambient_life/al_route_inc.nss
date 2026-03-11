@@ -71,9 +71,8 @@ void AL_RouteFallbackToDefault(object oNpc)
     }
 
     AL_RouteRuntimeClear(oNpc);
-    int nFallback = GetLocalInt(oNpc, "al_default_activity");
     ClearAllActions(TRUE);
-    AL_ActivityApplyBaseline(oNpc, nFallback, 6);
+    AL_ActivityApplyStep(oNpc, AL_ACTIVITY_HIDDEN, 6);
 }
 
 int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
@@ -291,10 +290,6 @@ int AL_RouteQueueStep(object oNpc, int nStepIdx)
     AL_SleepRuntimeClear(oNpc);
 
     int nActivity = GetLocalInt(oTarget, "al_activity");
-    if (nActivity <= AL_ACTIVITY_IDLE)
-    {
-        nActivity = GetLocalInt(oNpc, "al_default_activity");
-    }
 
     int nDur = GetLocalInt(oTarget, "al_dur_sec");
     if (nDur <= 0)
@@ -304,7 +299,7 @@ int AL_RouteQueueStep(object oNpc, int nStepIdx)
 
     ClearAllActions(TRUE);
     ActionMoveToObject(oTarget, TRUE, 1.5);
-    AL_ActivityApplyBaseline(oNpc, nActivity, nDur);
+    AL_ActivityApplyStep(oNpc, nActivity, nDur);
     ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
 
     SetLocalInt(oNpc, AL_RouteRtIdxKey(), nStepIdx);

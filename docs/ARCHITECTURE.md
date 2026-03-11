@@ -1,4 +1,4 @@
-# Ambient Life — Architecture Canon (Stage A/B/C + Stage D/E + Stage F transitions + Stage G sleep)
+# Ambient Life — Architecture Canon (Stage A/B/C + Stage D/E + Stage F transitions + Stage G sleep + Stage H activity semantics)
 
 ## 1) Scope
 
@@ -9,6 +9,7 @@
 - Stage E: bounded multi-step routines в `HOT`.
 - Stage F: отдельная transition subsystem поверх Stage E (без смешивания с route cache).
 - Stage G: отдельная sleep subsystem поверх Stage E/F (special routine case).
+- Stage H: отдельная canonical activity subsystem для ordinary non-sleep/non-transition шагов.
 
 Обязательные принципы:
 - Event-driven оркестрация через `OnUserDefined`.
@@ -166,4 +167,22 @@ Stage G не включает:
 - `rest`/`OnRested`/`AnimActionRest`;
 - heartbeat/timer-per-NPC/polling architectures.
 
-Следующий этап: reactions.
+Следующий этап: Stage I reactions (crime/alarm/disturb override).
+
+
+## 8) Stage H activity boundary (explicit)
+
+Stage H вводит отдельный activity execution layer:
+- вход: `al_activity` на step + fallback через `al_default_activity`;
+- исполнение: централизованный int-code -> behavior mapping;
+- clean fallback: safe idle при отсутствии валидного ordinary activity code.
+
+Source of truth для activity IDs/имен:
+- canonical activity table из `lncaster-cell/PycukSystems` (`al_acts_inc.nss` / activity table).
+- На Stage H используется только Ambient Life subset ordinary IDs; sleep-коды остаются Stage G special-case.
+
+Границы:
+- Ordinary activity: non-transition + non-sleep steps.
+- Transition special-case: Stage F subsystem.
+- Sleep special-case: Stage G subsystem.
+- Reaction override: не здесь, переносится в Stage I.
