@@ -7,7 +7,7 @@ const int AL_EVENT_SLOT_3 = 3103;
 const int AL_EVENT_SLOT_4 = 3104;
 const int AL_EVENT_SLOT_5 = 3105;
 const int AL_EVENT_RESYNC = 3106;
-const int AL_EVENT_ROUTE_REPEAT = 3107; // Stage E bounded route step-advance hook
+const int AL_EVENT_ROUTE_REPEAT = 3107; // Stage E/F bounded step-advance hook (normal route + transition step)
 
 int AL_IsSlotEvent(int nEvent)
 {
