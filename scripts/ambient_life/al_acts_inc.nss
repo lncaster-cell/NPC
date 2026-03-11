@@ -34,12 +34,12 @@ const int AL_ACT_NPC_FORGE_MULTI = 30;
 const int AL_ACT_NPC_MIDNIGHT_90 = 31;
 const int AL_ACT_NPC_SLEEP_90 = 32;
 const int AL_ACT_NPC_THIEF = 33;
-const int AL_ACT_NPC_THIEF2 = 34;
-const int AL_ACT_NPC_ASSASSIN = 35;
-const int AL_ACT_NPC_MERCHANT_MULTI = 36;
+const int AL_ACT_NPC_THIEF2 = 36;
+const int AL_ACT_NPC_ASSASSIN = 37;
+const int AL_ACT_NPC_MERCHANT_MULTI = 38;
 const int AL_ACT_NPC_KNEEL_TALK = 39;
-const int AL_ACT_NPC_BARMAID = 40;
-const int AL_ACT_NPC_BARTENDER = 41;
+const int AL_ACT_NPC_BARMAID = 41;
+const int AL_ACT_NPC_BARTENDER = 42;
 const int AL_ACT_NPC_GUARD = 43;
 
 const string AL_WP_PACE = "AL_WP_PACE";
