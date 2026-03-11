@@ -1,11 +1,12 @@
-# Ambient Life — Architecture Canon (Stage A contracts, Stage B core runtime, Stage C LOD, Stage D route baseline)
+# Ambient Life — Architecture Canon (Stage A contracts, Stage B core runtime, Stage C LOD, Stage D route baseline, Stage E multi-step routines)
 
-## 1) Scope (Stage A + Stage B + Stage C + Stage D status)
+## 1) Scope (Stage A + Stage B + Stage C + Stage D + Stage E status)
 
 Stage A зафиксировал архитектуру и contracts.
 Stage B реализовал минимальный core lifecycle runtime поверх этого канона.
 Stage C добавил area graph linkage contract и area simulation LOD policy.
 Stage D добавил минимальный route layer (cache + baseline execution) строго в рамках `HOT` tier.
+Stage E развил его в bounded multi-step routine progression внутри одного slot и одной area.
 
 Обязательные принципы:
 - Event-driven оркестрация.
@@ -16,7 +17,7 @@ Stage D добавил минимальный route layer (cache + baseline exec
 - Слотная модель времени (базовые слоты через `alwp0..alwp5`).
 - Персональный временной offset (`al_slot_offset_min`) остаётся canonical field; full per-NPC offset-dispatch остаётся следующими стадиями.
 - Агрессивное кэширование и отсутствие repeated area full-scan в hot path.
-- Stage D route runtime исполняется только в `HOT` areas.
+- Stage E routine runtime исполняется только в `HOT` areas.
 
 ---
 
@@ -49,16 +50,15 @@ Core принимает entry-события и управляет lifecycle:
 ### 2.4 Registry/Cache layer
 Отвечает за плотный registry area и кэши, чтобы hot path не сканировал зону повторно.
 
-### 2.5 Route baseline layer (Stage D)
+### 2.5 Route cache + bounded routine layer (Stage D/E)
 Минимальный route foundation:
 - slot -> route tag resolve через `alwp0..alwp5`;
 - controlled cache build/rebuild;
 - deterministic ordering только по `al_step`;
-- baseline execution через action queue без polling arrival tracking;
+- bounded multi-step execution через action queue без polling arrival tracking;
 - минимальные activity semantics (`al_activity` int code + fallback в `al_default_activity` int code).
 
-### 2.6 Future layers (Stage E+)
-- Rich multi-step routines.
+### 2.6 Future layers (Stage F+)
 - Sleep runtime (`<bed_id>_approach -> <bed_id>_pose`).
 - Reactions (blocked/disturbed/crime/alarm).
 
@@ -71,12 +71,12 @@ Core принимает entry-события и управляет lifecycle:
 Внутренний namespace Ambient Life в диапазоне `3100..3107`:
 - `3100..3105` — `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`.
 - `3106` — `AL_EVENT_RESYNC`.
-- `3107` — `AL_EVENT_ROUTE_REPEAT` (Stage D baseline поддерживает обработку, но без rich repeat engine).
+- `3107` — `AL_EVENT_ROUTE_REPEAT` (Stage E bounded step-advance hook, не heartbeat).
 
 Требования:
 1. Все внутренние сигналы Ambient Life передаются event-driven способом.
 2. Entry scripts не содержат feature runtime.
-3. Route runtime не исполняется в `WARM`/`FREEZE`.
+3. Route/routine runtime не исполняется в `WARM`/`FREEZE`.
 
 ---
 
@@ -92,21 +92,28 @@ Core принимает entry-события и управляет lifecycle:
    - разрешена только лёгкая поддержка cache/state readiness.
 3. `HOT`
    - area, где реально находится игрок;
-   - route baseline runtime Stage D разрешён.
+   - route/routine runtime Stage D/E разрешён.
 
 ---
 
-## 5) Slot model + route baseline
+## 5) Slot model + route/routine progression
 
 1. Глобальный slot хранится на area в `al_slot`.
 2. Для NPC базовые slot-якоря заданы через `alwp0..alwp5`.
 3. Runtime отслеживает последний обработанный слот в `al_last_slot`.
-4. Stage D route cache хранит:
+4. Stage D/E route cache хранит:
    - активный route tag,
    - cached slot,
    - шаги (`al_route_step_<idx>`),
    - valid marker (`al_route_cache_valid`).
 5. Rebuild кэша допускается только контролируемо: `RESYNC`, slot change, route tag change, area mismatch (NPC moved), force rebuild/invalidate.
+
+5. Stage E runtime locals для bounded progression:
+   - `al_route_rt_active` — флаг активного routine-цикла текущего slot;
+   - `al_route_rt_idx` — текущий индекс шага в cached цепочке;
+   - `al_route_rt_left` — сколько шагов осталось в bounded cycle;
+   - `al_route_rt_cycle` — служебный marker количества запусков cycle.
+6. `AL_EVENT_ROUTE_REPEAT` используется только как controlled step-advance после завершения очереди действий шага.
 
 ---
 
@@ -122,14 +129,19 @@ Core принимает entry-события и управляет lifecycle:
 - `al_npc_<idx>` хранит индексные ссылки на NPC.
 - Dispatch событий выполняется через area registry.
 
-### 6.3 Route cache strategy (Stage D)
+### 6.3 Route cache strategy (Stage D/E)
 - Cache build использует route tag из текущего slot.
 - Stage D cache area-scoped: waypoint считается валидным только если находится в текущей area NPC.
 - Waypoints собираются и сортируются только по `al_step`.
 - Неконсистентный route (missing/duplicate/non-contiguous step chain) сбрасывается в fallback.
 - В normal hot path используется уже cached route descriptor.
 
-### 6.4 Fallback-first safety
+### 6.4 Stage E step semantics (`al_dur_sec`)
+- Каждый шаг берётся из cached waypoint chain внутри текущей area.
+- `al_dur_sec` применяется как dwell-фаза шага через action queue (`move -> activity wait`).
+- Продвижение делается bounded repeat-событием в конце очереди действий шага, без polling/heartbeat.
+
+### 6.5 Fallback-first safety
 Если маршрут/шаг/активность невалидны:
 1. Без краша и без repeated search loop.
 2. Fallback к `al_default_activity` (int).
@@ -137,7 +149,7 @@ Core принимает entry-события и управляет lifecycle:
 
 
 
-### 6.5 Stage D temporary activity codes (int-based)
+### 6.6 Stage D/E temporary activity codes (int-based)
 - Stage D использует минимальный временный набор int кодов без новой activity-системы:
   - `0` = `AL_ACTIVITY_IDLE` (safe fallback),
   - `1` = `AL_ACTIVITY_STAND`,
@@ -147,14 +159,13 @@ Core принимает entry-события и управляет lifecycle:
 
 ---
 
-## 7) Stage D boundary (explicit)
+## 7) Stage E boundary (explicit)
 
-Stage D **не** включает:
+Stage E **не** включает:
 - cross-area routing / linked-area route traversal;
-- full multi-step routine engine;
 - sleep runtime;
 - reactions/crime/alarm;
 - polling-based arrival tracking;
 - превращение route runtime в монолитный AI.
 
-Stage D специально оставляет activity semantics минимальными, чтобы Stage E/F строились поверх устойчивого cache-first foundation.
+Stage E специально сохраняет activity semantics минимальными и area-scoped cache-first foundation для следующего этапа межзоновых переходов и sleep/reactions.

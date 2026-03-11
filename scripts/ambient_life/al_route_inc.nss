@@ -1,9 +1,14 @@
-// Ambient Life Stage D route cache + baseline route execution.
+// Ambient Life Stage E route cache + bounded multi-step routine execution.
 
 #include "al_area_inc"
 #include "al_activity_inc"
 
 const int AL_ROUTE_MAX_STEPS = 16;
+
+string AL_RouteRtActiveKey() { return "al_route_rt_active"; }
+string AL_RouteRtIdxKey() { return "al_route_rt_idx"; }
+string AL_RouteRtLeftKey() { return "al_route_rt_left"; }
+string AL_RouteRtCycleKey() { return "al_route_rt_cycle"; }
 
 string AL_RouteStepKey(int nIdx)
 {
@@ -40,6 +45,31 @@ void AL_RouteInvalidateCache(object oNpc)
     SetLocalInt(oNpc, "al_route_cache_slot", -1);
     SetLocalInt(oNpc, "al_route_cache_steps", 0);
     SetLocalInt(oNpc, "al_route_cache_valid", FALSE);
+}
+
+void AL_RouteRuntimeClear(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    SetLocalInt(oNpc, AL_RouteRtActiveKey(), FALSE);
+    SetLocalInt(oNpc, AL_RouteRtIdxKey(), 0);
+    SetLocalInt(oNpc, AL_RouteRtLeftKey(), 0);
+}
+
+void AL_RouteFallbackToDefault(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    AL_RouteRuntimeClear(oNpc);
+    int nFallback = GetLocalInt(oNpc, "al_default_activity");
+    ClearAllActions(TRUE);
+    AL_ActivityApplyBaseline(oNpc, nFallback, 6);
 }
 
 int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
@@ -196,35 +226,36 @@ int AL_RouteEnsureCache(object oNpc, int nSlot, int bForceRebuild)
     return AL_RouteBuildCache(oNpc, nSlot, sRouteTag);
 }
 
-void AL_RouteExecuteBaseline(object oNpc, int nSlot, int bForceRebuild)
+int AL_RouteQueueStep(object oNpc, int nStepIdx)
 {
     if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
     {
-        return;
+        return FALSE;
     }
 
     object oArea = GetArea(oNpc);
     if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
     {
-        return;
+        return FALSE;
     }
 
-    if (!AL_RouteEnsureCache(oNpc, nSlot, bForceRebuild))
+    int nSteps = GetLocalInt(oNpc, "al_route_cache_steps");
+    if (nSteps <= 0 || nStepIdx < 0 || nStepIdx >= nSteps)
     {
-        int nFallback = GetLocalInt(oNpc, "al_default_activity");
-        ClearAllActions(TRUE);
-        AL_ActivityApplyBaseline(oNpc, nFallback, 6);
-        return;
+        return FALSE;
     }
 
-    object oTarget = GetLocalObject(oNpc, AL_RouteStepKey(0));
+    object oTarget = GetLocalObject(oNpc, AL_RouteStepKey(nStepIdx));
     if (!GetIsObjectValid(oTarget))
     {
         AL_RouteInvalidateCache(oNpc);
-        int nFallback = GetLocalInt(oNpc, "al_default_activity");
-        ClearAllActions(TRUE);
-        AL_ActivityApplyBaseline(oNpc, nFallback, 6);
-        return;
+        return FALSE;
+    }
+
+    if (GetArea(oTarget) != oArea)
+    {
+        AL_RouteInvalidateCache(oNpc);
+        return FALSE;
     }
 
     int nActivity = GetLocalInt(oTarget, "al_activity");
@@ -242,4 +273,91 @@ void AL_RouteExecuteBaseline(object oNpc, int nSlot, int bForceRebuild)
     ClearAllActions(TRUE);
     ActionMoveToObject(oTarget, TRUE, 1.5);
     AL_ActivityApplyBaseline(oNpc, nActivity, nDur);
+    ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
+
+    SetLocalInt(oNpc, AL_RouteRtIdxKey(), nStepIdx);
+    SetLocalInt(oNpc, AL_RouteRtActiveKey(), TRUE);
+
+    return TRUE;
+}
+
+void AL_RouteRoutineStart(object oNpc, int nSlot, int bForceRebuild)
+{
+    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    {
+        return;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    {
+        return;
+    }
+
+    if (!AL_RouteEnsureCache(oNpc, nSlot, bForceRebuild))
+    {
+        AL_RouteFallbackToDefault(oNpc);
+        return;
+    }
+
+    int nSteps = GetLocalInt(oNpc, "al_route_cache_steps");
+    if (nSteps <= 0)
+    {
+        AL_RouteRuntimeClear(oNpc);
+        return;
+    }
+
+    SetLocalInt(oNpc, AL_RouteRtLeftKey(), nSteps);
+    SetLocalInt(oNpc, AL_RouteRtCycleKey(), GetLocalInt(oNpc, AL_RouteRtCycleKey()) + 1);
+
+    if (!AL_RouteQueueStep(oNpc, 0))
+    {
+        AL_RouteFallbackToDefault(oNpc);
+    }
+}
+
+void AL_RouteRoutineAdvance(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    {
+        return;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    {
+        return;
+    }
+
+    if (!GetLocalInt(oNpc, AL_RouteRtActiveKey()))
+    {
+        return;
+    }
+
+    int nSteps = GetLocalInt(oNpc, "al_route_cache_steps");
+    if (nSteps <= 0)
+    {
+        AL_RouteRuntimeClear(oNpc);
+        return;
+    }
+
+    int nLeft = GetLocalInt(oNpc, AL_RouteRtLeftKey()) - 1;
+    SetLocalInt(oNpc, AL_RouteRtLeftKey(), nLeft);
+    if (nLeft <= 0)
+    {
+        AL_RouteRuntimeClear(oNpc);
+        return;
+    }
+
+    int nCurrent = GetLocalInt(oNpc, AL_RouteRtIdxKey());
+    int nNext = nCurrent + 1;
+    if (nNext >= nSteps)
+    {
+        nNext = 0;
+    }
+
+    if (!AL_RouteQueueStep(oNpc, nNext))
+    {
+        AL_RouteFallbackToDefault(oNpc);
+    }
 }

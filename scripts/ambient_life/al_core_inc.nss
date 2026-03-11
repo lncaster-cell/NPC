@@ -1,4 +1,4 @@
-// Ambient Life Stage D core dispatcher.
+// Ambient Life Stage E core dispatcher.
 
 #include "al_area_inc"
 #include "al_events_inc"
@@ -16,7 +16,7 @@ void AL_NpcHandleResync(object oNpc)
     }
 
     int nSlot = GetLocalInt(oArea, "al_slot");
-    AL_RouteExecuteBaseline(oNpc, nSlot, TRUE);
+    AL_RouteRoutineStart(oNpc, nSlot, TRUE);
 }
 
 void AL_NpcHandleSlotChanged(object oNpc, int nSlot)
@@ -27,7 +27,7 @@ void AL_NpcHandleSlotChanged(object oNpc, int nSlot)
         return;
     }
 
-    AL_RouteExecuteBaseline(oNpc, nSlot, FALSE);
+    AL_RouteRoutineStart(oNpc, nSlot, FALSE);
 }
 
 void AL_OnNpcUserDefined(object oNpc)
@@ -68,8 +68,7 @@ void AL_OnNpcUserDefined(object oNpc)
 
     if (nEvent == AL_EVENT_ROUTE_REPEAT)
     {
-        int nSlot = GetLocalInt(GetArea(oNpc), "al_slot");
-        AL_RouteExecuteBaseline(oNpc, nSlot, FALSE);
+        AL_RouteRoutineAdvance(oNpc);
         return;
     }
 }
