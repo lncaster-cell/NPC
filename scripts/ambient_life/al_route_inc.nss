@@ -3,6 +3,7 @@
 #include "al_area_inc"
 #include "al_activity_inc"
 #include "al_transition_inc"
+#include "al_sleep_inc"
 
 const int AL_ROUTE_MAX_STEPS = 16;
 
@@ -59,6 +60,7 @@ void AL_RouteRuntimeClear(object oNpc)
     SetLocalInt(oNpc, AL_RouteRtIdxKey(), 0);
     SetLocalInt(oNpc, AL_RouteRtLeftKey(), 0);
     AL_TransitionRuntimeClear(oNpc);
+    AL_SleepRuntimeClear(oNpc);
 }
 
 void AL_RouteFallbackToDefault(object oNpc)
@@ -272,7 +274,21 @@ int AL_RouteQueueStep(object oNpc, int nStepIdx)
         return TRUE;
     }
 
+    if (AL_SleepIsStep(oTarget))
+    {
+        AL_TransitionRuntimeClear(oNpc);
+        if (!AL_SleepQueueFromStep(oNpc, oTarget))
+        {
+            return FALSE;
+        }
+
+        SetLocalInt(oNpc, AL_RouteRtIdxKey(), nStepIdx);
+        SetLocalInt(oNpc, AL_RouteRtActiveKey(), TRUE);
+        return TRUE;
+    }
+
     AL_TransitionRuntimeClear(oNpc);
+    AL_SleepRuntimeClear(oNpc);
 
     int nActivity = GetLocalInt(oTarget, "al_activity");
     if (nActivity <= AL_ACTIVITY_IDLE)

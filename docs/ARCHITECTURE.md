@@ -1,4 +1,4 @@
-# Ambient Life — Architecture Canon (Stage A/B/C + Stage D/E + Stage F transitions)
+# Ambient Life — Architecture Canon (Stage A/B/C + Stage D/E + Stage F transitions + Stage G sleep)
 
 ## 1) Scope
 
@@ -8,6 +8,7 @@
 - Stage D: area-scoped route cache foundation.
 - Stage E: bounded multi-step routines в `HOT`.
 - Stage F: отдельная transition subsystem поверх Stage E (без смешивания с route cache).
+- Stage G: отдельная sleep subsystem поверх Stage E/F (special routine case).
 
 Обязательные принципы:
 - Event-driven оркестрация через `OnUserDefined`.
@@ -65,7 +66,6 @@
 - Helper transitions не становятся "обычным move step".
 
 ### 2.7 Future layers
-- Sleep runtime.
 - Reactions (blocked/disturbed/crime/alarm).
 
 ---
@@ -75,7 +75,7 @@
 Internal namespace `3100..3107`:
 - `3100..3105` — `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`.
 - `3106` — `AL_EVENT_RESYNC`.
-- `3107` — `AL_EVENT_ROUTE_REPEAT` (bounded step-advance hook для Stage E/F).
+- `3107` — `AL_EVENT_ROUTE_REPEAT` (bounded step-advance hook для Stage E/F/G).
 
 Требования:
 1. Внутренние сигналы только event-driven.
@@ -93,11 +93,11 @@ Internal namespace `3100..3107`:
    - поддержание readiness/caches;
    - без route/transition execution.
 3. `HOT`
-   - активный runtime Stage D/E/F.
+   - активный runtime Stage D/E/F/G.
 
 ---
 
-## 5) Stage D/E/F execution contracts
+## 5) Stage D/E/F/G execution contracts
 
 ## 5.1 Route cache (Stage D)
 - cache area-scoped;
@@ -119,29 +119,51 @@ Transition step определяется waypoint-полями `al_trans_type`, 
 - ставится минимальный transition runtime marker на NPC.
 
 Если step не transition:
-- остаётся обычный Stage E path.
+- проверяется Stage G sleep special-case;
+- если это не sleep step, остаётся обычный Stage E path.
+
+## 5.4 Sleep progression (Stage G)
+Sleep step определяется наличием `al_bed_id` на route waypoint.
+
+Если step sleep:
+- runtime резолвит canonical pair `<bed_id>_approach` и `<bed_id>_pose` в текущей area;
+- выполняется `move-to-approach -> dock-to-pose -> sleep dwell -> repeat event`;
+- ставится минимальный sleep runtime marker на NPC.
+
+Fallback policy:
+- missing/invalid `al_bed_id`;
+- missing/invalid `<bed_id>_approach`;
+- missing/invalid `<bed_id>_pose`.
+
+Во всех случаях выше используется clean fallback `sleep on place`.
 
 ---
 
 ## 6) Caching / hot-path policy
 
 - Нет repeated full-area scans в hot path.
-- Нет repeated nearest/tag search как baseline route/transition strategy.
+- Нет repeated nearest/tag search как baseline route/transition/sleep strategy.
 - Transition pair резолвится по явно заданным helper tag (authoring contract), а не через nearest fallback.
+- Sleep pair резолвится по canonical tags `<bed_id>_approach` и `<bed_id>_pose`.
 - Failure любого шага ведёт к clean fallback на `al_default_activity`.
 
 ---
 
-## 7) Stage F boundary (explicit)
+## 7) Stage G boundary (explicit)
 
-Stage F включает только отдельную transition subsystem:
+Stage G добавляет отдельную sleep subsystem:
+- sleep pair `<bed_id>_approach -> <bed_id>_pose`;
+- fallback sleep on place при невалидной конфигурации.
+
+При этом Stage F transition subsystem сохраняется отдельно:
 - area-to-area helper transition;
 - intra-area teleport transition.
 
-Stage F не включает:
-- sleep runtime;
+Stage G не включает:
 - reactions/crime/alarm;
 - linked-area traversal graph;
+- `ActionInteractObject`-based sleep;
+- `rest`/`OnRested`/`AnimActionRest`;
 - heartbeat/timer-per-NPC/polling architectures.
 
-Следующий этап: sleep runtime, затем reactions.
+Следующий этап: reactions.
