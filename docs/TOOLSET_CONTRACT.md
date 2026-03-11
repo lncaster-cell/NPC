@@ -48,6 +48,7 @@ Stage I.1 добавляет отдельный bounded `OnDisturbed` inventory/
 | `al_react_resume_flag` | int (0/1) | Stage I.1 флаг необходимости resume ordinary route после локальной реакции. |
 | `al_react_last_source` | object/string | Stage I.1 последний disturbance source (если валиден). |
 | `al_react_last_item` | object/string | Stage I.1 последний disturbance item (если валиден). |
+| `al_exit_counted` | int (0/1) | Runtime-флаг PC guard для дедупликации area exit/module leave декремента `al_player_count` (сбрасывается на входе в area). |
 
 ---
 

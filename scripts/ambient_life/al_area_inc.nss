@@ -263,6 +263,8 @@ void AL_OnAreaEnter(object oArea, object oEnter)
         return;
     }
 
+    SetLocalInt(oEnter, "al_exit_counted", 0);
+
     int nPlayers = GetLocalInt(oArea, "al_player_count") + 1;
     SetLocalInt(oArea, "al_player_count", nPlayers);
 
@@ -278,6 +280,11 @@ void AL_OnAreaExit(object oArea, object oExit)
         return;
     }
 
+    if (GetLocalInt(oExit, "al_exit_counted") == 1)
+    {
+        return;
+    }
+
     int nPlayers = GetLocalInt(oArea, "al_player_count") - 1;
     if (nPlayers < 0)
     {
@@ -285,6 +292,7 @@ void AL_OnAreaExit(object oArea, object oExit)
     }
 
     SetLocalInt(oArea, "al_player_count", nPlayers);
+    SetLocalInt(oExit, "al_exit_counted", 1);
 
     if (nPlayers == 0)
     {
@@ -297,6 +305,11 @@ void AL_OnAreaExit(object oArea, object oExit)
 void AL_OnModuleLeave(object oPC)
 {
     if (!GetIsObjectValid(oPC) || !GetIsPC(oPC))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oPC, "al_exit_counted") == 1)
     {
         return;
     }
