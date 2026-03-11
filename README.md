@@ -135,6 +135,12 @@ slot = floor(GetTimeHour() / 4)  // 0..5
 | `al_bar_bartender_ref` / `al_bar_barmaid_ref` | object | ссылки на барную пару (задаются в toolset) |
 | `al_bar_bartender` / `al_bar_barmaid` | object | закешированные ссылки на барную пару |
 
+### На PC (runtime guard)
+
+| Local | Тип | Назначение |
+| --- | --- | --- |
+| `al_exit_counted` | int (0/1) | guard против повторного учёта выхода: сбрасывается в `0` при входе в область и ставится в `1` после успешного декремента `al_player_count` в `OnExit/OnClientLeave`. |
+
 ### На NPC
 
 | Local | Тип | Назначение |
