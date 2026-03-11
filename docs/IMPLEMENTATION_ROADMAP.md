@@ -21,16 +21,17 @@
 - Добавлен minimal grace/hysteresis (`al_warm_until_sync`), чтобы area не дёргалась на мгновенных переходах через двери/границы.
 - Stage B tick backbone расширен так, чтобы полноценно тиковал только `HOT`, а `WARM` оставался лёгким runtime-maintenance tier без route execution.
 
-## Stage D — Route Cache + Route Execution
-- Реализовать агрессивный route cache без full-scan в hot path.
-- Реализовать route lookup по slot anchors (`alwp0..alwp5`).
-- Реализовать базовое route execution с invalidation/rebuild политикой.
-- Опираться на Stage C LOD policy: route/cache/runtime исполняются только в `HOT` area.
+## Stage D — Route Cache + Route Execution Baseline (implemented)
+- Реализован route cache в `al_route_inc.nss` с controlled rebuild/invalidation.
+- Route tag берётся из slot anchors (`alwp0..alwp5`) для текущего slot.
+- Waypoint ordering детерминирован через `al_step`; nearest-based construction не используется.
+- Route runtime запускается только в `HOT` area (на `RESYNC`/slot events).
+- Baseline execution использует action queue и минимальные activity semantics (`al_activity` + fallback `al_default_activity`).
+- `WARM` и `FREEZE` не исполняют normal route runtime.
 
 ## Stage E — Multi-step Routines
-- Реализовать multi-step routines внутри активного slot.
-- Поддержать шаги по waypoint locals: `al_step`, `al_activity`, `al_dur_sec`.
-- Добавить переходы между шагами и fallback на `al_default_activity`.
+- Реализовать rich multi-step routines внутри активного slot поверх Stage D cache foundation.
+- Поддержать продвинутые переходы между шагами и bounded repeat semantics без polling.
 
 ## Stage F — Sleep Runtime
 - Реализовать sleep pipeline по канону `<bed_id>_approach -> <bed_id>_pose`.
