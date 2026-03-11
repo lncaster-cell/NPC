@@ -142,6 +142,26 @@ Sleep step остаётся waypoint в route chain и исполняется о
 
 ---
 
+## Current invariants
+
+Ниже перечислены фактические runtime-ограничения системы на текущей реализации.
+
+### Enforced кодом
+
+- Dense registry area хранится через `al_npc_count` + `al_npc_<idx>` и поддерживается без дыр
+  за счёт `swap-remove` в unregister/compact/dispatch-путях.
+- `AL_RegisterNPC` принимает только валидных не-PC creatures в валидной area.
+- В `AL_RegisterNPC` действует жёсткий cap `AL_MAX_NPCS = 100`; при `al_npc_count >= 100`
+  новые NPC в registry не добавляются.
+
+### Только рекомендация/операционная дисциплина
+
+- Контракт предполагает, что registry locals не редактируются вручную/сторонними скриптами.
+- При переполнении (`>=100`) рекомендуется иметь внешний мониторинг, так как runtime просто
+  пропускает регистрацию без аварийного сигнала.
+
+---
+
 ## 4) LOD policy boundary
 
 Используются только 3 tiers:

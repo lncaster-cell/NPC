@@ -1,5 +1,7 @@
 // Ambient Life dense registry (Stage B).
 
+const int AL_MAX_NPCS = 100;
+
 string AL_RegKey(int nIdx)
 {
     return "al_npc_" + IntToString(nIdx);
@@ -43,6 +45,11 @@ void AL_RegisterNPC(object oNpc)
     }
 
     int nCount = GetLocalInt(oArea, "al_npc_count");
+    if (nCount >= AL_MAX_NPCS)
+    {
+        return;
+    }
+
     SetLocalObject(oArea, AL_RegKey(nCount), oNpc);
     SetLocalInt(oArea, "al_npc_count", nCount + 1);
 }

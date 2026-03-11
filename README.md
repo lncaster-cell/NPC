@@ -157,7 +157,7 @@ slot = floor(GetTimeHour() / 4)  // 0..5
 ### Регистрация
 
 - `AL_RegisterNPC(oNpc)` добавляет NPC в `al_npc_count` + `al_npc_<idx>`.
-- При достижении лимита (`AL_MAX_NPCS = 100`) новые NPC не регистрируются.
+- В `AL_RegisterNPC` есть явный cap: при достижении лимита (`AL_MAX_NPCS = 100`) новые NPC не регистрируются.
 
 ### Удаление
 
@@ -385,6 +385,26 @@ OnExit или OnClientLeave:
 1. На области задайте локальные object-переменные:
    - `al_bar_bartender_ref`
    - `al_bar_barmaid_ref`
+
+## Current invariants
+
+Ниже перечислены актуальные runtime-инварианты: что реально **enforced кодом**,
+а что является **операционной рекомендацией**.
+
+### Enforced кодом
+
+- Реестр NPC — плотный массив `al_npc_<idx>` с `swap-remove` при удалении/очистке
+  (дырки не сохраняются).
+- `AL_RegisterNPC` регистрирует только валидных не-PC существ в валидной area.
+- В `AL_RegisterNPC` есть жёсткий cap `AL_MAX_NPCS = 100`; при `al_npc_count >= 100`
+  регистрация прекращается без добавления нового элемента.
+
+### Рекомендации (не полностью enforced во всех путях)
+
+- Поддерживать `al_npc_count` консистентным с фактическим набором
+  `al_npc_<idx>` при внешних ручных правках locals.
+- Не модифицировать registry locals (`al_npc_count`, `al_npc_<idx>`) из сторонних
+  скриптов в обход API (`AL_RegisterNPC`/`AL_UnregisterNPC`/`AL_RegistryCompact`).
 
 ## Ограничения и риски
 
