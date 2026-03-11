@@ -10,6 +10,7 @@
 - Stage F: отдельная transition subsystem поверх Stage E (без смешивания с route cache).
 - Stage G: отдельная sleep subsystem поверх Stage E/F (special routine case).
 - Stage H: отдельная canonical activity subsystem для ordinary non-sleep/non-transition шагов.
+- Stage I.0: локальный `OnBlocked` unblock layer (door-first + bounded fallback/resync).
 
 Обязательные принципы:
 - Event-driven оркестрация через `OnUserDefined`.
@@ -32,6 +33,7 @@
 - `al_npc_onspawn`
 - `al_npc_ondeath`
 - `al_npc_onud`
+- `al_npc_onblocked`
 
 ### 2.2 Core layer
 Управляет area/npc lifecycle и dispatch:
@@ -67,16 +69,18 @@
 - Helper transitions не становятся "обычным move step".
 
 ### 2.7 Future layers
-- Reactions (blocked/disturbed/crime/alarm).
+- Stage I.0 local runtime unblock (`OnBlocked`: door-first + bounded fallback/resync).
+- Stage I.x reactions (disturbed/crime/alarm), deferred.
 
 ---
 
 ## 3) Event model
 
-Internal namespace `3100..3107`:
+Internal namespace `3100..3108`:
 - `3100..3105` — `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`.
 - `3106` — `AL_EVENT_RESYNC`.
 - `3107` — `AL_EVENT_ROUTE_REPEAT` (bounded step-advance hook для Stage E/F/G).
+- `3108` — `AL_EVENT_BLOCKED_RESUME` (Stage I.0 local OnBlocked resume hook после door-first попытки).
 
 Требования:
 1. Внутренние сигналы только event-driven.
@@ -94,7 +98,7 @@ Internal namespace `3100..3107`:
    - поддержание readiness/caches;
    - без route/transition execution.
 3. `HOT`
-   - активный runtime Stage D/E/F/G.
+   - активный runtime Stage D/E/F/G/H/I.0.
 
 ---
 
@@ -186,3 +190,12 @@ Source of truth для activity IDs/имен:
 - Transition special-case: Stage F subsystem.
 - Sleep special-case: Stage G subsystem.
 - Reaction override: не здесь, переносится в Stage I.
+
+
+## 8) Stage I.0 boundary (implemented, narrow)
+
+- `OnBlocked` трактуется как локальный runtime helper, а не как общий reaction framework.
+- First-line policy: попытка door/open через `GetBlockingDoor()` и `ActionOpenDoor(...)`, затем resume текущего route-step.
+- Если local-unblock не удался: bounded fallback (одна локальная попытка resume), затем safe resync через `AL_EVENT_RESYNC`.
+- Без heartbeat, без per-NPC periodic timers, без polling/retry-loop machine.
+- `OnDisturbed` и crime/alarm сознательно отложены на следующие sub-stages.
