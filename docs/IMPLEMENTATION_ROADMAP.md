@@ -32,9 +32,12 @@
 - Transition step интегрирован как special action в bounded routine progression.
 - Добавлен минимальный transition runtime state (`al_trans_rt_active`, `al_trans_rt_type`, `al_trans_rt_dst`).
 
-## Stage G — Sleep Runtime (next)
-- Реализовать sleep pipeline `<bed_id>_approach -> <bed_id>_pose`.
-- Поддержать fallback sleep on place при неполной конфигурации.
+## Stage G — Sleep Runtime (implemented)
+- Реализован отдельный Stage G sleep runtime subsystem поверх Stage E/F foundation.
+- Поддержан канонический pipeline `<bed_id>_approach -> <bed_id>_pose`.
+- Реализован fallback sleep on place при missing/invalid `al_bed_id` или неполной pair-конфигурации.
+- Sleep runtime остаётся HOT-only, без heartbeat/polling/per-NPC timer архитектур.
+- `ActionInteractObject` и `rest`/`OnRested`/`AnimActionRest` сознательно не используются.
 
 ## Stage H — Blocked/Disturbed + Crime/Alarm Reactions (next)
 - Реализовать реактивный слой и приоритеты реакций.
