@@ -29,11 +29,13 @@
 - Baseline execution использует action queue и минимальные activity semantics (`al_activity` + fallback `al_default_activity`).
 - `WARM` и `FREEZE` не исполняют normal route runtime.
 
-## Stage E — Multi-step Routines
-- Реализовать rich multi-step routines внутри активного slot поверх Stage D cache foundation.
-- Поддержать продвинутые переходы между шагами и bounded repeat semantics без polling.
+## Stage E — Multi-step Routines (implemented)
+- Реализованы bounded multi-step routines внутри активного slot поверх Stage D cache foundation.
+- Поддержан step-advance через `AL_EVENT_ROUTE_REPEAT` как controlled hook (не heartbeat) и без polling.
+- Runtime остаётся строго HOT-only и area-scoped, без межзоновых переходов.
+- `al_dur_sec` применяется как dwell-фаза каждого шага через action queue.
 
-## Stage F — Sleep Runtime
+## Stage F — Sleep Runtime (next)
 - Реализовать sleep pipeline по канону `<bed_id>_approach -> <bed_id>_pose`.
 - Поддержать `al_bed_id` и валидацию sleep цепочки.
 - Реализовать fallback sleep on place при неполной конфигурации.

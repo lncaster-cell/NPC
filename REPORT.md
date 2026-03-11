@@ -1,60 +1,42 @@
-# Ambient Life — Stage D Report (Route Cache + Route Execution Baseline)
+# Ambient Life — Stage E Report (Bounded Multi-step Routines on Stage D Foundation)
 
 ## Реализовано
-- Route cache subsystem (`scripts/ambient_life/al_route_inc.nss`):
+- Stage D route cache сохранён как основа (`scripts/ambient_life/al_route_inc.nss`):
   - slot -> route tag resolve через `alwp0..alwp5`,
   - controlled invalidation/rebuild,
-  - area-scoped step selection (только waypoint из current NPC area),
-  - cached ordered step references (`al_route_step_<idx>`),
-  - minimal descriptor (`tag`, `slot`, `step_count`, `valid`).
-- Deterministic route ordering:
-  - шаги сортируются только по `al_step`,
-  - nearest-based route construction не используется,
-  - broken chain (дырки/дубли) уходит в clean fallback.
-- Baseline route execution:
-  - исполняется только в `HOT` area,
-  - запускается на `AL_EVENT_RESYNC` и slot-change событиях,
-  - использует action queue sequence (`move -> baseline activity`) без polling arrival tracking.
-- Minimal activity baseline:
-  - источник активности — waypoint `al_activity` (int),
-  - fallback на `al_default_activity` (int),
-  - при невалидной активности — safe idle.
+  - area-scoped ordered chain по `al_step`.
+- Добавлен Stage E routine runtime поверх cache:
+  - bounded multi-step progression внутри одного slot,
+  - исполнение шагов в порядке cached индексов,
+  - поддержка route с 1+ шагами,
+  - broken/non-contiguous/invalid цепочка уходит в clean fallback.
+- Step advance сделан event-driven:
+  - `AL_EVENT_ROUTE_REPEAT` используется как controlled post-step hook,
+  - событие ставится в конец action queue шага,
+  - heartbeat/polling loop не используется.
+- Реальная поддержка `al_dur_sec`:
+  - на каждом шаге queue строится как `move -> activity(dwell) -> repeat-event`,
+  - `al_dur_sec` определяет dwell длительность,
+  - при невалидном/нулевом значении применяется bounded fallback duration.
 
-## Интеграция с Stage B/C backbone
+## Новые runtime locals (минимальный набор)
+- `al_route_rt_active` — флаг активного routine цикла.
+- `al_route_rt_idx` — индекс текущего шага в cached chain.
+- `al_route_rt_left` — оставшееся число шагов в текущем bounded cycle.
+- `al_route_rt_cycle` — служебный маркер числа запусков routine cycle.
+
+Набор ограничен Stage E потребностями; sleep/reaction/inter-area state не добавлялся.
+
+## Интеграция с Stage B/C/D backbone
 - Event-driven модель сохранена.
-- NPC для runtime берутся только через area dense registry dispatch (`al_npc_count` + `al_npc_<idx>`).
-- `WARM`/`FREEZE` не исполняют normal route runtime.
-- Stage B lifecycle и Stage C LOD поведение не меняются по контракту.
+- NPC для runtime по-прежнему берутся только через area dense registry dispatch.
+- Routine progression остаётся строго HOT-only.
+- Stage D area-scoped cache foundation не переписан и не размыт.
 
-## Политика refresh/invalidation route cache
-Rebuild/refresh выполняется только контролируемо:
-- `RESYNC` (force rebuild),
-- slot change,
-- route tag change,
-- explicit invalidation (при detected broken cache/reference).
+## Границы Stage E (сознательно не реализовано)
+- Межзоновые переходы и linked-area traversal.
+- Sleep runtime (`al_bed_id` pipeline).
+- Blocked/disturbed/crime/alarm reactions.
+- Любая polling/timer-per-NPC архитектура.
 
-Normal hot path использует уже построенный cache и не пересобирает route на каждом проходе.
-
-Stage D route cache намеренно area-scoped: это сознательная граница этапа, а не недоработка.
-
-## Сознательно отложено (граница Stage D)
-- Cross-area routing / linked-area route traversal.
-- Полноценный multi-step routine engine (Stage E).
-- Sleep runtime (`al_bed_id`, bed pipeline) (Stage F).
-- Reactions / crime / alarm runtime.
-- Богатая activity/социальная/анимационная система.
-
-## Почему foundation готов для Stage E/F
-- Route layer маленький и cache-first.
-- Route execution ограничен `HOT` tier и не размывает LOD.
-- Контракты Stage A/B/C соблюдены, а Stage D даёт стабильную базу для richer routines без переписывания основы.
-
-
-## Activity contract alignment fix
-- Stage D activity baseline приведён к canonical int-contract:
-  - `al_activity` читается как `int`,
-  - `al_default_activity` читается как `int`,
-  - string activity names удалены из runtime model.
-- Временный минимальный Stage D baseline-кодсет:
-  - `0` idle, `1` stand, `2` sit, `3` guard.
-- Это осознанно минимальный слой без расширения scope в rich activity abstraction.
+Следующий логичный этап: ограниченные межзоновые переходы внутри города поверх текущего bounded routine foundation.
