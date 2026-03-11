@@ -53,9 +53,13 @@
 - Добавлен минимальный runtime state: `al_blocked_rt_active`, `al_blocked_rt_retry`.
 - Границы: без giant reaction layer, без heartbeat/polling/per-NPC timers.
 
-## Stage I.1 — OnDisturbed Reaction Layer (next)
-- Отдельный слой реакции на disturbed events (вне `OnBlocked`).
-- Дебаунс/кулдауны для шумных сигналов.
+## Stage I.1 — OnDisturbed Inventory/Theft Foundation (implemented)
+- Добавлен отдельный bounded `OnDisturbed` path в `al_react_inc.nss` + entry script `al_npc_ondisturbed.nss`.
+- Канонически используется inventory disturbance semantics: `GetLastDisturbed`, `GetInventoryDisturbType`, `GetInventoryDisturbItem`.
+- Реализована clean classification `added/removed/stolen` + bounded unknown fallback для partial контекста (особенно creature theft cases).
+- Реакция временно прерывает ordinary route только локально и завершает через resume текущего шага или safe resync.
+- Stage I.0 `OnBlocked` остаётся полностью отдельным door-first navigation helper.
 
-## Stage I.2 — Crime/Alarm Reactions (later)
-- Отдельная интеграция crime/alarm без смешивания с локальным unblock path.
+## Stage I.2 — Crime/Alarm Reactions (next)
+- Расширение Stage I.1 disturbance foundation до crime/alarm escalation.
+- Без смешивания с локальным unblock path Stage I.0.

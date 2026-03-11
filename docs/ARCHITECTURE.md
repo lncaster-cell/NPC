@@ -1,4 +1,4 @@
-# Ambient Life — Architecture Canon (Stage A/B/C + Stage D/E + Stage F transitions + Stage G sleep + Stage H activity semantics)
+# Ambient Life — Architecture Canon (Stage A/B/C + Stage D/E + Stage F transitions + Stage G sleep + Stage H activity semantics + Stage I.0/I.1 reactions split)
 
 ## 1) Scope
 
@@ -11,6 +11,7 @@
 - Stage G: отдельная sleep subsystem поверх Stage E/F (special routine case).
 - Stage H: отдельная canonical activity subsystem для ordinary non-sleep/non-transition шагов.
 - Stage I.0: локальный `OnBlocked` unblock layer (door-first + bounded fallback/resync).
+- Stage I.1: отдельный `OnDisturbed` inventory/theft foundation (bounded override/resume, без crime/alarm).
 
 Обязательные принципы:
 - Event-driven оркестрация через `OnUserDefined`.
@@ -34,6 +35,7 @@
 - `al_npc_ondeath`
 - `al_npc_onud`
 - `al_npc_onblocked`
+- `al_npc_ondisturbed`
 
 ### 2.2 Core layer
 Управляет area/npc lifecycle и dispatch:
@@ -70,13 +72,15 @@
 
 ### 2.7 Future layers
 - Stage I.0 local runtime unblock (`OnBlocked`: door-first + bounded fallback/resync).
-- Stage I.x reactions (disturbed/crime/alarm), deferred.
+- Stage I.1 inventory/theft disturbed foundation (implemented, separate from `OnBlocked`).
+- Stage I.2 crime/alarm escalation (deferred).
 
 ---
 
 ## 3) Event model
 
 Internal namespace `3100..3108`:
+- `OnDisturbed` Stage I.1 использует штатные inventory disturbance API (`GetLastDisturbed`, `GetInventoryDisturbType`, `GetInventoryDisturbItem`) и не вводит отдельный internal event.
 - `3100..3105` — `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`.
 - `3106` — `AL_EVENT_RESYNC`.
 - `3107` — `AL_EVENT_ROUTE_REPEAT` (bounded step-advance hook для Stage E/F/G).
@@ -98,7 +102,7 @@ Internal namespace `3100..3108`:
    - поддержание readiness/caches;
    - без route/transition execution.
 3. `HOT`
-   - активный runtime Stage D/E/F/G/H/I.0.
+   - активный runtime Stage D/E/F/G/H/I.0/I.1.
 
 ---
 
@@ -198,4 +202,15 @@ Source of truth для activity IDs/имен:
 - First-line policy: попытка door/open через `GetBlockingDoor()` и `ActionOpenDoor(...)`, затем resume текущего route-step.
 - Если local-unblock не удался: bounded fallback (одна локальная попытка resume), затем safe resync через `AL_EVENT_RESYNC`.
 - Без heartbeat, без per-NPC periodic timers, без polling/retry-loop machine.
-- `OnDisturbed` и crime/alarm сознательно отложены на следующие sub-stages.
+- `OnDisturbed` вынесен в отдельный Stage I.1 layer; crime/alarm сознательно отложены на Stage I.2.
+
+
+## 9) Stage I.1 boundary (implemented, inventory/theft foundation)
+
+- `OnDisturbed` трактуется строго как inventory disturbance event (`added` / `removed` / `stolen`), а не как общий social reaction signal.
+- Stage I.1 читает только штатный disturbance context: `GetLastDisturbed()`, `GetInventoryDisturbType()`, `GetInventoryDisturbItem()`.
+- `OnBlocked` и `OnDisturbed` intentionally separated: навигационный door-first helper остаётся в Stage I.0, disturbance reaction — в отдельном reaction layer Stage I.1.
+- Runtime state ограничен и диагностируем: `al_react_active`, `al_react_type`, `al_react_resume_flag`, `al_react_last_source`, `al_react_last_item`.
+- Для creature theft edge-cases допускается partial context (missing/invalid source/item); применяется bounded fallback без жёсткой эскалации.
+- Ordinary flow временно прерывается только локально (bounded override), затем делается resume текущего route-step или safe resync.
+- Crime/alarm propagation, world-wide investigation и social simulation сознательно отложены на Stage I.2.
