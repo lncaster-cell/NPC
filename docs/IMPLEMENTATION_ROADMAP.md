@@ -1,65 +1,30 @@
-# Ambient Life — Implementation Roadmap
+# Ambient Life — Implementation Roadmap (актуализировано)
 
-## Stage A — Contracts and Architecture Canon (implemented)
-- Зафиксированы архитектурные контракты и базовая модель runtime.
+## Реализовано
 
-## Stage B — Core Runtime Backbone (implemented)
-- Реализованы area/npc lifecycle обработчики (spawn/death/enter/exit/leave).
-- Реализованы single area-level tick loop, dense registry и internal OnUserDefined bus.
-- Slot dispatch работает как area-global orchestration backbone.
+- ✅ Stage A: contracts/architecture baseline.
+- ✅ Stage B: dense area registry + event constants/helpers.
+- ✅ Stage C: area lifecycle, LOD tiers, linked warm-retention.
+- ✅ Stage D: route cache by slot/tag.
+- ✅ Stage E: bounded routine progression.
+- ✅ Stage F: transition step subsystem.
+- ✅ Stage G: sleep subsystem.
+- ✅ Stage H: canonical activity layer.
+- ✅ Stage I.0: OnBlocked local recovery.
+- ✅ Stage I.1: OnDisturbed inventory/theft foundation.
 
-## Stage C — Area Graph + Simulation LOD Policy (implemented)
-- Введён area linkage contract (`al_link_count` + `al_link_<idx>`).
-- Введена 3-tier модель симуляции area: `FREEZE`, `WARM`, `HOT`.
-- Реализована depth 0 / depth 1 interest policy с hysteresis.
+## В работе (следующая цель)
 
-## Stage D — Route Cache + Route Execution Baseline (implemented)
-- Реализован area-scoped route cache.
-- Route tag берётся из slot anchors (`alwp0..alwp5`).
-- Waypoint ordering детерминирован через `al_step`.
-- Runtime исполняется только в `HOT`.
+### Stage I.2 — Crime/Alarm reactions
 
-## Stage E — Bounded Multi-step Routines (implemented)
-- Реализованы bounded multi-step routines поверх Stage D cache foundation.
-- Поддержан step-advance через `AL_EVENT_ROUTE_REPEAT`.
-- Runtime остаётся HOT-only и без polling.
+План:
+1. Классификация источника и тяжести события кражи.
+2. Локальное распространение тревоги (bounded area scope).
+3. Правила эскалации guard/civilian без глобального сканирования мира.
+4. Безопасные fallback-пути при неполном контексте source/item.
 
-## Stage F — Transition Subsystem (implemented)
-- Добавлена отдельная transition subsystem поверх Stage E, не смешанная с Stage D cache.
-- Поддержаны два канонических механизма:
-  - area-to-area helper transition (pair waypoint);
-  - intra-area teleport transition (pair waypoint).
-- Transition step интегрирован как special action в bounded routine progression.
-- Добавлен минимальный transition runtime state (`al_trans_rt_active`, `al_trans_rt_type`, `al_trans_rt_dst`).
+## Технический долг
 
-## Stage G — Sleep Runtime (implemented)
-- Реализован отдельный Stage G sleep runtime subsystem поверх Stage E/F foundation.
-- Поддержан канонический pipeline `<bed_id>_approach -> <bed_id>_pose`.
-- Реализован fallback sleep on place при missing/invalid `al_bed_id` или неполной pair-конфигурации.
-- Sleep runtime остаётся HOT-only, без heartbeat/polling/per-NPC timer архитектур.
-- `ActionInteractObject` и `rest`/`OnRested`/`AnimActionRest` сознательно не используются.
-
-## Stage H — Activity Subsystem / Canonical Activity Semantics (implemented)
-- Выделена отдельная activity subsystem в `al_activity_inc.nss` (без ad-hoc логики в route/transition).
-- Сохранён int-based контракт `al_activity`/`al_default_activity`.
-- Canonical activity ID set синхронизирован с таблицей PycukSystems (см. ARCHITECTURE/TOOLSET_CONTRACT).
-- Stage D/E/F/G интегрированы через общий execution layer `AL_ActivityApplyStep`.
-- Sleep и transition сохранены как отдельные special-case подсистемы.
-
-## Stage I.0 — OnBlocked Local Unblock / Door Handling (implemented)
-- Добавлен отдельный узкий `OnBlocked` path как local navigation/runtime helper.
-- Реализована door-first политика: `GetBlockingDoor()` + штатное `ActionOpenDoor(...)` + bounded resume текущего route шага.
-- Если local-unblock не сработал: bounded fallback (single retry) и safe resync через `AL_EVENT_RESYNC`.
-- Добавлен минимальный runtime state: `al_blocked_rt_active`, `al_blocked_rt_retry`.
-- Границы: без giant reaction layer, без heartbeat/polling/per-NPC timers.
-
-## Stage I.1 — OnDisturbed Inventory/Theft Foundation (implemented)
-- Добавлен отдельный bounded `OnDisturbed` path в `al_react_inc.nss` + entry script `al_npc_ondisturbed.nss`.
-- Канонически используется inventory disturbance semantics: `GetLastDisturbed`, `GetInventoryDisturbType`, `GetInventoryDisturbItem`.
-- Реализована clean classification `added/removed/stolen` + bounded unknown fallback для partial контекста (особенно creature theft cases).
-- Реакция временно прерывает ordinary route только локально и завершает через resume текущего шага или safe resync.
-- Stage I.0 `OnBlocked` остаётся полностью отдельным door-first navigation helper.
-
-## Stage I.2 — Crime/Alarm Reactions (next)
-- Расширение Stage I.1 disturbance foundation до crime/alarm escalation.
-- Без смешивания с локальным unblock path Stage I.0.
+- Инструментальный лог/метрики на отказ регистрации при переполнении (`AL_MAX_NPCS`).
+- Единый debug-toggle для реактивных подсистем I.0/I.1/I.2.
+- Автоматизируемый smoke-набор сценариев для handoff тестирования контента.
