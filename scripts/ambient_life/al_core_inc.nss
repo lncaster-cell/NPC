@@ -1,4 +1,4 @@
-// Ambient Life Stage E core dispatcher.
+// Ambient Life Stage F core dispatcher (Stage E routines + separate transitions).
 
 #include "al_area_inc"
 #include "al_events_inc"

@@ -1,42 +1,40 @@
-# Ambient Life — Stage E Report (Bounded Multi-step Routines on Stage D Foundation)
+# Ambient Life — Stage F Report (Separate Transition Subsystem after Stage E)
 
 ## Реализовано
-- Stage D route cache сохранён как основа (`scripts/ambient_life/al_route_inc.nss`):
-  - slot -> route tag resolve через `alwp0..alwp5`,
-  - controlled invalidation/rebuild,
-  - area-scoped ordered chain по `al_step`.
-- Добавлен Stage E routine runtime поверх cache:
-  - bounded multi-step progression внутри одного slot,
-  - исполнение шагов в порядке cached индексов,
-  - поддержка route с 1+ шагами,
-  - broken/non-contiguous/invalid цепочка уходит в clean fallback.
-- Step advance сделан event-driven:
-  - `AL_EVENT_ROUTE_REPEAT` используется как controlled post-step hook,
-  - событие ставится в конец action queue шага,
-  - heartbeat/polling loop не используется.
-- Реальная поддержка `al_dur_sec`:
-  - на каждом шаге queue строится как `move -> activity(dwell) -> repeat-event`,
-  - `al_dur_sec` определяет dwell длительность,
-  - при невалидном/нулевом значении применяется bounded fallback duration.
+- Сохранена Stage D/E основа:
+  - area-scoped route cache по `alwp0..alwp5`,
+  - bounded multi-step progression через `AL_EVENT_ROUTE_REPEAT`.
+- Добавлен отдельный runtime-слой `al_transition_inc.nss`, который вызывается только для transition steps.
+- Реализованы два канонических механизма переходов:
+  1. **Area-to-area helper transition**
+     - transition step указывает source/destination helper waypoint tags;
+     - runtime делает `move-to-source -> jump-to-destination -> dwell -> repeat`;
+     - source обязан быть в текущей area NPC, destination — в другой area.
+  2. **Intra-area teleport transition**
+     - transition step также указывает пару helper waypoint;
+     - runtime делает `move-to-source -> jump-to-destination -> dwell -> repeat`;
+     - source и destination обязаны быть в одной area.
 
-## Новые runtime locals (минимальный набор)
-- `al_route_rt_active` — флаг активного routine цикла.
-- `al_route_rt_idx` — индекс текущего шага в cached chain.
-- `al_route_rt_left` — оставшееся число шагов в текущем bounded cycle.
-- `al_route_rt_cycle` — служебный маркер числа запусков routine cycle.
+## Authoring contract (Stage F)
+- Transition step остаётся waypoint в route chain (`al_step`), но объявляется как special action:
+  - `al_trans_type` (`1` area helper, `2` intra teleport),
+  - `al_trans_src_wp` (tag source helper waypoint),
+  - `al_trans_dst_wp` (tag destination helper waypoint).
+- Если `al_trans_type` отсутствует/невалиден, шаг обрабатывается как обычный Stage E route step.
+- Helper-пары заранее ставятся в toolset и могут переиспользоваться многими NPC.
 
-Набор ограничен Stage E потребностями; sleep/reaction/inter-area state не добавлялся.
+## Новый runtime state (минимальный)
+- `al_trans_rt_active` — маркер активного transition шага.
+- `al_trans_rt_type` — тип transition механизма.
+- `al_trans_rt_dst` — destination helper waypoint текущего transition.
 
-## Интеграция с Stage B/C/D backbone
-- Event-driven модель сохранена.
-- NPC для runtime по-прежнему берутся только через area dense registry dispatch.
-- Routine progression остаётся строго HOT-only.
-- Stage D area-scoped cache foundation не переписан и не размыт.
+## Интеграция и границы
+- Transition subsystem отделён от обычного route runtime path.
+- Stage D area-scoped cache не переписан и не превращён в transition graph.
+- HOT/WARM/FREEZE semantics сохранены: route/transition runtime работает только в HOT.
+- Heartbeat/polling/per-NPC timer архитектуры не добавлялись.
 
-## Границы Stage E (сознательно не реализовано)
-- Межзоновые переходы и linked-area traversal.
-- Sleep runtime (`al_bed_id` pipeline).
+## Сознательно отложено
+- Sleep runtime.
 - Blocked/disturbed/crime/alarm reactions.
-- Любая polling/timer-per-NPC архитектура.
-
-Следующий логичный этап: ограниченные межзоновые переходы внутри города поверх текущего bounded routine foundation.
+- Любой новый сложный graph/path subsystem.

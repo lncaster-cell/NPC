@@ -1,7 +1,8 @@
-// Ambient Life Stage E route cache + bounded multi-step routine execution.
+// Ambient Life Stage E/F route runtime (Stage E routines + Stage F transition steps).
 
 #include "al_area_inc"
 #include "al_activity_inc"
+#include "al_transition_inc"
 
 const int AL_ROUTE_MAX_STEPS = 16;
 
@@ -57,6 +58,7 @@ void AL_RouteRuntimeClear(object oNpc)
     SetLocalInt(oNpc, AL_RouteRtActiveKey(), FALSE);
     SetLocalInt(oNpc, AL_RouteRtIdxKey(), 0);
     SetLocalInt(oNpc, AL_RouteRtLeftKey(), 0);
+    AL_TransitionRuntimeClear(oNpc);
 }
 
 void AL_RouteFallbackToDefault(object oNpc)
@@ -257,6 +259,20 @@ int AL_RouteQueueStep(object oNpc, int nStepIdx)
         AL_RouteInvalidateCache(oNpc);
         return FALSE;
     }
+
+    if (AL_TransitionTypeFromStep(oTarget) != AL_TRANSITION_NONE)
+    {
+        if (!AL_TransitionQueueFromStep(oNpc, oTarget))
+        {
+            return FALSE;
+        }
+
+        SetLocalInt(oNpc, AL_RouteRtIdxKey(), nStepIdx);
+        SetLocalInt(oNpc, AL_RouteRtActiveKey(), TRUE);
+        return TRUE;
+    }
+
+    AL_TransitionRuntimeClear(oNpc);
 
     int nActivity = GetLocalInt(oTarget, "al_activity");
     if (nActivity <= AL_ACTIVITY_IDLE)
