@@ -137,26 +137,6 @@ int AL_ShouldLoopCustomAnimation(int nActivity, string sAnimToken)
     return FALSE;
 }
 
-int AL_CustomTokenToLocateWrapperAnim(string sAnimToken)
-{
-    string sToken = AL_TrimToken(sAnimToken);
-    if (sToken == "")
-    {
-        return -1;
-    }
-
-    if (sToken == "lookleft" || sToken == "lookright" || sToken == "shrug") return 91;
-    if (sToken == "bored" || sToken == "scratchhead" || sToken == "yawn") return 92;
-    if (sToken == "sitfidget" || sToken == "sitidle" || sToken == "sittalk" || sToken == "sittalk01" || sToken == "sittalk02") return 93;
-    if (sToken == "kneelidle" || sToken == "kneeltalk") return 94;
-    if (sToken == "chuckle" || sToken == "nodno" || sToken == "nodyes" || sToken == "talk01" || sToken == "talk02" || sToken == "talklaugh") return 95;
-    if (sToken == "craft01" || sToken == "dustoff" || sToken == "forge01" || sToken == "openlock") return 96;
-    if (sToken == "meditate") return 97;
-    if (sToken == "disableground" || sToken == "sleightofhand" || sToken == "sneak") return 98;
-
-    return -1;
-}
-
 int AL_PlayCustomAnimation(object oNpc, int nActivity, int nDurSec)
 {
     if (!GetIsObjectValid(oNpc))
@@ -170,16 +150,11 @@ int AL_PlayCustomAnimation(object oNpc, int nActivity, int nDurSec)
         return FALSE;
     }
 
-    int nWrapperAnim = AL_CustomTokenToLocateWrapperAnim(sToken);
-    if (nWrapperAnim <= 0)
-    {
-        return FALSE;
-    }
-
     int bLoop = AL_ShouldLoopCustomAnimation(nActivity, sToken);
 
-    // Engine-compatible custom token playback via canonical locate-wrapper animation ids.
-    AssignCommand(oNpc, ActionPlayAnimation(nWrapperAnim, bLoop, 1.0));
+    // Real engine custom-token playback.
+    string sChunk = "PlayCustomAnimation(OBJECT_SELF, \"" + sToken + "\", " + IntToString(bLoop) + ");";
+    AssignCommand(oNpc, ExecuteScriptChunk(sChunk));
     AssignCommand(oNpc, ActionWait(IntToFloat(nDurSec)));
 
     // Preserve the selected token for metadata/debug and higher-level behavior tracking.
@@ -317,11 +292,11 @@ void AL_ActivityApplyIdleFallback(object oNpc)
     ActionWait(1.0);
 }
 
-void AL_ActivityQueueOrdinary(object oNpc, int nActivity, int nDurSec)
+int AL_ActivityQueueOrdinary(object oNpc, int nActivity, int nDurSec)
 {
     if (!GetIsObjectValid(oNpc))
     {
-        return;
+        return FALSE;
     }
 
     if (nDurSec <= 0)
@@ -343,6 +318,7 @@ void AL_ActivityQueueOrdinary(object oNpc, int nActivity, int nDurSec)
 
     SetLocalInt(oNpc, "al_activity_current", nActivity);
     SetLocalString(oNpc, "al_mode", AL_ActivityNameForCode(nActivity));
+    return TRUE;
 }
 
 void AL_ActivityApplyStep(object oNpc, int nStepActivity, int nDurSec)
@@ -383,7 +359,12 @@ void AL_ActivityApplyStep(object oNpc, int nStepActivity, int nDurSec)
         return;
     }
 
-    AL_ActivityQueueOrdinary(oNpc, nActivity, nDurSec);
+    if (AL_ActivityQueueOrdinary(oNpc, nActivity, nDurSec))
+    {
+        return;
+    }
+
+    AL_ActivityApplyIdleFallback(oNpc);
 }
 
 void AL_ActivityApplyBaseline(object oNpc, int nActivity, int nDurSec)
