@@ -4,7 +4,9 @@ string AL_RouteAreaCacheStepsKey(string sRouteTag) { return "al_route_area_steps
 string AL_RouteAreaCacheTickKey(string sRouteTag) { return "al_route_area_tick_" + sRouteTag; }
 string AL_RouteAreaStepKey(string sRouteTag, int nIdx) { return "al_route_area_step_" + sRouteTag + "_" + IntToString(nIdx); }
 string AL_RouteAreaRebuildCooldownUntilKey(string sRouteTag) { return "al_route_area_rebuild_cooldown_until_" + sRouteTag; }
-string AL_RouteAreaSignatureKey(string sRouteTag) { return "al_route_area_signature_" + sRouteTag; }
+string AL_RouteAreaFingerprintKey(string sRouteTag) { return "al_route_area_fingerprint_" + sRouteTag; }
+string AL_RouteAreaContentVersionKey(string sRouteTag) { return "al_route_area_content_ver_" + sRouteTag; }
+string AL_RouteAreaCandidateCountKey(string sRouteTag) { return "al_route_area_candidate_count_" + sRouteTag; }
 
 int AL_RouteAreaCacheStepsValid(object oArea, string sRouteTag)
 {
@@ -29,25 +31,48 @@ int AL_RouteAreaCacheStepsValid(object oArea, string sRouteTag)
     return TRUE;
 }
 
-string AL_RouteBuildSignature(object oArea, string sRouteTag, int nSlot)
+int AL_RouteHashMix(int nHash, int nValue)
+{
+    int nMod = 1000003;
+    int nMixed = ((nHash * 131) % nMod + (nValue % nMod)) % nMod;
+    if (nMixed < 0)
+    {
+        nMixed = nMixed + nMod;
+    }
+
+    return nMixed;
+}
+
+int AL_RouteHashString(int nHash, string sValue)
+{
+    int nLen = GetStringLength(sValue);
+    int i = 0;
+    while (i < nLen)
+    {
+        string sChar = GetSubString(sValue, i, 1);
+        int nCode = FindSubString("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-:.", sChar);
+        if (nCode < 0)
+        {
+            nCode = 0;
+        }
+
+        nHash = AL_RouteHashMix(nHash, nCode + 1);
+        i = i + 1;
+    }
+
+    return AL_RouteHashMix(nHash, nLen + 17);
+}
+
+int AL_RouteBuildFingerprint(object oArea, string sRouteTag)
 {
     if (!GetIsObjectValid(oArea) || sRouteTag == "")
     {
-        return "";
-    }
-
-    int nContentVersion = GetLocalInt(oArea, "al_content_version");
-    if (nContentVersion <= 0)
-    {
-        nContentVersion = GetLocalInt(oArea, "al_area_content_version");
+        return 0;
     }
 
     int nCandidateCount = AL_GetWaypointCandidatesCountCached(oArea, sRouteTag);
-    string sSignature = "slot=" + IntToString(nSlot)
-        + ";route=" + sRouteTag
-        + ";content_ver=" + IntToString(nContentVersion)
-        + ";candidate_count=" + IntToString(nCandidateCount)
-        + ";steps=";
+    int nFingerprint = AL_RouteHashString(23, sRouteTag);
+    nFingerprint = AL_RouteHashMix(nFingerprint, nCandidateCount + 29);
 
     int nCandidateIdx = 0;
     while (nCandidateIdx < nCandidateCount)
@@ -59,17 +84,15 @@ string AL_RouteBuildSignature(object oArea, string sRouteTag, int nSlot)
             continue;
         }
 
-        sSignature = sSignature
-            + GetTag(oWp)
-            + ":" + IntToString(GetLocalInt(oWp, "al_step"))
-            + ":" + IntToString(GetLocalInt(oWp, "al_activity"))
-            + ":" + IntToString(GetLocalInt(oWp, "al_dur_sec"))
-            + ":" + IntToString(GetLocalInt(oWp, "al_transition"))
-            + ":" + IntToString(GetLocalInt(oWp, "al_sleep"))
-            + "|";
+        nFingerprint = AL_RouteHashString(nFingerprint, GetTag(oWp));
+        nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_step") + 37);
+        nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_activity") + 41);
+        nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_dur_sec") + 43);
+        nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_transition") + 47);
+        nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_sleep") + 53);
     }
 
-    return sSignature;
+    return nFingerprint;
 }
 
 void AL_RouteBlockedRuntimeReset(object oNpc)
@@ -122,7 +145,7 @@ void AL_RouteInvalidateCache(object oNpc)
     int bHadCache = GetLocalInt(oNpc, "al_route_cache_valid") || nCachedSteps > 0;
 
     DeleteLocalString(oNpc, "al_route_cache_tag");
-    DeleteLocalString(oNpc, "al_route_cache_signature");
+    DeleteLocalInt(oNpc, "al_route_cache_fingerprint");
     DeleteLocalObject(oNpc, "al_route_cache_area");
     SetLocalInt(oNpc, "al_route_cache_slot", -1);
     SetLocalInt(oNpc, "al_route_cache_steps", 0);
@@ -141,7 +164,7 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
     }
 
     int nSteps = GetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag));
-    int bHadCache = nSteps > 0 || GetLocalString(oArea, AL_RouteAreaSignatureKey(sRouteTag)) != "";
+    int bHadCache = nSteps > 0 || GetLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag)) != 0;
     int i = 0;
     while (i < nSteps)
     {
@@ -152,6 +175,9 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
     SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaRebuildCooldownUntilKey(sRouteTag), 0);
+    DeleteLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag));
+    DeleteLocalInt(oArea, AL_RouteAreaContentVersionKey(sRouteTag));
+    DeleteLocalInt(oArea, AL_RouteAreaCandidateCountKey(sRouteTag));
     if (bHadCache)
     {
         SetLocalInt(oArea, "route_cache_invalidations", GetLocalInt(oArea, "route_cache_invalidations") + 1);
@@ -310,9 +336,19 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
         iCheck = iCheck + 1;
     }
 
+    int nContentVersion = GetLocalInt(oArea, "al_content_version");
+    if (nContentVersion <= 0)
+    {
+        nContentVersion = GetLocalInt(oArea, "al_area_content_version");
+    }
+
+    int nCandidateCount = AL_GetWaypointCandidatesCountCached(oArea, sRouteTag);
+
     SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), nFound);
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), GetLocalInt(oArea, "al_sync_tick"));
-    SetLocalString(oArea, AL_RouteAreaSignatureKey(sRouteTag), AL_RouteBuildSignature(oArea, sRouteTag, 0));
+    SetLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag), AL_RouteBuildFingerprint(oArea, sRouteTag));
+    SetLocalInt(oArea, AL_RouteAreaContentVersionKey(sRouteTag), nContentVersion);
+    SetLocalInt(oArea, AL_RouteAreaCandidateCountKey(sRouteTag), nCandidateCount);
     DeleteLocalString(oArea, "al_route_fail_reason");
     return TRUE;
 }
@@ -326,10 +362,18 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
 
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
     int bCacheValid = AL_RouteAreaCacheStepsValid(oArea, sRouteTag);
-    string sCurrentSignature = AL_RouteBuildSignature(oArea, sRouteTag, 0);
-    string sLastSuccessSignature = GetLocalString(oArea, AL_RouteAreaSignatureKey(sRouteTag));
+    int nContentVersion = GetLocalInt(oArea, "al_content_version");
+    if (nContentVersion <= 0)
+    {
+        nContentVersion = GetLocalInt(oArea, "al_area_content_version");
+    }
 
-    if (bCacheValid && sCurrentSignature != "" && sCurrentSignature == sLastSuccessSignature)
+    int nCandidateCount = AL_GetWaypointCandidatesCountCached(oArea, sRouteTag);
+    int nLastContentVersion = GetLocalInt(oArea, AL_RouteAreaContentVersionKey(sRouteTag));
+    int nLastCandidateCount = GetLocalInt(oArea, AL_RouteAreaCandidateCountKey(sRouteTag));
+    int bTriggersChanged = (nContentVersion != nLastContentVersion) || (nCandidateCount != nLastCandidateCount);
+
+    if (bCacheValid && !bTriggersChanged)
     {
         if (bForceRebuild)
         {
@@ -340,10 +384,28 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
         return TRUE;
     }
 
+    if (bCacheValid && bTriggersChanged)
+    {
+        SetLocalInt(oArea, "route_cache_full_rehashes", GetLocalInt(oArea, "route_cache_full_rehashes") + 1);
+        int nCurrentFingerprint = AL_RouteBuildFingerprint(oArea, sRouteTag);
+        int nCachedFingerprint = GetLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag));
+        if (nCurrentFingerprint != 0 && nCurrentFingerprint == nCachedFingerprint)
+        {
+            SetLocalInt(oArea, AL_RouteAreaContentVersionKey(sRouteTag), nContentVersion);
+            SetLocalInt(oArea, AL_RouteAreaCandidateCountKey(sRouteTag), nCandidateCount);
+            if (bForceRebuild)
+            {
+                SetLocalInt(oArea, "route_cache_hits", GetLocalInt(oArea, "route_cache_hits") + 1);
+            }
+
+            AL_RouteClearAreaPending(oArea, sRouteTag);
+            return TRUE;
+        }
+    }
+
     if (!bForceRebuild)
     {
         int nCooldownUntil = GetLocalInt(oArea, AL_RouteAreaRebuildCooldownUntilKey(sRouteTag));
-        int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
         if (nCooldownUntil > 0 && nSyncTick < nCooldownUntil)
         {
             return FALSE;
@@ -373,7 +435,6 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
     int bBuilt = AL_RouteBuildAreaCache(oArea, sRouteTag);
     if (!bBuilt && !bForceRebuild)
     {
-        int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
         SetLocalInt(
             oArea,
             AL_RouteAreaRebuildCooldownUntilKey(sRouteTag),

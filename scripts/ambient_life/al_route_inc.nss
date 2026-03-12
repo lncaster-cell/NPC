@@ -56,6 +56,7 @@ void AL_RouteResetAreaOverflowMetrics(object oArea)
     DeleteLocalString(oArea, "al_route_fail_reason");
     SetLocalInt(oArea, "al_route_pending_rebuild", FALSE);
     SetLocalInt(oArea, "al_route_pending_count", 0);
+    SetLocalInt(oArea, "route_cache_full_rehashes", 0);
 }
 
 
@@ -116,7 +117,7 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
     SetLocalInt(oNpc, "al_route_cache_slot", nSlot);
     SetLocalInt(oNpc, "al_route_cache_steps", nFound);
     SetLocalInt(oNpc, "al_route_cache_valid", TRUE);
-    SetLocalString(oNpc, "al_route_cache_signature", AL_RouteBuildSignature(oNpcArea, sRouteTag, nSlot));
+    SetLocalInt(oNpc, "al_route_cache_fingerprint", GetLocalInt(oNpcArea, AL_RouteAreaFingerprintKey(sRouteTag)));
 
     return TRUE;
 }
@@ -152,9 +153,9 @@ int AL_RouteEnsureCache(object oNpc, int nSlot, int bForceRebuild)
             return TRUE;
         }
 
-        string sCurrentSignature = AL_RouteBuildSignature(oCurrentArea, sRouteTag, nSlot);
-        string sCachedSignature = GetLocalString(oNpc, "al_route_cache_signature");
-        if (sCurrentSignature != "" && sCurrentSignature == sCachedSignature)
+        int nCurrentFingerprint = GetLocalInt(oCurrentArea, AL_RouteAreaFingerprintKey(sRouteTag));
+        int nCachedFingerprint = GetLocalInt(oNpc, "al_route_cache_fingerprint");
+        if (nCurrentFingerprint != 0 && nCurrentFingerprint == nCachedFingerprint)
         {
             SetLocalInt(oNpc, "route_cache_hits", GetLocalInt(oNpc, "route_cache_hits") + 1);
             return TRUE;
