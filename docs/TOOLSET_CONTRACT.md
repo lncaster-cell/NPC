@@ -38,6 +38,19 @@
   (hard-fail + fallback), а runtime пишет диагностику `al_route_overflow_count`/`al_route_overflow_tag`
   на NPC и area.
 
+### Safe-waypoint для react/flee
+- Рекомендуемый явный маркер: `al_safe_wp = 1` (int local на waypoint).
+- Legacy fallback (если явный маркер не проставлен): подстрока `safe/SAFE` в `tag` или `name` waypoint.
+- Runtime собирает area-level кэш safe-waypoint-ов и выбирает ближайший по дистанции внутри area.
+- При пустом или просроченном кэше используется legacy fallback-lookup через `GetNearestObject`.
+
+Миграция контента:
+- Для новых сцен используйте только явный локал `al_safe_wp=1`.
+- Для существующих сцен с `safe*` в тегах/именах мигрируйте постепенно:
+  1) проставьте `al_safe_wp=1` на целевых safe-точках;
+  2) сохраните старые теги/имена на переходный период;
+  3) после валидации react/flee в area можно убрать зависимость от naming convention.
+
 ### Transition-step
 - `al_trans_type`:
   - `1` — area helper
@@ -75,6 +88,7 @@
   - `al_alarm_until` (`al_sync_tick` deadline)
   - `al_alarm_source` (object)
   - `al_alarm_last_tick`, `al_alarm_last_source`, `al_alarm_last_kind` (debounce)
+  - safe-waypoint lookup counters: `al_safe_lookup_hit`, `al_safe_lookup_miss`
 
 ## 4) Правила
 
