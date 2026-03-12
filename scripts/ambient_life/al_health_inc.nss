@@ -1,5 +1,21 @@
 // Ambient Life area health snapshot helpers (extracted from al_area_inc).
 
+void AL_SetLocalIntOnChange(object oTarget, string sVar, int nValue)
+{
+    if (GetLocalInt(oTarget, sVar) != nValue)
+    {
+        SetLocalInt(oTarget, sVar, nValue);
+    }
+}
+
+void AL_SetLocalStringOnChange(object oTarget, string sVar, string sValue)
+{
+    if (GetLocalString(oTarget, sVar) != sValue)
+    {
+        SetLocalString(oTarget, sVar, sValue);
+    }
+}
+
 int AL_ComputeHealthResyncWindowMask()
 {
     int nWindowMask = 0;
@@ -18,7 +34,7 @@ void AL_EnsureAreaHealthSnapshotInit(object oArea)
 {
     if (GetLocalInt(oArea, "al_h_resync_window_mask") <= 0)
     {
-        SetLocalInt(oArea, "al_h_resync_window_mask", AL_ComputeHealthResyncWindowMask());
+        AL_SetLocalIntOnChange(oArea, "al_h_resync_window_mask", AL_ComputeHealthResyncWindowMask());
     }
 }
 
@@ -69,14 +85,14 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     int nRegOverflow = GetLocalInt(oArea, "al_reg_overflow_count");
     int nRouteOverflow = GetLocalInt(oArea, "al_route_overflow_count");
 
-    SetLocalInt(oArea, "al_h_npc_count", nNpcCount);
-    SetLocalInt(oArea, "al_h_tier", nTier);
-    SetLocalInt(oArea, "al_h_slot", nSlot);
-    SetLocalInt(oArea, "al_h_sync_tick", nSyncTick);
-    SetLocalInt(oArea, "al_h_reg_overflow_count", nRegOverflow);
-    SetLocalInt(oArea, "al_h_route_overflow_count", nRouteOverflow);
-    SetLocalInt(oArea, "al_h_recent_resync", nRecentResync);
-    SetLocalInt(oArea, "al_h_recent_resync_mask", nResyncMask);
+    AL_SetLocalIntOnChange(oArea, "al_h_npc_count", nNpcCount);
+    AL_SetLocalIntOnChange(oArea, "al_h_tier", nTier);
+    AL_SetLocalIntOnChange(oArea, "al_h_slot", nSlot);
+    AL_SetLocalIntOnChange(oArea, "al_h_sync_tick", nSyncTick);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_overflow_count", nRegOverflow);
+    AL_SetLocalIntOnChange(oArea, "al_h_route_overflow_count", nRouteOverflow);
+    AL_SetLocalIntOnChange(oArea, "al_h_recent_resync", nRecentResync);
+    AL_SetLocalIntOnChange(oArea, "al_h_recent_resync_mask", nResyncMask);
 
     if (GetLocalInt(oArea, "al_debug") > 0)
     {
@@ -130,10 +146,10 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
         }
     }
 
-    SetLocalInt(oArea, "al_h_dbg_prev_npc_count", nNpcCount);
-    SetLocalInt(oArea, "al_h_dbg_prev_tier", nTier);
-    SetLocalInt(oArea, "al_h_dbg_prev_slot", nSlot);
-    SetLocalInt(oArea, "al_h_dbg_prev_reg_overflow", nRegOverflow);
-    SetLocalInt(oArea, "al_h_dbg_prev_route_overflow", nRouteOverflow);
-    SetLocalInt(oArea, "al_h_dbg_prev_recent_resync", nRecentResync);
+    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_npc_count", nNpcCount);
+    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_tier", nTier);
+    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_slot", nSlot);
+    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_reg_overflow", nRegOverflow);
+    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_route_overflow", nRouteOverflow);
+    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_recent_resync", nRecentResync);
 }
