@@ -9,6 +9,7 @@ const int AL_SIM_TIER_WARM = 1;
 const int AL_SIM_TIER_HOT = 2;
 const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
+const int AL_DISPATCH_BATCH_SIZE = 25;
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 
 int AL_ComputeAreaSlot()
@@ -157,30 +158,98 @@ int AL_ResolveAreaTier(object oArea)
     return AL_SIM_TIER_FREEZE;
 }
 
+void AL_RunBatchedDispatch(object oArea);
+
+void AL_StartBatchedDispatch(object oArea, int nEvent)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, "al_dispatch_active") > 0 && GetLocalInt(oArea, "al_dispatch_event") == nEvent)
+    {
+        return;
+    }
+
+    int nCount = GetLocalInt(oArea, "al_npc_count");
+    if (nCount > GetLocalInt(oArea, "al_dispatch_queue_len_max"))
+    {
+        SetLocalInt(oArea, "al_dispatch_queue_len_max", nCount);
+    }
+
+    int nCycleId = GetLocalInt(oArea, "al_dispatch_cycle") + 1;
+    SetLocalInt(oArea, "al_dispatch_cycle", nCycleId);
+    SetLocalInt(oArea, "al_dispatch_cursor", 0);
+    SetLocalInt(oArea, "al_dispatch_event", nEvent);
+    SetLocalInt(oArea, "al_dispatch_active", 1);
+
+    AL_RunBatchedDispatch(oArea);
+}
+
+void AL_RunBatchedDispatch(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, "al_dispatch_active") <= 0)
+    {
+        return;
+    }
+
+    int nEvent = GetLocalInt(oArea, "al_dispatch_event");
+    int nCount = GetLocalInt(oArea, "al_npc_count");
+    int nCursor = GetLocalInt(oArea, "al_dispatch_cursor");
+    int nCycleId = GetLocalInt(oArea, "al_dispatch_cycle");
+    int nProcessed = 0;
+
+    SetLocalInt(oArea, "al_dispatch_ticks", GetLocalInt(oArea, "al_dispatch_ticks") + 1);
+
+    while (nCursor < nCount && nProcessed < AL_DISPATCH_BATCH_SIZE)
+    {
+        object oNpc = GetLocalObject(oArea, AL_RegKey(nCursor));
+        if (GetIsObjectValid(oNpc) && GetLocalInt(oNpc, "al_dispatch_seen_cycle") != nCycleId)
+        {
+            SetLocalInt(oNpc, "al_dispatch_seen_cycle", nCycleId);
+            SignalEvent(oNpc, EventUserDefined(nEvent));
+            nProcessed = nProcessed + 1;
+        }
+
+        nCursor = nCursor + 1;
+    }
+
+    SetLocalInt(oArea, "al_dispatch_cursor", nCursor);
+    if (nCursor >= nCount)
+    {
+        SetLocalInt(oArea, "al_dispatch_active", 0);
+        return;
+    }
+
+    DelayCommand(0.0, AL_RunBatchedDispatch(oArea));
+}
+
 void AL_DispatchEventToAreaRegistry(object oArea, int nEvent)
 {
+    AL_RegistryCompact(oArea);
+
+    if (nEvent == AL_EVENT_RESYNC || AL_IsSlotEvent(nEvent))
+    {
+        AL_StartBatchedDispatch(oArea, nEvent);
+        return;
+    }
+
     int nCount = GetLocalInt(oArea, "al_npc_count");
     int i = 0;
 
     while (i < nCount)
     {
         object oNpc = GetLocalObject(oArea, AL_RegKey(i));
-        if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc) || GetArea(oNpc) != oArea)
+        if (GetIsObjectValid(oNpc))
         {
-            int nLastIdx = nCount - 1;
-            object oLast = GetLocalObject(oArea, AL_RegKey(nLastIdx));
-            if (i != nLastIdx)
-            {
-                SetLocalObject(oArea, AL_RegKey(i), oLast);
-            }
-
-            DeleteLocalObject(oArea, AL_RegKey(nLastIdx));
-            nCount = nLastIdx;
-            SetLocalInt(oArea, "al_npc_count", nCount);
-            continue;
+            SignalEvent(oNpc, EventUserDefined(nEvent));
         }
-
-        SignalEvent(oNpc, EventUserDefined(nEvent));
         i = i + 1;
     }
 }
