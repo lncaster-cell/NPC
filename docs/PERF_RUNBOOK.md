@@ -23,12 +23,10 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 
 Для CI/артефактов используйте `--format json`.
 
-Режимы сортировки issue для preflight-suite и отдельных валидаторов (`al_route_preflight.py`, `al_link_preflight.py`, `al_locals_preflight.py`):
-- по умолчанию (без флагов): **без сортировки**, сохраняется исходный порядок поступления issue (быстрее и ближе к runtime-диагностике);
-- `--deterministic-sort`: детерминируются только верхнеуровневые группы (suite: `check` + `severity`; одиночные валидаторы: `severity` + тип группы), порядок внутри группы остаётся исходным;
-- `--strict-deterministic-sort`: полная сортировка всех issue-полей (использовать только там, где CI/сравнение артефактов реально требует полностью стабильный порядок).
-
-Для CI рекомендуемый профиль: включать `--strict-deterministic-sort` только в job'ах, где есть жёсткое сравнение JSON-артефактов; в perf smoke/diagnostic job'ах оставлять режим по умолчанию или `--deterministic-sort`.
+Режимы запуска preflight-валидаторов:
+- **CI mode (быстрый fail):** запускать `al_route_preflight.py`, `al_link_preflight.py`, `al_locals_preflight.py` с `--fail-fast`.
+  При необходимости ограничить порог остановки: `--max-errors <N>`.
+- **Operator mode (полный triage):** запускать без `--fail-fast`, чтобы получить полный список ошибок/предупреждений в одном прогоне.
 
 Требования к входному JSON:
 - корень: либо массив waypoint-объектов, либо объект с ключом `waypoints`;
