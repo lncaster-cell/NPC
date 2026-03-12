@@ -208,6 +208,21 @@
 - `al_npc_count`, `al_npc_<idx>`
 - `al_reg_cap_effective`, `al_reg_overflow_count`, `al_reg_overflow_count_cap`, `al_reg_overflow_count_at_cap_change`
 
+### Рекомендуемые профили locals (prod/staging/debug)
+
+Для предсказуемой эксплуатации используйте один из профилей ниже.
+
+| Профиль | `al_max_npcs` | `al_dispatch_q_capacity` | `al_debug` | Назначение |
+|---|---:|---:|---:|---|
+| `prod` (рекомендуется) | `100` (или из capacity-плана area) | `16` | `0` | Минимальная диагностическая нагрузка, только обязательные runtime-метрики. |
+| `staging` | `100` (или целевой cap теста: `80/100/120`) | `16` | `0` (по умолчанию) | Реплика prod-поведения; `al_debug=1` включать только на короткое окно расследования. |
+| `debug` | `100` | `16` | `1` | Расширенная диагностика: registry miss-triage и dispatch ref-audit с sampling/batch обновлением. |
+
+Практика переключения:
+- держите `prod/staging` в `al_debug=0` постоянно;
+- при расследовании включайте `al_debug=1` только на 20-50 sync-тиков;
+- после сбора диагностики обязательно верните `al_debug=0`.
+
 ### Area tuning locals (можно задавать вручную)
 - `al_max_npcs` (int, optional): effective cap для registry.
   - Источник effective-cap: сначала area local `al_max_npcs`, затем fallback на module local `al_max_npcs`, затем fallback на `AL_MAX_NPCS_DEFAULT=100`.

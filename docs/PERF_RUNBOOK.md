@@ -197,6 +197,35 @@ python3 scripts/ambient_life/run_preflight_suite.py \
      - M: `<= 20` за окно
      - H: `<= 35` за окно
 
+### Профили интерпретации метрик: prod vs diagnostics
+
+Начиная с текущей версии, часть «тяжёлых» счётчиков registry/dispatch обновляется только при `al_debug=1` и с sampling/batch-гейтингом.
+Это снижает write-amplification в hot-path и требует явного разделения полей в отчётах.
+
+**Обязательные поля для prod/staging perf-отчёта (всегда):**
+
+- `al_h_npc_count`
+- `al_h_tier`
+- `al_h_recent_resync`
+- `al_dispatch_q_len`
+- `al_dispatch_q_overflow`
+- `al_reg_overflow_count`
+- `al_route_overflow_count`
+- `al_dispatch_ticks`
+- `al_dispatch_ticks_to_drain`
+
+**Поля только для диагностических прогонов (`al_debug=1`):**
+
+- registry miss-triage: `al_reg_lookup_total`, `al_reg_lookup_window_total`, `al_reg_lookup_window_miss`,
+  `al_reg_reverse_hit`, `al_reg_reverse_miss`, `al_reg_index_miss_*`, `al_reg_miss_rate_last_log_tick`;
+- dispatch ref-audit: `al_dispatch_ref_audit_*`.
+
+Правило интерпретации:
+
+1. Для prod/staging отсутствие/нулевое изменение диагностических полей **не считается ошибкой**.
+2. Для debug-замеров диагностические поля должны сравниваться только с debug-baseline (не смешивать с prod-baseline).
+3. При triage registry/dispatch в PR явно указывать, что метрики сняты в режиме `al_debug=1`.
+
 ### Пороговая интерпретация обязательных метрик (warn/critical)
 
 Для метрик ниже статус в отчёте ставится по значению **«После»** в окне 20 тиков.
