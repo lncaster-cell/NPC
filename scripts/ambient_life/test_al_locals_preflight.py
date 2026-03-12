@@ -65,5 +65,89 @@ class ValidateLocalsAreaTagValidationTests(unittest.TestCase):
         )
 
 
+class ValidateLocalsWaypointTagValidationTests(unittest.TestCase):
+    def test_waypoint_missing_area_tag_reports_error_with_waypoint_object_id(self):
+        payload = {
+            "npcs": [],
+            "waypoints": [
+                {
+                    "route_tag": "market_route",
+                    "waypoint_tag": "market_0",
+                    "locals": {"al_step": 0},
+                }
+            ],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertTrue(
+            any(
+                issue.level == "ERROR"
+                and issue.code == "missing_area_tag"
+                and issue.object_id == "market_0"
+                for issue in issues
+            )
+        )
+
+    def test_waypoint_route_tag_with_non_string_type_reports_invalid_type(self):
+        payload = {
+            "npcs": [],
+            "waypoints": [
+                {
+                    "area_tag": "area_market",
+                    "route_tag": 42,
+                    "waypoint_tag": "market_0",
+                    "locals": {"al_step": 0},
+                }
+            ],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertTrue(
+            any(
+                issue.level == "ERROR"
+                and issue.code == "invalid_route_tag_type"
+                and issue.object_id == "market_0"
+                for issue in issues
+            )
+        )
+
+    def test_waypoint_with_blank_area_and_route_tags_reports_missing_errors(self):
+        payload = {
+            "npcs": [],
+            "waypoints": [
+                {
+                    "area_tag": "   ",
+                    "route_tag": "\t",
+                    "waypoint_tag": "market_0",
+                    "locals": {"al_step": 0},
+                }
+            ],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertTrue(
+            any(
+                issue.level == "ERROR"
+                and issue.code == "missing_area_tag"
+                and issue.object_id == "market_0"
+                for issue in issues
+            )
+        )
+        self.assertTrue(
+            any(
+                issue.level == "ERROR"
+                and issue.code == "missing_route_tag"
+                and issue.object_id == "market_0"
+                for issue in issues
+            )
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
