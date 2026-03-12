@@ -107,6 +107,11 @@ def _build_report(
 
     issues: list[dict[str, Any]] = []
     summary = {"error": 0, "warn": 0, "info": 0, "total": 0}
+    aggregates = {
+        "severity": {"error": 0, "warn": 0, "info": 0},
+        "check": {"route": 0, "link": 0, "locals": 0},
+        "code": {},
+    }
 
     def bump_summary(severity: str) -> None:
         normalized = _normalize_severity(severity)
@@ -116,6 +121,10 @@ def _build_report(
     def add_issue(payload: dict[str, Any]) -> None:
         issues.append(payload)
         bump_summary(payload["severity"])
+        aggregates["severity"][payload["severity"]] += 1
+        aggregates["check"][payload["check"]] += 1
+        code = payload["code"]
+        aggregates["code"][code] = aggregates["code"].get(code, 0) + 1
 
     for issue in route_issues:
         add_issue(
@@ -185,6 +194,7 @@ def _build_report(
             "locals": str(locals_input),
         },
         "summary": summary,
+        "aggregates": aggregates,
         "issues": _order_issues(issues, sort_mode),
     }
 
@@ -248,6 +258,12 @@ def main() -> int:
     parser.add_argument("--locals-input", required=True, help="Path to locals preflight JSON input")
     parser.add_argument("--parallel", action="store_true", help="Run route/link/locals checks in parallel")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
+    parser.add_argument(
+        "--detail-limit",
+        type=int,
+        default=30,
+        help="Maximum number of issue lines to print in --format text output",
+    )
     sort_group = parser.add_mutually_exclusive_group()
     sort_group.add_argument(
         "--deterministic-sort",
