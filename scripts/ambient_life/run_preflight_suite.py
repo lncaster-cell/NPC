@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -177,6 +178,11 @@ def _build_report(
             "locals": str(locals_input),
         },
         "summary": summary,
+        "aggregates": {
+            "code": dict(code_counts),
+            "check": dict(check_counts),
+            "severity": dict(severity_counts),
+        },
         "issues": _order_issues(issues, sort_mode),
     }
 
@@ -206,12 +212,12 @@ def _print_text_summary(report: dict[str, Any], detail_limit: int) -> None:
         print("- none")
 
     print("\nTop issue codes:")
+    code_aggregates = report.get("aggregates", {}).get("code", {})
+    if not code_aggregates:
+        code_aggregates = Counter(issue["code"] for issue in report["issues"])
+
     top_codes = sorted(
-        (
-            (code, count)
-            for code, count in report["aggregates"]["code"].items()
-            if code != "ok"
-        ),
+        ((code, count) for code, count in code_aggregates.items() if code != "ok"),
         key=lambda item: (-item[1], item[0]),
     )
     if top_codes:
@@ -240,6 +246,12 @@ def main() -> int:
     parser.add_argument("--locals-input", required=True, help="Path to locals preflight JSON input")
     parser.add_argument("--parallel", action="store_true", help="Run route/link/locals checks in parallel")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
+    parser.add_argument(
+        "--detail-limit",
+        type=int,
+        default=50,
+        help="Maximum number of issues printed in text format",
+    )
     sort_group = parser.add_mutually_exclusive_group()
     sort_group.add_argument(
         "--deterministic-sort",
