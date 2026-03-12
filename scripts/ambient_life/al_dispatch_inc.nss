@@ -6,6 +6,7 @@ const int AL_DISPATCH_QUEUE_CAPACITY = 16;
 const int AL_DISPATCH_PRIORITY_NORMAL = 0;
 const int AL_DISPATCH_PRIORITY_CRITICAL = 1;
 const int AL_DISPATCH_CRITICAL_BURST_QUOTA = 3;
+const int AL_DISPATCH_METRICS_FULL_INTERVAL_TICKS = 6;
 
 string AL_DispatchQueueKey(string sField, int nIdx)
 {
@@ -213,7 +214,7 @@ int AL_HasPendingPriority(object oArea, int nPriority)
     return FALSE;
 }
 
-void AL_UpdateDispatchQueueMetrics(object oArea)
+void AL_UpdateDispatchQueueDepthFast(object oArea)
 {
     int nDepth = GetLocalInt(oArea, "al_dispatch_q_len");
     if (GetLocalInt(oArea, "al_dispatch_active") > 0)
@@ -229,6 +230,11 @@ void AL_UpdateDispatchQueueMetrics(object oArea)
         // Backward-compatible metric key used by existing observability tooling.
         SetLocalInt(oArea, "al_dispatch_queue_len_max", nDepth);
     }
+}
+
+void AL_UpdateDispatchQueueMetricsFull(object oArea)
+{
+    AL_UpdateDispatchQueueDepthFast(oArea);
 
     int nDedupeChecks = GetLocalInt(oArea, "al_dispatch_dedupe_checks");
     int nDedupeHits = GetLocalInt(oArea, "al_dispatch_dedupe_hits");
@@ -239,6 +245,23 @@ void AL_UpdateDispatchQueueMetrics(object oArea)
     }
 
     SetLocalInt(oArea, "al_dispatch_dedupe_hit_rate_pct", nDedupePct);
+    SetLocalInt(oArea, "al_dispatch_metrics_full_sync_tick", GetLocalInt(oArea, "al_sync_tick"));
+}
+
+void AL_MaybeUpdateDispatchQueueMetricsFull(object oArea, int bForce)
+{
+    if (bForce)
+    {
+        AL_UpdateDispatchQueueMetricsFull(oArea);
+        return;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nLastSyncTick = GetLocalInt(oArea, "al_dispatch_metrics_full_sync_tick");
+    if (nLastSyncTick <= 0 || nSyncTick <= 0 || (nSyncTick - nLastSyncTick) >= AL_DISPATCH_METRICS_FULL_INTERVAL_TICKS)
+    {
+        AL_UpdateDispatchQueueMetricsFull(oArea);
+    }
 }
 
 void AL_OnDispatchWorkQueued(object oArea)
@@ -249,7 +272,8 @@ void AL_OnDispatchWorkQueued(object oArea)
         SetLocalInt(oArea, "al_dispatch_drain_tick_start", GetLocalInt(oArea, "al_dispatch_ticks") + 1);
     }
 
-    AL_UpdateDispatchQueueMetrics(oArea);
+    AL_UpdateDispatchQueueDepthFast(oArea);
+    AL_MaybeUpdateDispatchQueueMetricsFull(oArea, FALSE);
 }
 
 void AL_OnDispatchWorkDrained(object oArea)
@@ -268,5 +292,6 @@ void AL_OnDispatchWorkDrained(object oArea)
 
     SetLocalInt(oArea, "al_dispatch_drain_started", 0);
     SetLocalInt(oArea, "al_dispatch_drain_tick_start", 0);
-    AL_UpdateDispatchQueueMetrics(oArea);
+    AL_UpdateDispatchQueueDepthFast(oArea);
+    AL_MaybeUpdateDispatchQueueMetricsFull(oArea, TRUE);
 }
