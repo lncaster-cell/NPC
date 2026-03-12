@@ -66,6 +66,7 @@ Crime/alarm на Stage I.2 намеренно **не** добавляет нов
 ## 5. Инварианты
 
 - Нет heartbeat/polling loop на NPC.
-- Центральный runtime loop — только area tick (`DelayCommand`).
+- Центральный runtime loop — только внутренний area tick scheduler (`DelayCommand` через `AL_ScheduleAreaTick`).
+- Внешний `OnHeartbeat`/hook для `al_area_tick` рассматривается только как bootstrap-активация area и не должен быть источником периодического тика.
 - Dispatch событий работает по текущему area registry.
 - Stage I.2 не включает guard spawn/reinforcements и не включает surrender/arrest/trial (оставлены только future hooks `al_legal_followup_pending`).

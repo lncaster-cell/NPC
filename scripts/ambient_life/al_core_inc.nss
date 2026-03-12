@@ -111,5 +111,7 @@ void AL_OnNpcDeath(object oNpc)
 
 void AL_OnAreaTick(object oArea)
 {
-    AL_AreaTick(oArea, GetLocalInt(oArea, "al_tick_token"));
+    // Heartbeat/hook entrypoint: bootstrap only.
+    // Периодический runtime тик должен идти только через AL_ScheduleAreaTick().
+    AL_AreaActivate(oArea);
 }
