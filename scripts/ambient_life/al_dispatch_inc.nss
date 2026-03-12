@@ -2,7 +2,9 @@
 
 #include "al_events_inc"
 
-const int AL_DISPATCH_QUEUE_CAPACITY = 16;
+const int AL_DISPATCH_QUEUE_CAPACITY_DEFAULT = 16;
+const int AL_DISPATCH_QUEUE_CAPACITY_MIN = 4;
+const int AL_DISPATCH_QUEUE_CAPACITY_MAX = 64;
 const int AL_DISPATCH_PRIORITY_NORMAL = 0;
 const int AL_DISPATCH_PRIORITY_CRITICAL = 1;
 const int AL_DISPATCH_CRITICAL_BURST_QUOTA = 3;
@@ -11,6 +13,26 @@ const int AL_DISPATCH_METRICS_FULL_INTERVAL_TICKS = 6;
 string AL_DispatchQueueKey(string sField, int nIdx)
 {
     return "al_dispatch_q_" + sField + "_" + IntToString(nIdx);
+}
+
+int AL_GetDispatchQueueCapacity(object oArea)
+{
+    int nCapacity = GetLocalInt(oArea, "al_dispatch_q_capacity");
+    if (nCapacity <= 0)
+    {
+        nCapacity = AL_DISPATCH_QUEUE_CAPACITY_DEFAULT;
+    }
+
+    if (nCapacity < AL_DISPATCH_QUEUE_CAPACITY_MIN)
+    {
+        nCapacity = AL_DISPATCH_QUEUE_CAPACITY_MIN;
+    }
+    else if (nCapacity > AL_DISPATCH_QUEUE_CAPACITY_MAX)
+    {
+        nCapacity = AL_DISPATCH_QUEUE_CAPACITY_MAX;
+    }
+
+    return nCapacity;
 }
 
 string AL_DispatchPendingKey(string sCycleKey)
@@ -87,10 +109,11 @@ int AL_IsDispatchCycleReferenced(object oArea, string sCycleKey)
 
     int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
     int nHead = GetLocalInt(oArea, "al_dispatch_q_head");
+    int nCapacity = AL_GetDispatchQueueCapacity(oArea);
     int i = 0;
     while (i < nLen)
     {
-        int nIdx = (nHead + i) % AL_DISPATCH_QUEUE_CAPACITY;
+        int nIdx = (nHead + i) % nCapacity;
         if (GetLocalString(oArea, AL_DispatchQueueKey("cycle", nIdx)) == sCycleKey)
         {
             return TRUE;

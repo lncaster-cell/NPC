@@ -141,6 +141,15 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 
 Для `*_overflow*` дополнительно фиксируйте и в комментарии, и в выводе отчёта факт роста (`0 -> N`), даже если значение пока в зоне `WARN`.
 
+### Целевые пороги «до/после» для dispatch-degradation (обязательно для PR)
+
+Начиная с backpressure/coalesce-политики, в PR-отчёте отдельно фиксируйте `До/После/Delta` для двух метрик ниже и сверяйте с целями:
+
+| Метрика | Target «После» (L/M/H) | Target Delta («После» vs «До») | Интерпретация |
+| --- | --- | --- | --- |
+| `al_dispatch_q_overflow` | `0` в L/M, `<=1` в H | `<= 0` (рост недопустим) | При исправной деградации overflow должен быть подавлен coalesce/backpressure-механизмом. |
+| `al_dispatch_ticks_to_drain` | L: `<=2`, M: `<=3`, H: `<=4` | `<= +1` тик | Допускается небольшой рост из-за controlled backpressure, но без runaway-накопления очереди. |
+
 ## 4) Шаблон отчёта для PR («до/после»)
 
 ```md
