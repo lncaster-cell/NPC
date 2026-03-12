@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
-"""Run Ambient Life preflight suite and emit a unified report."""
+"""Run Ambient Life preflight suite and emit a unified report.
+
+Preferred launch mode (from repository root):
+    python3 -m scripts.ambient_life.run_preflight_suite ...
+
+Direct standalone execution is also supported:
+    python3 scripts/ambient_life/run_preflight_suite.py ...
+"""
 
 from __future__ import annotations
 
@@ -8,9 +15,12 @@ import json
 from pathlib import Path
 from typing import Any
 
-import al_link_preflight
-import al_locals_preflight
-import al_route_preflight
+try:
+    from scripts.ambient_life import al_link_preflight, al_locals_preflight, al_route_preflight
+except ImportError:
+    import al_link_preflight
+    import al_locals_preflight
+    import al_route_preflight
 
 
 def _route_path(issue: al_route_preflight.ValidationIssue) -> str:
