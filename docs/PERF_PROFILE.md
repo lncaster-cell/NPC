@@ -41,6 +41,9 @@
 - `al_dispatch_q_overflow`
 - `al_reg_overflow_count`
 - `al_route_overflow_count`
+- `route_cache_hits`
+- `route_cache_rebuilds`
+- `route_cache_invalidations`
 - `al_h_recent_resync`
 - `al_h_reg_index_miss_delta`
 - `al_h_reg_index_miss_window_delta`
@@ -110,6 +113,9 @@
 | al_dispatch_q_overflow |  |  |  |  |  |  |
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
+| route_cache_hits |  |  |  | n/a | n/a | ожидается рост при стабильном контенте |
+| route_cache_rebuilds |  |  |  | n/a | n/a | ожидается снижение при стабильном контенте |
+| route_cache_invalidations |  |  |  | n/a | n/a | без необоснованного роста |
 | al_h_recent_resync |  |  |  |  |  |  |
 | al_h_reg_index_miss_delta |  |  |  |  |  |  |
 | al_h_reg_index_miss_window_delta |  |  |  |  |  |  |
@@ -123,6 +129,9 @@
 | al_dispatch_q_overflow |  |  |  |  |  |  |
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
+| route_cache_hits |  |  |  | n/a | n/a | ожидается рост при стабильном контенте |
+| route_cache_rebuilds |  |  |  | n/a | n/a | ожидается снижение при стабильном контенте |
+| route_cache_invalidations |  |  |  | n/a | n/a | без необоснованного роста |
 | al_h_recent_resync |  |  |  |  |  |  |
 | al_h_reg_index_miss_delta |  |  |  |  |  |  |
 | al_h_reg_index_miss_window_delta |  |  |  |  |  |  |
@@ -136,6 +145,9 @@
 | al_dispatch_q_overflow |  |  |  |  |  |  |
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
+| route_cache_hits |  |  |  | n/a | n/a | ожидается рост при стабильном контенте |
+| route_cache_rebuilds |  |  |  | n/a | n/a | ожидается снижение при стабильном контенте |
+| route_cache_invalidations |  |  |  | n/a | n/a | без необоснованного роста |
 | al_h_recent_resync |  |  |  |  |  |  |
 | al_h_reg_index_miss_delta |  |  |  |  |  |  |
 | al_h_reg_index_miss_window_delta |  |  |  |  |  |  |

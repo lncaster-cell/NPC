@@ -116,6 +116,7 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
     SetLocalInt(oNpc, "al_route_cache_slot", nSlot);
     SetLocalInt(oNpc, "al_route_cache_steps", nFound);
     SetLocalInt(oNpc, "al_route_cache_valid", TRUE);
+    SetLocalString(oNpc, "al_route_cache_signature", AL_RouteBuildSignature(oNpcArea, sRouteTag, nSlot));
 
     return TRUE;
 }
@@ -134,23 +135,30 @@ int AL_RouteEnsureCache(object oNpc, int nSlot, int bForceRebuild)
         return FALSE;
     }
 
-    if (!bForceRebuild)
-    {
-        int bValid = GetLocalInt(oNpc, "al_route_cache_valid");
-        int nCachedSlot = GetLocalInt(oNpc, "al_route_cache_slot");
-        string sCachedTag = GetLocalString(oNpc, "al_route_cache_tag");
-        object oCachedArea = GetLocalObject(oNpc, "al_route_cache_area");
-        object oCurrentArea = GetArea(oNpc);
-        if (bValid && nCachedSlot == nSlot && sCachedTag == sRouteTag && oCachedArea == oCurrentArea)
-        {
-            return TRUE;
-        }
-    }
-
     object oCurrentArea = GetArea(oNpc);
     if (!GetIsObjectValid(oCurrentArea))
     {
         return FALSE;
+    }
+
+    int bValid = GetLocalInt(oNpc, "al_route_cache_valid");
+    int nCachedSlot = GetLocalInt(oNpc, "al_route_cache_slot");
+    string sCachedTag = GetLocalString(oNpc, "al_route_cache_tag");
+    object oCachedArea = GetLocalObject(oNpc, "al_route_cache_area");
+    if (bValid && nCachedSlot == nSlot && sCachedTag == sRouteTag && oCachedArea == oCurrentArea)
+    {
+        if (!bForceRebuild)
+        {
+            return TRUE;
+        }
+
+        string sCurrentSignature = AL_RouteBuildSignature(oCurrentArea, sRouteTag, nSlot);
+        string sCachedSignature = GetLocalString(oNpc, "al_route_cache_signature");
+        if (sCurrentSignature != "" && sCurrentSignature == sCachedSignature)
+        {
+            SetLocalInt(oNpc, "route_cache_hits", GetLocalInt(oNpc, "route_cache_hits") + 1);
+            return TRUE;
+        }
     }
 
     if (!AL_RouteEnsureAreaCache(oCurrentArea, sRouteTag, bForceRebuild))
@@ -159,6 +167,7 @@ int AL_RouteEnsureCache(object oNpc, int nSlot, int bForceRebuild)
         return FALSE;
     }
 
+    SetLocalInt(oNpc, "route_cache_rebuilds", GetLocalInt(oNpc, "route_cache_rebuilds") + 1);
     return AL_RouteBuildCache(oNpc, nSlot, sRouteTag);
 }
 
