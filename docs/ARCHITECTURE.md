@@ -43,9 +43,15 @@
 - Единый слой применения activity для route-шагов.
 - Дефолтная активность задаётся на NPC.
 
-### 3.7 Reactive subsystem (Stages I.0/I.1)
+### 3.7 Reactive subsystem (Stages I.0/I.1/I.2)
 - I.0: `OnBlocked` → локальный bounded recovery.
 - I.1: `OnDisturbed` → bounded override для inventory/theft, затем возврат к routine.
+- I.2: локальный слой crime/alarm поверх I.1:
+  - bounded классификация инцидента (`none/suspicious/theft/hostile-legal`);
+  - area-local alarm state (`al_alarm_state`, `al_alarm_until`, `al_alarm_source`) с деэскалацией по `al_sync_tick`;
+  - role split (`civilian/militia/guard`) без giant role framework;
+  - debounce anti-spam для повторных `OnDisturbed` инцидентов;
+  - только локальная эскалация (текущая area, уже присутствующие NPC), без global scan/spawn.
 
 ## 4. Event bus
 
@@ -54,8 +60,11 @@
 - `3107`: ROUTE_REPEAT
 - `3108`: BLOCKED_RESUME
 
+Crime/alarm на Stage I.2 намеренно **не** добавляет новые события шины: эскалация выполняется внутри bounded `OnDisturbed` пути.
+
 ## 5. Инварианты
 
 - Нет heartbeat/polling loop на NPC.
 - Центральный runtime loop — только area tick (`DelayCommand`).
 - Dispatch событий работает по текущему area registry.
+- Stage I.2 не включает guard spawn/reinforcements и не включает surrender/arrest/trial (оставлены только future hooks).

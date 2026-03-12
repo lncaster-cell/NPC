@@ -4,7 +4,7 @@
 
 ## Текущий статус
 
-Репозиторий содержит рабочую реализацию **Stages A–I.1**:
+Репозиторий содержит рабочую реализацию **Stages A–I.2**:
 - A: базовая архитектура и контракты;
 - B: event bus + плотный area-регистр;
 - C: lifecycle области и LOD-tier модель FREEZE/WARM/HOT;
@@ -13,7 +13,8 @@
 - G: sleep steps;
 - H: activity semantics;
 - I.0: локальная реакция на OnBlocked;
-- I.1: foundation для OnDisturbed (inventory/theft).
+- I.1: foundation для OnDisturbed (inventory/theft);
+- I.2: local crime/alarm layer (area-local escalation, civilian/militia/guard split).
 
 ## Быстрый старт
 
@@ -28,6 +29,13 @@
 - `AL_MAX_NPCS = 100`
 - `AL_ROUTE_MAX_STEPS = 16`
 - события шины: `AL_EVENT_SLOT_0..5 = 3100..3105`, `AL_EVENT_RESYNC = 3106`, `AL_EVENT_ROUTE_REPEAT = 3107`, `AL_EVENT_BLOCKED_RESUME = 3108`
+
+## Границы Stage I.2
+
+- Crime/alarm работает только в пределах текущей area (без global/world alarm).
+- Используются уже существующие NPC в runtime-контексте; guard spawn/reinforcements не реализованы.
+- Surrender/arrest/trial не реализованы (оставлены future hooks).
+- Ordinary Stage D/E/F/G/H flow остаётся default path вне локальных инцидентов.
 
 ## Структура репозитория
 
