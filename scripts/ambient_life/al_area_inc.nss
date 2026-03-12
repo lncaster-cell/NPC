@@ -22,15 +22,132 @@ int AL_GetLinkedAreaCount(object oArea)
     return GetLocalInt(oArea, "al_link_count");
 }
 
+void AL_RebuildLinkedAreaCache(object oArea)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return;
+    }
+
+    int nCfgCount = GetLocalInt(oArea, "al_link_count");
+    if (nCfgCount < 0)
+    {
+        nCfgCount = 0;
+    }
+
+    int nPrevCount = GetLocalInt(oArea, "al_link_obj_count");
+    int nClearCount = nPrevCount;
+    if (nCfgCount > nClearCount)
+    {
+        nClearCount = nCfgCount;
+    }
+
+    int i = 0;
+    while (i < nClearCount)
+    {
+        DeleteLocalObject(oArea, "al_link_obj_" + IntToString(i));
+        i = i + 1;
+    }
+
+    int nDebug = GetLocalInt(oArea, "al_debug");
+    i = 0;
+    while (i < nCfgCount)
+    {
+        string sTag = GetLocalString(oArea, "al_link_" + IntToString(i));
+        object oLinked = OBJECT_INVALID;
+        int bBroken = FALSE;
+        int bAmbiguous = FALSE;
+
+        if (sTag == "")
+        {
+            bBroken = TRUE;
+        }
+        else
+        {
+            oLinked = GetObjectByTag(sTag, 0);
+            if (!GetIsObjectValid(oLinked) || GetObjectType(oLinked) != OBJECT_TYPE_AREA)
+            {
+                oLinked = OBJECT_INVALID;
+                bBroken = TRUE;
+            }
+            else
+            {
+                object oSecond = GetObjectByTag(sTag, 1);
+                if (GetIsObjectValid(oSecond))
+                {
+                    bAmbiguous = TRUE;
+                }
+            }
+        }
+
+        if (GetIsObjectValid(oLinked) && oLinked == oArea)
+        {
+            oLinked = OBJECT_INVALID;
+            bBroken = TRUE;
+        }
+
+        SetLocalObject(oArea, "al_link_obj_" + IntToString(i), oLinked);
+
+        if (nDebug > 0 && (bBroken || bAmbiguous))
+        {
+            string sReason = "broken";
+            if (bAmbiguous)
+            {
+                sReason = "ambiguous";
+            }
+
+            WriteTimestampedLogEntry(
+                "[AL][LinkedAreaCache] area=" + GetTag(oArea)
+                + " idx=" + IntToString(i)
+                + " tag='" + sTag + "'"
+                + " reason=" + sReason
+            );
+        }
+
+        i = i + 1;
+    }
+
+    SetLocalInt(oArea, "al_link_obj_count", nCfgCount);
+    SetLocalInt(oArea, "al_link_cache_rev", GetLocalInt(oArea, "al_link_cfg_rev"));
+}
+
+int AL_GetLinkedAreaCachedCount(object oArea)
+{
+    if (GetLocalInt(oArea, "al_link_cache_rev") != GetLocalInt(oArea, "al_link_cfg_rev"))
+    {
+        AL_RebuildLinkedAreaCache(oArea);
+    }
+
+    return GetLocalInt(oArea, "al_link_obj_count");
+}
+
 object AL_GetLinkedAreaByIndex(object oArea, int nIdx)
 {
-    string sTag = GetLocalString(oArea, "al_link_" + IntToString(nIdx));
-    if (sTag == "")
+    if (nIdx < 0)
     {
         return OBJECT_INVALID;
     }
 
-    object oLinked = GetObjectByTag(sTag, 0);
+    int bRebuilt = FALSE;
+    if (GetLocalInt(oArea, "al_link_cache_rev") != GetLocalInt(oArea, "al_link_cfg_rev"))
+    {
+        AL_RebuildLinkedAreaCache(oArea);
+        bRebuilt = TRUE;
+    }
+
+    if (nIdx >= GetLocalInt(oArea, "al_link_obj_count"))
+    {
+        AL_RebuildLinkedAreaCache(oArea);
+        bRebuilt = TRUE;
+    }
+
+    object oLinked = GetLocalObject(oArea, "al_link_obj_" + IntToString(nIdx));
+    if ((!GetIsObjectValid(oLinked) || GetObjectType(oLinked) != OBJECT_TYPE_AREA) && !bRebuilt)
+    {
+        AL_RebuildLinkedAreaCache(oArea);
+        oLinked = GetLocalObject(oArea, "al_link_obj_" + IntToString(nIdx));
+    }
+
     if (!GetIsObjectValid(oLinked) || GetObjectType(oLinked) != OBJECT_TYPE_AREA)
     {
         return OBJECT_INVALID;
@@ -100,12 +217,12 @@ void AL_MarkAreaWarm(object oArea)
 
 void AL_RefreshLinkedAreasWarmth(object oArea)
 {
-    int nCount = AL_GetLinkedAreaCount(oArea);
+    int nCount = AL_GetLinkedAreaCachedCount(oArea);
     int i = 0;
 
     while (i < nCount)
     {
-        object oLinked = AL_GetLinkedAreaByIndex(oArea, i);
+        object oLinked = GetLocalObject(oArea, "al_link_obj_" + IntToString(i));
         if (GetIsObjectValid(oLinked) && oLinked != oArea)
         {
             AL_MarkAreaWarm(oLinked);
@@ -116,12 +233,12 @@ void AL_RefreshLinkedAreasWarmth(object oArea)
 
 int AL_HasLinkedHotSource(object oArea)
 {
-    int nCount = AL_GetLinkedAreaCount(oArea);
+    int nCount = AL_GetLinkedAreaCachedCount(oArea);
     int i = 0;
 
     while (i < nCount)
     {
-        object oLinked = AL_GetLinkedAreaByIndex(oArea, i);
+        object oLinked = GetLocalObject(oArea, "al_link_obj_" + IntToString(i));
         if (GetIsObjectValid(oLinked) && GetLocalInt(oLinked, "al_player_count") > 0)
         {
             return TRUE;
