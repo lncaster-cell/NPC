@@ -35,7 +35,25 @@
 
 - отдельно отметить абсолютные значения «до/после»;
 - отдельно отметить `Delta`;
+- для каждой обязательной метрики указать статус относительно порогов (`OK/WARN/CRITICAL`);
 - для overflow-метрик обязательно указать факт роста (`0 -> N` или `N -> M`).
+
+### Пороговые статусы обязательных метрик
+
+Статус выставляется по значению **«После»** в 20-тиковом окне.
+
+| Метрика | S80 (80 NPC) | S100 (100 NPC) | S120 (120 NPC) |
+| --- | --- | --- | --- |
+| `al_dispatch_q_len` | warn: `8..12`, critical: `>=13` | warn: `10..14`, critical: `>=15` | warn: `12..17`, critical: `>=18` |
+| `al_dispatch_q_overflow` | warn: `1..2`, critical: `>=3` | warn: `1..3`, critical: `>=4` | warn: `2..4`, critical: `>=5` |
+| `al_reg_overflow_count` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..4`, critical: `>=5` |
+| `al_route_overflow_count` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..4`, critical: `>=5` |
+| `al_h_recent_resync` | warn: `3..5`, critical: `>=6` | warn: `4..7`, critical: `>=8` | warn: `6..10`, critical: `>=11` |
+
+Единое правило:
+- `OK` — значение ниже warn-порога;
+- `WARN` — значение в warn-диапазоне;
+- `CRITICAL` — значение на critical-пороге и выше.
 
 ## 3) Шаблон отчёта «до/после» для PR
 
@@ -53,31 +71,31 @@
 ### Baseline vs After
 
 #### S80
-| Metric | До | После | Delta | Комментарий |
-| --- | ---: | ---: | ---: | --- |
-| al_dispatch_q_len |  |  |  |  |
-| al_dispatch_q_overflow |  |  |  |  |
-| al_reg_overflow_count |  |  |  |  |
-| al_route_overflow_count |  |  |  |  |
-| al_h_recent_resync |  |  |  |  |
+| Metric | До | После | Delta | Порог (warn/critical) | Статус vs пороги | Комментарий |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| al_dispatch_q_len |  |  |  |  |  |  |
+| al_dispatch_q_overflow |  |  |  |  |  |  |
+| al_reg_overflow_count |  |  |  |  |  |  |
+| al_route_overflow_count |  |  |  |  |  |  |
+| al_h_recent_resync |  |  |  |  |  |  |
 
 #### S100
-| Metric | До | После | Delta | Комментарий |
-| --- | ---: | ---: | ---: | --- |
-| al_dispatch_q_len |  |  |  |  |
-| al_dispatch_q_overflow |  |  |  |  |
-| al_reg_overflow_count |  |  |  |  |
-| al_route_overflow_count |  |  |  |  |
-| al_h_recent_resync |  |  |  |  |
+| Metric | До | После | Delta | Порог (warn/critical) | Статус vs пороги | Комментарий |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| al_dispatch_q_len |  |  |  |  |  |  |
+| al_dispatch_q_overflow |  |  |  |  |  |  |
+| al_reg_overflow_count |  |  |  |  |  |  |
+| al_route_overflow_count |  |  |  |  |  |  |
+| al_h_recent_resync |  |  |  |  |  |  |
 
 #### S120
-| Metric | До | После | Delta | Комментарий |
-| --- | ---: | ---: | ---: | --- |
-| al_dispatch_q_len |  |  |  |  |
-| al_dispatch_q_overflow |  |  |  |  |
-| al_reg_overflow_count |  |  |  |  |
-| al_route_overflow_count |  |  |  |  |
-| al_h_recent_resync |  |  |  |  |
+| Metric | До | После | Delta | Порог (warn/critical) | Статус vs пороги | Комментарий |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| al_dispatch_q_len |  |  |  |  |  |  |
+| al_dispatch_q_overflow |  |  |  |  |  |  |
+| al_reg_overflow_count |  |  |  |  |  |  |
+| al_route_overflow_count |  |  |  |  |  |  |
+| al_h_recent_resync |  |  |  |  |  |  |
 
 ### Conclusion
 - Регрессия: yes/no
