@@ -5,6 +5,8 @@
 ## Файлы
 
 - `s80_s100_s120_baseline.csv` — машинно-читаемый baseline (источник для автоматических проверок/диффов).
+  Для метрик с трендовой проверкой (`route_cache_hits`, `route_cache_rebuilds`, `route_cache_invalidations`)
+  обязательны поля `expected_direction` (`up|down|stable`) и `trend_tolerance`.
 - `s80_s100_s120_baseline.md` — операторское представление тех же значений в формате «до/после».
 - `perf_gate_report_template.csv` / `perf_gate_report_template.json` — шаблоны machine-readable отчёта для CI perf-gate.
 - `perf_gate_report.csv` (генерируется в PR) — фактический отчёт, который валидируется в CI.
@@ -13,7 +15,7 @@
 
 Baseline **обновляется только** при одном из двух условий:
 
-1. Подтверждённое улучшение (`After` лучше baseline по KPI/порогам, без регрессии по overflow и `al_dispatch_ticks_to_drain`).
+1. Подтверждённое улучшение (`After` лучше baseline по KPI/порогам, без регрессии по overflow, `al_dispatch_ticks_to_drain` и cache-trend метрикам).
 2. Обоснованное изменение поведения (документированная архитектурная/контентная причина, почему прежний baseline больше не репрезентативен).
 
 В обоих случаях обновление должно включать:

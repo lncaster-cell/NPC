@@ -88,5 +88,18 @@ class ValidateLinksAreaTagValidationTests(unittest.TestCase):
         self.assertEqual(missing_codes.get("<idx:1>"), "missing_area_tag")
 
 
+class ValidateLinksFailFastTests(unittest.TestCase):
+    def test_fail_fast_with_max_errors_limits_error_count(self):
+        rows = [
+            {"area_tag": "market", "locals": {"al_link_count": -1}},
+            {"area_tag": "gate", "locals": {"al_link_count": -1}},
+            {"area_tag": "dock", "locals": {"al_link_count": -1}},
+        ]
+
+        issues = validate_links(rows, fail_fast=True, max_errors=2)
+
+        self.assertEqual(sum(1 for issue in issues if issue.level == "ERROR"), 2)
+
+
 if __name__ == "__main__":
     unittest.main()

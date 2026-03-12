@@ -11,6 +11,7 @@ python3 -m scripts.ambient_life.run_preflight_suite \
   --link-input <path/to/areas_links.json> \
   --locals-input <path/to/locals_payload.json> \
   --format text
+  # performance-режим по умолчанию: порядок issue сохраняется как пришёл из валидаторов
 
 # Допустимый fallback (standalone-скрипт)
 python3 scripts/ambient_life/run_preflight_suite.py \
@@ -21,6 +22,11 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 ```
 
 Для CI/артефактов используйте `--format json`.
+
+Режимы запуска preflight-валидаторов:
+- **CI mode (быстрый fail):** запускать `al_route_preflight.py`, `al_link_preflight.py`, `al_locals_preflight.py` с `--fail-fast`.
+  При необходимости ограничить порог остановки: `--max-errors <N>`.
+- **Operator mode (полный triage):** запускать без `--fail-fast`, чтобы получить полный список ошибок/предупреждений в одном прогоне.
 
 Требования к входному JSON:
 - корень: либо массив waypoint-объектов, либо объект с ключом `waypoints`;
@@ -40,6 +46,27 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 - если есть `severity=error` — preflight считается "грязным", perf-прогон блокируется;
 - если есть только `warn/info` — требуется ручной triage, но запуск допускается.
 - **Любые perf-замеры считаются валидными только после "чистого" preflight (без `error`).**
+
+### 0.0.1) Triage-поток по unified preflight-suite
+
+Рекомендуемый порядок разбора preflight-результатов:
+
+1. Запустите suite в `text`-режиме для быстрого операционного обзора.
+   - Вывод начинается с блока `Critical errors` (все `severity=error`).
+   - Далее идёт агрегат `Top issue codes` (частотные коды проблем).
+   - После этого печатаются детальные строки в порядке приоритета: `ERROR` → `WARN` → `INFO`.
+2. Если в text-выводе сработал лимит детализации (`--detail-limit`), немедленно переснимите отчёт в `--format json` и приложите его как артефакт triage.
+3. Для root-cause анализа используйте раздел `aggregates` в JSON:
+   - `aggregates.severity` — объём проблем по уровням;
+   - `aggregates.check` — концентрация по подсистемам (`route/link/locals`);
+   - `aggregates.code` — частотный срез кодов, от которого строится порядок исправлений.
+4. При наличии `error`:
+   - остановите perf-прогон;
+   - исправьте сначала самые частые коды из `aggregates.code` (обычно это даёт максимальный эффект);
+   - повторите preflight до статуса без `error`.
+5. При отсутствии `error` и наличии только `warn/info`:
+   - зафиксируйте triage-note (какие коды и почему допускаются в текущем прогоне);
+   - запускайте perf только после сохранения JSON-артефакта preflight в PR/CI.
 
 Цель: дать **воспроизводимый** протокол производственных perf-прогонов для сравнения «до/после» изменений в `scripts/ambient_life/*`.
 
@@ -255,7 +282,7 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 
 - Markdown: таблица с колонками `Scenario | Metric | Baseline | After | Delta | Unit | Warn | Critical | Status | Notes`;
 - CSV: те же колонки в порядке
-  `scenario,metric,baseline_value,after_value,delta,unit,warn_threshold,critical_threshold,status,notes`.
+  `scenario,metric,baseline_value,expected_direction,trend_tolerance,after_value,delta,unit,warn_threshold,critical_threshold,status,notes`.
 
 Рекомендуется хранить CSV-артефакт рядом с PR-логами, чтобы сравнение оставалось одновременно машинно- и операторски-читаемым.
 
@@ -313,7 +340,13 @@ Fail-условия gate:
 
 1. рост `al_dispatch_q_overflow` относительно baseline (запрещён);
 2. превышение целевого абсолютного порога `al_dispatch_ticks_to_drain` (S80<=3, S100<=4, S120<=5);
-3. `al_dispatch_ticks_to_drain` хуже baseline более чем на `+1` тик.
+3. `al_dispatch_ticks_to_drain` хуже baseline более чем на `+1` тик;
+4. нарушение trend-ожиданий cache efficiency:
+   - `route_cache_hits`: ожидается `up` в пределах `trend_tolerance`;
+   - `route_cache_rebuilds`: ожидается `down` в пределах `trend_tolerance`;
+   - `route_cache_invalidations`: ожидается `down` в пределах `trend_tolerance`.
+
+Валидация печатает отдельный блок `cache efficiency` по S80/S100/S120 для быстрого чтения регрессий.
 
 ## 4.1) Диагностические признаки перегрева linked-графа
 

@@ -75,5 +75,18 @@ class ValidateRouteMarkupBedIdTypeTests(unittest.TestCase):
         self.assertIn("al_bed_id=123", invalid_type_issues[0].details)
 
 
+class ValidateRouteMarkupFailFastTests(unittest.TestCase):
+    def test_fail_fast_stops_after_first_error(self):
+        rows = [
+            {"area_tag": "a", "route_tag": "r", "waypoint_tag": "wp0", "al_step": -1},
+            {"area_tag": "a", "route_tag": "r", "waypoint_tag": "wp1", "al_step": 99},
+        ]
+
+        issues = validate_route_markup(rows, fail_fast=True)
+
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].code, "invalid_step_range")
+
+
 if __name__ == "__main__":
     unittest.main()

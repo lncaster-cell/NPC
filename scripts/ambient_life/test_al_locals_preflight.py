@@ -39,6 +39,40 @@ class ValidateLocalsRouteRefsTests(unittest.TestCase):
             )
         )
 
+    def test_npc_route_tag_with_whitespace_does_not_report_unknown_route_error(self):
+        payload = {
+            "npcs": [
+                {
+                    "npc_tag": "merchant_01",
+                    "locals": {
+                        "al_default_activity": 1,
+                        "alwp0": "  market_route  ",
+                    },
+                }
+            ],
+            "waypoints": [
+                {
+                    "area_tag": "area_market",
+                    "route_tag": "market_route",
+                    "waypoint_tag": "market_0",
+                    "locals": {"al_step": 0},
+                }
+            ],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertFalse(
+            any(
+                issue.level == "ERROR"
+                and issue.code == "unknown_route_tag_ref"
+                and issue.object_id == "merchant_01"
+                and "slot=alwp0" in issue.reason
+                for issue in issues
+            )
+        )
+
 
 class ValidateLocalsAreaTagValidationTests(unittest.TestCase):
     def test_area_tag_with_non_string_type_reports_invalid_type(self):
@@ -147,6 +181,22 @@ class ValidateLocalsWaypointTagValidationTests(unittest.TestCase):
                 for issue in issues
             )
         )
+
+
+class ValidateLocalsFailFastTests(unittest.TestCase):
+    def test_fail_fast_stops_after_first_error(self):
+        payload = {
+            "npcs": [
+                {"npc_tag": "npc_1", "locals": {"al_default_activity": "bad", "alwp0": "route_1"}},
+                {"npc_tag": "npc_2", "locals": {"al_default_activity": "bad", "alwp0": "route_2"}},
+            ],
+            "waypoints": [],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload, fail_fast=True)
+
+        self.assertEqual(sum(1 for issue in issues if issue.level == "ERROR"), 1)
 
 
 if __name__ == "__main__":

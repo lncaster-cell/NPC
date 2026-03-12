@@ -15,3 +15,6 @@
   - [ ] CI job `Ambient Life Perf Gate` зелёный;
   - [ ] заполнен machine-readable отчёт (`docs/perf/baselines/perf_gate_report.csv` или `.json`) и валидирован скриптом `scripts/ambient_life/validate_perf_gate.py`.
 - [ ] К PR приложен preflight summary из `scripts/ambient_life/run_preflight_suite.py` (JSON или text), подтверждающий актуальное состояние route/link/locals.
+- [ ] Для preflight-режимов явно указан контекст запуска:
+  - [ ] **CI mode**: `--fail-fast` (опционально `--max-errors N`) для быстрого early-fail.
+  - [ ] **Operator mode**: без `--fail-fast`, чтобы собрать полный список issue для triage.
