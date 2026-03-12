@@ -28,14 +28,21 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+try:
+    from scripts.ambient_life.preflight_issue_utils import make_issue_context, render_issue_message
+except ImportError:
+    from preflight_issue_utils import make_issue_context, render_issue_message
 
 AL_ROUTE_MAX_STEPS = 16
 NPC_ROUTE_SLOTS = tuple(range(6))
 NPC_ROLE_MIN = 0
 NPC_ROLE_MAX = 2
+
+_SEVERITY_RANK = {"ERROR": 0, "WARN": 1, "INFO": 2}
 
 
 @dataclass
@@ -44,7 +51,11 @@ class ValidationIssue:
     scope: str
     object_id: str
     code: str
-    reason: str
+    context: dict[str, Any]
+
+    @property
+    def reason(self) -> str:
+        return render_issue_message(self.code, self.context)
 
 
 class _StopValidation(Exception):
@@ -58,9 +69,7 @@ class ValidationLimits:
 
 
 def _read_input(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError("JSON root must be an object")
+    payload = read_json_object_input(path)
 
     result: dict[str, Any] = {}
     for key in ("npcs", "waypoints", "areas"):
@@ -130,7 +139,7 @@ def _validate_npcs(
             continue
 
         npc_tag_raw = row.get("npc_tag", row.get("tag"))
-        npc_tag = _read_tag(npc_tag_raw) or f"<idx:{index}>"
+        npc_tag = read_tag(npc_tag_raw) or f"<idx:{index}>"
         if npc_tag_raw is None:
             _append_issue(issues, "ERROR", "npc", npc_tag, "missing_npc_tag", "npc_tag must be non-empty string", limits=limits)
         elif _read_tag(npc_tag_raw) is None:
@@ -159,15 +168,17 @@ def _validate_npcs(
             legacy_key = f"AL_WP_S{slot}"
             primary_val = locals_map.get(primary_key)
             legacy_val = locals_map.get(legacy_key)
+            primary_normalized = primary_val.strip() if isinstance(primary_val, str) else primary_val
+            legacy_normalized = legacy_val.strip() if isinstance(legacy_val, str) else legacy_val
 
             if primary_val is not None and not isinstance(primary_val, str):
                 _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{primary_key} must be string", limits=limits)
             if legacy_val is not None and not isinstance(legacy_val, str):
                 _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{legacy_key} must be string", limits=limits)
 
-            if _is_non_empty_string(primary_val):
+            if _is_non_empty_string(primary_normalized):
                 has_primary_route = True
-                if primary_val not in known_route_tags:
+                if primary_normalized not in known_route_tags:
                     _append_issue(
                         issues,
                         "ERROR",
@@ -177,7 +188,7 @@ def _validate_npcs(
                         f"slot={primary_key} references unknown route tag {primary_val!r}",
                         limits=limits,
                     )
-            if _is_non_empty_string(legacy_val):
+            if _is_non_empty_string(legacy_normalized):
                 has_legacy_route = True
                 _append_issue(issues, "WARN", "npc", npc_tag, "legacy_route_alias_in_use", f"{legacy_key} is used", limits=limits)
                 if legacy_val not in known_route_tags:
@@ -191,7 +202,11 @@ def _validate_npcs(
                         limits=limits,
                     )
 
-            if _is_non_empty_string(primary_val) and _is_non_empty_string(legacy_val) and primary_val != legacy_val:
+            if (
+                _is_non_empty_string(primary_normalized)
+                and _is_non_empty_string(legacy_normalized)
+                and primary_normalized != legacy_normalized
+            ):
                 _append_issue(
                     issues,
                     "WARN",
@@ -236,7 +251,7 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue], limits: 
             continue
 
         wp_tag_raw = row.get("waypoint_tag", row.get("tag"))
-        wp_tag = _read_tag(wp_tag_raw) or f"<idx:{index}>"
+        wp_tag = read_tag(wp_tag_raw) or f"<idx:{index}>"
         if wp_tag_raw is None:
             _append_issue(issues, "ERROR", "waypoint", wp_tag, "missing_waypoint_tag", "waypoint_tag must be non-empty string", limits=limits)
         elif _read_tag(wp_tag_raw) is None:
@@ -244,7 +259,7 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue], limits: 
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "waypoint_tag must be non-empty string", limits=limits)
 
         area_tag_raw = row.get("area_tag")
-        area_tag = _read_tag(area_tag_raw)
+        area_tag = read_tag(area_tag_raw)
         if area_tag is None:
             code = (
                 "missing_area_tag"
@@ -254,7 +269,7 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue], limits: 
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "area_tag must be non-empty string", limits=limits)
 
         route_tag_raw = row.get("route_tag")
-        route_tag = _read_tag(route_tag_raw)
+        route_tag = read_tag(route_tag_raw)
         if route_tag is None:
             code = (
                 "missing_route_tag"
@@ -321,7 +336,7 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue], limits: Vali
             continue
 
         raw_area_tag = row.get("area_tag", row.get("tag"))
-        accepted_area_tag = _read_tag(raw_area_tag)
+        accepted_area_tag = read_tag(raw_area_tag)
         display_area_tag = accepted_area_tag or f"<idx:{index}>"
         if raw_area_tag is None:
             _append_issue(issues, "ERROR", "area", display_area_tag, "missing_area_tag", "area_tag must be non-empty string", limits=limits)
@@ -411,9 +426,18 @@ def validate_locals(payload: dict[str, Any], fail_fast: bool = False, max_errors
     return issues
 
 
-def build_report(issues: list[ValidationIssue]) -> dict[str, Any]:
+def _order_issues(issues: list[ValidationIssue], sort_mode: str) -> list[ValidationIssue]:
+    if sort_mode == "strict":
+        return sorted(issues, key=lambda i: (i.level, i.scope, i.object_id, i.code, i.reason))
+    if sort_mode == "grouped":
+        return sorted(issues, key=lambda i: (_SEVERITY_RANK.get(i.level, 99), i.scope))
+    return issues
+
+
+def build_report(issues: list[ValidationIssue], sort_mode: str = "none") -> dict[str, Any]:
     errors = sum(1 for issue in issues if issue.level == "ERROR")
     warns = sum(1 for issue in issues if issue.level == "WARN")
+    ordered_issues = _order_issues(issues, sort_mode)
     return {
         "status": "ERROR" if errors > 0 else "OK",
         "summary": {
@@ -421,7 +445,16 @@ def build_report(issues: list[ValidationIssue]) -> dict[str, Any]:
             "warnings": warns,
             "total": len(issues),
         },
-        "issues": [asdict(issue) for issue in sorted(issues, key=lambda i: (i.level, i.scope, i.object_id, i.code, i.reason))],
+        "issues": [
+            {
+                "level": issue.level,
+                "scope": issue.scope,
+                "object_id": issue.object_id,
+                "code": issue.code,
+                "reason": issue.reason,
+            }
+            for issue in sorted(issues, key=lambda i: (i.level, i.scope, i.object_id, i.code, i.reason))
+        ],
     }
 
 

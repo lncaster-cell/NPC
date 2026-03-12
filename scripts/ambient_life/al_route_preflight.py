@@ -18,14 +18,20 @@ Expected fields contract:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+try:
+    from scripts.ambient_life.preflight_issue_utils import make_issue_context, render_issue_message
+except ImportError:
+    from preflight_issue_utils import make_issue_context, render_issue_message
+
 AL_ROUTE_MAX_STEPS = 16
+
+_SEVERITY_RANK = {"ERROR": 0, "WARN": 1, "INFO": 2}
 
 
 @dataclass
@@ -43,51 +49,41 @@ class ValidationIssue:
     area_tag: str
     route_tag: str
     code: str
-    details: str
+    context: dict[str, Any]
+
+    @property
+    def details(self) -> str:
+        return render_issue_message(self.code, self.context)
+
+
+def _issue(*, level: str, area_tag: str, route_tag: str, code: str, details: str) -> ValidationIssue:
+    return ValidationIssue(
+        level=level,
+        area_tag=area_tag,
+        route_tag=route_tag,
+        code=code,
+        context=make_issue_context(details),
+    )
 
 
 def _read_input(path: Path) -> list[dict[str, Any]]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(payload, dict):
-        if "waypoints" not in payload:
-            raise ValueError("missing required key 'waypoints'")
-        waypoints = payload["waypoints"]
-    elif isinstance(payload, list):
-        waypoints = payload
-    else:
-        raise ValueError("JSON root must be an object with key 'waypoints' or an array")
-
-    if not isinstance(waypoints, list):
-        raise ValueError("'waypoints' must be an array")
-    return waypoints
-
-
-def is_strict_int(value: Any) -> bool:
-    # Exclude bool explicitly: JSON boolean is not a valid integer value for route/locals config fields.
-    return isinstance(value, int) and not isinstance(value, bool)
-
-
-def _read_tag(value: Any) -> str | None:
-    if not isinstance(value, str):
-        return None
-    tag = value.strip()
-    return tag or None
+    return read_json_list_input(path, key="waypoints")
 
 
 def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, ValidationIssue | None]:
     area_tag_raw = raw.get("area_tag")
-    area_tag = _read_tag(area_tag_raw)
+    area_tag = read_tag(area_tag_raw)
     route_tag_raw = raw.get("route_tag")
-    route_tag = _read_tag(route_tag_raw)
+    route_tag = read_tag(route_tag_raw)
     waypoint_tag_raw = raw.get("waypoint_tag")
-    waypoint_tag = _read_tag(waypoint_tag_raw) or f"<idx:{index}>"
+    waypoint_tag = read_tag(waypoint_tag_raw) or f"<idx:{index}>"
     step_raw = raw.get("al_step")
 
     al_bed_id_raw = raw.get("al_bed_id")
     if al_bed_id_raw is None:
         al_bed_id = ""
     elif not isinstance(al_bed_id_raw, str):
-        return None, ValidationIssue(
+        return None, _issue(
             level="ERROR",
             area_tag=area_tag or "<unknown-area>",
             route_tag=route_tag or "<unknown-route>",
@@ -103,7 +99,7 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
             if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
             else "invalid_area_tag_type"
         )
-        return None, ValidationIssue(
+        return None, _issue(
             level="ERROR",
             area_tag="<unknown-area>",
             route_tag=route_tag or "<unknown-route>",
@@ -117,7 +113,7 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
             if route_tag_raw is None or (isinstance(route_tag_raw, str) and route_tag_raw.strip() == "")
             else "invalid_route_tag_type"
         )
-        return None, ValidationIssue(
+        return None, _issue(
             level="ERROR",
             area_tag=area_tag,
             route_tag="<unknown-route>",
@@ -125,13 +121,13 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
             details=f"waypoint={waypoint_tag}",
         )
 
-    if waypoint_tag.startswith(f"<idx:{index}>") and _read_tag(waypoint_tag_raw) is None:
-        code = (
-            "missing_waypoint_tag"
-            if waypoint_tag_raw is None or (isinstance(waypoint_tag_raw, str) and waypoint_tag_raw.strip() == "")
-            else "invalid_waypoint_tag_type"
+    if waypoint_tag.startswith(f"<idx:{index}>") and read_tag(waypoint_tag_raw) is None:
+        code = tag_error_code(
+            waypoint_tag_raw,
+            missing_code="missing_waypoint_tag",
+            invalid_type_code="invalid_waypoint_tag_type",
         )
-        return None, ValidationIssue(
+        return None, _issue(
             level="ERROR",
             area_tag=area_tag,
             route_tag=route_tag,
@@ -140,7 +136,7 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
         )
 
     if not is_strict_int(step_raw):
-        return None, ValidationIssue(
+        return None, _issue(
             level="ERROR",
             area_tag=area_tag,
             route_tag=route_tag,
@@ -226,7 +222,8 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
 
     for (area_tag, route_tag), waypoints in grouped.items():
         step_to_waypoint: dict[int, str] = {}
-        valid_steps: set[int] = set()
+        valid_steps_mask = 0
+        max_valid_step = -1
 
         for wp in waypoints:
             if wp.al_step < 0 or wp.al_step >= AL_ROUTE_MAX_STEPS:
@@ -259,9 +256,11 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
                 continue
 
             step_to_waypoint[wp.al_step] = wp.waypoint_tag
-            valid_steps.add(wp.al_step)
+            valid_steps_mask |= 1 << wp.al_step
+            if wp.al_step > max_valid_step:
+                max_valid_step = wp.al_step
 
-        if not valid_steps:
+        if valid_steps_mask == 0:
             continue
 
         if 0 not in valid_steps:
@@ -277,15 +276,16 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
                 return issues
             continue
 
-        for expected in range(0, len(valid_steps)):
-            if expected not in valid_steps:
-                if add_issue(
-                    ValidationIssue(
+        for expected in range(0, max_valid_step + 1):
+            if (valid_steps_mask & (1 << expected)) == 0:
+                present_steps = [step for step in range(0, max_valid_step + 1) if (valid_steps_mask & (1 << step)) != 0]
+                issues.append(
+                    _issue(
                         level="ERROR",
                         area_tag=area_tag,
                         route_tag=route_tag,
                         code="non_contiguous_steps",
-                        details=f"missing_step={expected} present_steps={sorted(valid_steps)}",
+                        details=f"missing_step={expected} present_steps={present_steps}",
                     )
                 ):
                     return issues
@@ -297,8 +297,8 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
 
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
-            if add_issue(
-                ValidationIssue(
+            issues.append(
+                _issue(
                     level="ERROR",
                     area_tag=area_tag,
                     route_tag=route_tag,
@@ -317,8 +317,8 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
             if expected_tag in route_waypoint_tags[(sleep_step.area_tag, sleep_step.route_tag)]:
                 continue
 
-            if add_issue(
-                ValidationIssue(
+            issues.append(
+                _issue(
                     level="ERROR",
                     area_tag=sleep_step.area_tag,
                     route_tag=sleep_step.route_tag,
@@ -337,8 +337,8 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
 
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
-            if add_issue(
-                ValidationIssue(
+            issues.append(
+                _issue(
                     level="ERROR",
                     area_tag=area_tag,
                     route_tag="<sleep>",
@@ -355,8 +355,8 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
 
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
-            if add_issue(
-                ValidationIssue(
+            issues.append(
+                _issue(
                     level="ERROR",
                     area_tag=area_tag,
                     route_tag="<sleep>",
@@ -369,12 +369,20 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
     return issues
 
 
-def print_report(issues: list[ValidationIssue]) -> None:
+def _order_issues(issues: list[ValidationIssue], sort_mode: str) -> list[ValidationIssue]:
+    if sort_mode == "strict":
+        return sorted(issues, key=lambda x: (x.level, x.area_tag, x.route_tag, x.code, x.details))
+    if sort_mode == "grouped":
+        return sorted(issues, key=lambda x: (_SEVERITY_RANK.get(x.level, 99), x.code))
+    return issues
+
+
+def print_report(issues: list[ValidationIssue], sort_mode: str = "none") -> None:
     if not issues:
         print("[OK] route preflight passed: no issues found")
         return
 
-    for issue in sorted(issues, key=lambda x: (x.level, x.area_tag, x.route_tag, x.code, x.details)):
+    for issue in _order_issues(issues, sort_mode):
         print(
             f"[{issue.level}] area={issue.area_tag} route={issue.route_tag} "
             f"code={issue.code} {issue.details}"
@@ -388,8 +396,17 @@ def print_report(issues: list[ValidationIssue]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Ambient Life route markup offline")
     parser.add_argument("--input", required=True, help="Path to JSON with waypoint route markup")
-    parser.add_argument("--fail-fast", action="store_true", help="Stop validation after first error (or after --max-errors)")
-    parser.add_argument("--max-errors", type=int, default=None, help="Error limit used with --fail-fast")
+    sort_group = parser.add_mutually_exclusive_group()
+    sort_group.add_argument(
+        "--deterministic-sort",
+        action="store_true",
+        help="Enable grouped deterministic ordering (severity/code) while preserving issue arrival order inside groups",
+    )
+    sort_group.add_argument(
+        "--strict-deterministic-sort",
+        action="store_true",
+        help="Enable strict deterministic ordering with full issue sort",
+    )
     args = parser.parse_args()
     if args.max_errors is not None and args.max_errors < 1:
         parser.error("--max-errors must be >= 1")
@@ -400,8 +417,15 @@ def main() -> int:
         print(f"[FATAL] failed to read input: {exc}", file=sys.stderr)
         return 2
 
-    issues = validate_route_markup(rows, fail_fast=args.fail_fast, max_errors=args.max_errors)
-    print_report(issues)
+    issues = validate_route_markup(rows)
+
+    sort_mode = "none"
+    if args.strict_deterministic_sort:
+        sort_mode = "strict"
+    elif args.deterministic_sort:
+        sort_mode = "grouped"
+
+    print_report(issues, sort_mode=sort_mode)
 
     return 1 if any(i.level == "ERROR" for i in issues) else 0
 

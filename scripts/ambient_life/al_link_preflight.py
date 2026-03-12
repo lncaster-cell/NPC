@@ -18,14 +18,21 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+try:
+    from scripts.ambient_life.preflight_issue_utils import make_issue_context, render_issue_message
+except ImportError:
+    from preflight_issue_utils import make_issue_context, render_issue_message
 
 TARGET_DEGREE_MIN = 2
 TARGET_DEGREE_MAX = 4
 HUB_DEGREE_MAX = 6
 LINK_KEY_RE = re.compile(r"^al_link_(\d+)$")
+
+_SEVERITY_RANK = {"ERROR": 0, "WARN": 1, "INFO": 2}
 
 
 @dataclass
@@ -33,36 +40,15 @@ class ValidationIssue:
     level: str
     area_tag: str
     code: str
-    reason: str
+    context: dict[str, Any]
 
-
-def is_strict_int(value: Any) -> bool:
-    return isinstance(value, int) and not isinstance(value, bool)
-
-
-def _read_tag(value: Any) -> str | None:
-    if not isinstance(value, str):
-        return None
-    tag = value.strip()
-    return tag or None
+    @property
+    def reason(self) -> str:
+        return render_issue_message(self.code, self.context)
 
 
 def _read_input(path: Path) -> list[dict[str, Any]]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-
-    if isinstance(payload, dict):
-        if "areas" not in payload:
-            raise ValueError("missing required key 'areas'")
-        areas = payload["areas"]
-    elif isinstance(payload, list):
-        areas = payload
-    else:
-        raise ValueError("JSON root must be an object with key 'areas' or an array")
-
-    if not isinstance(areas, list):
-        raise ValueError("'areas' must be an array")
-
-    return areas
+    return read_json_list_input(path, key="areas")
 
 
 def _extract_locals(raw: dict[str, Any]) -> tuple[dict[str, Any], bool]:
@@ -76,7 +62,7 @@ def _extract_locals(raw: dict[str, Any]) -> tuple[dict[str, Any], bool]:
 
 
 def _append_issue(issues: list[ValidationIssue], level: str, area_tag: str, code: str, reason: str) -> None:
-    issues.append(ValidationIssue(level=level, area_tag=area_tag, code=code, reason=reason))
+    issues.append(ValidationIssue(level=level, area_tag=area_tag, code=code, context=make_issue_context(reason)))
 
 
 def validate_links(rows: list[dict[str, Any]], fail_fast: bool = False, max_errors: int | None = None) -> list[ValidationIssue]:
@@ -92,6 +78,16 @@ def validate_links(rows: list[dict[str, Any]], fail_fast: bool = False, max_erro
             error_count += 1
         return error_limit is not None and error_count >= error_limit
 
+    if len(rows) == 0:
+        _append_issue(
+            issues,
+            "ERROR",
+            "<payload>",
+            "empty_payload",
+            "input must contain at least one area",
+        )
+        return issues
+
     for index, row in enumerate(rows):
         if not isinstance(row, dict):
             if add_issue("ERROR", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}"):
@@ -99,7 +95,7 @@ def validate_links(rows: list[dict[str, Any]], fail_fast: bool = False, max_erro
             continue
 
         area_tag_raw = row.get("area_tag")
-        area_tag = _read_tag(area_tag_raw)
+        area_tag = read_tag(area_tag_raw)
         object_id = f"<idx:{index}>"
         issue_area_tag = area_tag or object_id
         if area_tag is None:
@@ -214,13 +210,30 @@ def validate_links(rows: list[dict[str, Any]], fail_fast: bool = False, max_erro
     return issues
 
 
-def build_report(issues: list[ValidationIssue]) -> dict[str, Any]:
+def _order_issues(issues: list[ValidationIssue], sort_mode: str) -> list[ValidationIssue]:
+    if sort_mode == "strict":
+        return sorted(issues, key=lambda i: (i.level, i.area_tag, i.code, i.reason))
+    if sort_mode == "grouped":
+        return sorted(issues, key=lambda i: (_SEVERITY_RANK.get(i.level, 99), i.code))
+    return issues
+
+
+def build_report(issues: list[ValidationIssue], sort_mode: str = "none") -> dict[str, Any]:
     errors = sum(1 for issue in issues if issue.level == "ERROR")
     warns = sum(1 for issue in issues if issue.level == "WARN")
+    ordered_issues = _order_issues(issues, sort_mode)
     return {
         "status": "ERROR" if errors else "OK",
         "summary": {"errors": errors, "warnings": warns, "total": len(issues)},
-        "issues": [asdict(issue) for issue in sorted(issues, key=lambda i: (i.level, i.area_tag, i.code, i.reason))],
+        "issues": [
+            {
+                "level": issue.level,
+                "area_tag": issue.area_tag,
+                "code": issue.code,
+                "reason": issue.reason,
+            }
+            for issue in sorted(issues, key=lambda i: (i.level, i.area_tag, i.code, i.reason))
+        ],
     }
 
 
