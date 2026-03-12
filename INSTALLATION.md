@@ -59,6 +59,51 @@
 - `alwp5` (string)
 - `al_default_activity` (int)
 
+### Что именно писать в `alwp0..alwp5`
+
+`alwpX` — это **тег маршрута** (route tag). Система ищет в текущей area все waypoint с этим тегом, сортирует их по `al_step` и строит маршрут.
+
+Привязка `X` к времени суток (слоты по 4 часа):
+
+| Local | Слот | Часы |
+|---|---:|---|
+| `alwp0` | 0 | 00:00–03:59 |
+| `alwp1` | 1 | 04:00–07:59 |
+| `alwp2` | 2 | 08:00–11:59 |
+| `alwp3` | 3 | 12:00–15:59 |
+| `alwp4` | 4 | 16:00–19:59 |
+| `alwp5` | 5 | 20:00–23:59 |
+
+Пример заполнения для одного NPC:
+- `alwp0 = rt_inn_sleep`
+- `alwp1 = rt_inn_morning`
+- `alwp2 = rt_market_day`
+- `alwp3 = rt_market_day`
+- `alwp4 = rt_tavern_evening`
+- `alwp5 = rt_inn_sleep`
+
+Это значит:
+- ночью NPC ходит по маршруту с тегом `rt_inn_sleep`,
+- утром — по `rt_inn_morning`,
+- днём — по `rt_market_day`,
+- вечером — по `rt_tavern_evening`.
+
+### Что писать в `al_default_activity`
+
+Это числовой ID активности на случай fallback/дефолтного поведения.
+
+Часто используемые значения:
+- `0` — `AL_ACT_NPC_HIDDEN`
+- `20` — `AL_ACT_NPC_READ`
+- `21` — `AL_ACT_NPC_SIT`
+- `23` — `AL_ACT_NPC_STAND_CHAT`
+- `43` — `AL_ACT_NPC_GUARD`
+
+Если не знаете, что выбрать, ставьте безопасный базовый вариант:
+- `al_default_activity = 23` (stand/chat).
+
+> Полный список ID находится в `scripts/ambient_life/al_acts_inc.nss`.
+
 ### Опционально (только для legacy-контента)
 - `AL_WP_S0..AL_WP_S5` (string)
 
@@ -70,6 +115,15 @@
 - `al_step` (int, `>= 0`) — обязателен для шага маршрута.
 - `al_activity` (int) — опционально.
 - `al_dur_sec` (int) — опционально.
+
+Важно для маршрута:
+- все waypoint одного маршрута должны иметь **одинаковый Tag** (тот, что вы указали в `alwpX` у NPC);
+- `al_step` должен идти без дыр (например `0,1,2,3`).
+
+Пример для `alwp2 = rt_market_day`:
+- Waypoint A: `Tag=rt_market_day`, `al_step=0`
+- Waypoint B: `Tag=rt_market_day`, `al_step=1`
+- Waypoint C: `Tag=rt_market_day`, `al_step=2`
 
 ### Для transition-step
 - `al_trans_type` (int):
@@ -149,6 +203,8 @@
 
 - [ ] Импортированы и скомпилированы все `scripts/ambient_life/*.nss`
 - [ ] Скрипты назначены в Module/Area/NPC **точно по таблицам из раздела 2**
+- [ ] У каждого NPC заполнены `alwp0..alwp5` и `al_default_activity`
+- [ ] Для каждого route tag созданы waypoint с одинаковым Tag и `al_step` без дыр
 - [ ] Ручные locals заполнены в нужных объектах (NPC/Waypoint/Area) по разделу 3
 - [ ] Runtime locals вручную не заполняются
 - [ ] Пройдена проверка из раздела 6
