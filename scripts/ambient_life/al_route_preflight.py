@@ -214,7 +214,8 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
 
     for (area_tag, route_tag), waypoints in grouped.items():
         step_to_waypoint: dict[int, str] = {}
-        valid_steps: set[int] = set()
+        valid_steps_mask = 0
+        max_valid_step = -1
 
         for wp in waypoints:
             if wp.al_step < 0 or wp.al_step >= AL_ROUTE_MAX_STEPS:
@@ -245,12 +246,14 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                 continue
 
             step_to_waypoint[wp.al_step] = wp.waypoint_tag
-            valid_steps.add(wp.al_step)
+            valid_steps_mask |= 1 << wp.al_step
+            if wp.al_step > max_valid_step:
+                max_valid_step = wp.al_step
 
-        if not valid_steps:
+        if valid_steps_mask == 0:
             continue
 
-        if 0 not in valid_steps:
+        if (valid_steps_mask & 1) == 0:
             issues.append(
                 ValidationIssue(
                     level="ERROR",
@@ -262,15 +265,16 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             )
             continue
 
-        for expected in range(0, len(valid_steps)):
-            if expected not in valid_steps:
+        for expected in range(0, max_valid_step + 1):
+            if (valid_steps_mask & (1 << expected)) == 0:
+                present_steps = [step for step in range(0, max_valid_step + 1) if (valid_steps_mask & (1 << step)) != 0]
                 issues.append(
                     ValidationIssue(
                         level="ERROR",
                         area_tag=area_tag,
                         route_tag=route_tag,
                         code="non_contiguous_steps",
-                        details=f"missing_step={expected} present_steps={sorted(valid_steps)}",
+                        details=f"missing_step={expected} present_steps={present_steps}",
                     )
                 )
                 break
