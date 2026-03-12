@@ -15,3 +15,7 @@
   - [ ] CI job `Ambient Life Perf Gate` зелёный;
   - [ ] заполнен machine-readable отчёт (`docs/perf/baselines/perf_gate_report.csv` или `.json`) и валидирован скриптом `scripts/ambient_life/validate_perf_gate.py`.
 - [ ] К PR приложен preflight summary из `scripts/ambient_life/run_preflight_suite.py` (JSON или text), подтверждающий актуальное состояние route/link/locals.
+- [ ] Для preflight-артефактов выбран и зафиксирован режим сортировки issue:
+  - [ ] default (без сортировки) для performance/диагностики,
+  - [ ] `--deterministic-sort` для стабильной группировки без полной сортировки,
+  - [ ] `--strict-deterministic-sort` **только** если CI действительно требует полностью детерминированный порядок.
