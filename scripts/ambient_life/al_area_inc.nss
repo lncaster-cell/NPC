@@ -521,40 +521,52 @@ int AL_PickDispatchQueueIndex(object oArea)
     int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
     int nHead = GetLocalInt(oArea, "al_dispatch_q_head");
     int i = 0;
-    int nChosen = -1;
+    int nFirstNormal = -1;
+    int nFirstCritical = -1;
+    int bHasNormal = FALSE;
 
     if (nLen <= 0)
     {
         return -1;
     }
 
-    int nCriticalStreak = GetLocalInt(oArea, "al_dispatch_critical_streak");
-    int bAllowCritical = TRUE;
-    if (nCriticalStreak >= AL_DISPATCH_CRITICAL_BURST_QUOTA && AL_HasPendingPriority(oArea, AL_DISPATCH_PRIORITY_NORMAL))
-    {
-        bAllowCritical = FALSE;
-    }
-
-    i = 0;
     while (i < nLen)
     {
         int nIdx = (nHead + i) % AL_DISPATCH_QUEUE_CAPACITY;
         int nPriority = GetLocalInt(oArea, AL_DispatchQueueKey("prio", nIdx));
-        if (nPriority == AL_DISPATCH_PRIORITY_CRITICAL && bAllowCritical)
+        if (nPriority == AL_DISPATCH_PRIORITY_CRITICAL)
         {
-            return nIdx;
+            if (nFirstCritical < 0)
+            {
+                nFirstCritical = nIdx;
+            }
+        }
+        else
+        {
+            bHasNormal = TRUE;
+            if (nFirstNormal < 0)
+            {
+                nFirstNormal = nIdx;
+            }
         }
 
-        if (nChosen < 0)
-        {
-            nChosen = nIdx;
-        }
         i = i + 1;
     }
 
-    if (nChosen >= 0)
+    int nCriticalStreak = GetLocalInt(oArea, "al_dispatch_critical_streak");
+    if (nFirstCritical >= 0)
     {
-        return nChosen;
+        if (nCriticalStreak >= AL_DISPATCH_CRITICAL_BURST_QUOTA && bHasNormal)
+        {
+            return nFirstNormal;
+        }
+
+        return nFirstCritical;
+    }
+
+    if (nFirstNormal >= 0)
+    {
+        return nFirstNormal;
     }
 
     return nHead;
