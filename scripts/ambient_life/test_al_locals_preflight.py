@@ -40,5 +40,30 @@ class ValidateLocalsRouteRefsTests(unittest.TestCase):
         )
 
 
+class ValidateLocalsAreaTagValidationTests(unittest.TestCase):
+    def test_area_tag_with_non_string_type_reports_invalid_type(self):
+        payload = {
+            "npcs": [],
+            "waypoints": [],
+            "areas": [
+                {
+                    "area_tag": 123,
+                    "locals": {"al_link_count": 0},
+                }
+            ],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertTrue(
+            any(
+                issue.level == "ERROR"
+                and issue.code == "invalid_area_tag_type"
+                and issue.object_id == "<idx:0>"
+                for issue in issues
+            )
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
