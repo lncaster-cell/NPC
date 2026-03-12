@@ -257,6 +257,29 @@ void AL_AreaTick(object oArea, int nToken)
     AL_ScheduleAreaTick(oArea, nToken);
 }
 
+void AL_DecrementAreaPlayerCount(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    int nPlayers = GetLocalInt(oArea, "al_player_count") - 1;
+    if (nPlayers < 0)
+    {
+        nPlayers = 0;
+    }
+
+    SetLocalInt(oArea, "al_player_count", nPlayers);
+
+    if (nPlayers == 0)
+    {
+        AL_MarkAreaWarm(oArea);
+    }
+
+    AL_AreaActivate(oArea);
+}
+
 void AL_OnAreaEnter(object oArea, object oEnter)
 {
     if (!GetIsObjectValid(oArea) || !GetIsObjectValid(oEnter) || !GetIsPC(oEnter))
@@ -264,14 +287,18 @@ void AL_OnAreaEnter(object oArea, object oEnter)
         return;
     }
 
-    object oCountedArea = GetLocalObject(oEnter, AL_COUNTED_AREA_LOCAL);
-    if (GetIsObjectValid(oCountedArea) && oCountedArea == oArea)
+    object oPrevArea = GetLocalObject(oEnter, AL_COUNTED_AREA_LOCAL);
+    if (GetIsObjectValid(oPrevArea) && oPrevArea == oArea)
     {
         return;
     }
 
-    int nPlayers = GetLocalInt(oArea, "al_player_count");
-    nPlayers = nPlayers + 1;
+    if (GetIsObjectValid(oPrevArea) && oPrevArea != oArea)
+    {
+        AL_DecrementAreaPlayerCount(oPrevArea);
+    }
+
+    int nPlayers = GetLocalInt(oArea, "al_player_count") + 1;
     SetLocalInt(oArea, "al_player_count", nPlayers);
     SetLocalObject(oEnter, AL_COUNTED_AREA_LOCAL, oArea);
 
@@ -288,27 +315,19 @@ void AL_OnAreaExit(object oArea, object oExit)
     }
 
     object oCountedArea = GetLocalObject(oExit, AL_COUNTED_AREA_LOCAL);
-    if (!GetIsObjectValid(oCountedArea) || oCountedArea != oArea)
+    if (!GetIsObjectValid(oCountedArea))
     {
         return;
     }
 
-    int nPlayers = GetLocalInt(oArea, "al_player_count") - 1;
+    if (oCountedArea != oArea)
+    {
+        DeleteLocalObject(oExit, AL_COUNTED_AREA_LOCAL);
+        return;
+    }
+
     DeleteLocalObject(oExit, AL_COUNTED_AREA_LOCAL);
-
-    if (nPlayers < 0)
-    {
-        nPlayers = 0;
-    }
-
-    SetLocalInt(oArea, "al_player_count", nPlayers);
-
-    if (nPlayers == 0)
-    {
-        AL_MarkAreaWarm(oArea);
-    }
-
-    AL_AreaActivate(oArea);
+    AL_DecrementAreaPlayerCount(oArea);
 }
 
 void AL_OnModuleLeave(object oPC)
