@@ -115,6 +115,7 @@
 
 - `scripts/ambient_life/` — NWScript runtime.
 - `docs/ARCHITECTURE.md` — архитектурная модель и инварианты.
+- `docs/TECH_PASSPORT.md` — единый технический паспорт системы (архитектура, runtime-поток, роли файлов, инварианты, диагностика).
 - `docs/TOOLSET_CONTRACT.md` — контракт locals для toolset.
 - `docs/IMPLEMENTATION_ROADMAP.md` — дорожная карта.
 - `INSTALLATION.md` — установка и подключение в модуле.
