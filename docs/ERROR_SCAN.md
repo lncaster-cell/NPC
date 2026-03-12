@@ -22,6 +22,17 @@
 
 В окружении отсутствует NWScript-компилятор (`nwnsc`/`nsscomp`), поэтому полноценная компиляционная валидация не выполнена.
 
+## Dispatch helper compile-risk (устранено)
+
+В `AL_MaybeUpdateDispatchQueueMetricsFull` (`scripts/ambient_life/al_dispatch_inc.nss`) подтверждено отсутствие дублирующего объявления
+`int nLastSyncTick = GetLocalInt(oArea, "al_dispatch_metrics_full_sync_tick");`.
+
+Условие обновления full-метрик использует единственный `nLastSyncTick`:
+
+- `nLastSyncTick <= 0 || nSyncTick <= 0 || (nSyncTick - nLastSyncTick) >= AL_DISPATCH_METRICS_FULL_INTERVAL_TICKS`.
+
+Тем самым устранён конкретный compile-risk в dispatch helper (ошибка повторного объявления локальной переменной).
+
 ## Runtime-диагностика переполнения `AL_RegisterNPC`
 
 Если area registry достиг `AL_MAX_NPCS`, регистрация нового NPC по-прежнему корректно отклоняется (bounded-поведение сохранено), но теперь дополнительно фиксируется диагностический след в area locals:
@@ -51,4 +62,3 @@
 
 - значение остаётся производным от `al_h_recent_resync_mask` через popcount и поэтому не меняет поведение маршрутизации/dispatch;
 - перенос вычисления window mask из tick-path в init-path не влияет на rolling-сдвиг (`mask = (mask * 2) & window_mask`, затем `| 1` при resync на текущем тикe).
-
