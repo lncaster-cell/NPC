@@ -34,170 +34,158 @@ void AL_RecordLookupCacheMiss(object oArea)
     SetLocalInt(oArea, "al_cache_miss", GetLocalInt(oArea, "al_cache_miss") + 1);
 }
 
-void AL_RecordSafeLookupHit(object oArea)
+string AL_LookupWpCountKey(string sTag)
 {
-    if (!GetIsObjectValid(oArea))
-    {
-        return;
-    }
-
-    SetLocalInt(oArea, "al_safe_lookup_hit", GetLocalInt(oArea, "al_safe_lookup_hit") + 1);
+    return "al_cache_wp_count_" + sTag;
 }
 
-void AL_RecordSafeLookupMiss(object oArea)
+string AL_LookupWpTickKey(string sTag)
 {
-    if (!GetIsObjectValid(oArea))
-    {
-        return;
-    }
-
-    SetLocalInt(oArea, "al_safe_lookup_miss", GetLocalInt(oArea, "al_safe_lookup_miss") + 1);
+    return "al_cache_wp_tick_" + sTag;
 }
 
-int AL_IsSafeWaypointCandidate(object oWaypoint)
+string AL_LookupWpItemKey(string sTag, int nIdx)
 {
-    if (!GetIsObjectValid(oWaypoint) || GetObjectType(oWaypoint) != OBJECT_TYPE_WAYPOINT)
-    {
-        return FALSE;
-    }
-
-    if (GetLocalInt(oWaypoint, "al_safe_wp") == TRUE)
-    {
-        return TRUE;
-    }
-
-    string sTag = GetTag(oWaypoint);
-    if (FindSubString(sTag, "safe") >= 0 || FindSubString(sTag, "SAFE") >= 0)
-    {
-        return TRUE;
-    }
-
-    string sName = GetName(oWaypoint);
-    if (FindSubString(sName, "safe") >= 0 || FindSubString(sName, "SAFE") >= 0)
-    {
-        return TRUE;
-    }
-
-    return FALSE;
+    return "al_cache_wp_item_" + sTag + "_" + IntToString(nIdx);
 }
 
-void AL_RebuildSafeWaypointCache(object oArea)
+void AL_LookupTrackTag(object oArea, string sTag)
 {
-    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
-    {
-        return;
-    }
-
+    int nTracked = GetLocalInt(oArea, "al_cache_wp_tag_count");
     int i = 0;
-    while (i < AL_SAFE_WP_CACHE_MAX)
+    while (i < nTracked)
     {
-        DeleteLocalObject(oArea, "al_safe_wp_obj_" + IntToString(i));
+        if (GetLocalString(oArea, "al_cache_wp_tag_" + IntToString(i)) == sTag)
+        {
+            return;
+        }
         i = i + 1;
     }
 
-    int nCount = 0;
-    object oObj = GetFirstObjectInArea(oArea);
-    while (GetIsObjectValid(oObj))
-    {
-        if (AL_IsSafeWaypointCandidate(oObj))
-        {
-            if (nCount < AL_SAFE_WP_CACHE_MAX)
-            {
-                SetLocalObject(oArea, "al_safe_wp_obj_" + IntToString(nCount), oObj);
-                nCount = nCount + 1;
-            }
-        }
-
-        oObj = GetNextObjectInArea(oArea);
-    }
-
-    SetLocalInt(oArea, "al_safe_wp_count", nCount);
-    SetLocalInt(oArea, "al_safe_wp_tick", GetLocalInt(oArea, "al_sync_tick"));
+    SetLocalString(oArea, "al_cache_wp_tag_" + IntToString(nTracked), sTag);
+    SetLocalInt(oArea, "al_cache_wp_tag_count", nTracked + 1);
 }
 
-int AL_IsSafeWaypointCacheFresh(object oArea)
+void AL_LookupBuildWaypointListCache(object oArea, string sTag)
 {
-    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    int nOldCount = GetLocalInt(oArea, AL_LookupWpCountKey(sTag));
+    int iClear = 0;
+    while (iClear < nOldCount)
     {
-        return FALSE;
-    }
-
-    int nCount = GetLocalInt(oArea, "al_safe_wp_count");
-    if (nCount <= 0)
-    {
-        return FALSE;
+        DeleteLocalObject(oArea, AL_LookupWpItemKey(sTag, iClear));
+        iClear = iClear + 1;
     }
 
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
-    int nCachedTick = GetLocalInt(oArea, "al_safe_wp_tick");
-    if (nSyncTick <= 0 || nCachedTick <= 0)
-    {
-        return FALSE;
-    }
+    int nFound = 0;
+    int nSearchIdx = 0;
 
-    return (nSyncTick <= (nCachedTick + AL_WP_CACHE_TTL_TICKS));
-}
-
-object AL_FindNearestSafeWaypointFromCache(object oNpc)
-{
-    if (!GetIsObjectValid(oNpc))
+    while (TRUE)
     {
-        return OBJECT_INVALID;
-    }
-
-    object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
-    {
-        return OBJECT_INVALID;
-    }
-
-    int bFresh = AL_IsSafeWaypointCacheFresh(oArea);
-    if (!bFresh)
-    {
-        AL_RebuildSafeWaypointCache(oArea);
-        bFresh = AL_IsSafeWaypointCacheFresh(oArea);
-    }
-
-    if (!bFresh)
-    {
-        AL_RecordSafeLookupMiss(oArea);
-        return OBJECT_INVALID;
-    }
-
-    int nCount = GetLocalInt(oArea, "al_safe_wp_count");
-    if (nCount <= 0)
-    {
-        AL_RecordSafeLookupMiss(oArea);
-        return OBJECT_INVALID;
-    }
-
-    float fBestDist = 1000000.0;
-    object oBest = OBJECT_INVALID;
-    int i = 0;
-    while (i < nCount)
-    {
-        object oWaypoint = GetLocalObject(oArea, "al_safe_wp_obj_" + IntToString(i));
-        if (GetIsObjectValid(oWaypoint) && GetObjectType(oWaypoint) == OBJECT_TYPE_WAYPOINT && GetArea(oWaypoint) == oArea)
+        object oCandidate = GetObjectByTag(sTag, nSearchIdx);
+        if (!GetIsObjectValid(oCandidate))
         {
-            float fDist = GetDistanceBetween(oNpc, oWaypoint);
-            if (!GetIsObjectValid(oBest) || fDist < fBestDist)
-            {
-                fBestDist = fDist;
-                oBest = oWaypoint;
-            }
+            break;
         }
 
+        nSearchIdx = nSearchIdx + 1;
+        if (GetObjectType(oCandidate) != OBJECT_TYPE_WAYPOINT || GetArea(oCandidate) != oArea)
+        {
+            continue;
+        }
+
+        SetLocalObject(oArea, AL_LookupWpItemKey(sTag, nFound), oCandidate);
+        nFound = nFound + 1;
+    }
+
+    SetLocalInt(oArea, AL_LookupWpCountKey(sTag), nFound);
+    SetLocalInt(oArea, AL_LookupWpTickKey(sTag), nSyncTick);
+    AL_LookupTrackTag(oArea, sTag);
+}
+
+void AL_LookupSoftInvalidateAreaCache(object oArea)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return;
+    }
+
+    int nTracked = GetLocalInt(oArea, "al_cache_wp_tag_count");
+    int i = 0;
+    while (i < nTracked)
+    {
+        string sTag = GetLocalString(oArea, "al_cache_wp_tag_" + IntToString(i));
+        if (sTag != "")
+        {
+            SetLocalInt(oArea, AL_LookupWpTickKey(sTag), 0);
+        }
         i = i + 1;
     }
+}
 
-    if (GetIsObjectValid(oBest))
+int AL_GetWaypointCandidatesCountCached(object oArea, string sTag)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA || sTag == "")
     {
-        AL_RecordSafeLookupHit(oArea);
-        return oBest;
+        return 0;
     }
 
-    AL_RecordSafeLookupMiss(oArea);
-    return OBJECT_INVALID;
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nCachedTick = GetLocalInt(oArea, AL_LookupWpTickKey(sTag));
+    int nCachedCount = GetLocalInt(oArea, AL_LookupWpCountKey(sTag));
+
+    if (nSyncTick > 0 && nCachedTick > 0 && nSyncTick <= (nCachedTick + AL_WP_CACHE_TTL_TICKS))
+    {
+        int i = 0;
+        while (i < nCachedCount)
+        {
+            object oCached = GetLocalObject(oArea, AL_LookupWpItemKey(sTag, i));
+            if (!GetIsObjectValid(oCached) || GetObjectType(oCached) != OBJECT_TYPE_WAYPOINT || GetArea(oCached) != oArea)
+            {
+                break;
+            }
+            i = i + 1;
+        }
+
+        if (i == nCachedCount)
+        {
+            AL_RecordLookupCacheHit(oArea);
+            return nCachedCount;
+        }
+    }
+
+    AL_RecordLookupCacheMiss(oArea);
+    AL_LookupBuildWaypointListCache(oArea, sTag);
+    return GetLocalInt(oArea, AL_LookupWpCountKey(sTag));
+}
+
+object AL_GetWaypointCandidateCached(object oArea, string sTag, int nIdx)
+{
+    if (!GetIsObjectValid(oArea) || sTag == "" || nIdx < 0)
+    {
+        return OBJECT_INVALID;
+    }
+
+    int nCount = AL_GetWaypointCandidatesCountCached(oArea, sTag);
+    if (nIdx >= nCount)
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oWaypoint = GetLocalObject(oArea, AL_LookupWpItemKey(sTag, nIdx));
+    if (!GetIsObjectValid(oWaypoint) || GetObjectType(oWaypoint) != OBJECT_TYPE_WAYPOINT || GetArea(oWaypoint) != oArea)
+    {
+        AL_RecordLookupCacheMiss(oArea);
+        AL_LookupBuildWaypointListCache(oArea, sTag);
+        if (nIdx >= GetLocalInt(oArea, AL_LookupWpCountKey(sTag)))
+        {
+            return OBJECT_INVALID;
+        }
+
+        oWaypoint = GetLocalObject(oArea, AL_LookupWpItemKey(sTag, nIdx));
+    }
+
+    return oWaypoint;
 }
 
 object AL_ResolveWaypointInAreaCached(object oArea, string sTag)
@@ -207,41 +195,12 @@ object AL_ResolveWaypointInAreaCached(object oArea, string sTag)
         return OBJECT_INVALID;
     }
 
-    string sCacheKey = "al_cache_wp_" + sTag;
-    string sCacheTickKey = "al_cache_wp_tick_" + sTag;
-    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
-
-    object oCached = GetLocalObject(oArea, sCacheKey);
-    if (GetIsObjectValid(oCached) && GetObjectType(oCached) == OBJECT_TYPE_WAYPOINT && GetArea(oCached) == oArea)
+    if (AL_GetWaypointCandidatesCountCached(oArea, sTag) <= 0)
     {
-        int nCachedTick = GetLocalInt(oArea, sCacheTickKey);
-        if (nSyncTick > 0 && nCachedTick > 0 && nSyncTick <= (nCachedTick + AL_WP_CACHE_TTL_TICKS))
-        {
-            AL_RecordLookupCacheHit(oArea);
-            return oCached;
-        }
+        return OBJECT_INVALID;
     }
 
-    AL_RecordLookupCacheMiss(oArea);
-
-    int nIndex = 0;
-    object oCandidate = GetObjectByTag(sTag, nIndex);
-    while (GetIsObjectValid(oCandidate))
-    {
-        if (GetObjectType(oCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oCandidate) == oArea)
-        {
-            SetLocalObject(oArea, sCacheKey, oCandidate);
-            SetLocalInt(oArea, sCacheTickKey, nSyncTick);
-            return oCandidate;
-        }
-
-        nIndex = nIndex + 1;
-        oCandidate = GetObjectByTag(sTag, nIndex);
-    }
-
-    DeleteLocalObject(oArea, sCacheKey);
-    SetLocalInt(oArea, sCacheTickKey, nSyncTick);
-    return OBJECT_INVALID;
+    return AL_GetWaypointCandidateCached(oArea, sTag, 0);
 }
 
 int AL_ComputeAreaSlot()
@@ -399,6 +358,7 @@ void AL_AreaSetTier(object oArea, int nTier)
     }
 
     SetLocalInt(oArea, "al_sim_tier", nTier);
+    AL_LookupSoftInvalidateAreaCache(oArea);
 
     if (nTier == AL_SIM_TIER_FREEZE)
     {
@@ -798,6 +758,7 @@ void AL_AreaTick(object oArea, int nToken)
     {
         if ((nSyncTick % AL_WARM_MAINTENANCE_PERIOD) == 0)
         {
+            AL_LookupSoftInvalidateAreaCache(oArea);
             AL_RegistryCompact(oArea);
         }
     }
