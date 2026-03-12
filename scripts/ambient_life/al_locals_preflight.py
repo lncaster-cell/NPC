@@ -71,6 +71,10 @@ def _append_issue(issues: list[ValidationIssue], level: str, scope: str, object_
     issues.append(ValidationIssue(level=level, scope=scope, object_id=object_id, code=code, reason=reason))
 
 
+def is_strict_int(value: Any) -> bool:
+    # Exclude bool explicitly: JSON boolean is not a valid integer value for route/locals config fields.
+    return isinstance(value, int) and not isinstance(value, bool)
+
 def _is_non_empty_string(value: Any) -> bool:
     return isinstance(value, str) and value.strip() != ""
 
@@ -84,7 +88,7 @@ def _validate_npcs(rows: list[Any], issues: list[ValidationIssue]) -> None:
         npc_tag = str(row.get("npc_tag", row.get("tag", f"<idx:{index}>"))).strip() or f"<idx:{index}>"
         locals_map = _extract_locals(row, {"npc_tag", "tag", "name", "locals"})
 
-        if not isinstance(locals_map.get("al_default_activity"), int):
+        if not is_strict_int(locals_map.get("al_default_activity")):
             _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_default_activity", "al_default_activity must be int")
 
         has_primary_route = False
@@ -121,7 +125,7 @@ def _validate_npcs(rows: list[Any], issues: list[ValidationIssue]) -> None:
 
         role_val = locals_map.get("al_npc_role")
         if role_val is not None:
-            if not isinstance(role_val, int) or role_val < NPC_ROLE_MIN or role_val > NPC_ROLE_MAX:
+            if not is_strict_int(role_val) or role_val < NPC_ROLE_MIN or role_val > NPC_ROLE_MAX:
                 _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_npc_role", "al_npc_role must be int in range 0..2")
 
         safe_wp_val = locals_map.get("al_safe_wp")
@@ -132,7 +136,7 @@ def _validate_npcs(rows: list[Any], issues: list[ValidationIssue]) -> None:
             flag_val = locals_map.get(flag_name)
             if flag_val is None:
                 continue
-            if not isinstance(flag_val, int) or flag_val not in (0, 1):
+            if not is_strict_int(flag_val) or flag_val not in (0, 1):
                 _append_issue(issues, "WARN", "npc", npc_tag, "invalid_disturbed_flag", f"{flag_name} should be 0 or 1")
 
         for tag_name in ("al_owner_tag", "al_allowed_tag"):
@@ -153,7 +157,7 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
         locals_map = _extract_locals(row, {"waypoint_tag", "tag", "name", "area_tag", "route_tag", "locals"})
 
         step_val = locals_map.get("al_step")
-        if not isinstance(step_val, int):
+        if not is_strict_int(step_val):
             _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_step_type", "al_step must be int")
         elif step_val < 0 or step_val >= AL_ROUTE_MAX_STEPS:
             _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_step_range", f"al_step must be in range 0..{AL_ROUTE_MAX_STEPS - 1}")
@@ -161,7 +165,7 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
         trans_type = locals_map.get("al_trans_type")
         has_any_trans_key = any(key in locals_map for key in ("al_trans_type", "al_trans_src_wp", "al_trans_dst_wp"))
         if has_any_trans_key:
-            if not isinstance(trans_type, int) or trans_type not in (1, 2):
+            if not is_strict_int(trans_type) or trans_type not in (1, 2):
                 _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_transition_type", "al_trans_type must be 1 or 2")
 
             for key in ("al_trans_src_wp", "al_trans_dst_wp"):
@@ -202,7 +206,7 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
         link_count = locals_map.get("al_link_count")
         if link_count is None:
             link_count = 0
-        if not isinstance(link_count, int) or link_count < 0:
+        if not is_strict_int(link_count) or link_count < 0:
             _append_issue(issues, "ERROR", "area", area_tag, "invalid_link_count", "al_link_count must be int >= 0")
             link_count = 0
 
@@ -225,7 +229,7 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
             if flag_name not in locals_map:
                 continue
             flag_val = locals_map.get(flag_name)
-            if not isinstance(flag_val, int) or flag_val < 0:
+            if not is_strict_int(flag_val) or flag_val < 0:
                 _append_issue(issues, "WARN", "area", area_tag, "invalid_debug_perf_flag", f"{flag_name} should be int >= 0")
 
 
