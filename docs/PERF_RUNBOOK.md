@@ -294,7 +294,20 @@ Baseline в `docs/perf/baselines/*` обновляется только если
 python3 scripts/ambient_life/validate_perf_gate.py \
   --baseline docs/perf/baselines/s80_s100_s120_baseline.csv \
   --report docs/perf/baselines/perf_gate_report.csv
+
+# Для детерминированных CI-прогонов без локального кэша парсинга:
+python3 scripts/ambient_life/validate_perf_gate.py \
+  --baseline docs/perf/baselines/s80_s100_s120_baseline.csv \
+  --report docs/perf/baselines/perf_gate_report.csv \
+  --no-cache
 ```
+
+Примечание по кэшу (`.cache/perf_gate/`):
+
+- кэш локальный (на машине/воркдире раннера), не является артефактом perf-gate и не должен коммититься;
+- ключ кэша: `sha256(<baseline-bytes> + "\\0" + <report-bytes>)`;
+- кэшируются результаты нормализации/парсинга входов, а не итоговый verdict PASS/FAIL;
+- режим best-effort: любая ошибка чтения/декодирования/записи кэша безопасно приводит к fallback на прямой парсинг файлов.
 
 Fail-условия gate:
 
