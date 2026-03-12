@@ -15,7 +15,14 @@
 ## P2
 
 - [ ] Сервисный валидатор locals (NPC/waypoints/areas) для контент-команды.
-- [ ] Профилирование производительности на сценах с высокой плотностью NPC.
+- [ ] Профилирование производительности на сценах с высокой плотностью NPC (по `docs/PERF_RUNBOOK.md`).
+
+
+## Регулярная QA-практика
+
+- Smoke-check: см. раздел `Runbook: Area Health Snapshot` ниже.
+- Perf-check: см. `docs/PERF_RUNBOOK.md` (минимум Scene M для каждого заметного изменения ambient-life).
+- Для правок в route/registry/dispatcher: обязательный PR-отчёт «до/после» по шаблону из `docs/PERF_RUNBOOK.md`.
 
 ## Runbook: Area Health Snapshot (операторский минимум)
 

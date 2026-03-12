@@ -95,6 +95,7 @@
 2. Привязать entry scripts (см. `INSTALLATION.md`).
 3. Настроить locals у NPC/waypoints/areas (см. `docs/TOOLSET_CONTRACT.md`).
 4. Пройти smoke-check из `TASKS.md`.
+5. Выполнить perf-check по `docs/PERF_RUNBOOK.md` (как часть регулярного QA).
 
 ## Ключевые runtime-константы
 
@@ -119,6 +120,7 @@
 - `INSTALLATION.md` — установка и подключение в модуле.
 - `AUDIT.md` — текущие риски и контрольные меры.
 - `TASKS.md` — активный backlog.
+- `docs/PERF_RUNBOOK.md` — воспроизводимый perf-протокол и PR-шаблон отчёта «до/после».
 
 ## Что важно помнить
 
