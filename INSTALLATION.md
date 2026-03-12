@@ -210,8 +210,9 @@
 
 ### Area tuning locals (можно задавать вручную)
 - `al_max_npcs` (int, optional): effective cap для registry.
+  - Источник effective-cap: сначала area local `al_max_npcs`, затем fallback на module local `al_max_npcs`, затем fallback на `AL_MAX_NPCS_DEFAULT=100`.
   - Валидный диапазон: `20..200`.
-  - `<=19` или `>=201` => значение считается невалидным и применяется `AL_MAX_NPCS_DEFAULT=100`.
+  - Значения вне диапазона (включая `<=19`, `>=201`, `0`, отрицательные) считаются невалидными и приводят к fallback-логике.
   - Изменение cap в runtime не сбрасывает `al_reg_overflow_count`; для интерпретации текущего cap используется `al_reg_overflow_count_cap`.
 
 ---
@@ -220,7 +221,7 @@
 
 - `AL_AREA_TICK_SEC = 30.0`
 - `AL_MAX_NPCS_DEFAULT = 100` на одну area (базовый cap)
-- `al_max_npcs` (area local, optional) переопределяет cap в безопасном диапазоне `20..200`; вне диапазона используется fallback `AL_MAX_NPCS_DEFAULT`
+- `al_max_npcs` (area/module local, optional) переопределяет cap в безопасном диапазоне `20..200`; приоритет: area -> module -> `AL_MAX_NPCS_DEFAULT`
 - `AL_ROUTE_MAX_STEPS = 16`
 
 События шины:
@@ -248,6 +249,12 @@
    - `al_h_reg_overflow_count=0` и `al_h_route_overflow_count=0` для штатного контента;
    - в module log появляются записи `[AL][AreaHealthDelta]` (минимум одна запись при изменении метрик).
 4. Если после 2–3 тиков health-метрики не появились/не меняются, считать подключение hooks некорректным и перепроверить раздел 2.
+
+### 6.2 Smoke-проверка cap-профилей (80/100/120)
+
+1. Выполнить три прогона с `al_max_npcs=80`, `100`, `120` (через area local; при отсутствии area local допускается module local как fallback).
+2. Для каждого прогона зафиксировать в отчёте минимум две метрики: `al_reg_overflow_count` и `al_dispatch_q_overflow`.
+3. Отчёт сохранять в формате таблицы (рекомендуемо: `docs/perf/baselines/s80_s100_s120_cap_smoke.md`) с колонками: `cap`, `al_reg_overflow_count`, `al_dispatch_q_overflow`, `status`, `notes`.
 
 ---
 

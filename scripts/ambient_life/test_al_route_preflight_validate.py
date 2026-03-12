@@ -39,5 +39,24 @@ class ValidateRouteMarkupSleepPairTests(unittest.TestCase):
         self.assertTrue(any("missing=bed_1_approach" in issue.details for issue in missing_pair_issues))
 
 
+class ValidateRouteMarkupBedIdTypeTests(unittest.TestCase):
+    def test_al_bed_id_numeric_reports_invalid_type(self):
+        rows = [
+            {
+                "area_tag": "inn_01",
+                "route_tag": "route_a",
+                "waypoint_tag": "bed_1_approach",
+                "al_step": 0,
+                "al_bed_id": 123,
+            },
+        ]
+
+        issues = validate_route_markup(rows)
+
+        invalid_type_issues = [issue for issue in issues if issue.code == "invalid_bed_id_type"]
+        self.assertEqual(len(invalid_type_issues), 1)
+        self.assertIn("al_bed_id=123", invalid_type_issues[0].details)
+
+
 if __name__ == "__main__":
     unittest.main()

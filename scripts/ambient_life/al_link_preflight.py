@@ -8,6 +8,8 @@ Input JSON modes:
 Area entry supports either nested locals object:
   {"area_tag": "market", "locals": {"al_link_count": 2, "al_link_0": "gate", "al_link_1": "tavern"}}
 or flat fields on the area object.
+
+Each area must have a unique `area_tag` in the input payload.
 """
 
 from __future__ import annotations
@@ -148,6 +150,16 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                 "degree_below_target",
                 f"degree={degree} below target {TARGET_DEGREE_MIN}..{TARGET_DEGREE_MAX}",
             )
+
+        if area_tag in adjacency:
+            _append_issue(
+                issues,
+                "ERROR",
+                area_tag,
+                "duplicate_area_tag",
+                f"area_tag {area_tag!r} appears more than once in payload",
+            )
+            continue
 
         adjacency[area_tag] = set(values)
 

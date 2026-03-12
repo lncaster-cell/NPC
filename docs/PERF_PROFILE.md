@@ -42,6 +42,7 @@
 - `al_reg_overflow_count`
 - `al_route_overflow_count`
 - `al_h_recent_resync`
+- `al_h_reg_index_miss_delta`
 - `al_h_reg_index_miss_window_delta`
 - `al_reg_compact_calls` / `al_reg_compact_calls_window`
 - `al_dispatch_ticks_to_drain`
@@ -73,6 +74,7 @@
 | `al_reg_overflow_count` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..4`, critical: `>=5` |
 | `al_route_overflow_count` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..4`, critical: `>=5` |
 | `al_h_recent_resync` | warn: `3..5`, critical: `>=6` | warn: `4..7`, critical: `>=8` | warn: `6..10`, critical: `>=11` |
+| `al_h_reg_index_miss_delta` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..3`, critical: `>=4` |
 | `al_h_reg_index_miss_window_delta` | warn: `1..2`, critical: `>=3` | warn: `1..3`, critical: `>=4` | warn: `2..4`, critical: `>=5` |
 
 Единое правило:
@@ -105,6 +107,7 @@
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
 | al_h_recent_resync |  |  |  |  |  |  |
+| al_h_reg_index_miss_delta |  |  |  |  |  |  |
 | al_h_reg_index_miss_window_delta |  |  |  |  |  |  |
 | al_reg_compact_calls / al_reg_compact_calls_window |  |  |  | n/a | n/a | ожидается снижение |
 | al_dispatch_ticks_to_drain |  |  |  | n/a | n/a | без деградации vs baseline |
@@ -117,6 +120,7 @@
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
 | al_h_recent_resync |  |  |  |  |  |  |
+| al_h_reg_index_miss_delta |  |  |  |  |  |  |
 | al_h_reg_index_miss_window_delta |  |  |  |  |  |  |
 | al_reg_compact_calls / al_reg_compact_calls_window |  |  |  | n/a | n/a | ожидается снижение |
 | al_dispatch_ticks_to_drain |  |  |  | n/a | n/a | без деградации vs baseline |
@@ -129,6 +133,7 @@
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
 | al_h_recent_resync |  |  |  |  |  |  |
+| al_h_reg_index_miss_delta |  |  |  |  |  |  |
 | al_h_reg_index_miss_window_delta |  |  |  |  |  |  |
 | al_reg_compact_calls / al_reg_compact_calls_window |  |  |  | n/a | n/a | ожидается снижение |
 | al_dispatch_ticks_to_drain |  |  |  | n/a | n/a | без деградации vs baseline |

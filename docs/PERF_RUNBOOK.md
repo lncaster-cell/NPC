@@ -164,17 +164,27 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 | `al_reg_overflow_count` | warn: `1`, critical: `>=2` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | Переполнение registry недопустимо в baseline, в stress — сигнал дефицита ёмкости. |
 | `al_route_overflow_count` | warn: `1`, critical: `>=2` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | Переполнение route-cache/route-пула: риск деградации маршрутизации и повторных rebuild. |
 | `al_h_recent_resync` | warn: `3..4`, critical: `>=5` | warn: `3..5`, critical: `>=6` | warn: `4..7`, critical: `>=8` | Частые resync без явных контентных причин — симптом нестабильности состояния NPC. |
-| `al_h_reg_index_miss_window_delta` | warn: `1..2`, critical: `>=3` | warn: `1..3`, critical: `>=4` | warn: `2..4`, critical: `>=5` | Рост miss-дельты означает рассинхрон reverse-index: реестр чаще уходит в линейный поиск. |
+| `al_h_reg_index_miss_delta` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..3`, critical: `>=4` | Пер-тиковый рост miss-дельты показывает кратковременные всплески рассинхрона reverse-index. |
+| `al_h_reg_index_miss_window_delta` | warn: `1..2`, critical: `>=3` | warn: `1..3`, critical: `>=4` | warn: `2..4`, critical: `>=5` | Рост miss-дельты в окне означает рассинхрон reverse-index: реестр чаще уходит в линейный поиск. |
 
 Правило статуса:
 - `OK` — значение ниже warn-порога;
 - `WARN` — попадает в warn-диапазон;
 - `CRITICAL` — достигает или превышает critical-порог.
 
+### Операторские действия по статусам (обязательно фиксировать в отчёте)
+
+| Статус | Когда ставится | Действия оператора |
+| --- | --- | --- |
+| `OK` | Метрика ниже warn-порога. | 1) Продолжить прогон по матрице S80/S100/S120 без остановки. 2) Зафиксировать значение и `Delta` в markdown+csv. 3) Для overflow-метрик дополнительно подтвердить, что роста нет (`0 -> 0` или без ухудшения). |
+| `WARN` | Метрика в warn-диапазоне. | 1) Пометить строку как `WARN` и приложить фрагмент логов за окно 20 тиков. 2) Выполнить повторный контрольный прогон того же сценария (warmup 2 + measure 20) для исключения шума. 3) Если `WARN` воспроизводится, открыть triage-задачу и оставить PR в состоянии «нужен follow-up». |
+| `CRITICAL` | Метрика достигла critical-порога или выше. | 1) Немедленно остановить baseline-vs-after сравнение как невалидное. 2) Записать incident-note: сценарий, тик, метрика, значение, последние изменения. 3) Выполнить triage (registry/route/dispatch по соответствующей подсистеме), устранить причину и полностью переснять профиль S80/S100/S120. |
+
 Для `*_overflow*` дополнительно фиксируйте и в комментарии, и в выводе отчёта факт роста (`0 -> N`), даже если значение пока в зоне `WARN`.
 
-Для `al_h_reg_index_miss_window_delta` операторские действия при росте:
-- `WARN`: сохранить 20-тиковое окно, приложить `[AL][RegIndexMiss]`-логи и проверить, что у NPC/area не теряются `al_reg_area`/`al_reg_idx`;
+Для `al_h_reg_index_miss_delta` и `al_h_reg_index_miss_window_delta` операторские действия при росте:
+- `OK`: фиксировать в отчёте как «без роста miss-дельты», продолжать прогон.
+- `WARN`: сохранить 20-тиковое окно, приложить `[AL][RegIndexMiss]`-логи и проверить, что у NPC/area не теряются `al_reg_area`/`al_reg_idx`.
 - `CRITICAL`: остановить perf-сравнение как нестабильное, выполнить triage реестра (компактация/перерегистрация NPC, проверка массовых transition), затем повторить прогон.
 
 ### Целевые пороги «до/после» для dispatch-degradation (обязательно для PR)
@@ -206,6 +216,7 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 | al_reg_overflow_count |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
 | al_route_overflow_count |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
 | al_h_recent_resync |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
+| al_h_reg_index_miss_delta |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL | пер-тиковая miss-дельта |
 | al_h_reg_index_miss_window_delta |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL | окно `AL_HEALTH_RESYNC_WINDOW_TICKS` |
 | avg_dispatch_drain |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
 | al_dispatch_ticks_to_drain |  |  |  | baseline ± шум | OK/WARN/CRITICAL | ожидается без деградации |
@@ -287,7 +298,7 @@ Fail-условия gate:
 Минимальный операторский ответ:
 
 1. Зафиксировать окно: warmup 2 тика + measure 20 тиков.
-2. Снять значения `al_h_tier`, `al_h_recent_resync`, `al_h_reg_index_miss_window_delta`, overflow-счётчиков до/после окна.
+2. Снять значения `al_h_tier`, `al_h_recent_resync`, `al_h_reg_index_miss_delta`, `al_h_reg_index_miss_window_delta`, overflow-счётчиков до/после окна.
 3. Если есть рост overflow или устойчивый высокий resync-фон — пересобрать linked-граф (снижение степени хабов, декомпозиция кластера, удаление избыточных связей).
 
 ## 5) Встраивание в регулярный QA-процесс

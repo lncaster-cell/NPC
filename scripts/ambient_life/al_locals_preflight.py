@@ -267,13 +267,17 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
             _append_issue(issues, "ERROR", "area", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}")
             continue
 
-        area_tag_raw = row.get("area_tag", row.get("tag"))
-        area_tag = _read_tag(area_tag_raw) or f"<idx:{index}>"
-        if area_tag_raw is None:
-            _append_issue(issues, "ERROR", "area", area_tag, "missing_area_tag", "area_tag must be non-empty string")
-        elif _read_tag(area_tag_raw) is None:
-            code = "missing_area_tag" if isinstance(area_tag_raw, str) else "invalid_area_tag_type"
-            _append_issue(issues, "ERROR", "area", area_tag, code, "area_tag must be non-empty string")
+        raw_area_tag = row.get("area_tag", row.get("tag"))
+        accepted_area_tag = _read_tag(raw_area_tag)
+        display_area_tag = accepted_area_tag or f"<idx:{index}>"
+        if raw_area_tag is None:
+            _append_issue(issues, "ERROR", "area", display_area_tag, "missing_area_tag", "area_tag must be non-empty string")
+        elif not isinstance(raw_area_tag, str):
+            _append_issue(issues, "ERROR", "area", display_area_tag, "invalid_area_tag_type", "area_tag must be non-empty string")
+        elif raw_area_tag.strip() == "":
+            _append_issue(issues, "ERROR", "area", display_area_tag, "missing_area_tag", "area_tag must be non-empty string")
+
+        area_object_id = accepted_area_tag or display_area_tag
 
         locals_map, has_invalid_locals_type = _extract_locals(row, {"area_tag", "tag", "name", "locals"})
         if has_invalid_locals_type:
@@ -281,7 +285,7 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
                 issues,
                 "ERROR",
                 "area",
-                area_tag,
+                area_object_id,
                 "invalid_locals_type",
                 "[CI_FILTER:INVALID_LOCALS_TYPE] locals key exists but is not an object",
             )
@@ -290,30 +294,30 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
         if link_count is None:
             link_count = 0
         if not is_strict_int(link_count) or link_count < 0:
-            _append_issue(issues, "ERROR", "area", area_tag, "invalid_link_count", "al_link_count must be int >= 0")
+            _append_issue(issues, "ERROR", "area", area_object_id, "invalid_link_count", "al_link_count must be int >= 0")
             link_count = 0
 
         for i in range(link_count):
             key = f"al_link_{i}"
             if not _is_non_empty_string(locals_map.get(key)):
-                _append_issue(issues, "ERROR", "area", area_tag, "missing_link_slot", f"{key} must be non-empty string")
+                _append_issue(issues, "ERROR", "area", area_object_id, "missing_link_slot", f"{key} must be non-empty string")
 
         for key in sorted(k for k in locals_map if k.startswith("al_link_")):
             if key == "al_link_count":
                 continue
             suffix = key.removeprefix("al_link_")
             if not suffix.isdigit():
-                _append_issue(issues, "WARN", "area", area_tag, "non_numeric_link_slot", f"unexpected link key {key}")
+                _append_issue(issues, "WARN", "area", area_object_id, "non_numeric_link_slot", f"unexpected link key {key}")
                 continue
             if int(suffix) >= link_count:
-                _append_issue(issues, "WARN", "area", area_tag, "link_slot_outside_count", f"{key} is set but al_link_count={link_count}")
+                _append_issue(issues, "WARN", "area", area_object_id, "link_slot_outside_count", f"{key} is set but al_link_count={link_count}")
 
         for flag_name in ("al_debug", "al_perf"):
             if flag_name not in locals_map:
                 continue
             flag_val = locals_map.get(flag_name)
             if not is_strict_int(flag_val) or flag_val < 0:
-                _append_issue(issues, "WARN", "area", area_tag, "invalid_debug_perf_flag", f"{flag_name} should be int >= 0")
+                _append_issue(issues, "WARN", "area", area_object_id, "invalid_debug_perf_flag", f"{flag_name} should be int >= 0")
 
 
 def validate_locals(payload: dict[str, Any]) -> list[ValidationIssue]:
