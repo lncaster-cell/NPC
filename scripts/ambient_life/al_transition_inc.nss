@@ -50,22 +50,132 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
         return FALSE;
     }
 
-    oSrc = GetObjectByTag(sSrcTag, 0);
-    oDst = GetObjectByTag(sDstTag, 0);
+    int nDebug = GetLocalInt(oArea, "al_debug");
 
-    if (!GetIsObjectValid(oSrc) || !GetIsObjectValid(oDst))
+    // Resolve source waypoint by tag, explicitly restricted to NPC current area.
+    int iSrc = 0;
+    int nSrcMatches = 0;
+    object oSrcCandidate = GetObjectByTag(sSrcTag, iSrc);
+    while (GetIsObjectValid(oSrcCandidate))
     {
+        if (GetObjectType(oSrcCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oSrcCandidate) == oArea)
+        {
+            nSrcMatches = nSrcMatches + 1;
+            if (nSrcMatches == 1)
+            {
+                oSrc = oSrcCandidate;
+            }
+        }
+
+        iSrc = iSrc + 1;
+        oSrcCandidate = GetObjectByTag(sSrcTag, iSrc);
+    }
+
+    if (nSrcMatches != 1)
+    {
+        if (nDebug > 0)
+        {
+            WriteTimestampedLogEntry(
+                "[AL][TransitionResolve] ambiguous-or-missing src waypoint: area=" + GetTag(oArea)
+                + " src_tag=" + sSrcTag
+                + " matches_in_area=" + IntToString(nSrcMatches)
+            );
+        }
         return FALSE;
     }
 
-    if (GetObjectType(oSrc) != OBJECT_TYPE_WAYPOINT || GetObjectType(oDst) != OBJECT_TYPE_WAYPOINT)
+    // Optional explicit destination-area policy.
+    object oDstTargetArea = GetLocalObject(oStep, "al_trans_dst_area_obj");
+    if (!GetIsObjectValid(oDstTargetArea))
     {
-        return FALSE;
+        oDstTargetArea = GetLocalObject(oStep, "al_trans_target_area");
     }
 
-    // Transition source must belong to current NPC area, destination may be remote.
-    if (GetArea(oSrc) != oArea)
+    string sDstTargetAreaTag = GetLocalString(oStep, "al_trans_dst_area");
+    if (sDstTargetAreaTag == "")
     {
+        sDstTargetAreaTag = GetLocalString(oStep, "al_trans_target_area");
+    }
+
+    if (!GetIsObjectValid(oDstTargetArea) && sDstTargetAreaTag != "")
+    {
+        int iArea = 0;
+        int nAreaMatches = 0;
+        object oAreaCandidate = GetObjectByTag(sDstTargetAreaTag, iArea);
+        while (GetIsObjectValid(oAreaCandidate))
+        {
+            if (GetObjectType(oAreaCandidate) == OBJECT_TYPE_AREA)
+            {
+                nAreaMatches = nAreaMatches + 1;
+                if (nAreaMatches == 1)
+                {
+                    oDstTargetArea = oAreaCandidate;
+                }
+            }
+
+            iArea = iArea + 1;
+            oAreaCandidate = GetObjectByTag(sDstTargetAreaTag, iArea);
+        }
+
+        if (nAreaMatches != 1)
+        {
+            if (nDebug > 0)
+            {
+                WriteTimestampedLogEntry(
+                    "[AL][TransitionResolve] ambiguous-or-missing dst area: area=" + GetTag(oArea)
+                    + " dst_area_tag=" + sDstTargetAreaTag
+                    + " area_matches=" + IntToString(nAreaMatches)
+                );
+            }
+            return FALSE;
+        }
+    }
+
+    // Resolve destination waypoint by tag using explicit target-area policy if configured.
+    int iDst = 0;
+    int nDstMatches = 0;
+    object oDstCandidate = GetObjectByTag(sDstTag, iDst);
+    while (GetIsObjectValid(oDstCandidate))
+    {
+        if (GetObjectType(oDstCandidate) == OBJECT_TYPE_WAYPOINT)
+        {
+            int bAreaMatch = TRUE;
+            if (GetIsObjectValid(oDstTargetArea))
+            {
+                bAreaMatch = (GetArea(oDstCandidate) == oDstTargetArea);
+            }
+
+            if (bAreaMatch)
+            {
+                nDstMatches = nDstMatches + 1;
+                if (nDstMatches == 1)
+                {
+                    oDst = oDstCandidate;
+                }
+            }
+        }
+
+        iDst = iDst + 1;
+        oDstCandidate = GetObjectByTag(sDstTag, iDst);
+    }
+
+    if (nDstMatches != 1)
+    {
+        if (nDebug > 0)
+        {
+            string sScope = "global";
+            if (GetIsObjectValid(oDstTargetArea))
+            {
+                sScope = GetTag(oDstTargetArea);
+            }
+
+            WriteTimestampedLogEntry(
+                "[AL][TransitionResolve] ambiguous-or-missing dst waypoint: area=" + GetTag(oArea)
+                + " dst_tag=" + sDstTag
+                + " scope=" + sScope
+                + " matches=" + IntToString(nDstMatches)
+            );
+        }
         return FALSE;
     }
 
