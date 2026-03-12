@@ -10,6 +10,7 @@ const int AL_SIM_TIER_WARM = 1;
 const int AL_SIM_TIER_HOT = 2;
 const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
+const int AL_WARM_COMPACT_MIN_SYNC_TICKS = 4;
 const int AL_WP_CACHE_TTL_TICKS = 10;
 const int AL_HEALTH_RESYNC_WINDOW_TICKS = 8;
 const int AL_LINK_REBUILD_METRICS_WINDOW_TICKS = 100;
@@ -754,6 +755,17 @@ void AL_DispatchEventToAreaRegistry(object oArea, int nEvent)
 void AL_AreaTick(object oArea, int nToken);
 void AL_RunScheduledAreaTick(object oArea, int nToken);
 
+void AL_RunScheduledAreaTick(object oArea, int nToken)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, AL_TICK_SCHED_MARKER_LOCAL, TRUE);
+    AL_AreaTick(oArea, nToken);
+    DeleteLocalInt(oArea, AL_TICK_SCHED_MARKER_LOCAL);
+}
 
 void AL_ScheduleAreaTick(object oArea, int nToken)
 {
