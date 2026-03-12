@@ -35,7 +35,13 @@ string AL_RouteTagFromSlot(object oNpc, int nSlot)
         return "";
     }
 
-    return GetLocalString(oNpc, "alwp" + IntToString(nSlot));
+    string sTag = GetLocalString(oNpc, "alwp" + IntToString(nSlot));
+    if (sTag != "")
+    {
+        return sTag;
+    }
+
+    return GetLocalString(oNpc, "AL_WP_S" + IntToString(nSlot));
 }
 
 void AL_RouteInvalidateCache(object oNpc)
