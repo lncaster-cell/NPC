@@ -64,20 +64,63 @@ def is_strict_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
+def _read_tag(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    tag = value.strip()
+    return tag or None
+
+
 def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, ValidationIssue | None]:
-    area_tag = str(raw.get("area_tag", "")).strip()
-    route_tag = str(raw.get("route_tag", "")).strip()
-    waypoint_tag = str(raw.get("waypoint_tag", f"<idx:{index}>"))
+    area_tag_raw = raw.get("area_tag")
+    area_tag = _read_tag(area_tag_raw)
+    route_tag_raw = raw.get("route_tag")
+    route_tag = _read_tag(route_tag_raw)
+    waypoint_tag_raw = raw.get("waypoint_tag")
+    waypoint_tag = _read_tag(waypoint_tag_raw) or f"<idx:{index}>"
     step_raw = raw.get("al_step")
     al_bed_id = str(raw.get("al_bed_id", "")).strip()
 
-    if not area_tag or not route_tag:
+    if area_tag is None:
+        code = (
+            "missing_area_tag"
+            if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
+            else "invalid_area_tag_type"
+        )
         return None, ValidationIssue(
-            level="WARN",
-            area_tag=area_tag or "<unknown-area>",
+            level="ERROR",
+            area_tag="<unknown-area>",
             route_tag=route_tag or "<unknown-route>",
-            code="missing_route_or_area_tag",
+            code=code,
             details=f"waypoint={waypoint_tag}",
+        )
+
+    if route_tag is None:
+        code = (
+            "missing_route_tag"
+            if route_tag_raw is None or (isinstance(route_tag_raw, str) and route_tag_raw.strip() == "")
+            else "invalid_route_tag_type"
+        )
+        return None, ValidationIssue(
+            level="ERROR",
+            area_tag=area_tag,
+            route_tag="<unknown-route>",
+            code=code,
+            details=f"waypoint={waypoint_tag}",
+        )
+
+    if waypoint_tag.startswith(f"<idx:{index}>") and _read_tag(waypoint_tag_raw) is None:
+        code = (
+            "missing_waypoint_tag"
+            if waypoint_tag_raw is None or (isinstance(waypoint_tag_raw, str) and waypoint_tag_raw.strip() == "")
+            else "invalid_waypoint_tag_type"
+        )
+        return None, ValidationIssue(
+            level="ERROR",
+            area_tag=area_tag,
+            route_tag=route_tag,
+            code=code,
+            details=f"waypoint=<idx:{index}>",
         )
 
     if not is_strict_int(step_raw):
