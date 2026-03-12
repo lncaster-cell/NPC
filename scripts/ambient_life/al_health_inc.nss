@@ -483,21 +483,21 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
         nRegIndexMissStatus = 1;
     }
 
-    AL_SetLocalIntOnChange(oArea, "al_h_npc_count", nNpcCount);
-    AL_SetLocalIntOnChange(oArea, "al_h_tier", nTier);
-    AL_SetLocalIntOnChange(oArea, "al_h_slot", nSlot);
-    AL_SetLocalIntOnChange(oArea, "al_h_sync_tick", nSyncTick);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_overflow_count", nRegOverflow);
-    AL_SetLocalIntOnChange(oArea, "al_h_route_overflow_count", nRouteOverflow);
-    AL_SetLocalIntOnChange(oArea, "al_h_recent_resync", nRecentResync);
-    AL_SetLocalIntOnChange(oArea, "al_h_recent_resync_mask", nResyncMask);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_delta", nRegIndexMissDelta);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_ticks", nRegIndexMissWindowTicks);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_warn_status", nRegIndexMissStatus);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_cold_start_delta", nRegIndexMissColdStartDelta);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_stale_delta", nRegIndexMissStaleDelta);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_orphan_delta", nRegIndexMissOrphanDelta);
+    AL_SetLocalIfChangedInt(oArea, "al_h_npc_count", nNpcCount);
+    AL_SetLocalIfChangedInt(oArea, "al_h_tier", nTier);
+    AL_SetLocalIfChangedInt(oArea, "al_h_slot", nSlot);
+    AL_SetLocalIfChangedInt(oArea, "al_h_sync_tick", nSyncTick);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_overflow_count", nRegOverflow);
+    AL_SetLocalIfChangedInt(oArea, "al_h_route_overflow_count", nRouteOverflow);
+    AL_SetLocalIfChangedInt(oArea, "al_h_recent_resync", nRecentResync);
+    AL_SetLocalIfChangedInt(oArea, "al_h_recent_resync_mask", nResyncMask);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_delta", nRegIndexMissDelta);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_window_ticks", nRegIndexMissWindowTicks);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_warn_status", nRegIndexMissStatus);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_cold_start_delta", nRegIndexMissColdStartDelta);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_stale_delta", nRegIndexMissStaleDelta);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_orphan_delta", nRegIndexMissOrphanDelta);
 
     if (GetLocalInt(oArea, "al_debug") > 0)
     {
@@ -578,18 +578,18 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
         );
     }
 
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_npc_count", nNpcCount);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_tier", nTier);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_slot", nSlot);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_reg_overflow", nRegOverflow);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_route_overflow", nRouteOverflow);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_recent_resync", nRecentResync);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_last", nRegIndexMiss);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_start_tick", nRegIndexMissWindowStartTick);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_start_value", nRegIndexMissWindowStartValue);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_warn_prev_status", nRegIndexMissStatus);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_cold_start_last", nRegIndexMissColdStart);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_stale_last", nRegIndexMissStale);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_orphan_last", nRegIndexMissOrphan);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_npc_count", nNpcCount);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_tier", nTier);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_slot", nSlot);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_reg_overflow", nRegOverflow);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_route_overflow", nRouteOverflow);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_recent_resync", nRecentResync);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_last", nRegIndexMiss);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_window_start_tick", nRegIndexMissWindowStartTick);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_window_start_value", nRegIndexMissWindowStartValue);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_warn_prev_status", nRegIndexMissStatus);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_cold_start_last", nRegIndexMissColdStart);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_stale_last", nRegIndexMissStale);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_orphan_last", nRegIndexMissOrphan);
 }

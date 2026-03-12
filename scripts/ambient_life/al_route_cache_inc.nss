@@ -1,5 +1,7 @@
 // Ambient Life route cache helpers (extracted from al_route_inc).
 
+const int AL_ROUTE_REBUILD_FAIL_COOLDOWN_TICKS = 2;
+
 string AL_RouteAreaCacheStepsKey(string sRouteTag) { return "al_route_area_steps_" + sRouteTag; }
 string AL_RouteAreaCacheTickKey(string sRouteTag) { return "al_route_area_tick_" + sRouteTag; }
 string AL_RouteAreaStepKey(string sRouteTag, int nIdx) { return "al_route_area_step_" + sRouteTag + "_" + IntToString(nIdx); }
@@ -9,6 +11,66 @@ string AL_RouteAreaContentVersionKey(string sRouteTag) { return "al_route_area_c
 string AL_RouteAreaCandidateCountKey(string sRouteTag) { return "al_route_area_candidate_count_" + sRouteTag; }
 string AL_RouteAreaFingerprintTickKey(string sRouteTag) { return "al_route_fp_tick_" + sRouteTag; }
 string AL_RouteAreaFingerprintValueKey(string sRouteTag) { return "al_route_fp_value_" + sRouteTag; }
+
+string AL_RouteAreaFailTickKey(string sRouteTag) { return "al_route_area_fail_tick_" + sRouteTag; }
+string AL_RouteAreaPendingKey(string sRouteTag) { return "al_route_area_pending_" + sRouteTag; }
+
+int AL_RouteCanRebuildThisTick(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return FALSE;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    if (nSyncTick <= 0)
+    {
+        return TRUE;
+    }
+
+    return GetLocalInt(oArea, "al_route_rebuild_sync_tick") != nSyncTick;
+}
+
+void AL_RouteMarkAreaPending(object oArea, string sRouteTag)
+{
+    if (!GetIsObjectValid(oArea) || sRouteTag == "")
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag)) == TRUE)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag), TRUE);
+    SetLocalInt(oArea, "al_route_pending_rebuild", TRUE);
+    SetLocalInt(oArea, "al_route_pending_count", GetLocalInt(oArea, "al_route_pending_count") + 1);
+}
+
+void AL_RouteClearAreaPending(object oArea, string sRouteTag)
+{
+    if (!GetIsObjectValid(oArea) || sRouteTag == "")
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag)) != TRUE)
+    {
+        return;
+    }
+
+    DeleteLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag));
+
+    int nPending = GetLocalInt(oArea, "al_route_pending_count") - 1;
+    if (nPending < 0)
+    {
+        nPending = 0;
+    }
+
+    SetLocalInt(oArea, "al_route_pending_count", nPending);
+    SetLocalInt(oArea, "al_route_pending_rebuild", nPending > 0);
+}
 
 int AL_RouteAreaCacheStepsValid(object oArea, string sRouteTag)
 {
@@ -71,6 +133,8 @@ int AL_ComputeRouteFingerprintFromCandidates(object oArea, string sRouteTag, int
     {
         return 0;
     }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
 
     int nFingerprint = AL_RouteHashString(23, sRouteTag);
     nFingerprint = AL_RouteHashMix(nFingerprint, nCandidateCount + 29);
@@ -193,6 +257,7 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
     DeleteLocalInt(oArea, AL_RouteAreaFingerprintValueKey(sRouteTag));
     DeleteLocalInt(oArea, AL_RouteAreaContentVersionKey(sRouteTag));
     DeleteLocalInt(oArea, AL_RouteAreaCandidateCountKey(sRouteTag));
+    DeleteLocalInt(oArea, AL_RouteAreaFailTickKey(sRouteTag));
     if (bHadCache)
     {
         SetLocalInt(oArea, "route_cache_invalidations", GetLocalInt(oArea, "route_cache_invalidations") + 1);
@@ -451,6 +516,7 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
     }
 
     SetLocalInt(oArea, "route_cache_rebuilds", GetLocalInt(oArea, "route_cache_rebuilds") + 1);
+    SetLocalInt(oArea, "al_route_rebuild_sync_tick", nSyncTick);
     int bBuilt = AL_RouteBuildAreaCache(oArea, sRouteTag);
     if (!bBuilt && !bForceRebuild)
     {
@@ -459,6 +525,7 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
             AL_RouteAreaRebuildCooldownUntilKey(sRouteTag),
             nSyncTick + AL_ROUTE_REBUILD_COOLDOWN_TICKS
         );
+        SetLocalInt(oArea, AL_RouteAreaFailTickKey(sRouteTag), nSyncTick);
     }
 
     return bBuilt;
