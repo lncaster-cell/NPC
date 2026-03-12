@@ -94,16 +94,22 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
 {
     AL_RouteInvalidateAreaCache(oArea, sRouteTag);
 
+    DeleteLocalString(oArea, "al_route_fail_reason");
+    SetLocalInt(oArea, "al_route_invalid_step_count", 0);
+    SetLocalInt(oArea, "al_route_duplicate_step_count", 0);
+
     if (!GetIsObjectValid(oArea) || sRouteTag == "")
     {
         return FALSE;
     }
 
-    int anStepVals[AL_ROUTE_MAX_STEPS];
     object aoStepRefs[AL_ROUTE_MAX_STEPS];
+    int anStepOccupied[AL_ROUTE_MAX_STEPS];
     int nFound = 0;
     int nValidCandidates = 0;
     int nOverflowCandidates = 0;
+    int nInvalidStepCandidates = 0;
+    int nDuplicateStepCandidates = 0;
     int nCandidateCount = AL_GetWaypointCandidatesCountCached(oArea, sRouteTag);
     int nCandidateIdx = 0;
 
@@ -117,27 +123,17 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
         }
 
         int nStep = GetLocalInt(oWp, "al_step");
-        if (nStep < 0)
+        if (nStep < 0 || nStep >= AL_ROUTE_MAX_STEPS)
         {
+            nInvalidStepCandidates = nInvalidStepCandidates + 1;
             continue;
         }
 
         nValidCandidates = nValidCandidates + 1;
 
-        int bDuplicateStep = FALSE;
-        int i = 0;
-        while (i < nFound)
+        if (anStepOccupied[nStep])
         {
-            if (anStepVals[i] == nStep)
-            {
-                bDuplicateStep = TRUE;
-                break;
-            }
-            i = i + 1;
-        }
-
-        if (bDuplicateStep)
-        {
+            nDuplicateStepCandidates = nDuplicateStepCandidates + 1;
             continue;
         }
 
@@ -147,15 +143,43 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
             continue;
         }
 
-        anStepVals[nFound] = nStep;
-        aoStepRefs[nFound] = oWp;
+        anStepOccupied[nStep] = TRUE;
+        aoStepRefs[nStep] = oWp;
         nFound = nFound + 1;
+
+    }
+
+    SetLocalInt(oArea, "al_route_invalid_step_count", nInvalidStepCandidates);
+    SetLocalInt(oArea, "al_route_duplicate_step_count", nDuplicateStepCandidates);
+
+    string sRejectDiag = "";
+    if (nInvalidStepCandidates > 0)
+    {
+        sRejectDiag = sRejectDiag + "invalid_step=" + IntToString(nInvalidStepCandidates);
+    }
+
+    if (nDuplicateStepCandidates > 0)
+    {
+        if (sRejectDiag != "")
+        {
+            sRejectDiag = sRejectDiag + ";";
+        }
+
+        sRejectDiag = sRejectDiag + "duplicate_step=" + IntToString(nDuplicateStepCandidates);
     }
 
     if (nOverflowCandidates > 0)
     {
         SetLocalInt(oArea, "al_route_overflow_count", GetLocalInt(oArea, "al_route_overflow_count") + 1);
         SetLocalString(oArea, "al_route_overflow_tag", sRouteTag);
+
+        string sFailReason = "overflow";
+        if (sRejectDiag != "")
+        {
+            sFailReason = sFailReason + ";" + sRejectDiag;
+        }
+
+        SetLocalString(oArea, "al_route_fail_reason", sFailReason);
 
         if (GetLocalInt(oArea, "al_debug") > 0)
         {
@@ -174,39 +198,25 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
 
     if (nFound <= 0)
     {
+        string sFailReason = "empty";
+        if (sRejectDiag != "")
+        {
+            sFailReason = sFailReason + ";" + sRejectDiag;
+        }
+
+        SetLocalString(oArea, "al_route_fail_reason", sFailReason);
         return FALSE;
     }
 
-    int iSort = 0;
-    while (iSort < nFound)
+    if (!anStepOccupied[0])
     {
-        int iMin = iSort;
-        int j = iSort + 1;
-
-        while (j < nFound)
+        string sFailReason = "missing_step_0";
+        if (sRejectDiag != "")
         {
-            if (anStepVals[j] < anStepVals[iMin])
-            {
-                iMin = j;
-            }
-            j = j + 1;
+            sFailReason = sFailReason + ";" + sRejectDiag;
         }
 
-        if (iMin != iSort)
-        {
-            int nTmpStep = anStepVals[iSort];
-            object oTmpRef = aoStepRefs[iSort];
-            anStepVals[iSort] = anStepVals[iMin];
-            aoStepRefs[iSort] = aoStepRefs[iMin];
-            anStepVals[iMin] = nTmpStep;
-            aoStepRefs[iMin] = oTmpRef;
-        }
-
-        iSort = iSort + 1;
-    }
-
-    if (anStepVals[0] != 0)
-    {
+        SetLocalString(oArea, "al_route_fail_reason", sFailReason);
         AL_RouteInvalidateAreaCache(oArea, sRouteTag);
         return FALSE;
     }
@@ -214,8 +224,15 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
     int iCheck = 0;
     while (iCheck < nFound)
     {
-        if (anStepVals[iCheck] != iCheck)
+        if (!anStepOccupied[iCheck])
         {
+            string sFailReason = "non_contiguous";
+            if (sRejectDiag != "")
+            {
+                sFailReason = sFailReason + ";" + sRejectDiag;
+            }
+
+            SetLocalString(oArea, "al_route_fail_reason", sFailReason);
             AL_RouteInvalidateAreaCache(oArea, sRouteTag);
             return FALSE;
         }
@@ -226,6 +243,7 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
 
     SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), nFound);
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), GetLocalInt(oArea, "al_sync_tick"));
+    DeleteLocalString(oArea, "al_route_fail_reason");
     return TRUE;
 }
 
@@ -298,7 +316,10 @@ void AL_RouteResetAreaOverflowMetrics(object oArea)
     }
 
     SetLocalInt(oArea, "al_route_overflow_count", 0);
+    SetLocalInt(oArea, "al_route_invalid_step_count", 0);
+    SetLocalInt(oArea, "al_route_duplicate_step_count", 0);
     DeleteLocalString(oArea, "al_route_overflow_tag");
+    DeleteLocalString(oArea, "al_route_fail_reason");
 }
 
 int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
@@ -317,10 +338,17 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
     }
 
     SetLocalInt(oNpc, "al_route_overflow_count", 0);
+    SetLocalInt(oNpc, "al_route_invalid_step_count", 0);
+    SetLocalInt(oNpc, "al_route_duplicate_step_count", 0);
     DeleteLocalString(oNpc, "al_route_overflow_tag");
+    DeleteLocalString(oNpc, "al_route_fail_reason");
 
     if (!AL_RouteEnsureAreaCache(oNpcArea, sRouteTag, FALSE))
     {
+        SetLocalInt(oNpc, "al_route_overflow_count", GetLocalInt(oNpcArea, "al_route_overflow_count"));
+        SetLocalInt(oNpc, "al_route_invalid_step_count", GetLocalInt(oNpcArea, "al_route_invalid_step_count"));
+        SetLocalInt(oNpc, "al_route_duplicate_step_count", GetLocalInt(oNpcArea, "al_route_duplicate_step_count"));
+        SetLocalString(oNpc, "al_route_fail_reason", GetLocalString(oNpcArea, "al_route_fail_reason"));
         return FALSE;
     }
 
