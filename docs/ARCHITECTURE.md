@@ -80,17 +80,30 @@ Crime/alarm на Stage I.2 намеренно **не** добавляет нов
 
 ### 4.2 Area health snapshot locals
 
-Для быстрой runtime-диагностики area-loop обновляет health snapshot locals (`AL_UpdateAreaHealthSnapshot`):
+Для быстрой runtime-диагностики area-loop обновляет health snapshot locals (`AL_UpdateAreaHealthSnapshot`) с разными классами частоты:
 
-- `al_h_npc_count` — текущее значение `al_npc_count`;
-- `al_h_tier` — текущий tier area (`FREEZE/WARM/HOT`);
-- `al_h_slot` — текущий вычисленный слот времени для HOT area;
-- `al_h_sync_tick` — последний sync tick, попавший в snapshot;
-- `al_h_reg_overflow_count` — накопленный счётчик overflow реестра NPC;
-- `al_h_route_overflow_count` — накопленный счётчик overflow route cache;
-- `al_h_recent_resync_mask` — rolling bitmask resync-событий за окно `AL_HEALTH_RESYNC_WINDOW_TICKS`;
-- `al_h_recent_resync` — popcount для `al_h_recent_resync_mask` (кол-во resync в текущем rolling окне);
-- `al_h_resync_window_mask` — предвычисленная маска окна (`(1 << AL_HEALTH_RESYNC_WINDOW_TICKS) - 1`) для поддержания rolling-семантики без пересчёта на каждом тикe.
+- **Критичные (каждый тик):**
+  - `al_h_sync_tick` — последний sync tick, попавший в snapshot;
+  - `al_h_recent_resync_mask` — rolling bitmask resync-событий за окно `AL_HEALTH_RESYNC_WINDOW_TICKS`;
+  - `al_h_recent_resync` — popcount для `al_h_recent_resync_mask` (кол-во resync в текущем rolling окне);
+  - `al_h_reg_index_miss_delta` — инкремент miss-счётчика за последний тик.
+- **Квазистатичные (write-on-change):**
+  - `al_h_npc_count` — текущее значение `al_npc_count`;
+  - `al_h_tier` — текущий tier area (`FREEZE/WARM/HOT`);
+  - `al_h_slot` — текущий вычисленный слот времени для HOT area;
+  - `al_h_reg_overflow_count` — накопленный счётчик overflow реестра NPC;
+  - `al_h_route_overflow_count` — накопленный счётчик overflow route cache;
+  - `al_h_resync_window_mask` — предвычисленная маска окна (`(1 << AL_HEALTH_RESYNC_WINDOW_TICKS) - 1`) для поддержания rolling-семантики без пересчёта на каждом тикe.
+- **Тяжёлые диагностические (sampling):**
+  - `al_h_reg_index_miss_window_delta`;
+  - `al_h_reg_index_miss_window_ticks`;
+  - `al_h_reg_index_miss_warn_status`.
+
+Sampling тяжёлых диагностических полей:
+
+- в `HOT` обновление выполняется раз в 2 тика;
+- в `WARM` обновление выполняется раз в 4 тика;
+- при свежем miss-инциденте (`al_h_reg_index_miss_delta > 0`) тяжёлые поля обновляются немедленно, вне расписания sampling.
 
 ## 5. Инварианты
 
