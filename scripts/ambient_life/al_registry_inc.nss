@@ -9,18 +9,63 @@ string AL_RegKey(int nIdx)
     return "al_npc_" + IntToString(nIdx);
 }
 
+string AL_RegStableId(object oNpc)
+{
+    return GetTag(oNpc) + "#" + ObjectToString(oNpc);
+}
+
+string AL_RegReverseKey(string sStableId)
+{
+    return "al_reg_rev_" + sStableId;
+}
+
+int AL_RegReverseGet(object oArea, object oNpc)
+{
+    int nStored = GetLocalInt(oArea, AL_RegReverseKey(AL_RegStableId(oNpc)));
+    if (nStored <= 0)
+    {
+        return -1;
+    }
+
+    return nStored - 1;
+}
+
+void AL_RegReverseSet(object oArea, object oNpc, int nIdx)
+{
+    if (!GetIsObjectValid(oArea) || !GetIsObjectValid(oNpc) || nIdx < 0)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, AL_RegReverseKey(AL_RegStableId(oNpc)), nIdx + 1);
+}
+
+void AL_RegReverseDelete(object oArea, object oNpc)
+{
+    if (!GetIsObjectValid(oArea) || !GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    DeleteLocalInt(oArea, AL_RegReverseKey(AL_RegStableId(oNpc)));
+}
+
 int AL_FindNPCInRegistry(object oArea, object oNpc)
 {
-    if (GetLocalObject(oNpc, "al_reg_area") == oArea)
+    int nReverseIdx = AL_RegReverseGet(oArea, oNpc);
+    if (nReverseIdx >= 0)
     {
-        int nFastIdx = GetLocalInt(oNpc, "al_reg_idx");
-        if (nFastIdx >= 0 && GetLocalObject(oArea, AL_RegKey(nFastIdx)) == oNpc)
+        if (GetLocalObject(oArea, AL_RegKey(nReverseIdx)) == oNpc)
         {
-            return nFastIdx;
+            SetLocalInt(oArea, "al_reg_reverse_hit", GetLocalInt(oArea, "al_reg_reverse_hit") + 1);
+            SetLocalObject(oNpc, "al_reg_area", oArea);
+            SetLocalInt(oNpc, "al_reg_idx", nReverseIdx);
+            return nReverseIdx;
         }
-
-        SetLocalInt(oArea, "al_reg_index_miss", GetLocalInt(oArea, "al_reg_index_miss") + 1);
     }
+
+    SetLocalInt(oArea, "al_reg_reverse_miss", GetLocalInt(oArea, "al_reg_reverse_miss") + 1);
+    SetLocalInt(oArea, "al_reg_index_miss", GetLocalInt(oArea, "al_reg_index_miss") + 1);
 
     int nCount = GetLocalInt(oArea, "al_npc_count");
     int i = 0;
@@ -29,6 +74,9 @@ int AL_FindNPCInRegistry(object oArea, object oNpc)
     {
         if (GetLocalObject(oArea, AL_RegKey(i)) == oNpc)
         {
+            AL_RegReverseSet(oArea, oNpc, i);
+            SetLocalObject(oNpc, "al_reg_area", oArea);
+            SetLocalInt(oNpc, "al_reg_idx", i);
             return i;
         }
         i = i + 1;
@@ -54,6 +102,8 @@ int AL_UnregisterNPCFromArea(object oNpc, object oArea)
     int nLastIdx = nCount - 1;
     object oLast = GetLocalObject(oArea, AL_RegKey(nLastIdx));
 
+    AL_RegReverseDelete(oArea, oNpc);
+
     if (nIdx != nLastIdx)
     {
         SetLocalObject(oArea, AL_RegKey(nIdx), oLast);
@@ -61,6 +111,7 @@ int AL_UnregisterNPCFromArea(object oNpc, object oArea)
         {
             SetLocalInt(oLast, "al_reg_idx", nIdx);
             SetLocalObject(oLast, "al_reg_area", oArea);
+            AL_RegReverseSet(oArea, oLast, nIdx);
         }
     }
 
@@ -104,6 +155,7 @@ void AL_RegisterNPCInArea(object oNpc, object oArea)
     SetLocalInt(oArea, "al_npc_count", nCount + 1);
     SetLocalObject(oNpc, "al_reg_area", oArea);
     SetLocalInt(oNpc, "al_reg_idx", nCount);
+    AL_RegReverseSet(oArea, oNpc, nCount);
     SetLocalInt(oArea, "al_reg_dirty", TRUE);
 }
 
@@ -242,6 +294,7 @@ void AL_RegistryCompact(object oArea)
         {
             if (GetIsObjectValid(oNpc))
             {
+                AL_RegReverseDelete(oArea, oNpc);
                 DeleteLocalObject(oNpc, "al_reg_area");
                 DeleteLocalInt(oNpc, "al_reg_idx");
             }
@@ -256,6 +309,7 @@ void AL_RegistryCompact(object oArea)
                 {
                     SetLocalInt(oLast, "al_reg_idx", i);
                     SetLocalObject(oLast, "al_reg_area", oArea);
+                    AL_RegReverseSet(oArea, oLast, i);
                 }
             }
 
@@ -269,6 +323,7 @@ void AL_RegistryCompact(object oArea)
         SetLocalObject(oNpc, "al_last_area", oArea);
         SetLocalObject(oNpc, "al_reg_area", oArea);
         SetLocalInt(oNpc, "al_reg_idx", i);
+        AL_RegReverseSet(oArea, oNpc, i);
         i = i + 1;
     }
 

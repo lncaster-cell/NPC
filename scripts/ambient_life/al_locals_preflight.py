@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offline locals preflight validator for Ambient Life content objects.
 
-Expected JSON input shape:
+Expected JSON input shape (all three top-level sections are required):
 {
   "npcs": [
     {"npc_tag": "npc_a", "locals": {"alwp0": "market_route", "al_default_activity": 1}}
@@ -52,19 +52,28 @@ def _read_input(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("JSON root must be an object")
 
-    return {
-        "npcs": payload.get("npcs", []),
-        "waypoints": payload.get("waypoints", []),
-        "areas": payload.get("areas", []),
-    }
+    result: dict[str, Any] = {}
+    for key in ("npcs", "waypoints", "areas"):
+        if key not in payload:
+            raise ValueError(f"JSON object must contain required '{key}' array")
+
+        value = payload[key]
+        if not isinstance(value, list):
+            raise ValueError(f"'{key}' must be an array")
+
+        result[key] = value
+
+    return result
 
 
-def _extract_locals(raw: dict[str, Any], reserved_fields: set[str]) -> dict[str, Any]:
-    locals_payload = raw.get("locals")
-    if isinstance(locals_payload, dict):
-        return locals_payload
+def _extract_locals(raw: dict[str, Any], reserved_fields: set[str]) -> tuple[dict[str, Any], bool]:
+    if "locals" in raw:
+        locals_payload = raw.get("locals")
+        if isinstance(locals_payload, dict):
+            return locals_payload, False
+        return {}, True
 
-    return {k: v for k, v in raw.items() if k not in reserved_fields}
+    return {k: v for k, v in raw.items() if k not in reserved_fields}, False
 
 
 def _append_issue(issues: list[ValidationIssue], level: str, scope: str, object_id: str, code: str, reason: str) -> None:
@@ -86,7 +95,16 @@ def _validate_npcs(rows: list[Any], issues: list[ValidationIssue]) -> None:
             continue
 
         npc_tag = str(row.get("npc_tag", row.get("tag", f"<idx:{index}>"))).strip() or f"<idx:{index}>"
-        locals_map = _extract_locals(row, {"npc_tag", "tag", "name", "locals"})
+        locals_map, has_invalid_locals_type = _extract_locals(row, {"npc_tag", "tag", "name", "locals"})
+        if has_invalid_locals_type:
+            _append_issue(
+                issues,
+                "ERROR",
+                "npc",
+                npc_tag,
+                "invalid_locals_type",
+                "[CI_FILTER:INVALID_LOCALS_TYPE] locals key exists but is not an object",
+            )
 
         if not is_strict_int(locals_map.get("al_default_activity")):
             _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_default_activity", "al_default_activity must be int")
@@ -154,7 +172,16 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
             continue
 
         wp_tag = str(row.get("waypoint_tag", row.get("tag", f"<idx:{index}>"))).strip() or f"<idx:{index}>"
-        locals_map = _extract_locals(row, {"waypoint_tag", "tag", "name", "area_tag", "route_tag", "locals"})
+        locals_map, has_invalid_locals_type = _extract_locals(row, {"waypoint_tag", "tag", "name", "area_tag", "route_tag", "locals"})
+        if has_invalid_locals_type:
+            _append_issue(
+                issues,
+                "ERROR",
+                "waypoint",
+                wp_tag,
+                "invalid_locals_type",
+                "[CI_FILTER:INVALID_LOCALS_TYPE] locals key exists but is not an object",
+            )
 
         step_val = locals_map.get("al_step")
         if not is_strict_int(step_val):
@@ -201,7 +228,16 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
             continue
 
         area_tag = str(row.get("area_tag", row.get("tag", f"<idx:{index}>"))).strip() or f"<idx:{index}>"
-        locals_map = _extract_locals(row, {"area_tag", "tag", "name", "locals"})
+        locals_map, has_invalid_locals_type = _extract_locals(row, {"area_tag", "tag", "name", "locals"})
+        if has_invalid_locals_type:
+            _append_issue(
+                issues,
+                "ERROR",
+                "area",
+                area_tag,
+                "invalid_locals_type",
+                "[CI_FILTER:INVALID_LOCALS_TYPE] locals key exists but is not an object",
+            )
 
         link_count = locals_map.get("al_link_count")
         if link_count is None:

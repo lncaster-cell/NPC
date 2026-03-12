@@ -233,7 +233,8 @@ int AL_RouteQueueStep(object oNpc, int nStepIdx)
     ClearAllActions(TRUE);
     ActionMoveToObject(oTarget, TRUE, 1.5);
     AL_ActivityApplyStep(oNpc, nActivity, nDur);
-    ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
+    SetLocalInt(oNpc, "al_action_signal_event", AL_EVENT_ROUTE_REPEAT);
+    ActionDoCommand(ExecuteScript("al_action_signal_ud", OBJECT_SELF));
 
     SetLocalInt(oNpc, AL_RouteRtIdxKey(), nStepIdx);
     SetLocalInt(oNpc, AL_RouteRtActiveKey(), TRUE);
