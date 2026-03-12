@@ -87,6 +87,7 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
 
     SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), 0);
+    AL_LookupSoftInvalidateAreaCache(oArea);
 }
 
 int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
@@ -103,18 +104,14 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
     int nFound = 0;
     int nValidCandidates = 0;
     int nOverflowCandidates = 0;
-    int nSearchIdx = 0;
+    int nCandidateCount = AL_GetWaypointCandidatesCountCached(oArea, sRouteTag);
+    int nCandidateIdx = 0;
 
-    while (TRUE)
+    while (nCandidateIdx < nCandidateCount)
     {
-        object oWp = GetObjectByTag(sRouteTag, nSearchIdx);
-        if (!GetIsObjectValid(oWp))
-        {
-            break;
-        }
-
-        nSearchIdx = nSearchIdx + 1;
-        if (GetObjectType(oWp) != OBJECT_TYPE_WAYPOINT || GetArea(oWp) != oArea)
+        object oWp = AL_GetWaypointCandidateCached(oArea, sRouteTag, nCandidateIdx);
+        nCandidateIdx = nCandidateIdx + 1;
+        if (!GetIsObjectValid(oWp) || GetObjectType(oWp) != OBJECT_TYPE_WAYPOINT || GetArea(oWp) != oArea)
         {
             continue;
         }
