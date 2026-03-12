@@ -1,0 +1,27 @@
+{
+  "areas": [
+    {
+      "area_tag": "area_a",
+      "locals": {
+        "al_link_count": 3,
+        "al_link_0": "area_a",
+        "al_link_1": "area_b",
+        "al_link_2": "area_b"
+      }
+    },
+    {
+      "area_tag": "area_b",
+      "locals": {
+        "al_link_count": 1,
+        "al_link_0": "area_c"
+      }
+    },
+    {
+      "area_tag": "area_c",
+      "locals": {
+        "al_link_count": 1,
+        "al_link_0": "area_d"
+      }
+    }
+  ]
+}

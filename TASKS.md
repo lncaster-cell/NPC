@@ -11,9 +11,18 @@
 - [x] Оффлайн/операторский preflight-валидатор маршрутов (`al_step` range, step continuity, duplicates, area consistency).
 - [x] Шаблон контент-подготовки sleep-точек (`_approach`/`_pose`) в `docs/SLEEP_MARKUP_TEMPLATE.md`.
 - [x] Операторский гайд по linked areas (`al_link_*`) и warm-policy.
-- [ ] Автоматизированный preflight-валидатор linked-графа (`al_link_count`, `al_link_*`, дубликаты, самоссылки, превышение degree-порогов).
+- [x] Автоматизированный preflight-валидатор linked-графа (`al_link_count`, `al_link_*`, дубликаты, самоссылки, превышение degree-порогов).
 
 ## P2
+
+### High-impact perf (queue/overflow/drain/registry)
+
+- [ ] Dispatch queue: снизить пиковую `al_dispatch_q_len` в S100/S120 без роста latency drain.
+- [ ] Overflow triage: устранить причины роста `al_dispatch_q_overflow`, `al_reg_overflow_count`, `al_route_overflow_count` на стресс-профилях.
+- [ ] Drain stability: удерживать `al_dispatch_ticks_to_drain` в целевых окнах S80/S100/S120.
+- [ ] Registry compaction: сократить `al_reg_compact_calls(_window)` без регрессии throughput.
+
+### Low-impact
 
 - [x] Сервисный валидатор locals (NPC/waypoints/areas) для контент-команды.
 - [ ] Профилирование производительности на сценах с высокой плотностью NPC (по `docs/PERF_RUNBOOK.md`).
@@ -25,8 +34,10 @@
 - Perf-check: см. `docs/PERF_RUNBOOK.md` (минимум Scene M для каждого заметного изменения ambient-life).
 - Preflight-gate перед S80/S100/S120: обязательный запуск `python3 scripts/ambient_life/al_route_preflight.py --input <waypoints.json>`; при `[ERROR]` запуск сценариев запрещён до исправления контента.
 - Locals-gate перед контентной выкладкой: обязательный запуск `python3 scripts/ambient_life/al_locals_preflight.py --input <locals.json>` (или `--format text` для операторского чтения); при `status=ERROR`/exit code `1` выкладка блокируется до исправления.
+- Для каждого perf-PR обязательна оценка: какую часть `AL_AreaTick` затрагивает изменение, и какой метрикой подтверждается эффект.
 - Для правок в route/registry/dispatcher: обязательный PR-отчёт «до/после» по шаблону из `docs/PERF_RUNBOOK.md`.
-- Gate (core): изменения в `scripts/ambient_life/al_area_inc.nss`, `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_route_inc.nss` считаются неполными без perf-сводки по `docs/PERF_PROFILE.md`.
+- High-impact perf-priority: `scripts/ambient_life/al_area_inc.nss`, `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_route_inc.nss`, `scripts/ambient_life/al_dispatch_inc.nss`.
+- Gate (core): изменения в high-impact файлах считаются неполными без perf-сводки по `docs/PERF_PROFILE.md`.
 
 ## Runbook: Area Health Snapshot (операторский минимум)
 

@@ -20,13 +20,14 @@
 
 ## 2) Нет автоматического preflight для linked-графа (есть только операторский гайд)
 
+**Статус.** ✅ Закрыто в рамках текущего прохода: добавлен `scripts/ambient_life/al_link_preflight.py`, а также `Linked-gate` в `TASKS.md`.
+
 **Issue.** Правила linked-графа подробно описаны в `docs/LINKED_GRAPH_OPERATIONS.md`, но не проверяются автоматически перед выкладкой контента. Это оставляет риск человеческой ошибки (дубликаты `al_link_*`, самоссылки, критическая степень узлов, несимметричные связи).
 
-**Task-stub.**
-1. Добавить `scripts/ambient_life/al_link_preflight.py` по аналогии с route/locals preflight.
-2. Поддержать вход JSON (`--input`) и текстовый отчёт (`--format text`) для операторов.
-3. Проверять минимум: диапазон индексов, валидность target tag, дубликаты, self-link, degree-пороги, связность компонент.
-4. Включить preflight-gate в `TASKS.md` (раздел «Регулярная QA-практика»).
+**Task-stub (follow-up).**
+1. Добавить sample-входы в `docs/` для linked preflight (pass/fail кейсы для операторов).
+2. Интегрировать запуск `al_link_preflight.py` в CI/checklist перед merge linked-правок.
+3. Уточнить пороги `WARN/ERROR` для degree/cluster-size по итогам perf-замеров S80/S100/S120.
 
 ---
 
