@@ -1,0 +1,44 @@
+name: Linked Graph Preflight
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/ambient_life/al_link_preflight.py'
+      - 'scripts/ambient_life/test_al_link_preflight_*.json'
+      - 'docs/LINKED_PREFLIGHT_EXAMPLES_*.json'
+      - 'docs/LINKED_GRAPH_OPERATIONS.md'
+      - 'docs/PR_CHECKLIST.md'
+      - 'TASKS.md'
+  push:
+    branches: [ main ]
+    paths:
+      - 'scripts/ambient_life/al_link_preflight.py'
+      - 'scripts/ambient_life/test_al_link_preflight_*.json'
+      - 'docs/LINKED_PREFLIGHT_EXAMPLES_*.json'
+      - 'docs/LINKED_GRAPH_OPERATIONS.md'
+
+jobs:
+  linked-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate linked graph (pass sample)
+        run: python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_PASS.json --format text
+
+      - name: Validate linked graph (invalid sample should fail)
+        run: |
+          set +e
+          python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_FAIL.json --format text
+          code=$?
+          set -e
+          if [ "$code" -ne 1 ]; then
+            echo "Expected exit code 1 for invalid linked sample, got $code"
+            exit 1
+          fi
