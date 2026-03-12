@@ -102,3 +102,81 @@
 - Stage I.2 использует только area-local alarm scope (без global/world propagation) и bounded nearby fan-out в текущей area.
 - Guard-response опирается на built-in faction/hostility слоя NWN2, где он уже даёт корректную legal hostility базу.
 - Stage I.2 не реализует guard spawn/reinforcements и не реализует surrender/arrest/trial.
+
+## 5) Операторский preflight locals (CI-ready)
+
+Для сервисной проверки locals контента используйте:
+
+```bash
+python3 scripts/ambient_life/al_locals_preflight.py --input <locals.json>
+```
+
+- Формат по умолчанию: `json` (машиночитаемый для CI).
+- Человеко-читаемый формат: `--format text`.
+- Exit code:
+  - `0` — нет `ERROR`,
+  - `1` — есть хотя бы один `ERROR`,
+  - `2` — фатальная ошибка входных данных/парсинга.
+
+Минимальная структура входного JSON:
+
+```json
+{
+  "npcs": [
+    {
+      "npc_tag": "npc_market_01",
+      "locals": {
+        "alwp0": "market_day",
+        "al_default_activity": 1,
+        "al_npc_role": 0
+      }
+    }
+  ],
+  "waypoints": [
+    {
+      "area_tag": "area_market",
+      "route_tag": "market_day",
+      "waypoint_tag": "market_day_00",
+      "locals": {
+        "al_step": 0
+      }
+    }
+  ],
+  "areas": [
+    {
+      "area_tag": "area_market",
+      "locals": {
+        "al_link_count": 1,
+        "al_link_0": "area_gate",
+        "al_debug": 0
+      }
+    }
+  ]
+}
+```
+
+Пример фрагмента JSON-отчёта:
+
+```json
+{
+  "status": "ERROR",
+  "summary": {
+    "errors": 2,
+    "warnings": 1,
+    "total": 3
+  },
+  "issues": [
+    {
+      "level": "ERROR",
+      "scope": "waypoint",
+      "object_id": "wp_sleep_1",
+      "code": "invalid_bed_id",
+      "reason": "al_bed_id must be non-empty string"
+    }
+  ]
+}
+```
+
+Интерпретация:
+- `ERROR` — блокирующая проблема контента (CI/preflight должен падать).
+- `WARN` — неблокирующее отклонение/legacy-конфиг, требующее ревью контент-командой.
