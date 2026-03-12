@@ -459,7 +459,7 @@ def build_report(issues: list[ValidationIssue], sort_mode: str = "none") -> dict
                 "code": issue.code,
                 "reason": issue.reason,
             }
-            for issue in sorted(issues, key=lambda i: (i.level, i.scope, i.object_id, i.code, i.reason))
+            for issue in ordered_issues
         ],
     }
 

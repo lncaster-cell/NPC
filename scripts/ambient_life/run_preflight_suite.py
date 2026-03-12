@@ -166,16 +166,12 @@ def _build_report(
                 }
             )
 
-    issues = sorted(
-        issues,
-        key=lambda item: (
-            _SEVERITY_RANK.get(item["severity"], 99),
-            item["check"],
-            item["path"],
-            item["code"],
-            item["message"],
-        ),
-    )
+    ordered_issues = _order_issues(issues, sort_mode)
+
+    aggregates = {"code": {}}
+    for issue in ordered_issues:
+        code = issue["code"]
+        aggregates["code"][code] = aggregates["code"].get(code, 0) + 1
 
     return {
         "status": "ERROR" if summary["error"] else "OK",
@@ -185,7 +181,8 @@ def _build_report(
             "locals": str(locals_input),
         },
         "summary": summary,
-        "issues": _order_issues(issues, sort_mode),
+        "issues": ordered_issues,
+        "aggregates": aggregates,
     }
 
 
@@ -248,6 +245,7 @@ def main() -> int:
     parser.add_argument("--locals-input", required=True, help="Path to locals preflight JSON input")
     parser.add_argument("--parallel", action="store_true", help="Run route/link/locals checks in parallel")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
+    parser.add_argument("--detail-limit", type=int, default=50, help="Maximum number of issues displayed in text mode")
     sort_group = parser.add_mutually_exclusive_group()
     sort_group.add_argument(
         "--deterministic-sort",
