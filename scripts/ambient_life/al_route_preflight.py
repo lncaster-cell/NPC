@@ -263,7 +263,7 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
         if valid_steps_mask == 0:
             continue
 
-        if 0 not in valid_steps:
+        if 0 not in step_to_waypoint:
             if add_issue(
                 ValidationIssue(
                     level="ERROR",
@@ -279,7 +279,7 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
         for expected in range(0, max_valid_step + 1):
             if (valid_steps_mask & (1 << expected)) == 0:
                 present_steps = [step for step in range(0, max_valid_step + 1) if (valid_steps_mask & (1 << step)) != 0]
-                issues.append(
+                if add_issue(
                     _issue(
                         level="ERROR",
                         area_tag=area_tag,
@@ -297,7 +297,7 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
 
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
-            issues.append(
+            if add_issue(
                 _issue(
                     level="ERROR",
                     area_tag=area_tag,
@@ -317,7 +317,7 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
             if expected_tag in route_waypoint_tags[(sleep_step.area_tag, sleep_step.route_tag)]:
                 continue
 
-            issues.append(
+            if add_issue(
                 _issue(
                     level="ERROR",
                     area_tag=sleep_step.area_tag,
@@ -337,7 +337,7 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
 
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
-            issues.append(
+            if add_issue(
                 _issue(
                     level="ERROR",
                     area_tag=area_tag,
@@ -355,7 +355,7 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
 
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
-            issues.append(
+            if add_issue(
                 _issue(
                     level="ERROR",
                     area_tag=area_tag,
@@ -396,6 +396,8 @@ def print_report(issues: list[ValidationIssue], sort_mode: str = "none") -> None
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Ambient Life route markup offline")
     parser.add_argument("--input", required=True, help="Path to JSON with waypoint route markup")
+    parser.add_argument("--fail-fast", action="store_true", help="Stop validation after first error (or after --max-errors)")
+    parser.add_argument("--max-errors", type=int, default=None, help="Error limit used with --fail-fast")
     sort_group = parser.add_mutually_exclusive_group()
     sort_group.add_argument(
         "--deterministic-sort",
@@ -417,7 +419,7 @@ def main() -> int:
         print(f"[FATAL] failed to read input: {exc}", file=sys.stderr)
         return 2
 
-    issues = validate_route_markup(rows)
+    issues = validate_route_markup(rows, fail_fast=args.fail_fast, max_errors=args.max_errors)
 
     sort_mode = "none"
     if args.strict_deterministic_sort:
