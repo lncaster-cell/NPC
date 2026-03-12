@@ -59,8 +59,8 @@ int AL_SleepQueueOnPlace(object oNpc, int nDurSec)
     }
 
     ClearAllActions(TRUE);
-    ActionWait(IntToFloat(nDurSec));
     ActionDoCommand(SetLocalString(oNpc, "al_mode", "sleep"));
+    ActionWait(IntToFloat(nDurSec));
     ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
 
     return TRUE;
@@ -101,8 +101,8 @@ int AL_SleepQueueFromStep(object oNpc, object oStep)
     ClearAllActions(TRUE);
     ActionMoveToObject(oApproach, TRUE, 1.5);
     ActionJumpToLocation(GetLocation(oPose));
-    ActionWait(IntToFloat(nDur));
     ActionDoCommand(SetLocalString(oNpc, "al_mode", "sleep"));
+    ActionWait(IntToFloat(nDur));
     ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
 
     return TRUE;
