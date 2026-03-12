@@ -39,14 +39,14 @@ class ValidateLocalsRouteRefsTests(unittest.TestCase):
             )
         )
 
-    def test_npc_route_tag_with_surrounding_whitespace_is_trimmed_for_lookup(self):
+    def test_npc_route_tag_with_whitespace_does_not_report_unknown_route_error(self):
         payload = {
             "npcs": [
                 {
                     "npc_tag": "merchant_01",
                     "locals": {
                         "al_default_activity": 1,
-                        "alwp0": " market_route ",
+                        "alwp0": "  market_route  ",
                     },
                 }
             ],

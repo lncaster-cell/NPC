@@ -121,39 +121,43 @@ def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[Val
             legacy_key = f"AL_WP_S{slot}"
             primary_val = locals_map.get(primary_key)
             legacy_val = locals_map.get(legacy_key)
-            primary_norm = primary_val.strip() if _is_non_empty_string(primary_val) else None
-            legacy_norm = legacy_val.strip() if _is_non_empty_string(legacy_val) else None
+            primary_normalized = primary_val.strip() if isinstance(primary_val, str) else primary_val
+            legacy_normalized = legacy_val.strip() if isinstance(legacy_val, str) else legacy_val
 
             if primary_val is not None and not isinstance(primary_val, str):
                 _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{primary_key} must be string")
             if legacy_val is not None and not isinstance(legacy_val, str):
                 _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{legacy_key} must be string")
 
-            if primary_norm is not None:
+            if _is_non_empty_string(primary_normalized):
                 has_primary_route = True
-                if primary_norm not in known_route_tags:
+                if primary_normalized not in known_route_tags:
                     _append_issue(
                         issues,
                         "ERROR",
                         "npc",
                         npc_tag,
                         "unknown_route_tag_ref",
-                        f"slot={primary_key} references unknown route tag {primary_norm!r}",
+                        f"slot={primary_key} references unknown route tag {primary_normalized!r}",
                     )
-            if legacy_norm is not None:
+            if _is_non_empty_string(legacy_normalized):
                 has_legacy_route = True
                 _append_issue(issues, "WARN", "npc", npc_tag, "legacy_route_alias_in_use", f"{legacy_key} is used")
-                if legacy_norm not in known_route_tags:
+                if legacy_normalized not in known_route_tags:
                     _append_issue(
                         issues,
                         "ERROR",
                         "npc",
                         npc_tag,
                         "unknown_route_tag_ref",
-                        f"slot={legacy_key} references unknown route tag {legacy_norm!r}",
+                        f"slot={legacy_key} references unknown route tag {legacy_normalized!r}",
                     )
 
-            if primary_norm is not None and legacy_norm is not None and primary_norm != legacy_norm:
+            if (
+                _is_non_empty_string(primary_normalized)
+                and _is_non_empty_string(legacy_normalized)
+                and primary_normalized != legacy_normalized
+            ):
                 _append_issue(
                     issues,
                     "WARN",
