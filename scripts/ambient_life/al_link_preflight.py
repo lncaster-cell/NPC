@@ -22,6 +22,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from scripts.ambient_life.preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
+
 TARGET_DEGREE_MIN = 2
 TARGET_DEGREE_MAX = 4
 HUB_DEGREE_MAX = 6
@@ -38,33 +40,8 @@ class ValidationIssue:
     reason: str
 
 
-def is_strict_int(value: Any) -> bool:
-    return isinstance(value, int) and not isinstance(value, bool)
-
-
-def _read_tag(value: Any) -> str | None:
-    if not isinstance(value, str):
-        return None
-    tag = value.strip()
-    return tag or None
-
-
 def _read_input(path: Path) -> list[dict[str, Any]]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-
-    if isinstance(payload, dict):
-        if "areas" not in payload:
-            raise ValueError("missing required key 'areas'")
-        areas = payload["areas"]
-    elif isinstance(payload, list):
-        areas = payload
-    else:
-        raise ValueError("JSON root must be an object with key 'areas' or an array")
-
-    if not isinstance(areas, list):
-        raise ValueError("'areas' must be an array")
-
-    return areas
+    return read_json_list_input(path, key="areas")
 
 
 def _extract_locals(raw: dict[str, Any]) -> tuple[dict[str, Any], bool]:
@@ -91,15 +68,11 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             continue
 
         area_tag_raw = row.get("area_tag")
-        area_tag = _read_tag(area_tag_raw)
+        area_tag = read_tag(area_tag_raw)
         object_id = f"<idx:{index}>"
         issue_area_tag = area_tag or object_id
         if area_tag is None:
-            code = (
-                "missing_area_tag"
-                if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
-                else "invalid_area_tag_type"
-            )
+            code = tag_error_code(area_tag_raw, missing_code="missing_area_tag", invalid_type_code="invalid_area_tag_type")
             _append_issue(issues, "ERROR", object_id, code, "area_tag must be non-empty string")
 
         locals_map, invalid_locals = _extract_locals(row)
