@@ -76,6 +76,21 @@ Crime/alarm на Stage I.2 намеренно **не** добавляет нов
   - `al_dispatch_ticks_to_drain` — ticks до полного опустошения очереди за последний цикл drain;
   - `al_dispatch_max_backlog` — максимальный observed backlog за lifetime area.
 
+
+### 4.2 Area health snapshot locals
+
+Для быстрой runtime-диагностики area-loop обновляет health snapshot locals (`AL_UpdateAreaHealthSnapshot`):
+
+- `al_h_npc_count` — текущее значение `al_npc_count`;
+- `al_h_tier` — текущий tier area (`FREEZE/WARM/HOT`);
+- `al_h_slot` — текущий вычисленный слот времени для HOT area;
+- `al_h_sync_tick` — последний sync tick, попавший в snapshot;
+- `al_h_reg_overflow_count` — накопленный счётчик overflow реестра NPC;
+- `al_h_route_overflow_count` — накопленный счётчик overflow route cache;
+- `al_h_recent_resync_mask` — rolling bitmask resync-событий за окно `AL_HEALTH_RESYNC_WINDOW_TICKS`;
+- `al_h_recent_resync` — popcount для `al_h_recent_resync_mask` (кол-во resync в текущем rolling окне);
+- `al_h_resync_window_mask` — предвычисленная маска окна (`(1 << AL_HEALTH_RESYNC_WINDOW_TICKS) - 1`) для поддержания rolling-семантики без пересчёта на каждом тикe.
+
 ## 5. Инварианты
 
 - Нет heartbeat/polling loop на NPC.

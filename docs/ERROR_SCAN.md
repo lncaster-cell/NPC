@@ -37,3 +37,18 @@
 - большое расхождение между текущим `al_sync_tick` и `al_reg_overflow_sync_tick` говорит о том, что событие было в прошлом и, возможно, уже неактуально.
 
 Для debug-сценариев доступен throttled лог в module log при `al_debug > 0` на area (не чаще, чем раз в 50 sync-тиков).
+
+## Runtime-метрики health snapshot (`al_h_*`)
+
+Для диагностики состояния area-loop и регрессий по resync доступны агрегированные locals:
+
+- `al_h_npc_count`, `al_h_tier`, `al_h_slot`, `al_h_sync_tick`;
+- `al_h_reg_overflow_count`, `al_h_route_overflow_count`;
+- `al_h_recent_resync_mask` (rolling bitmask) и `al_h_recent_resync` (число установленных битов в окне);
+- `al_h_resync_window_mask` — маска окна, инициализируется один раз на area и далее используется при каждом сдвиге rolling mask.
+
+Проверка семантики `al_h_recent_resync`:
+
+- значение остаётся производным от `al_h_recent_resync_mask` через popcount и поэтому не меняет поведение маршрутизации/dispatch;
+- перенос вычисления window mask из tick-path в init-path не влияет на rolling-сдвиг (`mask = (mask * 2) & window_mask`, затем `| 1` при resync на текущем тикe).
+

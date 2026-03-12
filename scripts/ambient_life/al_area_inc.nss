@@ -14,8 +14,31 @@ const int AL_DISPATCH_QUEUE_CAPACITY = 16;
 const int AL_DISPATCH_PRIORITY_NORMAL = 0;
 const int AL_DISPATCH_PRIORITY_CRITICAL = 1;
 const int AL_DISPATCH_CRITICAL_BURST_QUOTA = 3;
+const int AL_HEALTH_RESYNC_WINDOW_TICKS = 8;
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
+
+int AL_ComputeHealthResyncWindowMask()
+{
+    int nWindowMask = 0;
+    int i = 0;
+
+    while (i < AL_HEALTH_RESYNC_WINDOW_TICKS)
+    {
+        nWindowMask = (nWindowMask * 2) + 1;
+        i = i + 1;
+    }
+
+    return nWindowMask;
+}
+
+void AL_EnsureAreaHealthSnapshotInit(object oArea)
+{
+    if (GetLocalInt(oArea, "al_h_resync_window_mask") <= 0)
+    {
+        SetLocalInt(oArea, "al_h_resync_window_mask", AL_ComputeHealthResyncWindowMask());
+    }
+}
 
 string AL_DispatchQueueKey(string sField, int nIdx)
 {
@@ -436,6 +459,8 @@ void AL_ScheduleAreaTick(object oArea, int nToken);
 
 void AL_AreaSetTier(object oArea, int nTier)
 {
+    AL_EnsureAreaHealthSnapshotInit(oArea);
+
     int nOldTier = GetLocalInt(oArea, "al_sim_tier");
     if (nOldTier == nTier)
     {
@@ -805,17 +830,12 @@ int AL_CountBits(int nValue)
 
 void AL_UpdateAreaHealthSnapshot(object oArea)
 {
+    AL_EnsureAreaHealthSnapshotInit(oArea);
+
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
     int nResyncTick = GetLocalInt(oArea, "al_h_last_resync_tick");
     int nResyncMask = GetLocalInt(oArea, "al_h_recent_resync_mask");
-
-    int nWindowMask = 0;
-    int i = 0;
-    while (i < AL_HEALTH_RESYNC_WINDOW_TICKS)
-    {
-        nWindowMask = (nWindowMask * 2) + 1;
-        i = i + 1;
-    }
+    int nWindowMask = GetLocalInt(oArea, "al_h_resync_window_mask");
 
     int bResyncThisTick = FALSE;
     if (nResyncTick > 0 && nSyncTick > 0 && nResyncTick == nSyncTick)
