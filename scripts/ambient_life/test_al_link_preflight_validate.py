@@ -88,5 +88,19 @@ class ValidateLinksAreaTagValidationTests(unittest.TestCase):
         self.assertEqual(missing_codes.get("<idx:1>"), "missing_area_tag")
 
 
+class ValidateLinksPayloadValidationTests(unittest.TestCase):
+    def test_empty_payload_reports_error(self):
+        issues = validate_links([])
+
+        self.assertTrue(
+            any(
+                issue.level == "ERROR"
+                and issue.area_tag == "<payload>"
+                and issue.code == "empty_payload"
+                for issue in issues
+            )
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -42,6 +42,8 @@ NPC_ROUTE_SLOTS = tuple(range(6))
 NPC_ROLE_MIN = 0
 NPC_ROLE_MAX = 2
 
+_SEVERITY_RANK = {"ERROR": 0, "WARN": 1, "INFO": 2}
+
 
 @dataclass
 class ValidationIssue:
@@ -57,9 +59,7 @@ class ValidationIssue:
 
 
 def _read_input(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError("JSON root must be an object")
+    payload = read_json_object_input(path)
 
     result: dict[str, Any] = {}
     for key in ("npcs", "waypoints", "areas"):
@@ -89,18 +89,6 @@ def _append_issue(issues: list[ValidationIssue], level: str, scope: str, object_
     issues.append(ValidationIssue(level=level, scope=scope, object_id=object_id, code=code, context=make_issue_context(reason)))
 
 
-def is_strict_int(value: Any) -> bool:
-    # Exclude bool explicitly: JSON boolean is not a valid integer value for route/locals config fields.
-    return isinstance(value, int) and not isinstance(value, bool)
-
-
-def _read_tag(value: Any) -> str | None:
-    if not isinstance(value, str):
-        return None
-    tag = value.strip()
-    return tag or None
-
-
 def _is_non_empty_string(value: Any) -> bool:
     return isinstance(value, str) and value.strip() != ""
 
@@ -112,10 +100,10 @@ def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[Val
             continue
 
         npc_tag_raw = row.get("npc_tag", row.get("tag"))
-        npc_tag = _read_tag(npc_tag_raw) or f"<idx:{index}>"
+        npc_tag = read_tag(npc_tag_raw) or f"<idx:{index}>"
         if npc_tag_raw is None:
             _append_issue(issues, "ERROR", "npc", npc_tag, "missing_npc_tag", "npc_tag must be non-empty string")
-        elif _read_tag(npc_tag_raw) is None:
+        elif read_tag(npc_tag_raw) is None:
             code = "missing_npc_tag" if isinstance(npc_tag_raw, str) else "invalid_npc_tag_type"
             _append_issue(issues, "ERROR", "npc", npc_tag, code, "npc_tag must be non-empty string")
 
@@ -140,37 +128,43 @@ def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[Val
             legacy_key = f"AL_WP_S{slot}"
             primary_val = locals_map.get(primary_key)
             legacy_val = locals_map.get(legacy_key)
+            primary_normalized = primary_val.strip() if isinstance(primary_val, str) else primary_val
+            legacy_normalized = legacy_val.strip() if isinstance(legacy_val, str) else legacy_val
 
             if primary_val is not None and not isinstance(primary_val, str):
                 _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{primary_key} must be string")
             if legacy_val is not None and not isinstance(legacy_val, str):
                 _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{legacy_key} must be string")
 
-            if _is_non_empty_string(primary_val):
+            if _is_non_empty_string(primary_normalized):
                 has_primary_route = True
-                if primary_val not in known_route_tags:
+                if primary_normalized not in known_route_tags:
                     _append_issue(
                         issues,
                         "ERROR",
                         "npc",
                         npc_tag,
                         "unknown_route_tag_ref",
-                        f"slot={primary_key} references unknown route tag {primary_val!r}",
+                        f"slot={primary_key} references unknown route tag {primary_normalized!r}",
                     )
-            if _is_non_empty_string(legacy_val):
+            if _is_non_empty_string(legacy_normalized):
                 has_legacy_route = True
                 _append_issue(issues, "WARN", "npc", npc_tag, "legacy_route_alias_in_use", f"{legacy_key} is used")
-                if legacy_val not in known_route_tags:
+                if legacy_normalized not in known_route_tags:
                     _append_issue(
                         issues,
                         "ERROR",
                         "npc",
                         npc_tag,
                         "unknown_route_tag_ref",
-                        f"slot={legacy_key} references unknown route tag {legacy_val!r}",
+                        f"slot={legacy_key} references unknown route tag {legacy_normalized!r}",
                     )
 
-            if _is_non_empty_string(primary_val) and _is_non_empty_string(legacy_val) and primary_val != legacy_val:
+            if (
+                _is_non_empty_string(primary_normalized)
+                and _is_non_empty_string(legacy_normalized)
+                and primary_normalized != legacy_normalized
+            ):
                 _append_issue(
                     issues,
                     "WARN",
@@ -214,31 +208,23 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
             continue
 
         wp_tag_raw = row.get("waypoint_tag", row.get("tag"))
-        wp_tag = _read_tag(wp_tag_raw) or f"<idx:{index}>"
+        wp_tag = read_tag(wp_tag_raw) or f"<idx:{index}>"
         if wp_tag_raw is None:
             _append_issue(issues, "ERROR", "waypoint", wp_tag, "missing_waypoint_tag", "waypoint_tag must be non-empty string")
-        elif _read_tag(wp_tag_raw) is None:
+        elif read_tag(wp_tag_raw) is None:
             code = "missing_waypoint_tag" if isinstance(wp_tag_raw, str) else "invalid_waypoint_tag_type"
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "waypoint_tag must be non-empty string")
 
         area_tag_raw = row.get("area_tag")
-        area_tag = _read_tag(area_tag_raw)
+        area_tag = read_tag(area_tag_raw)
         if area_tag is None:
-            code = (
-                "missing_area_tag"
-                if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
-                else "invalid_area_tag_type"
-            )
+            code = tag_error_code(area_tag_raw, missing_code="missing_area_tag", invalid_type_code="invalid_area_tag_type")
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "area_tag must be non-empty string")
 
         route_tag_raw = row.get("route_tag")
-        route_tag = _read_tag(route_tag_raw)
+        route_tag = read_tag(route_tag_raw)
         if route_tag is None:
-            code = (
-                "missing_route_tag"
-                if route_tag_raw is None or (isinstance(route_tag_raw, str) and route_tag_raw.strip() == "")
-                else "invalid_route_tag_type"
-            )
+            code = tag_error_code(route_tag_raw, missing_code="missing_route_tag", invalid_type_code="invalid_route_tag_type")
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "route_tag must be non-empty string")
 
         locals_map, has_invalid_locals_type = _extract_locals(row, {"waypoint_tag", "tag", "name", "area_tag", "route_tag", "locals"})
@@ -297,7 +283,7 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
             continue
 
         raw_area_tag = row.get("area_tag", row.get("tag"))
-        accepted_area_tag = _read_tag(raw_area_tag)
+        accepted_area_tag = read_tag(raw_area_tag)
         display_area_tag = accepted_area_tag or f"<idx:{index}>"
         if raw_area_tag is None:
             _append_issue(issues, "ERROR", "area", display_area_tag, "missing_area_tag", "area_tag must be non-empty string")
@@ -381,9 +367,18 @@ def validate_locals(payload: dict[str, Any]) -> list[ValidationIssue]:
     return issues
 
 
-def build_report(issues: list[ValidationIssue]) -> dict[str, Any]:
+def _order_issues(issues: list[ValidationIssue], sort_mode: str) -> list[ValidationIssue]:
+    if sort_mode == "strict":
+        return sorted(issues, key=lambda i: (i.level, i.scope, i.object_id, i.code, i.reason))
+    if sort_mode == "grouped":
+        return sorted(issues, key=lambda i: (_SEVERITY_RANK.get(i.level, 99), i.scope))
+    return issues
+
+
+def build_report(issues: list[ValidationIssue], sort_mode: str = "none") -> dict[str, Any]:
     errors = sum(1 for issue in issues if issue.level == "ERROR")
     warns = sum(1 for issue in issues if issue.level == "WARN")
+    ordered_issues = _order_issues(issues, sort_mode)
     return {
         "status": "ERROR" if errors > 0 else "OK",
         "summary": {
@@ -423,6 +418,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Ambient Life locals offline")
     parser.add_argument("--input", required=True, help="Path to JSON with NPC/waypoint/area locals")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
+    sort_group = parser.add_mutually_exclusive_group()
+    sort_group.add_argument(
+        "--deterministic-sort",
+        action="store_true",
+        help="Enable grouped deterministic ordering (severity/scope) while preserving issue arrival order inside groups",
+    )
+    sort_group.add_argument(
+        "--strict-deterministic-sort",
+        action="store_true",
+        help="Enable strict deterministic ordering with full issue sort",
+    )
     args = parser.parse_args()
 
     try:
@@ -431,7 +437,13 @@ def main() -> int:
         print(json.dumps({"status": "FATAL", "reason": str(exc)}), file=sys.stderr)
         return 2
 
-    report = build_report(validate_locals(payload))
+    sort_mode = "none"
+    if args.strict_deterministic_sort:
+        sort_mode = "strict"
+    elif args.deterministic_sort:
+        sort_mode = "grouped"
+
+    report = build_report(validate_locals(payload), sort_mode=sort_mode)
 
     if args.format == "json":
         print(json.dumps(report, ensure_ascii=False, indent=2))

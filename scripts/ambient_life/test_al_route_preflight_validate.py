@@ -75,5 +75,70 @@ class ValidateRouteMarkupBedIdTypeTests(unittest.TestCase):
         self.assertIn("al_bed_id=123", invalid_type_issues[0].details)
 
 
+class ValidateRouteMarkupStepSequenceTests(unittest.TestCase):
+    def test_empty_route_has_no_step_sequence_issues(self):
+        issues = validate_route_markup([])
+
+        self.assertEqual(issues, [])
+
+    def test_duplicate_steps_report_duplicate_step_without_gap_issue(self):
+        rows = [
+            {
+                "area_tag": "inn_01",
+                "route_tag": "route_dup",
+                "waypoint_tag": "wp_0",
+                "al_step": 0,
+            },
+            {
+                "area_tag": "inn_01",
+                "route_tag": "route_dup",
+                "waypoint_tag": "wp_0_dup",
+                "al_step": 0,
+            },
+        ]
+
+        issues = validate_route_markup(rows)
+
+        self.assertEqual([issue.code for issue in issues], ["duplicate_step"])
+
+    def test_gap_in_middle_reports_missing_step(self):
+        rows = [
+            {
+                "area_tag": "inn_01",
+                "route_tag": "route_gap",
+                "waypoint_tag": "wp_0",
+                "al_step": 0,
+            },
+            {
+                "area_tag": "inn_01",
+                "route_tag": "route_gap",
+                "waypoint_tag": "wp_2",
+                "al_step": 2,
+            },
+        ]
+
+        issues = validate_route_markup(rows)
+
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].code, "non_contiguous_steps")
+        self.assertIn("missing_step=1", issues[0].details)
+
+    def test_step_overflow_reports_invalid_step_range(self):
+        rows = [
+            {
+                "area_tag": "inn_01",
+                "route_tag": "route_overflow",
+                "waypoint_tag": "wp_overflow",
+                "al_step": 16,
+            },
+        ]
+
+        issues = validate_route_markup(rows)
+
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].code, "invalid_step_range")
+        self.assertIn("expected=0..15", issues[0].details)
+
+
 if __name__ == "__main__":
     unittest.main()
