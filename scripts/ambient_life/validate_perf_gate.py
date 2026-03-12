@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -33,6 +34,8 @@ TREND_DIRECTIONS = ("up", "down", "stable")
 OVERFLOW_TARGETS = {"S80": 0.0, "S100": 0.0, "S120": 1.0}
 DRAIN_ABSOLUTE_TARGETS = {"S80": 3.0, "S100": 4.0, "S120": 5.0}
 MAX_DRAIN_DELTA = 1.0
+CACHE_VERSION = 1
+CACHE_DIRNAME = ".cache/perf_gate"
 
 
 class ValidationError(Exception):
@@ -43,7 +46,110 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Validate Ambient Life perf gate report")
     parser.add_argument("--baseline", required=True, help="Path to baseline CSV")
     parser.add_argument("--report", required=True, help="Path to perf report CSV/JSON")
+    parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="Disable local parse cache (useful for deterministic CI runs)",
+    )
     return parser.parse_args()
+
+
+def _cache_path(baseline_path: Path, report_path: Path) -> Path:
+    digest = hashlib.sha256()
+    digest.update(baseline_path.read_bytes())
+    digest.update(b"\0")
+    digest.update(report_path.read_bytes())
+    return Path(CACHE_DIRNAME) / f"{digest.hexdigest()}.json"
+
+
+def _encode_cache(
+    baseline: Dict[Tuple[str, str], float], report: Dict[Tuple[str, str], dict]
+) -> dict:
+    return {
+        "cache_version": CACHE_VERSION,
+        "baseline": [
+            {"scenario": scenario, "metric": metric, "value": value}
+            for (scenario, metric), value in sorted(baseline.items())
+        ],
+        "report": [
+            {
+                "scenario": scenario,
+                "metric": metric,
+                "after_value": entry["after_value"],
+                "baseline_value": entry["baseline_value"],
+                "delta": entry["delta"],
+            }
+            for (scenario, metric), entry in sorted(report.items())
+        ],
+    }
+
+
+def _decode_cache(payload: dict) -> Tuple[Dict[Tuple[str, str], float], Dict[Tuple[str, str], dict]]:
+    if payload.get("cache_version") != CACHE_VERSION:
+        raise ValidationError("cache version mismatch")
+
+    baseline_rows = payload.get("baseline")
+    report_rows = payload.get("report")
+    if not isinstance(baseline_rows, list) or not isinstance(report_rows, list):
+        raise ValidationError("cache payload is malformed")
+
+    baseline: Dict[Tuple[str, str], float] = {}
+    for row in baseline_rows:
+        scenario = str(row.get("scenario", "")).strip()
+        metric = str(row.get("metric", "")).strip()
+        value = row.get("value")
+        if not scenario or not metric:
+            raise ValidationError("cache payload baseline entry is malformed")
+        baseline[(scenario, metric)] = _to_float(value, "value", scenario, metric)
+
+    report: Dict[Tuple[str, str], dict] = {}
+    for row in report_rows:
+        scenario = str(row.get("scenario", "")).strip()
+        metric = str(row.get("metric", "")).strip()
+        if not scenario or not metric:
+            raise ValidationError("cache payload report entry is malformed")
+
+        baseline_value = row.get("baseline_value")
+        if baseline_value is not None:
+            baseline_value = _to_float(baseline_value, "baseline_value", scenario, metric)
+
+        report[(scenario, metric)] = {
+            "after_value": _to_float(row.get("after_value"), "after_value", scenario, metric),
+            "baseline_value": baseline_value,
+            "delta": row.get("delta"),
+        }
+
+    return baseline, report
+
+
+def _load_inputs_with_cache(
+    baseline_path: Path, report_path: Path, use_cache: bool
+) -> Tuple[Dict[Tuple[str, str], float], Dict[Tuple[str, str], dict]]:
+    if not use_cache:
+        return load_baseline(baseline_path), load_report(report_path)
+
+    cache_path: Path | None = None
+    try:
+        cache_path = _cache_path(baseline_path, report_path)
+        if cache_path.exists():
+            payload = json.loads(cache_path.read_text(encoding="utf-8"))
+            return _decode_cache(payload)
+    except (OSError, json.JSONDecodeError, ValidationError):
+        # Best-effort cache: any read/decode issue falls back to direct parsing.
+        pass
+
+    baseline = load_baseline(baseline_path)
+    report = load_report(report_path)
+
+    if cache_path is not None:
+        try:
+            cache_path.parent.mkdir(parents=True, exist_ok=True)
+            cache_path.write_text(json.dumps(_encode_cache(baseline, report)), encoding="utf-8")
+        except OSError:
+            # Best-effort cache: write issues must not break validation.
+            pass
+
+    return baseline, report
 
 
 def _to_float(raw: str, field: str, scenario: str, metric: str) -> float:
@@ -298,10 +404,12 @@ def validate(baseline: Dict[Tuple[str, str], dict], report: Dict[Tuple[str, str]
 def main() -> int:
     args = parse_args()
     try:
-        baseline = load_baseline(Path(args.baseline))
-        report = load_report(Path(args.report))
-        failures = validate(baseline, report)
-        cache_efficiency_lines = render_cache_efficiency(baseline, report)
+        baseline = Path(args.baseline)
+        report = Path(args.report)
+        baseline_values, report_values = _load_inputs_with_cache(
+            baseline, report, use_cache=not args.no_cache
+        )
+        failures = validate(baseline_values, report_values)
     except ValidationError as exc:
         print(f"[PERF-GATE][ERROR] {exc}")
         return 1

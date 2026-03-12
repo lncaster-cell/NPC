@@ -29,3 +29,9 @@ Baseline **обновляется только** при одном из двух
 Для PR с изменениями в `scripts/ambient_life/al_*` обязателен зелёный job `Ambient Life Perf Gate`.
 Проверка использует baseline `s80_s100_s120_baseline.csv` и отчёт `perf_gate_report.csv` (или `.json`)
 через `scripts/ambient_life/validate_perf_gate.py`.
+
+Скрипт `validate_perf_gate.py` использует локальный best-effort кэш нормализованных/распарсенных входов
+в `.cache/perf_gate/` (ключ: `sha256(<baseline-bytes> + "\\0" + <report-bytes>)`).
+Кэш не влияет на логику PASS/FAIL (вердикт считается каждый запуск), а при любой ошибке чтения,
+декодирования или записи скрипт безопасно откатывается к прямому парсингу файлов.
+Для полностью детерминированных CI-прогонов используйте флаг `--no-cache`.
