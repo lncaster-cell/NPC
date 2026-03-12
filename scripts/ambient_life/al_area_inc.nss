@@ -496,13 +496,19 @@ void AL_RunBatchedDispatch(object oArea)
     int nCursor = GetLocalInt(oArea, "al_dispatch_cursor");
     int nCycleId = GetLocalInt(oArea, "al_dispatch_cycle");
     int nProcessed = 0;
+    int bFoundInvalid = FALSE;
 
     SetLocalInt(oArea, "al_dispatch_ticks", GetLocalInt(oArea, "al_dispatch_ticks") + 1);
 
     while (nCursor < nCount && nProcessed < AL_DISPATCH_BATCH_SIZE)
     {
         object oNpc = GetLocalObject(oArea, AL_RegKey(nCursor));
-        if (GetIsObjectValid(oNpc) && GetLocalInt(oNpc, "al_dispatch_seen_cycle") != nCycleId)
+        int bInvalid = !AL_IsRuntimeNpc(oNpc) || (GetArea(oNpc) != oArea);
+        if (bInvalid)
+        {
+            bFoundInvalid = TRUE;
+        }
+        else if (GetLocalInt(oNpc, "al_dispatch_seen_cycle") != nCycleId)
         {
             SetLocalInt(oNpc, "al_dispatch_seen_cycle", nCycleId);
             SignalEvent(oNpc, EventUserDefined(nEvent));
@@ -512,9 +518,23 @@ void AL_RunBatchedDispatch(object oArea)
         nCursor = nCursor + 1;
     }
 
+    if (bFoundInvalid)
+    {
+        SetLocalInt(oArea, "al_reg_dirty", TRUE);
+        SetLocalInt(oArea, "al_dispatch_found_invalid", TRUE);
+    }
+
     SetLocalInt(oArea, "al_dispatch_cursor", nCursor);
     if (nCursor >= nCount)
     {
+        int bCycleFoundInvalid = GetLocalInt(oArea, "al_dispatch_found_invalid") == TRUE;
+        DeleteLocalInt(oArea, "al_dispatch_found_invalid");
+
+        if (bCycleFoundInvalid && AL_ShouldCompactRegistry(oArea, TRUE))
+        {
+            AL_RegistryCompact(oArea);
+        }
+
         SetLocalInt(oArea, "al_dispatch_active", 0);
         AL_ClearDispatchPendingKey(oArea, GetLocalString(oArea, "al_dispatch_cycle_key"));
         DeleteLocalString(oArea, "al_dispatch_cycle_key");
@@ -528,7 +548,11 @@ void AL_RunBatchedDispatch(object oArea)
 
 void AL_DispatchEventToAreaRegistry(object oArea, int nEvent)
 {
-    AL_RegistryCompact(oArea);
+    if (AL_ShouldCompactRegistry(oArea, FALSE))
+    {
+        AL_RegistryCompact(oArea);
+    }
+
     AL_StartBatchedDispatch(oArea, nEvent);
 }
 

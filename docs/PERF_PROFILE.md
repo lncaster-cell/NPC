@@ -35,13 +35,17 @@
 - `al_reg_overflow_count`
 - `al_route_overflow_count`
 - `al_h_recent_resync`
+- `al_reg_compact_calls` / `al_reg_compact_calls_window`
+- `al_dispatch_ticks_to_drain`
 
 Минимальные требования интерпретации:
 
 - отдельно отметить абсолютные значения «до/после»;
 - отдельно отметить `Delta`;
 - для каждой обязательной метрики указать статус относительно порогов (`OK/WARN/CRITICAL`);
-- для overflow-метрик обязательно указать факт роста (`0 -> N` или `N -> M`).
+- для overflow-метрик обязательно указать факт роста (`0 -> N` или `N -> M`);
+- для PR с оптимизацией compaction отдельно фиксировать ожидаемое снижение `al_reg_compact_calls(_window)`;
+- для того же PR подтвердить отсутствие деградации по `al_dispatch_ticks_to_drain` (не хуже baseline в пределах шума измерений).
 
 ### Пороговые статусы обязательных метрик
 
@@ -83,6 +87,8 @@
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
 | al_h_recent_resync |  |  |  |  |  |  |
+| al_reg_compact_calls / al_reg_compact_calls_window |  |  |  | n/a | n/a | ожидается снижение |
+| al_dispatch_ticks_to_drain |  |  |  | n/a | n/a | без деградации vs baseline |
 
 #### S100
 | Metric | До | После | Delta | Порог (warn/critical) | Статус vs пороги | Комментарий |
@@ -92,6 +98,8 @@
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
 | al_h_recent_resync |  |  |  |  |  |  |
+| al_reg_compact_calls / al_reg_compact_calls_window |  |  |  | n/a | n/a | ожидается снижение |
+| al_dispatch_ticks_to_drain |  |  |  | n/a | n/a | без деградации vs baseline |
 
 #### S120
 | Metric | До | После | Delta | Порог (warn/critical) | Статус vs пороги | Комментарий |
@@ -101,6 +109,8 @@
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
 | al_h_recent_resync |  |  |  |  |  |  |
+| al_reg_compact_calls / al_reg_compact_calls_window |  |  |  | n/a | n/a | ожидается снижение |
+| al_dispatch_ticks_to_drain |  |  |  | n/a | n/a | без деградации vs baseline |
 
 ### Conclusion
 - Регрессия: yes/no

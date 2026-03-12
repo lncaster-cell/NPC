@@ -103,6 +103,10 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
      - M: `<= 1.8`
      - H: `<= 2.5`
 
+   Дополнительно (для изменений dispatch/registry):
+   - проверять `al_dispatch_ticks_to_drain`;
+   - ожидание по оптимизациям compaction: **без деградации** относительно baseline (допускается только шум измерений).
+
 2. **Cache hit/miss share**
    - Формулы:
      - `hit_share = Δ(al_cache_hit) / (Δ(al_cache_hit)+Δ(al_cache_miss))`
@@ -110,9 +114,10 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
    - Цель для всех сцен: `hit_share >= 0.85`, `miss_share <= 0.15`.
 
 3. **Compaction frequency**
-   - Практический proxy (так как отдельного счётчика compaction в locals нет):
-     - считать частоту строк `[AL][AreaHealthDelta]` с заметным падением `npc_count` без контентного события despawn/transition.
-   - Цель: не более **1 аномального случая на 20 тиков** в сценах L/M и не более **2** в H.
+   - Использовать прямые счётчики в locals:
+     - `compaction_frequency = Δ(al_reg_compact_calls_window)` (предпочтительно в окне 20 тиков);
+     - fallback: `Δ(al_reg_compact_calls)` если window-счётчик не был переинициализирован в окне.
+   - Ожидание для оптимизаций gate-компактации: снижение `al_reg_compact_calls(_window)` против baseline без ухудшения `al_dispatch_ticks_to_drain`.
 
 4. **Route rebuild count**
    - Практический proxy: `route_rebuild_count = Δ(al_cache_miss)` (каждый miss приводит к попытке восстановления route cache).
@@ -162,8 +167,9 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 | al_route_overflow_count |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
 | al_h_recent_resync |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
 | avg_dispatch_drain |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
+| al_dispatch_ticks_to_drain |  |  |  | baseline ± шум | OK/WARN/CRITICAL | ожидается без деградации |
 | hit_share / miss_share |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
-| compaction_frequency |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
+| compaction_frequency (`Δal_reg_compact_calls_window`) |  |  |  | ниже baseline | OK/WARN/CRITICAL | ожидается снижение |
 | route_rebuild_count |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
 
 ### Scene M (`al_perf_mid`)
