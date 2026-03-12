@@ -24,6 +24,41 @@ int AL_FindNPCInRegistry(object oArea, object oNpc)
     return -1;
 }
 
+void AL_MarkRegistryOverflow(object oArea, object oNpc)
+{
+    int nOverflowCount = GetLocalInt(oArea, "al_reg_overflow_count") + 1;
+    SetLocalInt(oArea, "al_reg_overflow_count", nOverflowCount);
+    SetLocalString(oArea, "al_reg_overflow_last_npc_tag", GetTag(oNpc));
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    if (nSyncTick > 0)
+    {
+        SetLocalInt(oArea, "al_reg_overflow_sync_tick", nSyncTick);
+    }
+
+    // Optional diagnostics: throttled module-log entries in debug mode.
+    if (GetLocalInt(oArea, "al_debug") > 0)
+    {
+        int nLastLogTick = GetLocalInt(oArea, "al_reg_overflow_last_log_tick");
+        if (nSyncTick <= 0 || nLastLogTick <= 0 || (nSyncTick - nLastLogTick) >= 50)
+        {
+            WriteTimestampedLogEntry(
+                "[AL][RegistryOverflow] area=" + GetTag(oArea)
+                + " npc=" + GetTag(oNpc)
+                + " count=" + IntToString(GetLocalInt(oArea, "al_npc_count"))
+                + " max=" + IntToString(AL_MAX_NPCS)
+                + " overflows=" + IntToString(nOverflowCount)
+                + " sync_tick=" + IntToString(nSyncTick)
+            );
+
+            if (nSyncTick > 0)
+            {
+                SetLocalInt(oArea, "al_reg_overflow_last_log_tick", nSyncTick);
+            }
+        }
+    }
+}
+
 void AL_RegisterNPC(object oNpc)
 {
     if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
@@ -47,6 +82,7 @@ void AL_RegisterNPC(object oNpc)
     int nCount = GetLocalInt(oArea, "al_npc_count");
     if (nCount >= AL_MAX_NPCS)
     {
+        AL_MarkRegistryOverflow(oArea, oNpc);
         return;
     }
 
