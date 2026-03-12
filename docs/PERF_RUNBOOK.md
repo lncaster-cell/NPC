@@ -174,12 +174,14 @@ python3 scripts/ambient_life/run_preflight_suite.py \
    - проверять `al_dispatch_ticks_to_drain`;
    - для инкрементального ref-count dispatcher ожидать снижение jitter по `al_dispatch_ticks_to_drain` в стресс-сценах `S100/S120` (ровнее профиль между соседними окнами 20 тиков);
    - ожидание по оптимизациям compaction: **без деградации** относительно baseline (допускается только шум измерений).
+   - для оптимизаций cache lookup (fast-accessor + per-tag/per-tick guard) в `S80/S100/S120` ожидается снижение `al_dispatch_ticks_to_drain` и/или `al_cache_miss`; отсутствие тренда должно быть отдельно объяснено в отчёте.
 
 2. **Cache hit/miss share**
    - Формулы:
      - `hit_share = Δ(al_cache_hit) / (Δ(al_cache_hit)+Δ(al_cache_miss))`
      - `miss_share = Δ(al_cache_miss) / (Δ(al_cache_hit)+Δ(al_cache_miss))`
    - Цель для всех сцен: `hit_share >= 0.85`, `miss_share <= 0.15`.
+   - Для сценариев `S80/S100/S120` после внедрения fast-accessor ожидается направленный тренд к уменьшению `miss_share` (или стабильность на baseline-минимуме).
 
 3. **Compaction frequency**
    - Использовать прямые счётчики в locals:
