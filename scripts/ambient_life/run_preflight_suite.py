@@ -11,6 +11,7 @@ Direct standalone execution is also supported:
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 from pathlib import Path
 from typing import Any
@@ -42,14 +43,34 @@ def _normalize_severity(level: str) -> str:
     return "info"
 
 
-def _build_report(route_input: Path, link_input: Path, locals_input: Path) -> dict[str, Any]:
+def _run_route_check(route_input: Path) -> list[al_route_preflight.ValidationIssue]:
     route_rows = al_route_preflight._read_input(route_input)
-    link_rows = al_link_preflight._read_input(link_input)
-    locals_payload = al_locals_preflight._read_input(locals_input)
+    return al_route_preflight.validate_route_markup(route_rows)
 
-    route_issues = al_route_preflight.validate_route_markup(route_rows)
-    link_issues = al_link_preflight.validate_links(link_rows)
-    locals_issues = al_locals_preflight.validate_locals(locals_payload)
+
+def _run_link_check(link_input: Path) -> list[al_link_preflight.ValidationIssue]:
+    link_rows = al_link_preflight._read_input(link_input)
+    return al_link_preflight.validate_links(link_rows)
+
+
+def _run_locals_check(locals_input: Path) -> list[al_locals_preflight.ValidationIssue]:
+    locals_payload = al_locals_preflight._read_input(locals_input)
+    return al_locals_preflight.validate_locals(locals_payload)
+
+
+def _build_report(route_input: Path, link_input: Path, locals_input: Path, *, parallel: bool = False) -> dict[str, Any]:
+    if parallel:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            route_future = executor.submit(_run_route_check, route_input)
+            link_future = executor.submit(_run_link_check, link_input)
+            locals_future = executor.submit(_run_locals_check, locals_input)
+            route_issues = route_future.result()
+            link_issues = link_future.result()
+            locals_issues = locals_future.result()
+    else:
+        route_issues = _run_route_check(route_input)
+        link_issues = _run_link_check(link_input)
+        locals_issues = _run_locals_check(locals_input)
 
     issues: list[dict[str, Any]] = []
 
@@ -147,10 +168,11 @@ def main() -> int:
     parser.add_argument("--route-input", required=True, help="Path to route preflight JSON input")
     parser.add_argument("--link-input", required=True, help="Path to link preflight JSON input")
     parser.add_argument("--locals-input", required=True, help="Path to locals preflight JSON input")
+    parser.add_argument("--parallel", action="store_true", help="Run route/link/locals checks in parallel")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
     args = parser.parse_args()
 
-    report = _build_report(Path(args.route_input), Path(args.link_input), Path(args.locals_input))
+    report = _build_report(Path(args.route_input), Path(args.link_input), Path(args.locals_input), parallel=args.parallel)
 
     if args.format == "json":
         print(json.dumps(report, ensure_ascii=False, indent=2))
