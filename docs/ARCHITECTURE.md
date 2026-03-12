@@ -20,6 +20,7 @@
 
 ### 3.2 Registry (Stage B)
 - Плотный реестр `al_npc_0..N`, счётчик `al_npc_count`.
+- Reverse-index `al_reg_rev_<stable-id> -> reg_idx+1` на area locals, где `stable-id = tag#ObjectToString(oNpc)`.
 - Удаление — через swap-remove для сохранения плотности.
 - Ограничение: `AL_MAX_NPCS = 100` на area.
 
@@ -106,3 +107,12 @@ Crime/alarm на Stage I.2 намеренно **не** добавляет нов
   - `AL_IsRuntimeNpc(oNpc)` — валидный непользовательский creature для runtime-пайплайнов (`route/react/blocked/registry/core`).
   - `AL_IsHotArea(oArea)` — валидная area в `AL_SIM_TIER_HOT`, где разрешена активная симуляция.
 - Во всех ранних `return`-ветках используется прежняя семантика: guards только централизуют проверку, не меняя порядок и поведение fallback-логики.
+
+### 5.2 Инвариант консистентности registry/reverse-index
+
+- Для каждого валидного `i` в диапазоне `[0, al_npc_count)` объект `oNpc = al_npc_i` обязан иметь:
+  - `oNpc.al_reg_area == oArea`;
+  - `oNpc.al_reg_idx == i`;
+  - `oArea.al_reg_rev_<stable-id(oNpc)> == i + 1` (смещение на +1 нужно, чтобы `0` оставался sentinel-значением «нет записи»).
+- Любая операция, меняющая позицию NPC в dense-array (`register`, `unregister`, `transfer`, `compact`, `swap-with-last`), обязана синхронно обновлять reverse-index для перемещённого/удалённого NPC.
+- `AL_FindNPCInRegistry` сначала читает reverse-index (быстрый путь), а линейный scan используется только как fallback/самовосстановление при рассинхроне. Для observability ведутся счётчики `al_reg_reverse_hit` / `al_reg_reverse_miss`.
