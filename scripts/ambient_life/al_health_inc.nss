@@ -1,6 +1,6 @@
 // Ambient Life area health snapshot helpers (extracted from al_area_inc).
 
-void AL_SetLocalIntOnChange(object oTarget, string sVar, int nValue)
+void AL_SetLocalIfChangedInt(object oTarget, string sVar, int nValue)
 {
     if (GetLocalInt(oTarget, sVar) != nValue)
     {
@@ -8,12 +8,52 @@ void AL_SetLocalIntOnChange(object oTarget, string sVar, int nValue)
     }
 }
 
-void AL_SetLocalStringOnChange(object oTarget, string sVar, string sValue)
+void AL_SetLocalIfChangedString(object oTarget, string sVar, string sValue)
 {
     if (GetLocalString(oTarget, sVar) != sValue)
     {
         SetLocalString(oTarget, sVar, sValue);
     }
+}
+
+void AL_SetLocalIfChangedObject(object oTarget, string sVar, object oValue)
+{
+    if (GetLocalObject(oTarget, sVar) != oValue)
+    {
+        SetLocalObject(oTarget, sVar, oValue);
+    }
+}
+
+int AL_GetHealthHeavySamplePeriod(int nTier)
+{
+    if (nTier == AL_SIM_TIER_HOT)
+    {
+        return 2;
+    }
+
+    if (nTier == AL_SIM_TIER_WARM)
+    {
+        return 4;
+    }
+
+    return 4;
+}
+
+int AL_ShouldSampleHealthHeavyMetrics(int nSyncTick, int nTier)
+{
+    int nPeriod = AL_GetHealthHeavySamplePeriod(nTier);
+
+    if (nPeriod <= 1)
+    {
+        return TRUE;
+    }
+
+    if (nSyncTick <= 0)
+    {
+        return TRUE;
+    }
+
+    return (nSyncTick % nPeriod) == 0;
 }
 
 int AL_ComputeHealthResyncWindowMask()
@@ -34,7 +74,7 @@ void AL_EnsureAreaHealthSnapshotInit(object oArea)
 {
     if (GetLocalInt(oArea, "al_h_resync_window_mask") <= 0)
     {
-        AL_SetLocalIntOnChange(oArea, "al_h_resync_window_mask", AL_ComputeHealthResyncWindowMask());
+        AL_SetLocalIfChangedInt(oArea, "al_h_resync_window_mask", AL_ComputeHealthResyncWindowMask());
     }
 }
 
@@ -368,6 +408,8 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
         nRegIndexMissDelta = nRegIndexMiss;
     }
 
+    int bSampleHeavyMetrics = AL_ShouldSampleHealthHeavyMetrics(nSyncTick, nTier);
+
     int nRegIndexMissWindowStartTick = GetLocalInt(oArea, "al_h_reg_index_miss_window_start_tick");
     int nRegIndexMissWindowStartValue = GetLocalInt(oArea, "al_h_reg_index_miss_window_start_value");
     if (nRegIndexMissWindowStartTick <= 0 || nSyncTick < nRegIndexMissWindowStartTick)
@@ -407,18 +449,29 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
         nRegIndexMissStatus = 1;
     }
 
-    AL_SetLocalIntOnChange(oArea, "al_h_npc_count", nNpcCount);
-    AL_SetLocalIntOnChange(oArea, "al_h_tier", nTier);
-    AL_SetLocalIntOnChange(oArea, "al_h_slot", nSlot);
-    AL_SetLocalIntOnChange(oArea, "al_h_sync_tick", nSyncTick);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_overflow_count", nRegOverflow);
-    AL_SetLocalIntOnChange(oArea, "al_h_route_overflow_count", nRouteOverflow);
-    AL_SetLocalIntOnChange(oArea, "al_h_recent_resync", nRecentResync);
-    AL_SetLocalIntOnChange(oArea, "al_h_recent_resync_mask", nResyncMask);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_delta", nRegIndexMissDelta);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_ticks", nRegIndexMissWindowTicks);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_warn_status", nRegIndexMissStatus);
+    // Critical metrics (every tick).
+    AL_SetLocalIfChangedInt(oArea, "al_h_sync_tick", nSyncTick);
+    AL_SetLocalIfChangedInt(oArea, "al_h_recent_resync", nRecentResync);
+    AL_SetLocalIfChangedInt(oArea, "al_h_recent_resync_mask", nResyncMask);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_delta", nRegIndexMissDelta);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_last", nRegIndexMiss);
+
+    // Quasi-static metrics (change-driven writes).
+    AL_SetLocalIfChangedInt(oArea, "al_h_npc_count", nNpcCount);
+    AL_SetLocalIfChangedInt(oArea, "al_h_tier", nTier);
+    AL_SetLocalIfChangedInt(oArea, "al_h_slot", nSlot);
+    AL_SetLocalIfChangedInt(oArea, "al_h_reg_overflow_count", nRegOverflow);
+    AL_SetLocalIfChangedInt(oArea, "al_h_route_overflow_count", nRouteOverflow);
+
+    // Heavy diagnostic metrics (periodic sampling, but always on fresh incidents).
+    if (bSampleHeavyMetrics || nRegIndexMissDelta > 0)
+    {
+        AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
+        AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_window_ticks", nRegIndexMissWindowTicks);
+        AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_warn_status", nRegIndexMissStatus);
+        AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_window_start_tick", nRegIndexMissWindowStartTick);
+        AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_window_start_value", nRegIndexMissWindowStartValue);
+    }
 
     if (GetLocalInt(oArea, "al_debug") > 0)
     {
@@ -491,15 +544,15 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
         );
     }
 
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_npc_count", nNpcCount);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_tier", nTier);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_slot", nSlot);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_reg_overflow", nRegOverflow);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_route_overflow", nRouteOverflow);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_recent_resync", nRecentResync);
-    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_last", nRegIndexMiss);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_start_tick", nRegIndexMissWindowStartTick);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_start_value", nRegIndexMissWindowStartValue);
-    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_warn_prev_status", nRegIndexMissStatus);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_npc_count", nNpcCount);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_tier", nTier);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_slot", nSlot);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_reg_overflow", nRegOverflow);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_route_overflow", nRouteOverflow);
+    AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_recent_resync", nRecentResync);
+    if (bSampleHeavyMetrics || nRegIndexMissDelta > 0)
+    {
+        AL_SetLocalIfChangedInt(oArea, "al_h_dbg_prev_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
+        AL_SetLocalIfChangedInt(oArea, "al_h_reg_index_miss_warn_prev_status", nRegIndexMissStatus);
+    }
 }
