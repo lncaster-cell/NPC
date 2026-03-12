@@ -1,5 +1,5 @@
-// Ambient Life Stage I.1 disturbed reaction foundation.
-// Scope intentionally narrow: inventory/theft disturbance capture + bounded local override/resume.
+// Ambient Life Stage I.2 disturbed reaction layer.
+// Scope: Stage I.1 foundation + bounded local crime/alarm escalation (area-local only).
 
 #include "al_area_inc"
 #include "al_events_inc"
@@ -10,10 +10,379 @@ const int AL_REACT_TYPE_REMOVED = 2;
 const int AL_REACT_TYPE_STOLEN = 3;
 const int AL_REACT_TYPE_UNKNOWN = 4;
 
+const int AL_CRIME_KIND_NONE = 0;
+const int AL_CRIME_KIND_SUSPICIOUS = 1;
+const int AL_CRIME_KIND_THEFT = 2;
+const int AL_CRIME_KIND_HOSTILE_LEGAL = 3;
+
+const int AL_NPC_ROLE_CIVILIAN = 0;
+const int AL_NPC_ROLE_MILITIA = 1;
+const int AL_NPC_ROLE_GUARD = 2;
+
+const int AL_CRIME_DEBOUNCE_TICKS = 2;
+const float AL_LOCAL_ALARM_RADIUS = 18.0;
+const int AL_LOCAL_ALARM_MAX_RESPONDERS = 8;
+
 // Route runtime hooks consumed by Stage I.1 reaction layer.
 string AL_RouteRtActiveKey();
 int AL_RouteRoutineResumeCurrent(object oNpc);
 void AL_RouteBlockedRuntimeReset(object oNpc);
+
+// Local helper forward declarations used by bounded alarm fan-out path.
+int AL_ReactShouldOverrideRoutine(object oActor);
+void AL_ReactRuntimeBegin(object oActor, int nReactType, object oSource, object oItem);
+void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind);
+void AL_ReactFinishCreature(object oNpc);
+
+int AL_ReactGetAreaSyncTick(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return 0;
+    }
+
+    return GetLocalInt(oArea, "al_sync_tick");
+}
+
+void AL_ReactAreaAlarmClear(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, "al_alarm_state", AL_CRIME_KIND_NONE);
+    SetLocalInt(oArea, "al_alarm_until", 0);
+    DeleteLocalObject(oArea, "al_alarm_source");
+}
+
+void AL_ReactAreaAlarmRefresh(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    int nUntil = GetLocalInt(oArea, "al_alarm_until");
+    int nTick = AL_ReactGetAreaSyncTick(oArea);
+
+    if (nUntil <= 0 || nTick <= nUntil)
+    {
+        return;
+    }
+
+    AL_ReactAreaAlarmClear(oArea);
+}
+
+int AL_ReactGetNpcRole(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE)
+    {
+        return AL_NPC_ROLE_CIVILIAN;
+    }
+
+    int nRole = GetLocalInt(oNpc, "al_npc_role");
+    if (nRole < AL_NPC_ROLE_CIVILIAN || nRole > AL_NPC_ROLE_GUARD)
+    {
+        return AL_NPC_ROLE_CIVILIAN;
+    }
+
+    return nRole;
+}
+
+int AL_ReactIsSourceAllowed(object oDisturbed, object oSource)
+{
+    if (!GetIsObjectValid(oDisturbed) || !GetIsObjectValid(oSource))
+    {
+        return FALSE;
+    }
+
+    if (GetLocalInt(oDisturbed, "al_allow_all") == TRUE)
+    {
+        return TRUE;
+    }
+
+    string sSourceTag = GetTag(oSource);
+    string sOwnerTag = GetLocalString(oDisturbed, "al_owner_tag");
+    if (sOwnerTag != "" && sOwnerTag == sSourceTag)
+    {
+        return TRUE;
+    }
+
+    string sAllowedTag = GetLocalString(oDisturbed, "al_allowed_tag");
+    if (sAllowedTag != "" && sAllowedTag == sSourceTag)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+int AL_ReactHasWitness(object oDisturbed, object oSource)
+{
+    if (!GetIsObjectValid(oDisturbed))
+    {
+        return FALSE;
+    }
+
+    if (GetLocalInt(oDisturbed, "al_force_witness") == TRUE)
+    {
+        return TRUE;
+    }
+
+    if (GetObjectType(oDisturbed) == OBJECT_TYPE_CREATURE)
+    {
+        return TRUE;
+    }
+
+    object oArea = GetArea(oDisturbed);
+    if (!GetIsObjectValid(oArea))
+    {
+        return FALSE;
+    }
+
+    if (GetIsObjectValid(oSource) && GetObjectType(oSource) == OBJECT_TYPE_CREATURE && GetArea(oSource) == oArea)
+    {
+        return (GetLocalInt(oArea, "al_player_count") > 0);
+    }
+
+    return FALSE;
+}
+
+int AL_ReactClassifyCrime(object oActor, int nReactType, object oSource, object oItem)
+{
+    if (nReactType == AL_REACT_TYPE_ADDED || nReactType == AL_REACT_TYPE_NONE)
+    {
+        return AL_CRIME_KIND_NONE;
+    }
+
+    int bHasSource = GetIsObjectValid(oSource) && oSource != oActor;
+    int bHasItem = GetIsObjectValid(oItem);
+    int bAllowed = AL_ReactIsSourceAllowed(oActor, oSource);
+    int bWitness = AL_ReactHasWitness(oActor, oSource);
+
+    if (nReactType == AL_REACT_TYPE_STOLEN)
+    {
+        if (bHasSource && bHasItem && bWitness && !bAllowed)
+        {
+            return AL_CRIME_KIND_THEFT;
+        }
+
+        if (!bAllowed && (bHasSource || bWitness))
+        {
+            return AL_CRIME_KIND_SUSPICIOUS;
+        }
+    }
+
+    if ((nReactType == AL_REACT_TYPE_REMOVED || nReactType == AL_REACT_TYPE_UNKNOWN) && !bAllowed && (bHasSource || bWitness))
+    {
+        return AL_CRIME_KIND_SUSPICIOUS;
+    }
+
+    return AL_CRIME_KIND_NONE;
+}
+
+int AL_ReactPromoteByRole(int nCrimeKind, int nNpcRole)
+{
+    if (nCrimeKind == AL_CRIME_KIND_NONE)
+    {
+        return AL_CRIME_KIND_NONE;
+    }
+
+    if (nNpcRole == AL_NPC_ROLE_GUARD && nCrimeKind >= AL_CRIME_KIND_THEFT)
+    {
+        return AL_CRIME_KIND_HOSTILE_LEGAL;
+    }
+
+    return nCrimeKind;
+}
+
+int AL_ReactAlarmDebounced(object oArea, object oSource, int nCrimeKind)
+{
+    if (!GetIsObjectValid(oArea) || nCrimeKind <= AL_CRIME_KIND_NONE)
+    {
+        return TRUE;
+    }
+
+    int nTick = AL_ReactGetAreaSyncTick(oArea);
+    int nLastTick = GetLocalInt(oArea, "al_alarm_last_tick");
+    object oLastSource = GetLocalObject(oArea, "al_alarm_last_source");
+    int nLastKind = GetLocalInt(oArea, "al_alarm_last_kind");
+
+    if (nTick > 0 && nLastTick > 0 && nTick <= (nLastTick + AL_CRIME_DEBOUNCE_TICKS) && oLastSource == oSource && nCrimeKind <= nLastKind)
+    {
+        return TRUE;
+    }
+
+    SetLocalInt(oArea, "al_alarm_last_tick", nTick);
+    SetLocalObject(oArea, "al_alarm_last_source", oSource);
+    SetLocalInt(oArea, "al_alarm_last_kind", nCrimeKind);
+    return FALSE;
+}
+
+int AL_ReactIncidentDebounced(object oActor, object oSource, int nCrimeKind)
+{
+    if (!GetIsObjectValid(oActor) || nCrimeKind <= AL_CRIME_KIND_NONE)
+    {
+        return TRUE;
+    }
+
+    object oArea = GetArea(oActor);
+    int nTick = AL_ReactGetAreaSyncTick(oArea);
+
+    int nLastTick = GetLocalInt(oActor, "al_react_last_crime_tick");
+    object oLastSource = GetLocalObject(oActor, "al_react_last_crime_source");
+    int nLastKind = GetLocalInt(oActor, "al_react_last_crime_kind");
+
+    if (nTick > 0 && nLastTick > 0 && nTick <= (nLastTick + AL_CRIME_DEBOUNCE_TICKS) && oLastSource == oSource && nCrimeKind <= nLastKind)
+    {
+        return TRUE;
+    }
+
+    SetLocalInt(oActor, "al_react_last_crime_tick", nTick);
+    SetLocalObject(oActor, "al_react_last_crime_source", oSource);
+    SetLocalInt(oActor, "al_react_last_crime_kind", nCrimeKind);
+    return FALSE;
+}
+
+void AL_ReactRaiseAreaAlarm(object oActor, object oSource, int nCrimeKind)
+{
+    object oArea = GetArea(oActor);
+    if (!GetIsObjectValid(oArea) || nCrimeKind <= AL_CRIME_KIND_NONE)
+    {
+        return;
+    }
+
+    AL_ReactAreaAlarmRefresh(oArea);
+    if (AL_ReactAlarmDebounced(oArea, oSource, nCrimeKind))
+    {
+        return;
+    }
+
+    int nTick = AL_ReactGetAreaSyncTick(oArea);
+    int nDuration = 2;
+    if (nCrimeKind == AL_CRIME_KIND_THEFT)
+    {
+        nDuration = 4;
+    }
+    else if (nCrimeKind == AL_CRIME_KIND_HOSTILE_LEGAL)
+    {
+        nDuration = 6;
+    }
+
+    int nState = GetLocalInt(oArea, "al_alarm_state");
+    if (nCrimeKind > nState)
+    {
+        SetLocalInt(oArea, "al_alarm_state", nCrimeKind);
+    }
+
+    int nUntil = nTick + nDuration;
+    if (GetLocalInt(oArea, "al_alarm_until") < nUntil)
+    {
+        SetLocalInt(oArea, "al_alarm_until", nUntil);
+    }
+
+    if (GetIsObjectValid(oSource))
+    {
+        SetLocalObject(oArea, "al_alarm_source", oSource);
+    }
+}
+
+void AL_ReactCivilianResponse(object oNpc, object oSource)
+{
+    ActionSpeakString("Thief! Help!", TALKVOLUME_SHOUT);
+
+    object oSafe = GetObjectByTag(GetLocalString(oNpc, "al_safe_wp"), 0);
+    if (GetIsObjectValid(oSafe) && GetArea(oSafe) == GetArea(oNpc))
+    {
+        ActionMoveToObject(oSafe, TRUE, 1.5);
+        return;
+    }
+
+    if (GetIsObjectValid(oSource))
+    {
+        ActionMoveToObject(oSource, FALSE, 14.0);
+    }
+}
+
+void AL_ReactMilitiaResponse(object oNpc, object oSource)
+{
+    if (!GetIsObjectValid(oSource))
+    {
+        return;
+    }
+
+    ActionAttack(oSource);
+}
+
+void AL_ReactGuardResponse(object oNpc, object oSource, int nCrimeKind)
+{
+    if (!GetIsObjectValid(oSource))
+    {
+        return;
+    }
+
+    // Built-in hostility/faction alignment remains primary; legal chain is future stage hook.
+    int bFactionMismatch = !GetFactionEqual(oNpc, oSource);
+    int bBuiltInHostile = GetIsReactionTypeHostile(oNpc, oSource);
+    if (nCrimeKind >= AL_CRIME_KIND_HOSTILE_LEGAL || bBuiltInHostile || bFactionMismatch)
+    {
+        ActionAttack(oSource);
+        return;
+    }
+
+    ActionSpeakString("Stop!", TALKVOLUME_SHOUT);
+    ActionMoveToObject(oSource, TRUE, 2.0);
+}
+
+int AL_ReactShouldNpcJoinLocalAlarm(object oNpc, object oSource)
+{
+    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    {
+        return FALSE;
+    }
+
+    if (GetIsObjectValid(oSource) && oNpc == oSource)
+    {
+        return FALSE;
+    }
+
+    return AL_ReactShouldOverrideRoutine(oNpc);
+}
+
+void AL_ReactNotifyNearbyResponders(object oActor, object oSource, int nCrimeKind)
+{
+    if (!GetIsObjectValid(oActor) || nCrimeKind <= AL_CRIME_KIND_NONE)
+    {
+        return;
+    }
+
+    object oArea = GetArea(oActor);
+    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    {
+        return;
+    }
+
+    location lCenter = GetLocation(oActor);
+    object oCandidate = GetFirstObjectInShape(SHAPE_SPHERE, AL_LOCAL_ALARM_RADIUS, lCenter, FALSE, OBJECT_TYPE_CREATURE);
+    int nJoined = 0;
+
+    while (GetIsObjectValid(oCandidate) && nJoined < AL_LOCAL_ALARM_MAX_RESPONDERS)
+    {
+        object oNext = GetNextObjectInShape(SHAPE_SPHERE, AL_LOCAL_ALARM_RADIUS, lCenter, FALSE, OBJECT_TYPE_CREATURE);
+
+        if (oCandidate != oActor && AL_ReactShouldNpcJoinLocalAlarm(oCandidate, oSource))
+        {
+            AL_ReactRuntimeBegin(oCandidate, AL_REACT_TYPE_STOLEN, oSource, OBJECT_INVALID);
+            SetLocalInt(oCandidate, "al_react_resume_flag", TRUE);
+            AL_ReactRunBoundedOverride(oCandidate, GetIsObjectValid(oSource), nCrimeKind);
+            AL_ReactFinishCreature(oCandidate);
+            nJoined = nJoined + 1;
+        }
+
+        oCandidate = oNext;
+    }
+}
 
 int AL_ReactTypeFromDisturb(int nDisturbType)
 {
@@ -91,7 +460,7 @@ void AL_ReactRuntimeBegin(object oActor, int nReactType, object oSource, object 
     }
 }
 
-void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource)
+void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind)
 {
     if (!GetIsObjectValid(oNpc))
     {
@@ -100,7 +469,26 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource)
 
     ClearAllActions(TRUE);
 
-    if (bHasCredibleSource)
+    if (nCrimeKind > AL_CRIME_KIND_NONE)
+    {
+        int nRole = AL_ReactGetNpcRole(oNpc);
+        object oSource = GetLocalObject(oNpc, "al_react_last_source");
+
+        if (nRole == AL_NPC_ROLE_CIVILIAN)
+        {
+            AL_ReactCivilianResponse(oNpc, oSource);
+        }
+        else if (nRole == AL_NPC_ROLE_MILITIA)
+        {
+            AL_ReactMilitiaResponse(oNpc, oSource);
+        }
+        else
+        {
+            AL_ReactGuardResponse(oNpc, oSource, nCrimeKind);
+            SetLocalInt(oNpc, "al_legal_followup_pending", TRUE); // Stage I.3+: surrender/arrest/trial hook.
+        }
+    }
+    else if (bHasCredibleSource)
     {
         object oSource = GetLocalObject(oNpc, "al_react_last_source");
         ActionMoveToObject(oSource, TRUE, 2.0);
@@ -144,6 +532,8 @@ void AL_OnDisturbed(object oActor)
         return;
     }
 
+    AL_ReactAreaAlarmRefresh(GetArea(oActor));
+
     object oSource = GetLastDisturbed();
     int nDisturbType = GetInventoryDisturbType();
     object oItem = GetInventoryDisturbItem();
@@ -161,12 +551,22 @@ void AL_OnDisturbed(object oActor)
     SetLocalInt(oActor, "al_react_resume_flag", bCanOverride);
 
     // Creature theft context can be partial in toolset/runtime edge cases.
-    // Treat missing source/item on stolen as suspicious but bounded; no crime/alarm escalation here.
+    // Treat missing source/item on stolen as suspicious but bounded.
     int bHasCredibleSource = GetIsObjectValid(oSource) && oSource != oActor;
+
+    int nCrimeKind = AL_ReactClassifyCrime(oActor, nReactType, oSource, oItem);
+    int nRole = AL_ReactGetNpcRole(oActor);
+    nCrimeKind = AL_ReactPromoteByRole(nCrimeKind, nRole);
+
+    if (!AL_ReactIncidentDebounced(oActor, oSource, nCrimeKind))
+    {
+        AL_ReactRaiseAreaAlarm(oActor, oSource, nCrimeKind);
+        AL_ReactNotifyNearbyResponders(oActor, oSource, nCrimeKind);
+    }
 
     if (bCanOverride)
     {
-        AL_ReactRunBoundedOverride(oActor, bHasCredibleSource);
+        AL_ReactRunBoundedOverride(oActor, bHasCredibleSource, nCrimeKind);
     }
 
     AL_ReactFinishCreature(oActor);

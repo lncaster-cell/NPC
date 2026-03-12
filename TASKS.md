@@ -2,7 +2,7 @@
 
 ## P0
 
-- [ ] Stage I.2: crime/alarm escalation поверх disturbed foundation.
+- [x] Stage I.2: crime/alarm escalation поверх disturbed foundation.
 - [ ] Диагностика отказа `AL_RegisterNPC` при достижении `AL_MAX_NPCS`.
 - [ ] Унифицированная схема подключения `al_area_tick` для разных шаблонов модулей.
 
