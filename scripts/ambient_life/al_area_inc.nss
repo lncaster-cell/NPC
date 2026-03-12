@@ -12,6 +12,8 @@ const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
 const int AL_WP_CACHE_TTL_TICKS = 10;
 const int AL_HEALTH_RESYNC_WINDOW_TICKS = 8;
+const string AL_LOOKUP_INVALIDATE_REASON_ALL = "all";
+const string AL_LOOKUP_INVALIDATE_REASON_ROUTE = "route";
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
 
@@ -126,10 +128,26 @@ void AL_LookupBuildWaypointListCache(object oArea, string sTag)
     AL_LookupTrackTag(oArea, sTag);
 }
 
-void AL_LookupSoftInvalidateAreaCache(object oArea)
+void AL_LookupInvalidateTagCache(object oArea, string sTag)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA || sTag == "")
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, AL_LookupWpTickKey(sTag), 0);
+}
+
+void AL_LookupSoftInvalidateAreaCache(object oArea, string sReason, string sRouteTag)
 {
     if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
     {
+        return;
+    }
+
+    if (sReason == AL_LOOKUP_INVALIDATE_REASON_ROUTE && sRouteTag != "")
+    {
+        AL_LookupInvalidateTagCache(oArea, sRouteTag);
         return;
     }
 
@@ -140,7 +158,7 @@ void AL_LookupSoftInvalidateAreaCache(object oArea)
         string sTag = GetLocalString(oArea, "al_cache_wp_tag_" + IntToString(i));
         if (sTag != "")
         {
-            SetLocalInt(oArea, AL_LookupWpTickKey(sTag), 0);
+            AL_LookupInvalidateTagCache(oArea, sTag);
         }
         i = i + 1;
     }
@@ -383,7 +401,7 @@ void AL_AreaSetTier(object oArea, int nTier)
     }
 
     SetLocalInt(oArea, "al_sim_tier", nTier);
-    AL_LookupSoftInvalidateAreaCache(oArea);
+    AL_LookupSoftInvalidateAreaCache(oArea, AL_LOOKUP_INVALIDATE_REASON_ALL, "");
 
     if (nTier == AL_SIM_TIER_FREEZE)
     {
@@ -514,6 +532,7 @@ void AL_DequeueBatchedDispatch(object oArea)
 
     SetLocalInt(oArea, "al_dispatch_q_head", (nHead + 1) % AL_DISPATCH_QUEUE_CAPACITY);
     SetLocalInt(oArea, "al_dispatch_q_len", nLen - 1);
+    AL_UpdateDispatchQueueDepthFast(oArea);
 }
 
 int AL_PickDispatchQueueIndex(object oArea)
@@ -521,40 +540,52 @@ int AL_PickDispatchQueueIndex(object oArea)
     int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
     int nHead = GetLocalInt(oArea, "al_dispatch_q_head");
     int i = 0;
-    int nChosen = -1;
+    int nFirstNormal = -1;
+    int nFirstCritical = -1;
+    int bHasNormal = FALSE;
 
     if (nLen <= 0)
     {
         return -1;
     }
 
-    int nCriticalStreak = GetLocalInt(oArea, "al_dispatch_critical_streak");
-    int bAllowCritical = TRUE;
-    if (nCriticalStreak >= AL_DISPATCH_CRITICAL_BURST_QUOTA && AL_HasPendingPriority(oArea, AL_DISPATCH_PRIORITY_NORMAL))
-    {
-        bAllowCritical = FALSE;
-    }
-
-    i = 0;
     while (i < nLen)
     {
         int nIdx = (nHead + i) % AL_DISPATCH_QUEUE_CAPACITY;
         int nPriority = GetLocalInt(oArea, AL_DispatchQueueKey("prio", nIdx));
-        if (nPriority == AL_DISPATCH_PRIORITY_CRITICAL && bAllowCritical)
+        if (nPriority == AL_DISPATCH_PRIORITY_CRITICAL)
         {
-            return nIdx;
+            if (nFirstCritical < 0)
+            {
+                nFirstCritical = nIdx;
+            }
+        }
+        else
+        {
+            bHasNormal = TRUE;
+            if (nFirstNormal < 0)
+            {
+                nFirstNormal = nIdx;
+            }
         }
 
-        if (nChosen < 0)
-        {
-            nChosen = nIdx;
-        }
         i = i + 1;
     }
 
-    if (nChosen >= 0)
+    int nCriticalStreak = GetLocalInt(oArea, "al_dispatch_critical_streak");
+    if (nFirstCritical >= 0)
     {
-        return nChosen;
+        if (nCriticalStreak >= AL_DISPATCH_CRITICAL_BURST_QUOTA && bHasNormal)
+        {
+            return nFirstNormal;
+        }
+
+        return nFirstCritical;
+    }
+
+    if (nFirstNormal >= 0)
+    {
+        return nFirstNormal;
     }
 
     return nHead;
@@ -619,7 +650,7 @@ void AL_ActivateQueuedDispatch(object oArea)
         SetLocalInt(oArea, "al_dispatch_critical_streak", 0);
     }
 
-    AL_UpdateDispatchQueueMetrics(oArea);
+    AL_UpdateDispatchQueueDepthFast(oArea);
     AL_RunBatchedDispatch(oArea);
 }
 
@@ -637,14 +668,15 @@ void AL_StartBatchedDispatch(object oArea, int nEvent)
         && GetLocalString(oArea, "al_dispatch_cycle_key") == sCycleKey)
     {
         SetLocalInt(oArea, "al_dispatch_dedupe_hits", GetLocalInt(oArea, "al_dispatch_dedupe_hits") + 1);
-        AL_UpdateDispatchQueueMetrics(oArea);
+        AL_UpdateDispatchQueueDepthFast(oArea);
         return;
     }
 
-    if (GetLocalInt(oArea, AL_DispatchPendingKey(sCycleKey)) > 0)
+    if (GetLocalInt(oArea, AL_DispatchPendingMemberKey(sCycleKey)) > 0
+        || (GetLocalInt(oArea, "al_dispatch_active") > 0 && GetLocalString(oArea, "al_dispatch_cycle_key") == sCycleKey))
     {
         SetLocalInt(oArea, "al_dispatch_dedupe_hits", GetLocalInt(oArea, "al_dispatch_dedupe_hits") + 1);
-        AL_UpdateDispatchQueueMetrics(oArea);
+        AL_UpdateDispatchQueueDepthFast(oArea);
         return;
     }
 
@@ -665,6 +697,7 @@ void AL_StartBatchedDispatch(object oArea, int nEvent)
     SetLocalInt(oArea, "al_dispatch_q_len", nLen + 1);
 
     SetLocalInt(oArea, AL_DispatchPendingKey(sCycleKey), 1);
+    SetLocalInt(oArea, AL_DispatchPendingMemberKey(sCycleKey), 1);
     AL_TrackDispatchPendingKey(oArea, sCycleKey);
     AL_OnDispatchWorkQueued(oArea);
     AL_ActivateQueuedDispatch(oArea);
@@ -886,6 +919,7 @@ void AL_AreaTick(object oArea, int nToken)
 
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick") + 1;
     SetLocalInt(oArea, "al_sync_tick", nSyncTick);
+    AL_MaybeUpdateDispatchQueueMetricsFull(oArea, FALSE);
 
     if (nTier == AL_SIM_TIER_HOT)
     {

@@ -257,6 +257,8 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
         return FALSE;
     }
 
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+
     if (!bForceRebuild)
     {
         int nCooldownUntil = GetLocalInt(oArea, AL_RouteAreaRebuildCooldownUntilKey(sRouteTag));
@@ -283,8 +285,22 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
 
             if (i == nSteps)
             {
+                AL_RouteClearAreaPending(oArea, sRouteTag);
                 return TRUE;
             }
+        }
+
+        int nLastFailTick = GetLocalInt(oArea, AL_RouteAreaFailTickKey(sRouteTag));
+        if (nLastFailTick > 0 && nSyncTick > 0 && (nSyncTick - nLastFailTick) < AL_ROUTE_REBUILD_FAIL_COOLDOWN_TICKS)
+        {
+            return FALSE;
+        }
+
+        if (!AL_RouteCanRebuildThisTick(oArea))
+        {
+            AL_RouteMarkAreaPending(oArea, sRouteTag);
+            SetLocalString(oArea, "al_route_fail_reason", "budget_deferred");
+            return FALSE;
         }
     }
 
@@ -341,7 +357,11 @@ void AL_RouteResetAreaOverflowMetrics(object oArea)
     SetLocalInt(oArea, "al_route_duplicate_step_count", 0);
     DeleteLocalString(oArea, "al_route_overflow_tag");
     DeleteLocalString(oArea, "al_route_fail_reason");
+    SetLocalInt(oArea, "al_route_pending_rebuild", FALSE);
+    SetLocalInt(oArea, "al_route_pending_count", 0);
 }
+
+
 
 int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
 {
