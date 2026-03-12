@@ -136,5 +136,18 @@ class ValidateRouteMarkupStructureTests(unittest.TestCase):
         self.assertEqual(issues[0].code, "missing_step_0")
 
 
+class ValidateRouteMarkupSmokeTests(unittest.TestCase):
+    def test_basic_validation_runs(self):
+        rows = [
+            {"area_tag": "inn_01", "route_tag": "route_a", "waypoint_tag": "wp0", "al_step": 0},
+            {"area_tag": "inn_01", "route_tag": "route_a", "waypoint_tag": "wp1", "al_step": 1},
+        ]
+
+        issues = validate_route_markup(rows)
+
+        self.assertIsInstance(issues, list)
+        self.assertFalse(any(issue.level == "ERROR" for issue in issues))
+
+
 if __name__ == "__main__":
     unittest.main()
