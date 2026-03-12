@@ -19,6 +19,7 @@ const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
 
 #include "al_lookup_cache_inc"
+#include "al_debug_inc"
 #include "al_health_inc"
 
 int AL_ComputeAreaSlot()
