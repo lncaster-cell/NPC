@@ -2,6 +2,15 @@
 
 Документ определяет обязательный perf-регламент для изменений в `scripts/ambient_life/al_*`.
 
+## 0) Матрица perf-приоритизации подсистем
+
+| Подсистема | Стоимость в тике (`AL_AreaTick`) | Риск деградации | Ожидаемый выигрыш от оптимизаций |
+| --- | --- | --- | --- |
+| Dispatch queue/drain (`al_dispatch_inc.nss`) | Высокая: обработка очереди и drain-контур выполняются каждый тик | Высокий: рост `al_dispatch_q_len`/`al_dispatch_q_overflow`, замедление `al_dispatch_ticks_to_drain` | Стабилизация latency событий и удержание overflow в 0/низких значениях |
+| Registry compaction/scan (`al_registry_inc.nss`) | Высокая: сканирование/compaction затрагивает большие наборы NPC | Высокий: рост `al_reg_overflow_count`, лишние `al_reg_compact_calls` | Снижение compaction-нагрузки и уменьшение overflow-рисков |
+| Route lookup/step (`al_route_inc.nss`) | Средне-высокая: маршрутные проверки массово вызываются в тиках поведения | Высокий: рост `al_route_overflow_count`, накопление ошибок маршрутизации | Снижение route-overflow и стоимости поиска шага |
+| Area snapshot/health (`al_area_inc.nss`) | Средняя: периодическая агрегация area-состояния в каждом тике | Средне-высокий: деградация диагностик и избыточные local write | Меньше write-on-change операций и стабильные snapshot-метрики |
+
 ## 1) Обязательные сценарии прогона
 
 Для каждого PR с изменениями в `scripts/ambient_life/al_*` прогоняются минимум 3 профиля нагрузки:
@@ -86,6 +95,8 @@
 - Изменённые файлы: <список al_*>
 - Сценарии: S80 / S100 / S120
 - Нагрузочные события: blocked/disturbed burst + linked-area mass transition
+- Доля `AL_AreaTick`, затронутая изменением: <оценка в %, подсистема/фаза тика>
+- Метрика подтверждения эффекта: <какая обязательная метрика(и) показывает улучшение>
 
 ### Baseline vs After
 
@@ -150,5 +161,8 @@
 - `scripts/ambient_life/al_area_inc.nss`
 - `scripts/ambient_life/al_registry_inc.nss`
 - `scripts/ambient_life/al_route_inc.nss`
+- `scripts/ambient_life/al_dispatch_inc.nss`
 
 считаются **неполными**, если в PR нет perf-сводки по шаблону из этого документа (S80/S100/S120 + обязательные метрики).
+
+Эти же файлы считаются **high-impact** для perf-приоритета: задачи и review по ним ставятся выше low-impact изменений.
