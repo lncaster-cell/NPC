@@ -29,6 +29,16 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 
 Цель: дать **воспроизводимый** протокол производственных perf-прогонов для сравнения «до/после» изменений в `scripts/ambient_life/*`.
 
+## 0.1) Baseline-источник для S80/S100/S120
+
+Для сценариев S80/S100/S120 обязательные baseline-замеры фиксируются централизованно в каталоге:
+
+- `docs/perf/baselines/s80_s100_s120_baseline.csv` (машинно-читаемый источник истины);
+- `docs/perf/baselines/s80_s100_s120_baseline.md` (операторский формат);
+- `docs/perf/baselines/README.md` (правила обновления baseline).
+
+Любой PR, затрагивающий perf-критичные части ambient life, должен сравнивать «после» именно с этим baseline.
+
 ## 1) Фиксированные тест-сцены (Low / Mid / High)
 
 > Во всех сценах используются одинаковые настройки рантайма: `AL_AREA_TICK_SEC=30`, `AL_MAX_NPCS_DEFAULT=100`, `AL_ROUTE_MAX_STEPS=16`.
@@ -215,6 +225,27 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 - Приложенные логи/артефакты: <paths>
 ```
 
+Единый формат «до/после»:
+
+- Markdown: таблица с колонками `Scenario | Metric | Baseline | After | Delta | Unit | Warn | Critical | Status | Notes`;
+- CSV: те же колонки в порядке
+  `scenario,metric,baseline_value,after_value,delta,unit,warn_threshold,critical_threshold,status,notes`.
+
+Рекомендуется хранить CSV-артефакт рядом с PR-логами, чтобы сравнение оставалось одновременно машинно- и операторски-читаемым.
+
+## 4.2) Правило обновления baseline
+
+Baseline в `docs/perf/baselines/*` обновляется только если выполнено одно из условий:
+
+1. Есть подтверждённое улучшение относительно действующего baseline;
+2. Есть обоснованное изменение поведения (архитектурное/контентное), из-за которого старый baseline нерепрезентативен.
+
+При обновлении baseline обязательно:
+
+- приложить `baseline-vs-after` таблицы по всем обязательным метрикам;
+- указать причину обновления и ссылку на PR/commit;
+- синхронно обновить CSV и Markdown представления baseline.
+
 ## 4.1) Диагностические признаки перегрева linked-графа
 
 Признаки «перегрева» linked-кластера (обычно после неудачной topology-настройки `al_link_*`):
@@ -236,3 +267,4 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 - Smoke-check из `TASKS.md`.
 - Perf-check по этому runbook (`docs/PERF_RUNBOOK.md`) минимум на Scene M.
 - Для изменений маршрутизации/реестра/диспетчера — обязательно все 3 сцены (L/M/H) и отчёт «до/после» в PR.
+- Для core-изменений (`al_area_inc.nss`, `al_registry_inc.nss`, `al_route_inc.nss`) PR считается неполным без baseline-vs-after (S80/S100/S120, обязательные метрики, единый CSV/Markdown формат).

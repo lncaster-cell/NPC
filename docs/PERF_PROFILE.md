@@ -2,14 +2,11 @@
 
 Документ определяет обязательный perf-регламент для изменений в `scripts/ambient_life/al_*`.
 
-## 0) Матрица perf-приоритизации подсистем
+Актуальный baseline для S80/S100/S120 хранится в:
 
-| Подсистема | Стоимость в тике (`AL_AreaTick`) | Риск деградации | Ожидаемый выигрыш от оптимизаций |
-| --- | --- | --- | --- |
-| Dispatch queue/drain (`al_dispatch_inc.nss`) | Высокая: обработка очереди и drain-контур выполняются каждый тик | Высокий: рост `al_dispatch_q_len`/`al_dispatch_q_overflow`, замедление `al_dispatch_ticks_to_drain` | Стабилизация latency событий и удержание overflow в 0/низких значениях |
-| Registry compaction/scan (`al_registry_inc.nss`) | Высокая: сканирование/compaction затрагивает большие наборы NPC | Высокий: рост `al_reg_overflow_count`, лишние `al_reg_compact_calls` | Снижение compaction-нагрузки и уменьшение overflow-рисков |
-| Route lookup/step (`al_route_inc.nss`) | Средне-высокая: маршрутные проверки массово вызываются в тиках поведения | Высокий: рост `al_route_overflow_count`, накопление ошибок маршрутизации | Снижение route-overflow и стоимости поиска шага |
-| Area snapshot/health (`al_area_inc.nss`) | Средняя: периодическая агрегация area-состояния в каждом тике | Средне-высокий: деградация диагностик и избыточные local write | Меньше write-on-change операций и стабильные snapshot-метрики |
+- `docs/perf/baselines/s80_s100_s120_baseline.csv` (источник для автоматических проверок);
+- `docs/perf/baselines/s80_s100_s120_baseline.md` (операторское представление);
+- `docs/perf/baselines/README.md` (правило обновления baseline).
 
 ## 1) Обязательные сценарии прогона
 
@@ -142,19 +139,26 @@
 - Нужны follow-up задачи: <да/нет + список>
 ```
 
-## 3.1) Сравнение S80/S100/S120 при cap=80/100/120 (decision aid)
+Дополнительно к текущему шаблону, для машинного сравнения прикладывайте CSV в едином формате:
 
-Используйте таблицу ниже как шаблон интерпретации результатов (после заполнения секции Baseline vs After):
+```csv
+scenario,metric,baseline_value,after_value,delta,unit,warn_threshold,critical_threshold,status,notes
+S80,al_dispatch_q_len,6,,,,count,8..12,>=13,,
+```
 
-| Scenario | cap=80 | cap=100 | cap=120 | Suggested cap |
-| --- | --- | --- | --- | --- |
-| S80 | допустим при стабильном составе NPC, но чувствителен к burst-регистрациям | целевой baseline | запас без операционной необходимости | `100` |
-| S100 | ожидаемый рост `al_reg_overflow_count_cap` | целевой baseline | запас для burst/миграций | `100` (или `120` для пиковых area) |
-| S120 | устойчивый overflow (обычно WARN/CRITICAL) | вероятный overflow при пиках | целевой baseline | `120` |
+Markdown-таблицы и CSV должны описывать один и тот же набор строк/метрик.
 
-Критерий выбора: минимальный cap, при котором в штатном 20-тиковом окне `al_reg_overflow_count_cap` не растёт и нет деградации `al_dispatch_ticks_to_drain`.
+## 4) Критерии принятия baseline-vs-after
 
-## 4) Gate в TASKS / PR-review
+PR считается прошедшим perf-gate только если одновременно выполнено:
+
+1. Для S80/S100/S120 заполнены все must-have метрики;
+2. Сравнение оформлено в двух форматах: Markdown (для review) и CSV (для автоматических проверок);
+3. Нет необоснованного роста overflow-метрик;
+4. `al_dispatch_ticks_to_drain` не деградирует сверх допустимого дельта-окна;
+5. Для изменений compaction зафиксирован ожидаемый тренд по `al_reg_compact_calls(_window)`.
+
+## 5) Gate в TASKS / PR-review
 
 Изменения в core-файлах:
 
@@ -165,4 +169,17 @@
 
 считаются **неполными**, если в PR нет perf-сводки по шаблону из этого документа (S80/S100/S120 + обязательные метрики).
 
-Эти же файлы считаются **high-impact** для perf-приоритета: задачи и review по ним ставятся выше low-impact изменений.
+Дополнительно PR считается **неполным**, если отсутствует baseline-vs-after по файлам из `docs/perf/baselines/*`.
+
+Используйте `docs/PR_CHECKLIST.md` как обязательный pre-review checklist.
+
+## 6) Правило обновления baseline
+
+Baseline в `docs/perf/baselines/*` обновляется только при подтверждённом улучшении
+или при явно обоснованном изменении поведения системы.
+
+Обязательные условия обновления:
+
+- обоснование причины в PR;
+- ссылка на артефакт сравнения baseline-vs-after;
+- синхронное обновление `.csv` и `.md` baseline-файлов.
