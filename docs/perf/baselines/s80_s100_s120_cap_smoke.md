@@ -1,4 +1,7 @@
 # S80/S100/S120 cap-smoke report
+<!-- DOCSYNC:2026-03-12 -->
+> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+
 
 Дата: 2026-03-12  
 Окно: warmup=2 ticks, measure=20 ticks

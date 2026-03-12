@@ -1,4 +1,7 @@
 # PERF Runbook (Ambient Life)
+<!-- DOCSYNC:2026-03-12 -->
+> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+
 
 ## 0) Обязательный preflight: единый preflight-suite (route/link/locals)
 
