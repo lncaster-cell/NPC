@@ -1,0 +1,229 @@
+#!/usr/bin/env python3
+"""Offline route markup preflight validator for Ambient Life routes.
+
+Input JSON can be either:
+1) {"waypoints": [ ... ]}
+2) [ ... ]
+
+Each waypoint entry should contain:
+- area_tag (str)
+- route_tag (str)
+- waypoint_tag (str, optional but recommended)
+- al_step (int)
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from collections import defaultdict
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+AL_ROUTE_MAX_STEPS = 16
+
+
+@dataclass
+class Waypoint:
+    area_tag: str
+    route_tag: str
+    waypoint_tag: str
+    al_step: int
+
+
+@dataclass
+class ValidationIssue:
+    level: str
+    area_tag: str
+    route_tag: str
+    code: str
+    details: str
+
+
+def _read_input(path: Path) -> list[dict[str, Any]]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if isinstance(payload, dict):
+        waypoints = payload.get("waypoints", [])
+    elif isinstance(payload, list):
+        waypoints = payload
+    else:
+        raise ValueError("JSON root must be an object with key 'waypoints' or an array")
+
+    if not isinstance(waypoints, list):
+        raise ValueError("'waypoints' must be an array")
+    return waypoints
+
+
+def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, ValidationIssue | None]:
+    area_tag = str(raw.get("area_tag", "")).strip()
+    route_tag = str(raw.get("route_tag", "")).strip()
+    waypoint_tag = str(raw.get("waypoint_tag", f"<idx:{index}>"))
+    step_raw = raw.get("al_step")
+
+    if not area_tag or not route_tag:
+        return None, ValidationIssue(
+            level="WARN",
+            area_tag=area_tag or "<unknown-area>",
+            route_tag=route_tag or "<unknown-route>",
+            code="missing_route_or_area_tag",
+            details=f"waypoint={waypoint_tag}",
+        )
+
+    if not isinstance(step_raw, int):
+        return None, ValidationIssue(
+            level="ERROR",
+            area_tag=area_tag,
+            route_tag=route_tag,
+            code="invalid_step_type",
+            details=f"waypoint={waypoint_tag} al_step={step_raw!r}",
+        )
+
+    return Waypoint(area_tag, route_tag, waypoint_tag, step_raw), None
+
+
+def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
+    issues: list[ValidationIssue] = []
+    grouped: dict[tuple[str, str], list[Waypoint]] = defaultdict(list)
+    route_to_areas: dict[str, set[str]] = defaultdict(set)
+
+    for index, raw in enumerate(rows):
+        if not isinstance(raw, dict):
+            issues.append(
+                ValidationIssue(
+                    level="ERROR",
+                    area_tag="<unknown-area>",
+                    route_tag="<unknown-route>",
+                    code="invalid_row_type",
+                    details=f"index={index} type={type(raw).__name__}",
+                )
+            )
+            continue
+
+        waypoint, parse_issue = _as_waypoint(raw, index)
+        if parse_issue:
+            issues.append(parse_issue)
+        if not waypoint:
+            continue
+
+        grouped[(waypoint.area_tag, waypoint.route_tag)].append(waypoint)
+        route_to_areas[waypoint.route_tag].add(waypoint.area_tag)
+
+    for (area_tag, route_tag), waypoints in grouped.items():
+        step_to_waypoint: dict[int, str] = {}
+        valid_steps: set[int] = set()
+
+        for wp in waypoints:
+            if wp.al_step < 0 or wp.al_step >= AL_ROUTE_MAX_STEPS:
+                issues.append(
+                    ValidationIssue(
+                        level="ERROR",
+                        area_tag=area_tag,
+                        route_tag=route_tag,
+                        code="invalid_step_range",
+                        details=f"waypoint={wp.waypoint_tag} al_step={wp.al_step} expected=0..{AL_ROUTE_MAX_STEPS - 1}",
+                    )
+                )
+                continue
+
+            if wp.al_step in step_to_waypoint:
+                issues.append(
+                    ValidationIssue(
+                        level="ERROR",
+                        area_tag=area_tag,
+                        route_tag=route_tag,
+                        code="duplicate_step",
+                        details=(
+                            f"step={wp.al_step} waypoint={wp.waypoint_tag} "
+                            f"already_used_by={step_to_waypoint[wp.al_step]}"
+                        ),
+                    )
+                )
+                continue
+
+            step_to_waypoint[wp.al_step] = wp.waypoint_tag
+            valid_steps.add(wp.al_step)
+
+        if not valid_steps:
+            continue
+
+        if 0 not in valid_steps:
+            issues.append(
+                ValidationIssue(
+                    level="ERROR",
+                    area_tag=area_tag,
+                    route_tag=route_tag,
+                    code="missing_step_0",
+                    details="route has no valid al_step=0",
+                )
+            )
+            continue
+
+        for expected in range(0, len(valid_steps)):
+            if expected not in valid_steps:
+                issues.append(
+                    ValidationIssue(
+                        level="ERROR",
+                        area_tag=area_tag,
+                        route_tag=route_tag,
+                        code="non_contiguous_steps",
+                        details=f"missing_step={expected} present_steps={sorted(valid_steps)}",
+                    )
+                )
+                break
+
+    for route_tag, area_tags in route_to_areas.items():
+        if len(area_tags) <= 1:
+            continue
+
+        ordered = ",".join(sorted(area_tags))
+        for area_tag in sorted(area_tags):
+            issues.append(
+                ValidationIssue(
+                    level="ERROR",
+                    area_tag=area_tag,
+                    route_tag=route_tag,
+                    code="area_inconsistency",
+                    details=f"route_tag appears in multiple areas: {ordered}",
+                )
+            )
+
+    return issues
+
+
+def print_report(issues: list[ValidationIssue]) -> None:
+    if not issues:
+        print("[OK] route preflight passed: no issues found")
+        return
+
+    for issue in sorted(issues, key=lambda x: (x.level, x.area_tag, x.route_tag, x.code, x.details)):
+        print(
+            f"[{issue.level}] area={issue.area_tag} route={issue.route_tag} "
+            f"code={issue.code} {issue.details}"
+        )
+
+    error_count = sum(1 for i in issues if i.level == "ERROR")
+    warn_count = sum(1 for i in issues if i.level == "WARN")
+    print(f"\nSummary: errors={error_count} warnings={warn_count} total={len(issues)}")
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Validate Ambient Life route markup offline")
+    parser.add_argument("--input", required=True, help="Path to JSON with waypoint route markup")
+    args = parser.parse_args()
+
+    try:
+        rows = _read_input(Path(args.input))
+    except Exception as exc:
+        print(f"[FATAL] failed to read input: {exc}", file=sys.stderr)
+        return 2
+
+    issues = validate_route_markup(rows)
+    print_report(issues)
+
+    return 1 if any(i.level == "ERROR" for i in issues) else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
