@@ -514,6 +514,7 @@ void AL_DequeueBatchedDispatch(object oArea)
 
     SetLocalInt(oArea, "al_dispatch_q_head", (nHead + 1) % AL_DISPATCH_QUEUE_CAPACITY);
     SetLocalInt(oArea, "al_dispatch_q_len", nLen - 1);
+    AL_UpdateDispatchQueueDepthFast(oArea);
 }
 
 int AL_PickDispatchQueueIndex(object oArea)
@@ -619,7 +620,7 @@ void AL_ActivateQueuedDispatch(object oArea)
         SetLocalInt(oArea, "al_dispatch_critical_streak", 0);
     }
 
-    AL_UpdateDispatchQueueMetrics(oArea);
+    AL_UpdateDispatchQueueDepthFast(oArea);
     AL_RunBatchedDispatch(oArea);
 }
 
@@ -637,14 +638,14 @@ void AL_StartBatchedDispatch(object oArea, int nEvent)
         && GetLocalString(oArea, "al_dispatch_cycle_key") == sCycleKey)
     {
         SetLocalInt(oArea, "al_dispatch_dedupe_hits", GetLocalInt(oArea, "al_dispatch_dedupe_hits") + 1);
-        AL_UpdateDispatchQueueMetrics(oArea);
+        AL_UpdateDispatchQueueDepthFast(oArea);
         return;
     }
 
     if (GetLocalInt(oArea, AL_DispatchPendingKey(sCycleKey)) > 0)
     {
         SetLocalInt(oArea, "al_dispatch_dedupe_hits", GetLocalInt(oArea, "al_dispatch_dedupe_hits") + 1);
-        AL_UpdateDispatchQueueMetrics(oArea);
+        AL_UpdateDispatchQueueDepthFast(oArea);
         return;
     }
 
@@ -886,6 +887,7 @@ void AL_AreaTick(object oArea, int nToken)
 
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick") + 1;
     SetLocalInt(oArea, "al_sync_tick", nSyncTick);
+    AL_MaybeUpdateDispatchQueueMetricsFull(oArea, FALSE);
 
     if (nTier == AL_SIM_TIER_HOT)
     {
