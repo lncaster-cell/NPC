@@ -5,6 +5,14 @@
 Перед **каждым** perf-прогоном (S80/S100/S120) оператор обязан прогнать единый preflight-suite:
 
 ```bash
+# Предпочтительно (пакетный запуск из корня репозитория)
+python3 -m scripts.ambient_life.run_preflight_suite \
+  --route-input <path/to/waypoints.json> \
+  --link-input <path/to/areas_links.json> \
+  --locals-input <path/to/locals_payload.json> \
+  --format text
+
+# Допустимый fallback (standalone-скрипт)
 python3 scripts/ambient_life/run_preflight_suite.py \
   --route-input <path/to/waypoints.json> \
   --link-input <path/to/areas_links.json> \
@@ -12,7 +20,7 @@ python3 scripts/ambient_life/run_preflight_suite.py \
   --format text
 ```
 
-Альтернативно для CI/артефактов используйте `--format json`.
+Для CI/артефактов используйте `--format json`.
 
 Требования к входному JSON:
 - корень: либо массив waypoint-объектов, либо объект с ключом `waypoints`;
