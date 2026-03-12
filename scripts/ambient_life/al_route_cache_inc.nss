@@ -156,7 +156,7 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
     {
         SetLocalInt(oArea, "route_cache_invalidations", GetLocalInt(oArea, "route_cache_invalidations") + 1);
     }
-    AL_LookupSoftInvalidateAreaCache(oArea);
+    AL_LookupSoftInvalidateAreaCache(oArea, AL_LOOKUP_INVALIDATE_REASON_ROUTE, sRouteTag);
 }
 
 int AL_RouteBuildAreaCache(object oArea, string sRouteTag)

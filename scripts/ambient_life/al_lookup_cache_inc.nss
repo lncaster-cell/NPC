@@ -1,5 +1,7 @@
 // Ambient Life waypoint lookup cache helpers (extracted from al_area_inc).
 
+const int AL_LOOKUP_TRACKED_TAGS_MAX = 256;
+
 void AL_RecordLookupCacheHit(object oArea)
 {
     if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_debug") <= 0)
@@ -35,32 +37,89 @@ string AL_LookupWpItemKey(string sTag, int nIdx)
     return "al_cache_wp_item_" + sTag + "_" + IntToString(nIdx);
 }
 
-void AL_LookupTrackTag(object oArea, string sTag)
+string AL_LookupWpTagEnumKey(int nIdx)
+{
+    return "al_cache_wp_tag_" + IntToString(nIdx);
+}
+
+string AL_LookupWpTagMarkKey(string sTag)
+{
+    return "al_cache_wp_tag_mark_" + sTag;
+}
+
+void AL_LookupClearTagCacheData(object oArea, string sTag, int bDeleteMark)
+{
+    if (sTag == "")
+    {
+        return;
+    }
+
+    int nOldCount = GetLocalInt(oArea, AL_LookupWpCountKey(sTag));
+    int i = 0;
+    while (i < nOldCount)
+    {
+        DeleteLocalObject(oArea, AL_LookupWpItemKey(sTag, i));
+        i = i + 1;
+    }
+
+    DeleteLocalInt(oArea, AL_LookupWpCountKey(sTag));
+    DeleteLocalInt(oArea, AL_LookupWpTickKey(sTag));
+    if (bDeleteMark)
+    {
+        DeleteLocalInt(oArea, AL_LookupWpTagMarkKey(sTag));
+    }
+}
+
+void AL_LookupResetAreaCache(object oArea)
 {
     int nTracked = GetLocalInt(oArea, "al_cache_wp_tag_count");
     int i = 0;
     while (i < nTracked)
     {
-        if (GetLocalString(oArea, "al_cache_wp_tag_" + IntToString(i)) == sTag)
+        string sTag = GetLocalString(oArea, AL_LookupWpTagEnumKey(i));
+        if (sTag != "")
         {
-            return;
+            AL_LookupClearTagCacheData(oArea, sTag, TRUE);
         }
+        DeleteLocalString(oArea, AL_LookupWpTagEnumKey(i));
         i = i + 1;
     }
 
-    SetLocalString(oArea, "al_cache_wp_tag_" + IntToString(nTracked), sTag);
-    SetLocalInt(oArea, "al_cache_wp_tag_count", nTracked + 1);
+    SetLocalInt(oArea, "al_cache_wp_tag_count", 0);
+}
+
+void AL_LookupTrackTag(object oArea, string sTag)
+{
+    if (GetLocalInt(oArea, AL_LookupWpTagMarkKey(sTag)) > 0)
+    {
+        return;
+    }
+
+    int nTracked = GetLocalInt(oArea, "al_cache_wp_tag_count");
+    if (nTracked < 0)
+    {
+        nTracked = 0;
+    }
+
+    if (nTracked >= AL_LOOKUP_TRACKED_TAGS_MAX)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, AL_LookupWpTagMarkKey(sTag), 1);
+    SetLocalString(oArea, AL_LookupWpTagEnumKey(nTracked), sTag);
+
+    int nTrackedNew = nTracked + 1;
+    SetLocalInt(oArea, "al_cache_wp_tag_count", nTrackedNew);
+    if (nTrackedNew > GetLocalInt(oArea, "al_cache_wp_tag_count_peak"))
+    {
+        SetLocalInt(oArea, "al_cache_wp_tag_count_peak", nTrackedNew);
+    }
 }
 
 void AL_LookupBuildWaypointListCache(object oArea, string sTag)
 {
-    int nOldCount = GetLocalInt(oArea, AL_LookupWpCountKey(sTag));
-    int iClear = 0;
-    while (iClear < nOldCount)
-    {
-        DeleteLocalObject(oArea, AL_LookupWpItemKey(sTag, iClear));
-        iClear = iClear + 1;
-    }
+    AL_LookupClearTagCacheData(oArea, sTag, FALSE);
 
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
     int nFound = 0;
@@ -112,11 +171,17 @@ void AL_LookupSoftInvalidateAreaCache(object oArea, string sReason, string sRout
         return;
     }
 
+    if (sReason == AL_LOOKUP_INVALIDATE_REASON_ALL)
+    {
+        AL_LookupResetAreaCache(oArea);
+        return;
+    }
+
     int nTracked = GetLocalInt(oArea, "al_cache_wp_tag_count");
     int i = 0;
     while (i < nTracked)
     {
-        string sTag = GetLocalString(oArea, "al_cache_wp_tag_" + IntToString(i));
+        string sTag = GetLocalString(oArea, AL_LookupWpTagEnumKey(i));
         if (sTag != "")
         {
             AL_LookupInvalidateTagCache(oArea, sTag);
