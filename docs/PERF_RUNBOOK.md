@@ -22,6 +22,11 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 
 Для CI/артефактов используйте `--format json`.
 
+Режимы запуска preflight-валидаторов:
+- **CI mode (быстрый fail):** запускать `al_route_preflight.py`, `al_link_preflight.py`, `al_locals_preflight.py` с `--fail-fast`.
+  При необходимости ограничить порог остановки: `--max-errors <N>`.
+- **Operator mode (полный triage):** запускать без `--fail-fast`, чтобы получить полный список ошибок/предупреждений в одном прогоне.
+
 Требования к входному JSON:
 - корень: либо массив waypoint-объектов, либо объект с ключом `waypoints`;
 - обязательные поля для каждого waypoint: `area_tag`, `route_tag`, `al_step`;

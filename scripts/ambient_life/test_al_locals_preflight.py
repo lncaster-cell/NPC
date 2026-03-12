@@ -149,5 +149,21 @@ class ValidateLocalsWaypointTagValidationTests(unittest.TestCase):
         )
 
 
+class ValidateLocalsFailFastTests(unittest.TestCase):
+    def test_fail_fast_stops_after_first_error(self):
+        payload = {
+            "npcs": [
+                {"npc_tag": "npc_1", "locals": {"al_default_activity": "bad", "alwp0": "route_1"}},
+                {"npc_tag": "npc_2", "locals": {"al_default_activity": "bad", "alwp0": "route_2"}},
+            ],
+            "waypoints": [],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload, fail_fast=True)
+
+        self.assertEqual(sum(1 for issue in issues if issue.level == "ERROR"), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

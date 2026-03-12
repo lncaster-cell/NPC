@@ -47,6 +47,16 @@ class ValidationIssue:
     reason: str
 
 
+class _StopValidation(Exception):
+    pass
+
+
+@dataclass
+class ValidationLimits:
+    error_limit: int | None
+    error_count: int = 0
+
+
 def _read_input(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -76,8 +86,20 @@ def _extract_locals(raw: dict[str, Any], reserved_fields: set[str]) -> tuple[dic
     return {k: v for k, v in raw.items() if k not in reserved_fields}, False
 
 
-def _append_issue(issues: list[ValidationIssue], level: str, scope: str, object_id: str, code: str, reason: str) -> None:
+def _append_issue(
+    issues: list[ValidationIssue],
+    level: str,
+    scope: str,
+    object_id: str,
+    code: str,
+    reason: str,
+    limits: ValidationLimits | None = None,
+) -> None:
     issues.append(ValidationIssue(level=level, scope=scope, object_id=object_id, code=code, reason=reason))
+    if limits is not None and level == "ERROR":
+        limits.error_count += 1
+        if limits.error_limit is not None and limits.error_count >= limits.error_limit:
+            raise _StopValidation
 
 
 def is_strict_int(value: Any) -> bool:
@@ -96,19 +118,24 @@ def _is_non_empty_string(value: Any) -> bool:
     return isinstance(value, str) and value.strip() != ""
 
 
-def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[ValidationIssue]) -> None:
+def _validate_npcs(
+    rows: list[Any],
+    known_route_tags: set[str],
+    issues: list[ValidationIssue],
+    limits: ValidationLimits | None = None,
+) -> None:
     for index, row in enumerate(rows):
         if not isinstance(row, dict):
-            _append_issue(issues, "ERROR", "npc", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}")
+            _append_issue(issues, "ERROR", "npc", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}", limits=limits)
             continue
 
         npc_tag_raw = row.get("npc_tag", row.get("tag"))
         npc_tag = _read_tag(npc_tag_raw) or f"<idx:{index}>"
         if npc_tag_raw is None:
-            _append_issue(issues, "ERROR", "npc", npc_tag, "missing_npc_tag", "npc_tag must be non-empty string")
+            _append_issue(issues, "ERROR", "npc", npc_tag, "missing_npc_tag", "npc_tag must be non-empty string", limits=limits)
         elif _read_tag(npc_tag_raw) is None:
             code = "missing_npc_tag" if isinstance(npc_tag_raw, str) else "invalid_npc_tag_type"
-            _append_issue(issues, "ERROR", "npc", npc_tag, code, "npc_tag must be non-empty string")
+            _append_issue(issues, "ERROR", "npc", npc_tag, code, "npc_tag must be non-empty string", limits=limits)
 
         locals_map, has_invalid_locals_type = _extract_locals(row, {"npc_tag", "tag", "name", "locals"})
         if has_invalid_locals_type:
@@ -119,10 +146,11 @@ def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[Val
                 npc_tag,
                 "invalid_locals_type",
                 "[CI_FILTER:INVALID_LOCALS_TYPE] locals key exists but is not an object",
+                limits=limits,
             )
 
         if not is_strict_int(locals_map.get("al_default_activity")):
-            _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_default_activity", "al_default_activity must be int")
+            _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_default_activity", "al_default_activity must be int", limits=limits)
 
         has_primary_route = False
         has_legacy_route = False
@@ -133,9 +161,9 @@ def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[Val
             legacy_val = locals_map.get(legacy_key)
 
             if primary_val is not None and not isinstance(primary_val, str):
-                _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{primary_key} must be string")
+                _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{primary_key} must be string", limits=limits)
             if legacy_val is not None and not isinstance(legacy_val, str):
-                _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{legacy_key} must be string")
+                _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_route_local_type", f"{legacy_key} must be string", limits=limits)
 
             if _is_non_empty_string(primary_val):
                 has_primary_route = True
@@ -147,10 +175,11 @@ def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[Val
                         npc_tag,
                         "unknown_route_tag_ref",
                         f"slot={primary_key} references unknown route tag {primary_val!r}",
+                        limits=limits,
                     )
             if _is_non_empty_string(legacy_val):
                 has_legacy_route = True
-                _append_issue(issues, "WARN", "npc", npc_tag, "legacy_route_alias_in_use", f"{legacy_key} is used")
+                _append_issue(issues, "WARN", "npc", npc_tag, "legacy_route_alias_in_use", f"{legacy_key} is used", limits=limits)
                 if legacy_val not in known_route_tags:
                     _append_issue(
                         issues,
@@ -159,6 +188,7 @@ def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[Val
                         npc_tag,
                         "unknown_route_tag_ref",
                         f"slot={legacy_key} references unknown route tag {legacy_val!r}",
+                        limits=limits,
                     )
 
             if _is_non_empty_string(primary_val) and _is_non_empty_string(legacy_val) and primary_val != legacy_val:
@@ -169,48 +199,49 @@ def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[Val
                     npc_tag,
                     "conflicting_route_slot_values",
                     f"slot={slot} has different values in {primary_key} and {legacy_key}",
+                    limits=limits,
                 )
 
         if not has_primary_route and not has_legacy_route:
-            _append_issue(issues, "WARN", "npc", npc_tag, "missing_route_slots", "no route tags in alwp0..alwp5 or AL_WP_S0..AL_WP_S5")
+            _append_issue(issues, "WARN", "npc", npc_tag, "missing_route_slots", "no route tags in alwp0..alwp5 or AL_WP_S0..AL_WP_S5", limits=limits)
 
         role_val = locals_map.get("al_npc_role")
         if role_val is not None:
             if not is_strict_int(role_val) or role_val < NPC_ROLE_MIN or role_val > NPC_ROLE_MAX:
-                _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_npc_role", "al_npc_role must be int in range 0..2")
+                _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_npc_role", "al_npc_role must be int in range 0..2", limits=limits)
 
         safe_wp_val = locals_map.get("al_safe_wp")
         if safe_wp_val is not None and not _is_non_empty_string(safe_wp_val):
-            _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_safe_wp", "al_safe_wp must be non-empty string waypoint tag")
+            _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_safe_wp", "al_safe_wp must be non-empty string waypoint tag", limits=limits)
 
         for flag_name in ("al_allow_all", "al_force_witness"):
             flag_val = locals_map.get(flag_name)
             if flag_val is None:
                 continue
             if not is_strict_int(flag_val) or flag_val not in (0, 1):
-                _append_issue(issues, "WARN", "npc", npc_tag, "invalid_disturbed_flag", f"{flag_name} should be 0 or 1")
+                _append_issue(issues, "WARN", "npc", npc_tag, "invalid_disturbed_flag", f"{flag_name} should be 0 or 1", limits=limits)
 
         for tag_name in ("al_owner_tag", "al_allowed_tag"):
             tag_val = locals_map.get(tag_name)
             if tag_val is None:
                 continue
             if not _is_non_empty_string(tag_val):
-                _append_issue(issues, "WARN", "npc", npc_tag, "invalid_disturbed_tag", f"{tag_name} should be non-empty string")
+                _append_issue(issues, "WARN", "npc", npc_tag, "invalid_disturbed_tag", f"{tag_name} should be non-empty string", limits=limits)
 
 
-def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
+def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue], limits: ValidationLimits | None = None) -> None:
     for index, row in enumerate(rows):
         if not isinstance(row, dict):
-            _append_issue(issues, "ERROR", "waypoint", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}")
+            _append_issue(issues, "ERROR", "waypoint", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}", limits=limits)
             continue
 
         wp_tag_raw = row.get("waypoint_tag", row.get("tag"))
         wp_tag = _read_tag(wp_tag_raw) or f"<idx:{index}>"
         if wp_tag_raw is None:
-            _append_issue(issues, "ERROR", "waypoint", wp_tag, "missing_waypoint_tag", "waypoint_tag must be non-empty string")
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, "missing_waypoint_tag", "waypoint_tag must be non-empty string", limits=limits)
         elif _read_tag(wp_tag_raw) is None:
             code = "missing_waypoint_tag" if isinstance(wp_tag_raw, str) else "invalid_waypoint_tag_type"
-            _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "waypoint_tag must be non-empty string")
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "waypoint_tag must be non-empty string", limits=limits)
 
         area_tag_raw = row.get("area_tag")
         area_tag = _read_tag(area_tag_raw)
@@ -220,7 +251,7 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
                 if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
                 else "invalid_area_tag_type"
             )
-            _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "area_tag must be non-empty string")
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "area_tag must be non-empty string", limits=limits)
 
         route_tag_raw = row.get("route_tag")
         route_tag = _read_tag(route_tag_raw)
@@ -230,7 +261,7 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
                 if route_tag_raw is None or (isinstance(route_tag_raw, str) and route_tag_raw.strip() == "")
                 else "invalid_route_tag_type"
             )
-            _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "route_tag must be non-empty string")
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "route_tag must be non-empty string", limits=limits)
 
         locals_map, has_invalid_locals_type = _extract_locals(row, {"waypoint_tag", "tag", "name", "area_tag", "route_tag", "locals"})
         if has_invalid_locals_type:
@@ -241,28 +272,29 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
                 wp_tag,
                 "invalid_locals_type",
                 "[CI_FILTER:INVALID_LOCALS_TYPE] locals key exists but is not an object",
+                limits=limits,
             )
 
         step_val = locals_map.get("al_step")
         if not is_strict_int(step_val):
-            _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_step_type", "al_step must be int")
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_step_type", "al_step must be int", limits=limits)
         elif step_val < 0 or step_val >= AL_ROUTE_MAX_STEPS:
-            _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_step_range", f"al_step must be in range 0..{AL_ROUTE_MAX_STEPS - 1}")
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_step_range", f"al_step must be in range 0..{AL_ROUTE_MAX_STEPS - 1}", limits=limits)
 
         trans_type = locals_map.get("al_trans_type")
         has_any_trans_key = any(key in locals_map for key in ("al_trans_type", "al_trans_src_wp", "al_trans_dst_wp"))
         if has_any_trans_key:
             if not is_strict_int(trans_type) or trans_type not in (1, 2):
-                _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_transition_type", "al_trans_type must be 1 or 2")
+                _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_transition_type", "al_trans_type must be 1 or 2", limits=limits)
 
             for key in ("al_trans_src_wp", "al_trans_dst_wp"):
                 if not _is_non_empty_string(locals_map.get(key)):
-                    _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_transition_endpoint", f"{key} must be non-empty string")
+                    _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_transition_endpoint", f"{key} must be non-empty string", limits=limits)
 
         bed_id = locals_map.get("al_bed_id")
         has_bed = bed_id is not None
         if has_bed and not _is_non_empty_string(bed_id):
-            _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_bed_id", "al_bed_id must be non-empty string")
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_bed_id", "al_bed_id must be non-empty string", limits=limits)
 
         if has_bed and _is_non_empty_string(bed_id):
             expected_approach = f"{bed_id}_approach"
@@ -275,27 +307,28 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
                     wp_tag,
                     "unexpected_bed_waypoint_tag",
                     f"for al_bed_id={bed_id!r} expected tag {expected_approach!r} or {expected_pose!r}",
+                    limits=limits,
                 )
 
         if has_any_trans_key and has_bed:
-            _append_issue(issues, "ERROR", "waypoint", wp_tag, "mixed_transition_and_sleep_step", "waypoint cannot be both transition and sleep step")
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, "mixed_transition_and_sleep_step", "waypoint cannot be both transition and sleep step", limits=limits)
 
 
-def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
+def _validate_areas(rows: list[Any], issues: list[ValidationIssue], limits: ValidationLimits | None = None) -> None:
     for index, row in enumerate(rows):
         if not isinstance(row, dict):
-            _append_issue(issues, "ERROR", "area", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}")
+            _append_issue(issues, "ERROR", "area", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}", limits=limits)
             continue
 
         raw_area_tag = row.get("area_tag", row.get("tag"))
         accepted_area_tag = _read_tag(raw_area_tag)
         display_area_tag = accepted_area_tag or f"<idx:{index}>"
         if raw_area_tag is None:
-            _append_issue(issues, "ERROR", "area", display_area_tag, "missing_area_tag", "area_tag must be non-empty string")
+            _append_issue(issues, "ERROR", "area", display_area_tag, "missing_area_tag", "area_tag must be non-empty string", limits=limits)
         elif not isinstance(raw_area_tag, str):
-            _append_issue(issues, "ERROR", "area", display_area_tag, "invalid_area_tag_type", "area_tag must be non-empty string")
+            _append_issue(issues, "ERROR", "area", display_area_tag, "invalid_area_tag_type", "area_tag must be non-empty string", limits=limits)
         elif raw_area_tag.strip() == "":
-            _append_issue(issues, "ERROR", "area", display_area_tag, "missing_area_tag", "area_tag must be non-empty string")
+            _append_issue(issues, "ERROR", "area", display_area_tag, "missing_area_tag", "area_tag must be non-empty string", limits=limits)
 
         area_object_id = accepted_area_tag or display_area_tag
 
@@ -308,53 +341,56 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
                 area_object_id,
                 "invalid_locals_type",
                 "[CI_FILTER:INVALID_LOCALS_TYPE] locals key exists but is not an object",
+                limits=limits,
             )
 
         link_count = locals_map.get("al_link_count")
         if link_count is None:
             link_count = 0
         if not is_strict_int(link_count) or link_count < 0:
-            _append_issue(issues, "ERROR", "area", area_object_id, "invalid_link_count", "al_link_count must be int >= 0")
+            _append_issue(issues, "ERROR", "area", area_object_id, "invalid_link_count", "al_link_count must be int >= 0", limits=limits)
             link_count = 0
 
         for i in range(link_count):
             key = f"al_link_{i}"
             if not _is_non_empty_string(locals_map.get(key)):
-                _append_issue(issues, "ERROR", "area", area_object_id, "missing_link_slot", f"{key} must be non-empty string")
+                _append_issue(issues, "ERROR", "area", area_object_id, "missing_link_slot", f"{key} must be non-empty string", limits=limits)
 
         for key in sorted(k for k in locals_map if k.startswith("al_link_")):
             if key == "al_link_count":
                 continue
             suffix = key.removeprefix("al_link_")
             if not suffix.isdigit():
-                _append_issue(issues, "WARN", "area", area_object_id, "non_numeric_link_slot", f"unexpected link key {key}")
+                _append_issue(issues, "WARN", "area", area_object_id, "non_numeric_link_slot", f"unexpected link key {key}", limits=limits)
                 continue
             if int(suffix) >= link_count:
-                _append_issue(issues, "WARN", "area", area_object_id, "link_slot_outside_count", f"{key} is set but al_link_count={link_count}")
+                _append_issue(issues, "WARN", "area", area_object_id, "link_slot_outside_count", f"{key} is set but al_link_count={link_count}", limits=limits)
 
         for flag_name in ("al_debug", "al_perf"):
             if flag_name not in locals_map:
                 continue
             flag_val = locals_map.get(flag_name)
             if not is_strict_int(flag_val) or flag_val < 0:
-                _append_issue(issues, "WARN", "area", area_object_id, "invalid_debug_perf_flag", f"{flag_name} should be int >= 0")
+                _append_issue(issues, "WARN", "area", area_object_id, "invalid_debug_perf_flag", f"{flag_name} should be int >= 0", limits=limits)
 
 
-def validate_locals(payload: dict[str, Any]) -> list[ValidationIssue]:
+def validate_locals(payload: dict[str, Any], fail_fast: bool = False, max_errors: int | None = None) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
+    error_limit = max_errors if fail_fast and max_errors is not None else (1 if fail_fast else None)
+    limits = ValidationLimits(error_limit=error_limit)
 
     npcs = payload.get("npcs", [])
     waypoints = payload.get("waypoints", [])
     areas = payload.get("areas", [])
 
     if not isinstance(npcs, list):
-        _append_issue(issues, "ERROR", "payload", "npcs", "invalid_collection_type", "npcs must be array")
+        _append_issue(issues, "ERROR", "payload", "npcs", "invalid_collection_type", "npcs must be array", limits=limits)
         npcs = []
     if not isinstance(waypoints, list):
-        _append_issue(issues, "ERROR", "payload", "waypoints", "invalid_collection_type", "waypoints must be array")
+        _append_issue(issues, "ERROR", "payload", "waypoints", "invalid_collection_type", "waypoints must be array", limits=limits)
         waypoints = []
     if not isinstance(areas, list):
-        _append_issue(issues, "ERROR", "payload", "areas", "invalid_collection_type", "areas must be array")
+        _append_issue(issues, "ERROR", "payload", "areas", "invalid_collection_type", "areas must be array", limits=limits)
         areas = []
 
     known_route_tags = {
@@ -365,9 +401,12 @@ def validate_locals(payload: dict[str, Any]) -> list[ValidationIssue]:
         if isinstance(route_tag, str) and route_tag.strip() != ""
     }
 
-    _validate_npcs(npcs, known_route_tags, issues)
-    _validate_waypoints(waypoints, issues)
-    _validate_areas(areas, issues)
+    try:
+        _validate_npcs(npcs, known_route_tags, issues, limits=limits)
+        _validate_waypoints(waypoints, issues, limits=limits)
+        _validate_areas(areas, issues, limits=limits)
+    except _StopValidation:
+        return issues
 
     return issues
 
@@ -405,7 +444,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Ambient Life locals offline")
     parser.add_argument("--input", required=True, help="Path to JSON with NPC/waypoint/area locals")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
+    parser.add_argument("--fail-fast", action="store_true", help="Stop validation after first error (or after --max-errors)")
+    parser.add_argument("--max-errors", type=int, default=None, help="Error limit used with --fail-fast")
     args = parser.parse_args()
+    if args.max_errors is not None and args.max_errors < 1:
+        parser.error("--max-errors must be >= 1")
 
     try:
         payload = _read_input(Path(args.input))
@@ -413,7 +456,7 @@ def main() -> int:
         print(json.dumps({"status": "FATAL", "reason": str(exc)}), file=sys.stderr)
         return 2
 
-    report = build_report(validate_locals(payload))
+    report = build_report(validate_locals(payload, fail_fast=args.fail_fast, max_errors=args.max_errors))
 
     if args.format == "json":
         print(json.dumps(report, ensure_ascii=False, indent=2))

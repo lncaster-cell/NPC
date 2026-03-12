@@ -158,7 +158,7 @@ def _sleep_suffix(waypoint_tag: str) -> tuple[str, str] | None:
     return None
 
 
-def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
+def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, max_errors: int | None = None) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     grouped: dict[tuple[str, str], list[Waypoint]] = defaultdict(list)
     route_to_areas: dict[str, set[str]] = defaultdict(set)
@@ -168,9 +168,19 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
     bed_id_to_areas: dict[str, set[str]] = defaultdict(set)
     sleep_steps: list[Waypoint] = []
 
+    error_limit = max_errors if fail_fast and max_errors is not None else (1 if fail_fast else None)
+    error_count = 0
+
+    def add_issue(issue: ValidationIssue) -> bool:
+        nonlocal error_count
+        issues.append(issue)
+        if issue.level == "ERROR":
+            error_count += 1
+        return error_limit is not None and error_count >= error_limit
+
     for index, raw in enumerate(rows):
         if not isinstance(raw, dict):
-            issues.append(
+            if add_issue(
                 ValidationIssue(
                     level="ERROR",
                     area_tag="<unknown-area>",
@@ -178,12 +188,13 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                     code="invalid_row_type",
                     details=f"index={index} type={type(raw).__name__}",
                 )
-            )
+            ):
+                return issues
             continue
 
         waypoint, parse_issue = _as_waypoint(raw, index)
-        if parse_issue:
-            issues.append(parse_issue)
+        if parse_issue and add_issue(parse_issue):
+            return issues
         if not waypoint:
             continue
 
@@ -199,7 +210,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
 
         sleep_meta = _sleep_suffix(waypoint.waypoint_tag)
         if sleep_meta and waypoint.al_bed_id and waypoint.al_bed_id != sleep_meta[0]:
-            issues.append(
+            if add_issue(
                 ValidationIssue(
                     level="ERROR",
                     area_tag=waypoint.area_tag,
@@ -210,7 +221,8 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                         f"expected={sleep_meta[0]}"
                     ),
                 )
-            )
+            ):
+                return issues
 
     for (area_tag, route_tag), waypoints in grouped.items():
         step_to_waypoint: dict[int, str] = {}
@@ -218,7 +230,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
 
         for wp in waypoints:
             if wp.al_step < 0 or wp.al_step >= AL_ROUTE_MAX_STEPS:
-                issues.append(
+                if add_issue(
                     ValidationIssue(
                         level="ERROR",
                         area_tag=area_tag,
@@ -226,11 +238,12 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                         code="invalid_step_range",
                         details=f"waypoint={wp.waypoint_tag} al_step={wp.al_step} expected=0..{AL_ROUTE_MAX_STEPS - 1}",
                     )
-                )
+                ):
+                    return issues
                 continue
 
             if wp.al_step in step_to_waypoint:
-                issues.append(
+                if add_issue(
                     ValidationIssue(
                         level="ERROR",
                         area_tag=area_tag,
@@ -241,7 +254,8 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                             f"already_used_by={step_to_waypoint[wp.al_step]}"
                         ),
                     )
-                )
+                ):
+                    return issues
                 continue
 
             step_to_waypoint[wp.al_step] = wp.waypoint_tag
@@ -251,7 +265,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             continue
 
         if 0 not in valid_steps:
-            issues.append(
+            if add_issue(
                 ValidationIssue(
                     level="ERROR",
                     area_tag=area_tag,
@@ -259,12 +273,13 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                     code="missing_step_0",
                     details="route has no valid al_step=0",
                 )
-            )
+            ):
+                return issues
             continue
 
         for expected in range(0, len(valid_steps)):
             if expected not in valid_steps:
-                issues.append(
+                if add_issue(
                     ValidationIssue(
                         level="ERROR",
                         area_tag=area_tag,
@@ -272,7 +287,8 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                         code="non_contiguous_steps",
                         details=f"missing_step={expected} present_steps={sorted(valid_steps)}",
                     )
-                )
+                ):
+                    return issues
                 break
 
     for route_tag, area_tags in route_to_areas.items():
@@ -281,7 +297,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
 
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
-            issues.append(
+            if add_issue(
                 ValidationIssue(
                     level="ERROR",
                     area_tag=area_tag,
@@ -289,7 +305,8 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                     code="area_inconsistency",
                     details=f"route_tag appears in multiple areas: {ordered}",
                 )
-            )
+            ):
+                return issues
 
     for sleep_step in sleep_steps:
         expected_tags = (
@@ -300,7 +317,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             if expected_tag in route_waypoint_tags[(sleep_step.area_tag, sleep_step.route_tag)]:
                 continue
 
-            issues.append(
+            if add_issue(
                 ValidationIssue(
                     level="ERROR",
                     area_tag=sleep_step.area_tag,
@@ -311,7 +328,8 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                         f"missing={expected_tag}"
                     ),
                 )
-            )
+            ):
+                return issues
 
     for bed_id, area_tags in bed_id_to_areas.items():
         if len(area_tags) <= 1:
@@ -319,7 +337,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
 
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
-            issues.append(
+            if add_issue(
                 ValidationIssue(
                     level="ERROR",
                     area_tag=area_tag,
@@ -327,7 +345,8 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                     code="sleep_bed_area_inconsistency",
                     details=f"al_bed_id={bed_id} used across multiple areas: {ordered}",
                 )
-            )
+            ):
+                return issues
 
     for waypoint_tag, area_tags in waypoint_tag_to_areas.items():
         sleep_meta = _sleep_suffix(waypoint_tag)
@@ -336,7 +355,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
 
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
-            issues.append(
+            if add_issue(
                 ValidationIssue(
                     level="ERROR",
                     area_tag=area_tag,
@@ -344,7 +363,8 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                     code="sleep_waypoint_area_inconsistency",
                     details=f"waypoint={waypoint_tag} appears in multiple areas: {ordered}",
                 )
-            )
+            ):
+                return issues
 
     return issues
 
@@ -368,7 +388,11 @@ def print_report(issues: list[ValidationIssue]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Ambient Life route markup offline")
     parser.add_argument("--input", required=True, help="Path to JSON with waypoint route markup")
+    parser.add_argument("--fail-fast", action="store_true", help="Stop validation after first error (or after --max-errors)")
+    parser.add_argument("--max-errors", type=int, default=None, help="Error limit used with --fail-fast")
     args = parser.parse_args()
+    if args.max_errors is not None and args.max_errors < 1:
+        parser.error("--max-errors must be >= 1")
 
     try:
         rows = _read_input(Path(args.input))
@@ -376,7 +400,7 @@ def main() -> int:
         print(f"[FATAL] failed to read input: {exc}", file=sys.stderr)
         return 2
 
-    issues = validate_route_markup(rows)
+    issues = validate_route_markup(rows, fail_fast=args.fail_fast, max_errors=args.max_errors)
     print_report(issues)
 
     return 1 if any(i.level == "ERROR" for i in issues) else 0
