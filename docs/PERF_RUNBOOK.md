@@ -284,7 +284,7 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 
 - Markdown: таблица с колонками `Scenario | Metric | Baseline | After | Delta | Unit | Warn | Critical | Status | Notes`;
 - CSV: те же колонки в порядке
-  `scenario,metric,baseline_value,after_value,delta,unit,warn_threshold,critical_threshold,status,notes`.
+  `scenario,metric,baseline_value,expected_direction,trend_tolerance,after_value,delta,unit,warn_threshold,critical_threshold,status,notes`.
 
 Рекомендуется хранить CSV-артефакт рядом с PR-логами, чтобы сравнение оставалось одновременно машинно- и операторски-читаемым.
 
@@ -329,7 +329,13 @@ Fail-условия gate:
 
 1. рост `al_dispatch_q_overflow` относительно baseline (запрещён);
 2. превышение целевого абсолютного порога `al_dispatch_ticks_to_drain` (S80<=3, S100<=4, S120<=5);
-3. `al_dispatch_ticks_to_drain` хуже baseline более чем на `+1` тик.
+3. `al_dispatch_ticks_to_drain` хуже baseline более чем на `+1` тик;
+4. нарушение trend-ожиданий cache efficiency:
+   - `route_cache_hits`: ожидается `up` в пределах `trend_tolerance`;
+   - `route_cache_rebuilds`: ожидается `down` в пределах `trend_tolerance`;
+   - `route_cache_invalidations`: ожидается `down` в пределах `trend_tolerance`.
+
+Валидация печатает отдельный блок `cache efficiency` по S80/S100/S120 для быстрого чтения регрессий.
 
 ## 4.1) Диагностические признаки перегрева linked-графа
 
