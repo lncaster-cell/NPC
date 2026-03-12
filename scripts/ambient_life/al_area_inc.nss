@@ -9,6 +9,7 @@ const int AL_SIM_TIER_WARM = 1;
 const int AL_SIM_TIER_HOT = 2;
 const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
+const int AL_HEALTH_RESYNC_WINDOW_TICKS = 8;
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 
 int AL_ComputeAreaSlot()
@@ -71,6 +72,7 @@ void AL_AreaSetTier(object oArea, int nTier)
     {
         int nSlot = AL_ComputeAreaSlot();
         SetLocalInt(oArea, "al_slot", nSlot);
+        SetLocalInt(oArea, "al_h_last_resync_tick", GetLocalInt(oArea, "al_sync_tick") + 1);
         AL_DispatchEventToAreaRegistry(oArea, AL_EVENT_RESYNC);
     }
 
@@ -187,6 +189,128 @@ void AL_DispatchEventToAreaRegistry(object oArea, int nEvent)
 
 void AL_AreaTick(object oArea, int nToken);
 
+
+int AL_CountBits(int nValue)
+{
+    int nCount = 0;
+    int nWork = nValue;
+
+    while (nWork > 0)
+    {
+        if ((nWork & 1) == 1)
+        {
+            nCount = nCount + 1;
+        }
+
+        nWork = nWork / 2;
+    }
+
+    return nCount;
+}
+
+void AL_UpdateAreaHealthSnapshot(object oArea)
+{
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nResyncTick = GetLocalInt(oArea, "al_h_last_resync_tick");
+    int nResyncMask = GetLocalInt(oArea, "al_h_recent_resync_mask");
+
+    int nWindowMask = 0;
+    int i = 0;
+    while (i < AL_HEALTH_RESYNC_WINDOW_TICKS)
+    {
+        nWindowMask = (nWindowMask * 2) + 1;
+        i = i + 1;
+    }
+
+    int bResyncThisTick = FALSE;
+    if (nResyncTick > 0 && nSyncTick > 0 && nResyncTick == nSyncTick)
+    {
+        bResyncThisTick = TRUE;
+    }
+
+    nResyncMask = (nResyncMask * 2) & nWindowMask;
+    if (bResyncThisTick)
+    {
+        nResyncMask = nResyncMask | 1;
+    }
+
+    int nRecentResync = AL_CountBits(nResyncMask);
+
+    int nNpcCount = GetLocalInt(oArea, "al_npc_count");
+    int nTier = GetLocalInt(oArea, "al_sim_tier");
+    int nSlot = GetLocalInt(oArea, "al_slot");
+    int nRegOverflow = GetLocalInt(oArea, "al_reg_overflow_count");
+    int nRouteOverflow = GetLocalInt(oArea, "al_route_overflow_count");
+
+    SetLocalInt(oArea, "al_h_npc_count", nNpcCount);
+    SetLocalInt(oArea, "al_h_tier", nTier);
+    SetLocalInt(oArea, "al_h_slot", nSlot);
+    SetLocalInt(oArea, "al_h_sync_tick", nSyncTick);
+    SetLocalInt(oArea, "al_h_reg_overflow_count", nRegOverflow);
+    SetLocalInt(oArea, "al_h_route_overflow_count", nRouteOverflow);
+    SetLocalInt(oArea, "al_h_recent_resync", nRecentResync);
+    SetLocalInt(oArea, "al_h_recent_resync_mask", nResyncMask);
+
+    if (GetLocalInt(oArea, "al_debug") > 0)
+    {
+        int bChanged = FALSE;
+        string sDelta = "";
+
+        if (nNpcCount != GetLocalInt(oArea, "al_h_dbg_prev_npc_count"))
+        {
+            bChanged = TRUE;
+            sDelta = sDelta + " npc=" + IntToString(nNpcCount);
+        }
+
+        if (nTier != GetLocalInt(oArea, "al_h_dbg_prev_tier"))
+        {
+            bChanged = TRUE;
+            sDelta = sDelta + " tier=" + IntToString(nTier);
+        }
+
+        if (nSlot != GetLocalInt(oArea, "al_h_dbg_prev_slot"))
+        {
+            bChanged = TRUE;
+            sDelta = sDelta + " slot=" + IntToString(nSlot);
+        }
+
+        if (nRegOverflow != GetLocalInt(oArea, "al_h_dbg_prev_reg_overflow"))
+        {
+            bChanged = TRUE;
+            sDelta = sDelta + " reg_overflow=" + IntToString(nRegOverflow);
+        }
+
+        if (nRouteOverflow != GetLocalInt(oArea, "al_h_dbg_prev_route_overflow"))
+        {
+            bChanged = TRUE;
+            sDelta = sDelta + " route_overflow=" + IntToString(nRouteOverflow);
+        }
+
+        if (nRecentResync != GetLocalInt(oArea, "al_h_dbg_prev_recent_resync"))
+        {
+            bChanged = TRUE;
+            sDelta = sDelta + " recent_resync=" + IntToString(nRecentResync)
+                + "/" + IntToString(AL_HEALTH_RESYNC_WINDOW_TICKS);
+        }
+
+        if (bChanged)
+        {
+            WriteTimestampedLogEntry(
+                "[AL][AreaHealthDelta] area=" + GetTag(oArea)
+                + " sync_tick=" + IntToString(nSyncTick)
+                + sDelta
+            );
+        }
+    }
+
+    SetLocalInt(oArea, "al_h_dbg_prev_npc_count", nNpcCount);
+    SetLocalInt(oArea, "al_h_dbg_prev_tier", nTier);
+    SetLocalInt(oArea, "al_h_dbg_prev_slot", nSlot);
+    SetLocalInt(oArea, "al_h_dbg_prev_reg_overflow", nRegOverflow);
+    SetLocalInt(oArea, "al_h_dbg_prev_route_overflow", nRouteOverflow);
+    SetLocalInt(oArea, "al_h_dbg_prev_recent_resync", nRecentResync);
+}
+
 void AL_ScheduleAreaTick(object oArea, int nToken)
 {
     DelayCommand(AL_AREA_TICK_SEC, AL_AreaTick(oArea, nToken));
@@ -219,6 +343,7 @@ void AL_AreaTick(object oArea, int nToken)
     AL_AreaSetTier(oArea, nTier);
     if (nTier == AL_SIM_TIER_FREEZE)
     {
+        AL_UpdateAreaHealthSnapshot(oArea);
         return;
     }
 
@@ -253,6 +378,8 @@ void AL_AreaTick(object oArea, int nToken)
             AL_RegistryCompact(oArea);
         }
     }
+
+    AL_UpdateAreaHealthSnapshot(oArea);
 
     AL_ScheduleAreaTick(oArea, nToken);
 }

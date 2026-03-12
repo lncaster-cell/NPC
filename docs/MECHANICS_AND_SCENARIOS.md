@@ -164,3 +164,26 @@
 - Guard spawn/reinforcements.
 - Surrender/arrest/trial pipeline.
 - Глобальная (меж-area/мировая) тревога.
+
+## 14. QA health-пороги для диагностических сценариев
+
+Пороговые критерии применяются к runtime-snapshot locals `al_h_*` и используются как быстрый smoke-check.
+
+### Базовый штатный режим (валидный контент, без стресса)
+- `al_h_reg_overflow_count = 0`.
+- `al_h_route_overflow_count = 0`.
+- `al_h_npc_count <= AL_MAX_NPCS (100)`.
+- `al_h_recent_resync` обычно низкий (`0..1` в окне 8 тиков), без постоянного роста каждый тик.
+
+### После входа игрока в area (ожидаемый HOT/resync)
+- в течение 1-2 тиков: `al_h_tier = 2` (HOT).
+- `al_h_slot` соответствует `GetTimeHour()/4`.
+- `al_h_recent_resync >= 1` в ближайшем окне (подтверждение факта недавнего `RESYNC`).
+
+### При выходе игроков и warm-retention
+- `al_h_tier` переходит в `1` (WARM), затем в `0` (FREEZE) при отсутствии оснований для прогрева.
+- overflow-счётчики не должны расти только из-за lifecycle-переходов.
+
+### Debug-диагностика
+- при `al_debug > 0` ожидается delta-only лог `[AL][AreaHealthDelta]`.
+- отсутствие изменений метрик не должно создавать новый health-log шум.

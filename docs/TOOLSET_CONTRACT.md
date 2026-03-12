@@ -61,6 +61,15 @@
 - lifecycle/tier: `al_player_count`, `al_sim_tier`, `al_slot`
 - tick/runtime: `al_tick_token`, `al_sync_tick`, `al_warm_until_sync`
 - registry: `al_npc_count`, `al_npc_<idx>`
+- area health snapshot (runtime diagnostics):
+  - `al_h_npc_count` — mirror текущего `al_npc_count` на последнем `AL_AreaTick`.
+  - `al_h_tier` — snapshot текущего tier (`0=FREEZE`, `1=WARM`, `2=HOT`).
+  - `al_h_slot` — snapshot активного slot в момент тика.
+  - `al_h_sync_tick` — последний обработанный `al_sync_tick`.
+  - `al_h_reg_overflow_count` — накопленный счётчик registry overflow в area.
+  - `al_h_route_overflow_count` — накопленный счётчик route overflow в area.
+  - `al_h_recent_resync` — число тиков с `RESYNC` в скользящем окне последних `8` тиков (`0..8`).
+  - служебные runtime-поля окна/логов: `al_h_recent_resync_mask`, `al_h_last_resync_tick`, `al_h_dbg_prev_*`.
 - alarm runtime (Stage I.2):
   - `al_alarm_state` (`0..3`: none/suspicious/theft/hostile-legal)
   - `al_alarm_until` (`al_sync_tick` deadline)

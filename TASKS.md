@@ -16,3 +16,14 @@
 
 - [ ] Сервисный валидатор locals (NPC/waypoints/areas) для контент-команды.
 - [ ] Профилирование производительности на сценах с высокой плотностью NPC.
+
+## Runbook: Area Health Snapshot (операторский минимум)
+
+1. Включите debug на area: `al_debug=1` (опционально, только для delta-логов).
+2. Дождитесь минимум 2-3 тиков `AL_AreaTick`.
+3. Проверьте locals area:
+   - `al_h_npc_count` ~= ожидаемому числу активных NPC,
+   - `al_h_tier` и `al_h_slot` соответствуют текущей фазе,
+   - `al_h_reg_overflow_count=0` и `al_h_route_overflow_count=0` в штатном контенте,
+   - `al_h_recent_resync` в норме низкий и растёт в окне только при реальных RESYNC.
+4. Для debug-анализа смотрите module log: `[AL][AreaHealthDelta]` пишется только при изменении ключевых метрик.
