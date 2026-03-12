@@ -123,6 +123,14 @@
 - `TASKS.md` — активный backlog.
 - `docs/PERF_RUNBOOK.md` — воспроизводимый perf-протокол и PR-шаблон отчёта «до/после».
 
+
+## Deprecated / stub includes
+
+- `scripts/ambient_life/al_debug_inc.nss` и `scripts/ambient_life/al_schedule_inc.nss` помечены как **DEPRECATED/STUB**.
+- Эти файлы сохранены только для обратной совместимости старых include-графов и не содержат runtime-логики.
+- Для новых include действует правило: запрещено добавлять прямые или транзитивные зависимости на эти заглушки.
+- Удаление заглушек выполняется после подтверждения, что на них нет ссылок в entry/core include и модульном контенте.
+
 ## Что важно помнить
 
 - Централизованный area tick — единственный runtime loop.
