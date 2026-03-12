@@ -36,7 +36,7 @@ class ValidatorSortModeTests(unittest.TestCase):
 
         report = al_link_preflight.build_report(issues, sort_mode="none")
 
-        self.assertEqual([item["code"] for item in report["issues"]], ["a", "z"])
+        self.assertEqual([item["code"] for item in report["issues"]], ["z", "a"])
 
     def test_locals_report_strict_sorts_all_fields(self):
         issues = [

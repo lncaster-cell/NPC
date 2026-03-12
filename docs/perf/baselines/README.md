@@ -1,4 +1,7 @@
 # Ambient Life perf baselines (S80/S100/S120)
+<!-- DOCSYNC:2026-03-12 -->
+> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+
 
 Единая точка хранения baseline-замеров для обязательных perf-сценариев из `docs/PERF_RUNBOOK.md` и `docs/PERF_PROFILE.md`.
 
