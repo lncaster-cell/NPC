@@ -59,9 +59,24 @@
 - `alwp5` (string)
 - `al_default_activity` (int)
 
-### Что именно писать в `alwp0..alwp5`
+### Что именно писать в `alwp0..alwp5` (конкретно)
 
-`alwpX` — это **тег маршрута** (route tag). Система ищет в текущей area все waypoint с этим тегом, сортирует их по `al_step` и строит маршрут.
+В `alwpX` вписывается **Tag маршрута** — это **общий Tag группы waypoint**, которые образуют один маршрут.
+
+**Коротко:**
+- `alwp0 = <Tag маршрута>`
+- `alwp1 = <Tag маршрута>`
+- ...
+- `alwp5 = <Tag маршрута>`
+
+**Важно:** сюда вписывается **не имя отдельного шага**, а **общий Tag маршрута**.
+
+Как система понимает маршрут:
+1. Берёт значение `alwpX` у NPC.
+2. Находит в этой же area **все waypoint с таким Tag**.
+3. Сортирует их по `al_step` (`0,1,2,...`) и получает последовательность шагов маршрута.
+
+То есть «маршрут» = несколько waypoint с одинаковым `Tag` + с разными `al_step` без пропусков.
 
 Привязка `X` к времени суток (слоты по 4 часа):
 
@@ -73,20 +88,6 @@
 | `alwp3` | 3 | 12:00–15:59 |
 | `alwp4` | 4 | 16:00–19:59 |
 | `alwp5` | 5 | 20:00–23:59 |
-
-Пример заполнения для одного NPC:
-- `alwp0 = rt_inn_sleep`
-- `alwp1 = rt_inn_morning`
-- `alwp2 = rt_market_day`
-- `alwp3 = rt_market_day`
-- `alwp4 = rt_tavern_evening`
-- `alwp5 = rt_inn_sleep`
-
-Это значит:
-- ночью NPC ходит по маршруту с тегом `rt_inn_sleep`,
-- утром — по `rt_inn_morning`,
-- днём — по `rt_market_day`,
-- вечером — по `rt_tavern_evening`.
 
 ### Что писать в `al_default_activity`
 
@@ -117,13 +118,23 @@
 - `al_dur_sec` (int) — опционально.
 
 Важно для маршрута:
-- все waypoint одного маршрута должны иметь **одинаковый Tag** (тот, что вы указали в `alwpX` у NPC);
-- `al_step` должен идти без дыр (например `0,1,2,3`).
+- все waypoint одного маршрута должны иметь **одинаковый Tag** (ровно тот, что вы вписали в `alwpX` у NPC);
+- `al_step` должен идти без дыр (например `0,1,2,3`);
+- waypoint с другим Tag в этот маршрут не попадут.
 
-Пример для `alwp2 = rt_market_day`:
-- Waypoint A: `Tag=rt_market_day`, `al_step=0`
-- Waypoint B: `Tag=rt_market_day`, `al_step=1`
-- Waypoint C: `Tag=rt_market_day`, `al_step=2`
+Формула заполнения без двусмысленности:
+- `alwp0 = <Tag маршрута из waypoint>`
+- `alwp1 = <Tag маршрута из waypoint>`
+- `alwp2 = <Tag маршрута из waypoint>`
+- `alwp3 = <Tag маршрута из waypoint>`
+- `alwp4 = <Tag маршрута из waypoint>`
+- `alwp5 = <Tag маршрута из waypoint>`
+
+Где брать `<Tag маршрута из waypoint>`:
+1. Вы выбираете название маршрута (например `rt_market_day`).
+2. Ставите этот же `Tag` у всех waypoint этого маршрута.
+3. Выставляете им `al_step` как `0,1,2,...`.
+4. Это же название (`rt_market_day`) вписываете в нужный `alwpX` у NPC.
 
 ### Для transition-step
 - `al_trans_type` (int):
