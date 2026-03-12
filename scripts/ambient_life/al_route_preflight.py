@@ -46,7 +46,9 @@ class ValidationIssue:
 def _read_input(path: Path) -> list[dict[str, Any]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(payload, dict):
-        waypoints = payload.get("waypoints", [])
+        if "waypoints" not in payload:
+            raise ValueError("missing required key 'waypoints'")
+        waypoints = payload["waypoints"]
     elif isinstance(payload, list):
         waypoints = payload
     else:
