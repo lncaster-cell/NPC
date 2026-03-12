@@ -93,38 +93,10 @@ def load_baseline(path: Path) -> Dict[Tuple[str, str], dict]:
                     f"Baseline CSV row {idx}: missing value for 'baseline_value' in {scenario}/{metric}"
                 )
 
-            baseline_value = _to_float(str(baseline_raw), "baseline_value", *key)
-            expected_direction = str(row.get("expected_direction") or "").strip().lower()
-            trend_tolerance_raw = row.get("trend_tolerance")
+            if key in values:
+                raise ValidationError(f"duplicate entry for {scenario}/{metric} (row {idx})")
 
-            if metric in CACHE_TREND_METRICS:
-                if expected_direction not in TREND_DIRECTIONS:
-                    raise ValidationError(
-                        f"Baseline CSV row {idx}: expected_direction must be one of {TREND_DIRECTIONS} for {scenario}/{metric}"
-                    )
-                if trend_tolerance_raw in (None, ""):
-                    raise ValidationError(
-                        f"Baseline CSV row {idx}: missing value for 'trend_tolerance' in {scenario}/{metric}"
-                    )
-                trend_tolerance = _to_float(
-                    str(trend_tolerance_raw), "trend_tolerance", scenario, metric
-                )
-                if trend_tolerance < 0:
-                    raise ValidationError(
-                        f"Baseline CSV row {idx}: trend_tolerance must be >= 0 in {scenario}/{metric}"
-                    )
-            else:
-                trend_tolerance = (
-                    _to_float(str(trend_tolerance_raw), "trend_tolerance", scenario, metric)
-                    if trend_tolerance_raw not in (None, "")
-                    else 0.0
-                )
-
-            values[key] = {
-                "baseline_value": baseline_value,
-                "expected_direction": expected_direction,
-                "trend_tolerance": trend_tolerance,
-            }
+            values[key] = _to_float(str(baseline_raw), "baseline_value", *key)
 
     missing = [f"{s}/{m}" for s in REQUIRED_SCENARIOS for m in REQUIRED_METRICS if (s, m) not in values]
     if missing:
@@ -197,6 +169,9 @@ def load_report(path: Path) -> Dict[Tuple[str, str], dict]:
         baseline_value = None
         if baseline_raw not in (None, ""):
             baseline_value = _to_float(str(baseline_raw), "baseline_value", scenario, metric)
+
+        if (scenario, metric) in parsed:
+            raise ValidationError(f"duplicate entry for {scenario}/{metric} (row {idx})")
 
         parsed[(scenario, metric)] = {
             "after_value": after_value,
