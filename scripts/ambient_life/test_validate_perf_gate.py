@@ -1,8 +1,11 @@
+import argparse
+import io
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from scripts.ambient_life.validate_perf_gate import ValidationError, load_baseline, load_report, validate
+from scripts.ambient_life.validate_perf_gate import ValidationError, load_baseline, load_report, main, validate
 
 
 class LoadBaselineCsvValidationTests(unittest.TestCase):
@@ -43,14 +46,14 @@ S120,route_cache_invalidations,5,down,1
             load_baseline(path)
 
     def test_duplicate_baseline_entry_raises_validation_error(self):
-        csv_content = """scenario,metric,baseline_value
-S80,al_dispatch_q_overflow,0
-S80,al_dispatch_q_overflow,0
-S80,al_dispatch_ticks_to_drain,3
-S100,al_dispatch_q_overflow,0
-S100,al_dispatch_ticks_to_drain,4
-S120,al_dispatch_q_overflow,1
-S120,al_dispatch_ticks_to_drain,5
+        csv_content = """scenario,metric,baseline_value,expected_direction,trend_tolerance
+S80,al_dispatch_q_overflow,0,stable,1
+S80,al_dispatch_q_overflow,0,stable,1
+S80,al_dispatch_ticks_to_drain,3,stable,1
+S100,al_dispatch_q_overflow,0,stable,1
+S100,al_dispatch_ticks_to_drain,4,stable,1
+S120,al_dispatch_q_overflow,1,stable,1
+S120,al_dispatch_ticks_to_drain,5,stable,1
 """
         path = self._write_temp(csv_content)
 
@@ -143,6 +146,44 @@ class ValidateCacheTrendTests(unittest.TestCase):
         failures = validate(baseline, report)
 
         self.assertTrue(any("S100/route_cache_hits trend violation" in failure for failure in failures))
+
+
+class MainOutputTests(unittest.TestCase):
+    def test_main_prints_cache_efficiency_block(self):
+        baseline = {
+            ("S80", "al_dispatch_q_overflow"): {"baseline_value": 0, "expected_direction": "stable", "trend_tolerance": 1},
+            ("S80", "al_dispatch_ticks_to_drain"): {"baseline_value": 3, "expected_direction": "stable", "trend_tolerance": 1},
+            ("S80", "route_cache_hits"): {"baseline_value": 140, "expected_direction": "up", "trend_tolerance": 2},
+            ("S80", "route_cache_rebuilds"): {"baseline_value": 6, "expected_direction": "down", "trend_tolerance": 1},
+            ("S80", "route_cache_invalidations"): {"baseline_value": 3, "expected_direction": "down", "trend_tolerance": 1},
+            ("S100", "al_dispatch_q_overflow"): {"baseline_value": 0, "expected_direction": "stable", "trend_tolerance": 1},
+            ("S100", "al_dispatch_ticks_to_drain"): {"baseline_value": 4, "expected_direction": "stable", "trend_tolerance": 1},
+            ("S100", "route_cache_hits"): {"baseline_value": 175, "expected_direction": "up", "trend_tolerance": 2},
+            ("S100", "route_cache_rebuilds"): {"baseline_value": 8, "expected_direction": "down", "trend_tolerance": 1},
+            ("S100", "route_cache_invalidations"): {"baseline_value": 4, "expected_direction": "down", "trend_tolerance": 1},
+            ("S120", "al_dispatch_q_overflow"): {"baseline_value": 1, "expected_direction": "stable", "trend_tolerance": 1},
+            ("S120", "al_dispatch_ticks_to_drain"): {"baseline_value": 5, "expected_direction": "stable", "trend_tolerance": 1},
+            ("S120", "route_cache_hits"): {"baseline_value": 205, "expected_direction": "up", "trend_tolerance": 2},
+            ("S120", "route_cache_rebuilds"): {"baseline_value": 10, "expected_direction": "down", "trend_tolerance": 1},
+            ("S120", "route_cache_invalidations"): {"baseline_value": 5, "expected_direction": "down", "trend_tolerance": 1},
+        }
+        report = {
+            key: {"after_value": value["baseline_value"], "baseline_value": None, "delta": None}
+            for key, value in baseline.items()
+        }
+
+        stdout = io.StringIO()
+        with (
+            patch("scripts.ambient_life.validate_perf_gate.parse_args", return_value=argparse.Namespace(baseline="a.csv", report="b.csv", no_cache=False)),
+            patch("scripts.ambient_life.validate_perf_gate._load_inputs_with_cache", return_value=(baseline, report)),
+            patch("sys.stdout", new=stdout),
+        ):
+            exit_code = main()
+
+        output = stdout.getvalue()
+        self.assertEqual(exit_code, 0)
+        self.assertIn("[PERF-GATE] cache efficiency", output)
+        self.assertIn("[PERF-GATE][PASS] Perf gate checks passed for S80/S100/S120", output)
 
 
 if __name__ == "__main__":

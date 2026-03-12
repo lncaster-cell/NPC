@@ -410,6 +410,7 @@ def main() -> int:
             baseline, report, use_cache=not args.no_cache
         )
         failures = validate(baseline_values, report_values)
+        cache_efficiency_lines = render_cache_efficiency(baseline_values, report_values)
     except ValidationError as exc:
         print(f"[PERF-GATE][ERROR] {exc}")
         return 1
