@@ -14,7 +14,7 @@
 
 ## P2
 
-- [ ] Сервисный валидатор locals (NPC/waypoints/areas) для контент-команды.
+- [x] Сервисный валидатор locals (NPC/waypoints/areas) для контент-команды.
 - [ ] Профилирование производительности на сценах с высокой плотностью NPC (по `docs/PERF_RUNBOOK.md`).
 
 
@@ -22,7 +22,8 @@
 
 - Smoke-check: см. раздел `Runbook: Area Health Snapshot` ниже.
 - Perf-check: см. `docs/PERF_RUNBOOK.md` (минимум Scene M для каждого заметного изменения ambient-life).
-- Preflight-gate перед S80/S100/S120: обязательный запуск `python3 scripts/ambient_life/al_route_preflight.py --input <waypoints.json>`; при любых `[ERROR]` (включая sleep-инварианты) запуск сценариев запрещён до исправления контента.
+- Preflight-gate перед S80/S100/S120: обязательный запуск `python3 scripts/ambient_life/al_route_preflight.py --input <waypoints.json>`; при `[ERROR]` запуск сценариев запрещён до исправления контента.
+- Locals-gate перед контентной выкладкой: обязательный запуск `python3 scripts/ambient_life/al_locals_preflight.py --input <locals.json>` (или `--format text` для операторского чтения); при `status=ERROR`/exit code `1` выкладка блокируется до исправления.
 - Для правок в route/registry/dispatcher: обязательный PR-отчёт «до/после» по шаблону из `docs/PERF_RUNBOOK.md`.
 - Gate (core): изменения в `scripts/ambient_life/al_area_inc.nss`, `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_route_inc.nss` считаются неполными без perf-сводки по `docs/PERF_PROFILE.md`.
 
