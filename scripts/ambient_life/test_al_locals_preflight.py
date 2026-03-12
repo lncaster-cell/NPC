@@ -279,3 +279,69 @@ class ValidateLocalsCoreScenariosTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class ValidateLocalsSafeWaypointContractTests(unittest.TestCase):
+    def test_conflicting_safe_waypoint_tag_and_legacy_alias_reports_warning(self):
+        payload = {
+            "npcs": [
+                {
+                    "npc_tag": "civilian_01",
+                    "locals": {
+                        "al_default_activity": 1,
+                        "alwp0": "market_route",
+                        "al_safe_wp_tag": "safe_square",
+                        "al_safe_wp": "safe_gate",
+                    },
+                }
+            ],
+            "waypoints": [
+                {
+                    "area_tag": "area_market",
+                    "route_tag": "market_route",
+                    "waypoint_tag": "market_0",
+                    "locals": {"al_step": 0},
+                }
+            ],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertTrue(
+            any(
+                issue.level == "WARN"
+                and issue.scope == "npc"
+                and issue.code == "conflicting_safe_wp_tags"
+                and issue.object_id == "civilian_01"
+                for issue in issues
+            )
+        )
+
+    def test_invalid_waypoint_safe_marker_reports_warning(self):
+        payload = {
+            "npcs": [],
+            "waypoints": [
+                {
+                    "area_tag": "area_market",
+                    "route_tag": "market_route",
+                    "waypoint_tag": "safe_0",
+                    "locals": {
+                        "al_step": 0,
+                        "al_is_safe_wp": "yes",
+                    },
+                }
+            ],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertTrue(
+            any(
+                issue.level == "WARN"
+                and issue.scope == "waypoint"
+                and issue.code == "invalid_safe_marker"
+                and issue.object_id == "safe_0"
+                for issue in issues
+            )
+        )

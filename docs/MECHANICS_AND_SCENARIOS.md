@@ -143,7 +143,7 @@
 3. Для guard выставляется future-hook `al_legal_followup_pending`.
 
 ### Сценарии
-- Сценарий A: мирный NPC убегает к `al_safe_wp` или ближайшей safe-точке.
+- Сценарий A: мирный NPC убегает к `al_safe_wp_tag` (legacy: `al_safe_wp`) или ближайшей safe-точке (`al_is_safe_wp=1` / legacy marker + name/tag fallback).
 - Сценарий B: militia сразу вступает в бой с нарушителем.
 - Сценарий C: guard атакует при hostile/legal условиях, иначе перехватывает нарушителя.
 

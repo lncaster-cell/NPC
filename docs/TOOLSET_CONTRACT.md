@@ -17,7 +17,8 @@
   - `0` civilian (default)
   - `1` militia
   - `2` guard/enforcer
-- `al_safe_wp` (string) — waypoint tag для civilian fallback-run при тревоге.
+- `al_safe_wp_tag` (string) — канонический waypoint tag для civilian fallback-run при тревоге.
+- `al_safe_wp` (string) — legacy alias для `al_safe_wp_tag` (поддерживается на переходный период).
 
 ### Runtime-owned (не редактировать вручную)
 - area/slot markers: `al_last_area`, `al_last_slot`
@@ -26,7 +27,8 @@
 - sleep runtime: `al_sleep_rt_*`
 - blocked runtime: `al_blocked_rt_active`, `al_blocked_rt_retry`
 - react runtime: `al_react_active`, `al_react_type`, `al_react_resume_flag`, `al_react_last_source`, `al_react_last_item`,
-  `al_react_last_crime_tick`, `al_react_last_crime_source`, `al_react_last_crime_kind` (actor-local debounce)
+  `al_react_last_crime_tick`, `al_react_last_crime_source`, `al_react_last_crime_kind` (actor-local debounce),
+  safe-waypoint lookup cache/counters: `al_safe_lookup_area`, `al_safe_lookup_tick`, `al_safe_lookup_wp`, `al_safe_lookup_hit`, `al_safe_lookup_miss`
 - crime/alarm runtime: `al_legal_followup_pending` (future legal hook marker)
 - current state: `al_mode`, `al_activity_current`
 
@@ -42,15 +44,16 @@
   на NPC и area.
 
 ### Safe-waypoint для react/flee
-- Рекомендуемый явный маркер: `al_safe_wp = 1` (int local на waypoint).
+- Канонический явный маркер: `al_is_safe_wp = 1` (int local на waypoint).
+- Legacy marker (переходный период): `al_safe_wp = 1` (int local на waypoint).
 - Legacy fallback (если явный маркер не проставлен): подстрока `safe/SAFE` в `tag` или `name` waypoint.
-- Runtime собирает area-level кэш safe-waypoint-ов и выбирает ближайший по дистанции внутри area.
-- При пустом или просроченном кэше используется legacy fallback-lookup через `GetNearestObject`.
+- Runtime держит NPC-local tick cache для safe-waypoint lookup (`al_safe_lookup_area`, `al_safe_lookup_tick`, `al_safe_lookup_wp`).
+- При cache-hit возвращается cached waypoint; при cache-miss выполняется nearest-scan через `GetNearestObject` (до 24 waypoint в area) с fallback по `safe/SAFE` в tag/name.
 
 Миграция контента:
-- Для новых сцен используйте только явный локал `al_safe_wp=1`.
+- Для новых сцен используйте `al_is_safe_wp=1` + `al_safe_wp_tag` на NPC.
 - Для существующих сцен с `safe*` в тегах/именах мигрируйте постепенно:
-  1) проставьте `al_safe_wp=1` на целевых safe-точках;
+  1) проставьте `al_is_safe_wp=1` (и при необходимости legacy `al_safe_wp=1`) на целевых safe-точках;
   2) сохраните старые теги/имена на переходный период;
   3) после валидации react/flee в area можно убрать зависимость от naming convention.
 
@@ -91,7 +94,6 @@
   - `al_alarm_until` (`al_sync_tick` deadline)
   - `al_alarm_source` (object)
   - `al_alarm_last_tick`, `al_alarm_last_source`, `al_alarm_last_kind` (debounce)
-  - safe-waypoint lookup counters: `al_safe_lookup_hit`, `al_safe_lookup_miss`
 
 ## 4) Правила
 
