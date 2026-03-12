@@ -17,7 +17,7 @@ void AL_NpcHandleResync(object oNpc)
     }
 
     int nSlot = GetLocalInt(oArea, "al_slot");
-    AL_RouteRoutineStart(oNpc, nSlot, TRUE);
+    AL_RouteResyncCurrentArea(oNpc, nSlot);
 }
 
 void AL_NpcHandleSlotChanged(object oNpc, int nSlot)

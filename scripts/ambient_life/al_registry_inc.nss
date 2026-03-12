@@ -24,6 +24,79 @@ int AL_FindNPCInRegistry(object oArea, object oNpc)
     return -1;
 }
 
+int AL_UnregisterNPCFromArea(object oNpc, object oArea)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oArea))
+    {
+        return FALSE;
+    }
+
+    int nCount = GetLocalInt(oArea, "al_npc_count");
+    int nIdx = AL_FindNPCInRegistry(oArea, oNpc);
+    if (nIdx < 0 || nCount <= 0)
+    {
+        return FALSE;
+    }
+
+    int nLastIdx = nCount - 1;
+    object oLast = GetLocalObject(oArea, AL_RegKey(nLastIdx));
+
+    if (nIdx != nLastIdx)
+    {
+        SetLocalObject(oArea, AL_RegKey(nIdx), oLast);
+    }
+
+    DeleteLocalObject(oArea, AL_RegKey(nLastIdx));
+    SetLocalInt(oArea, "al_npc_count", nLastIdx);
+
+    return TRUE;
+}
+
+void AL_RegisterNPCInArea(object oNpc, object oArea)
+{
+    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    {
+        return;
+    }
+
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    SetLocalObject(oNpc, "al_last_area", oArea);
+
+    if (AL_FindNPCInRegistry(oArea, oNpc) >= 0)
+    {
+        return;
+    }
+
+    int nCount = GetLocalInt(oArea, "al_npc_count");
+    if (nCount >= AL_MAX_NPCS)
+    {
+        AL_MarkRegistryOverflow(oArea, oNpc);
+        return;
+    }
+
+    SetLocalObject(oArea, AL_RegKey(nCount), oNpc);
+    SetLocalInt(oArea, "al_npc_count", nCount + 1);
+}
+
+void AL_TransferNPCRegistry(object oNpc, object oFromArea, object oToArea)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oToArea))
+    {
+        return;
+    }
+
+    if (GetIsObjectValid(oFromArea) && oFromArea != oToArea)
+    {
+        AL_UnregisterNPCFromArea(oNpc, oFromArea);
+    }
+
+    AL_RegisterNPCInArea(oNpc, oToArea);
+}
+
 void AL_MarkRegistryOverflow(object oArea, object oNpc)
 {
     int nOverflowCount = GetLocalInt(oArea, "al_reg_overflow_count") + 1;
@@ -61,33 +134,8 @@ void AL_MarkRegistryOverflow(object oArea, object oNpc)
 
 void AL_RegisterNPC(object oNpc)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
-    {
-        return;
-    }
-
     object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea))
-    {
-        return;
-    }
-
-    SetLocalObject(oNpc, "al_last_area", oArea);
-
-    if (AL_FindNPCInRegistry(oArea, oNpc) >= 0)
-    {
-        return;
-    }
-
-    int nCount = GetLocalInt(oArea, "al_npc_count");
-    if (nCount >= AL_MAX_NPCS)
-    {
-        AL_MarkRegistryOverflow(oArea, oNpc);
-        return;
-    }
-
-    SetLocalObject(oArea, AL_RegKey(nCount), oNpc);
-    SetLocalInt(oArea, "al_npc_count", nCount + 1);
+    AL_RegisterNPCInArea(oNpc, oArea);
 }
 
 void AL_UnregisterNPC(object oNpc)
@@ -108,23 +156,7 @@ void AL_UnregisterNPC(object oNpc)
         return;
     }
 
-    int nCount = GetLocalInt(oArea, "al_npc_count");
-    int nIdx = AL_FindNPCInRegistry(oArea, oNpc);
-    if (nIdx < 0 || nCount <= 0)
-    {
-        return;
-    }
-
-    int nLastIdx = nCount - 1;
-    object oLast = GetLocalObject(oArea, AL_RegKey(nLastIdx));
-
-    if (nIdx != nLastIdx)
-    {
-        SetLocalObject(oArea, AL_RegKey(nIdx), oLast);
-    }
-
-    DeleteLocalObject(oArea, AL_RegKey(nLastIdx));
-    SetLocalInt(oArea, "al_npc_count", nLastIdx);
+    AL_UnregisterNPCFromArea(oNpc, oArea);
 }
 
 void AL_RegistryCompact(object oArea)
