@@ -242,18 +242,22 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
         iSort = iSort + 1;
     }
 
-    int nExpected = anStepVals[0];
+    if (anStepVals[0] != 0)
+    {
+        AL_RouteInvalidateCache(oNpc);
+        return FALSE;
+    }
+
     int iCheck = 0;
     while (iCheck < nFound)
     {
-        if (anStepVals[iCheck] != nExpected)
+        if (anStepVals[iCheck] != iCheck)
         {
             AL_RouteInvalidateCache(oNpc);
             return FALSE;
         }
 
         SetLocalObject(oNpc, AL_RouteStepKey(iCheck), aoStepRefs[iCheck]);
-        nExpected = nExpected + 1;
         iCheck = iCheck + 1;
     }
 
