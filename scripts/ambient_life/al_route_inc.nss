@@ -467,13 +467,13 @@ int AL_RouteEnsureCache(object oNpc, int nSlot, int bForceRebuild)
 
 int AL_RouteQueueStep(object oNpc, int nStepIdx)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    if (!AL_IsRuntimeNpc(oNpc))
     {
         return FALSE;
     }
 
     object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return FALSE;
     }
@@ -546,13 +546,13 @@ int AL_RouteQueueStep(object oNpc, int nStepIdx)
 
 int AL_RouteRoutineResumeCurrent(object oNpc)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    if (!AL_IsRuntimeNpc(oNpc))
     {
         return FALSE;
     }
 
     object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return FALSE;
     }
@@ -568,7 +568,7 @@ int AL_RouteRoutineResumeCurrent(object oNpc)
 
 void AL_RouteResyncCurrentArea(object oNpc, int nSlot)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    if (!AL_IsRuntimeNpc(oNpc))
     {
         return;
     }
@@ -579,13 +579,13 @@ void AL_RouteResyncCurrentArea(object oNpc, int nSlot)
 
 void AL_RouteRoutineStart(object oNpc, int nSlot, int bForceRebuild)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    if (!AL_IsRuntimeNpc(oNpc))
     {
         return;
     }
 
     object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return;
     }
@@ -616,13 +616,13 @@ void AL_RouteRoutineStart(object oNpc, int nSlot, int bForceRebuild)
 
 void AL_RouteRoutineAdvance(object oNpc)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    if (!AL_IsRuntimeNpc(oNpc))
     {
         return;
     }
 
     object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return;
     }

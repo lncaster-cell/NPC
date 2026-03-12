@@ -17,6 +17,16 @@ const string AL_LOOKUP_INVALIDATE_REASON_ROUTE = "route";
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
 
+int AL_IsRuntimeNpc(object oNpc)
+{
+    return GetIsObjectValid(oNpc) && GetObjectType(oNpc) == OBJECT_TYPE_CREATURE && !GetIsPC(oNpc);
+}
+
+int AL_IsHotArea(object oArea)
+{
+    return GetIsObjectValid(oArea) && GetLocalInt(oArea, "al_sim_tier") == AL_SIM_TIER_HOT;
+}
+
 int AL_ComputeHealthResyncWindowMask()
 {
     int nWindowMask = 0;

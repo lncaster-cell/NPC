@@ -99,3 +99,10 @@ Crime/alarm на Stage I.2 намеренно **не** добавляет нов
 - Dispatch событий работает по текущему area registry.
 - Event bus должен оставаться bounded: запуск через queue с защитой от дубликатов циклов и с fairness между critical/normal приоритетами.
 - Stage I.2 не включает guard spawn/reinforcements и не включает surrender/arrest/trial (оставлены только future hooks `al_legal_followup_pending`).
+
+### 5.1 Единые guard-инварианты
+
+- Базовые precondition-проверки вынесены в общий include `al_area_inc.nss`:
+  - `AL_IsRuntimeNpc(oNpc)` — валидный непользовательский creature для runtime-пайплайнов (`route/react/blocked/registry/core`).
+  - `AL_IsHotArea(oArea)` — валидная area в `AL_SIM_TIER_HOT`, где разрешена активная симуляция.
+- Во всех ранних `return`-ветках используется прежняя семантика: guards только централизуют проверку, не меняя порядок и поведение fallback-логики.
