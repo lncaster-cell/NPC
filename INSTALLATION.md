@@ -35,7 +35,33 @@
 `al_area_tick` можно оставлять только как legacy safety hook (bootstrap), если в вашем шаблоне уже есть такое подключение:
 он выполняет только активацию lifecycle и **не** должен быть единственным/основным источником периодического тика.
 
-### 2.3 NPC (Свойства NPC → Scripts)
+#### 2.2.1 Единый контракт подключения `al_area_tick` (entrypoint)
+
+Ниже фиксируется единый контракт для типовых шаблонов модулей.
+
+| Шаблон модуля | Что назначать в Toolset | Правило контракта |
+|---|---|---|
+| **A. Чистый lifecycle (рекомендуется)** | `OnEnter=al_area_onenter`, `OnExit=al_area_onexit`, `OnHeartbeat` пусто | Периодический тик идёт только через runtime scheduler (`AL_ScheduleAreaTick`). `al_area_tick` не подключается. |
+| **B. Общий heartbeat-dispatcher (legacy shared chain)** | Оставить текущий heartbeat-скрипт шаблона, но внутри цепочки вызывать `al_area_tick` ровно один раз | `al_area_tick` используется только как bootstrap (`AL_AreaActivate`), без собственного цикла и без дублирования scheduler-тика. |
+| **C. Прямой legacy heartbeat-hook** | `OnHeartbeat=al_area_tick` (только если шаблон уже исторически так устроен) | Допускается как safety bootstrap. Основной периодический цикл всё равно только через `AL_ScheduleAreaTick`. |
+
+Запрещённый вариант для всех шаблонов: любой heartbeat-скрипт, который вручную эмулирует/дублирует периодический area-loop Ambient Life.
+
+### 2.3 Таблица контракта hooks: `hook point → required script → expected locals/events`
+
+| Hook point | Required script | Expected locals/events (после инициализации) |
+|---|---|---|
+| Module `OnClientLeave` | `al_mod_onleave` | Корректная деактивация/cleanup player-context для area lifecycle; без ручных правок runtime locals. |
+| Area `OnEnter` | `al_area_onenter` | `AL_AreaActivate` запускает area lifecycle; появляются/обновляются area runtime locals (`al_tick_token`, `al_player_count`, `al_sim_tier`, `al_slot`). |
+| Area `OnExit` | `al_area_onexit` | Пересчёт активности area и корректное продолжение/останов lifecycle по population policy. |
+| Area `OnHeartbeat` (опционально, только legacy bootstrap) | `al_area_tick` или вызов `al_area_tick` из общего dispatcher | Допускается только bootstrap-entrypoint; не должен создавать второй периодический loop. |
+| NPC `OnSpawn` | `al_npc_onspawn` | NPC регистрируется в area (`AL_RegisterNPC`), начинает runtime routine/resync workflow. |
+| NPC `OnDeath` | `al_npc_ondeath` | NPC снимается с активного runtime-учёта area. |
+| NPC `OnUserDefined` | `al_npc_onud` | Обрабатываются события шины `AL_EVENT_SLOT_0..5`, `AL_EVENT_RESYNC`, `AL_EVENT_ROUTE_REPEAT`, `AL_EVENT_BLOCKED_RESUME`. |
+| NPC `OnBlocked` | `al_npc_onblocked` | bounded blocked-recovery без разрыва основного route-loop. |
+| NPC `OnDisturbed` | `al_npc_ondisturbed` | bounded disturbed-reaction c возвратом в routine. |
+
+### 2.4 NPC (Свойства NPC → Scripts)
 
 | Событие | Скрипт |
 |---|---|
@@ -204,6 +230,16 @@
 3. Переключите игровое время на следующий 4-часовой слот — должен смениться маршрут.
 4. Проверьте `OnBlocked` (закрытый проход/дверь) — должен отработать bounded recovery.
 5. Проверьте `OnDisturbed` (inventory/theft) — должен сработать bounded override с возвратом к routine.
+
+### 6.1 Smoke-процедура: сигнатура корректной инициализации area
+
+1. В Toolset/рантайме включите debug area: local `al_debug=1` (опционально, только для диагностики).
+2. Зайдите игроком в target area и дождитесь **2–3 тиков** `AL_AreaTick`.
+3. Зафиксируйте отличительный признак корректной инициализации:
+   - в area locals присутствуют и обновляются `al_h_npc_count`, `al_h_tier`, `al_h_slot`;
+   - `al_h_reg_overflow_count=0` и `al_h_route_overflow_count=0` для штатного контента;
+   - в module log появляются записи `[AL][AreaHealthDelta]` (минимум одна запись при изменении метрик).
+4. Если после 2–3 тиков health-метрики не появились/не меняются, считать подключение hooks некорректным и перепроверить раздел 2.
 
 ---
 

@@ -4,7 +4,7 @@
 
 - [x] Stage I.2: crime/alarm escalation поверх disturbed foundation.
 - [x] Диагностика отказа `AL_RegisterNPC` при достижении `AL_MAX_NPCS`.
-- [ ] Унифицированная схема подключения `al_area_tick` для разных шаблонов модулей.
+- [x] Унифицированная схема подключения `al_area_tick` для разных шаблонов модулей (см. `INSTALLATION.md`, разделы 2.2.1 и 2.3).
 
 ## P1
 
@@ -28,6 +28,8 @@
 
 ## Runbook: Area Health Snapshot (операторский минимум)
 
+См. также: `docs/LINKED_GRAPH_OPERATIONS.md` (правила linked-графа и warm-policy).
+
 1. Включите debug на area: `al_debug=1` (опционально, только для delta-логов).
 2. Дождитесь минимум 2-3 тиков `AL_AreaTick`.
 3. Проверьте locals area:
@@ -35,4 +37,11 @@
    - `al_h_tier` и `al_h_slot` соответствуют текущей фазе,
    - `al_h_reg_overflow_count=0` и `al_h_route_overflow_count=0` в штатном контенте,
    - `al_h_recent_resync` в норме низкий и растёт в окне только при реальных RESYNC.
-4. Для debug-анализа смотрите module log: `[AL][AreaHealthDelta]` пишется только при изменении ключевых метрик.
+4. Интерпретируйте обязательные пороги (`al_dispatch_q_len`, `al_dispatch_q_overflow`, `al_reg_overflow_count`, `al_route_overflow_count`, `al_h_recent_resync`) по таблицам из `docs/PERF_RUNBOOK.md` / `docs/PERF_PROFILE.md`:
+   - `OK` — ниже warn-порога,
+   - `WARN` — в warn-диапазоне,
+   - `CRITICAL` — на critical-пороге и выше.
+5. Действия оператора при превышении:
+   - при `WARN`: зафиксировать инцидент в отчёте, приложить delta и повторить замер на ещё одном 20-тиковом окне для подтверждения;
+   - при `CRITICAL` по любой метрике или при любом росте `*_overflow*`: остановить rollout/мердж, открыть follow-up (route/registry/dispatcher triage), приложить логи `[AL][AreaHealthDelta]` и значения до/после.
+6. Для debug-анализа смотрите module log: `[AL][AreaHealthDelta]` пишется только при изменении ключевых метрик.
