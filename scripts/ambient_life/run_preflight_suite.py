@@ -120,10 +120,10 @@ def _build_report(
 
     issues: list[dict[str, Any]] = []
     summary = {"error": 0, "warn": 0, "info": 0, "total": 0}
-    aggregates: dict[str, dict[str, int]] = {
+    aggregates = {
+        "severity": {"error": 0, "warn": 0, "info": 0},
+        "check": {"route": 0, "link": 0, "locals": 0},
         "code": {},
-        "check": {},
-        "severity": {},
     }
 
     def bump_summary(severity: str) -> None:
