@@ -79,7 +79,20 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
     waypoint_tag_raw = raw.get("waypoint_tag")
     waypoint_tag = _read_tag(waypoint_tag_raw) or f"<idx:{index}>"
     step_raw = raw.get("al_step")
-    al_bed_id = str(raw.get("al_bed_id", "")).strip()
+
+    al_bed_id_raw = raw.get("al_bed_id")
+    if al_bed_id_raw is None:
+        al_bed_id = ""
+    elif not isinstance(al_bed_id_raw, str):
+        return None, ValidationIssue(
+            level="ERROR",
+            area_tag=area_tag or "<unknown-area>",
+            route_tag=route_tag or "<unknown-route>",
+            code="invalid_bed_id_type",
+            details=f"waypoint={waypoint_tag} al_bed_id={al_bed_id_raw!r}",
+        )
+    else:
+        al_bed_id = al_bed_id_raw.strip()
 
     if area_tag is None:
         code = (
