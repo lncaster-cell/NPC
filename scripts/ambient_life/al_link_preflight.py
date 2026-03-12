@@ -40,6 +40,13 @@ def is_strict_int(value: Any) -> bool:
     return isinstance(value, int) and not isinstance(value, bool)
 
 
+def _read_tag(value: Any) -> str | None:
+    if not isinstance(value, str):
+        return None
+    tag = value.strip()
+    return tag or None
+
+
 def _read_input(path: Path) -> list[dict[str, Any]]:
     payload = json.loads(path.read_text(encoding="utf-8"))
 
@@ -81,14 +88,25 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             _append_issue(issues, "ERROR", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}")
             continue
 
-        area_tag = str(row.get("area_tag", row.get("tag", f"<idx:{index}>"))).strip() or f"<idx:{index}>"
+        area_tag_raw = row.get("area_tag")
+        area_tag = _read_tag(area_tag_raw)
+        object_id = f"<idx:{index}>"
+        issue_area_tag = area_tag or object_id
+        if area_tag is None:
+            code = (
+                "missing_area_tag"
+                if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
+                else "invalid_area_tag_type"
+            )
+            _append_issue(issues, "ERROR", object_id, code, "area_tag must be non-empty string")
+
         locals_map, invalid_locals = _extract_locals(row)
         if invalid_locals:
-            _append_issue(issues, "ERROR", area_tag, "invalid_locals_type", "locals key exists but is not an object")
+            _append_issue(issues, "ERROR", issue_area_tag, "invalid_locals_type", "locals key exists but is not an object")
 
         link_count = locals_map.get("al_link_count", 0)
         if not is_strict_int(link_count) or link_count < 0:
-            _append_issue(issues, "ERROR", area_tag, "invalid_link_count", "al_link_count must be int >= 0")
+            _append_issue(issues, "ERROR", issue_area_tag, "invalid_link_count", "al_link_count must be int >= 0")
             link_count = 0
 
         indexed_links: dict[int, str] = {}
@@ -99,29 +117,31 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             match = LINK_KEY_RE.match(key)
             if not match:
                 if key.startswith("al_link_"):
-                    _append_issue(issues, "ERROR", area_tag, "invalid_link_slot_key", f"{key} must use numeric suffix")
+                    _append_issue(issues, "ERROR", issue_area_tag, "invalid_link_slot_key", f"{key} must use numeric suffix")
                 continue
 
             slot = int(match.group(1))
             if slot >= link_count:
-                _append_issue(issues, "ERROR", area_tag, "link_slot_out_of_range", f"{key} is set but al_link_count={link_count}")
+                _append_issue(issues, "ERROR", issue_area_tag, "link_slot_out_of_range", f"{key} is set but al_link_count={link_count}")
                 continue
 
             if not isinstance(value, str) or not value.strip():
-                _append_issue(issues, "ERROR", area_tag, "invalid_link_slot_value", f"{key} must be non-empty string")
+                _append_issue(issues, "ERROR", issue_area_tag, "invalid_link_slot_value", f"{key} must be non-empty string")
                 continue
 
             indexed_links[slot] = value.strip()
 
         for slot in range(link_count):
             if slot not in indexed_links:
-                _append_issue(issues, "ERROR", area_tag, "missing_link_slot", f"al_link_{slot} must be set for al_link_count={link_count}")
+                _append_issue(issues, "ERROR", issue_area_tag, "missing_link_slot", f"al_link_{slot} must be set for al_link_count={link_count}")
 
         values = list(indexed_links.values())
         if len(values) != len(set(values)):
-            _append_issue(issues, "ERROR", area_tag, "duplicate_links", "duplicate area tags in al_link_* are not allowed")
+            _append_issue(issues, "ERROR", issue_area_tag, "duplicate_links", "duplicate area tags in al_link_* are not allowed")
 
         for target_tag in values:
+            if area_tag is None:
+                continue
             if target_tag == area_tag:
                 _append_issue(issues, "ERROR", area_tag, "self_link", f"self-link detected: {area_tag} -> {target_tag}")
 
@@ -130,7 +150,7 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             _append_issue(
                 issues,
                 "ERROR",
-                area_tag,
+                issue_area_tag,
                 "degree_exceeds_hub_max",
                 f"degree={degree} exceeds max allowed {HUB_DEGREE_MAX}",
             )
@@ -138,7 +158,7 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             _append_issue(
                 issues,
                 "WARN",
-                area_tag,
+                issue_area_tag,
                 "degree_above_target",
                 f"degree={degree} above target {TARGET_DEGREE_MIN}..{TARGET_DEGREE_MAX}",
             )
@@ -146,10 +166,13 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             _append_issue(
                 issues,
                 "WARN",
-                area_tag,
+                issue_area_tag,
                 "degree_below_target",
                 f"degree={degree} below target {TARGET_DEGREE_MIN}..{TARGET_DEGREE_MAX}",
             )
+
+        if area_tag is None:
+            continue
 
         if area_tag in adjacency:
             _append_issue(
