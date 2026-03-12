@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import json
-from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -70,7 +69,7 @@ def _order_issues(issues: list[dict[str, Any]], sort_mode: str) -> list[dict[str
     return issues
 
 
-def _build_report(route_input: Path, link_input: Path, locals_input: Path, sort_mode: str = "none") -> dict[str, Any]:
+def _run_route_check(route_input: Path) -> list[al_route_preflight.ValidationIssue]:
     route_rows = al_route_preflight._read_input(route_input)
     return al_route_preflight.validate_route_markup(route_rows)
 
@@ -85,7 +84,14 @@ def _run_locals_check(locals_input: Path) -> list[al_locals_preflight.Validation
     return al_locals_preflight.validate_locals(locals_payload)
 
 
-def _build_report(route_input: Path, link_input: Path, locals_input: Path, *, parallel: bool = False) -> dict[str, Any]:
+def _build_report(
+    route_input: Path,
+    link_input: Path,
+    locals_input: Path,
+    *,
+    parallel: bool = False,
+    sort_mode: str = "none",
+) -> dict[str, Any]:
     if parallel:
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             route_future = executor.submit(_run_route_check, route_input)
@@ -100,9 +106,19 @@ def _build_report(route_input: Path, link_input: Path, locals_input: Path, *, pa
         locals_issues = _run_locals_check(locals_input)
 
     issues: list[dict[str, Any]] = []
+    summary = {"error": 0, "warn": 0, "info": 0, "total": 0}
+
+    def bump_summary(severity: str) -> None:
+        normalized = _normalize_severity(severity)
+        summary[normalized] += 1
+        summary["total"] += 1
+
+    def add_issue(payload: dict[str, Any]) -> None:
+        issues.append(payload)
+        bump_summary(payload["severity"])
 
     for issue in route_issues:
-        issues.append(
+        add_issue(
             {
                 "check": "route",
                 "severity": _normalize_severity(issue.level),
@@ -113,7 +129,7 @@ def _build_report(route_input: Path, link_input: Path, locals_input: Path, *, pa
         )
 
     for issue in link_issues:
-        issues.append(
+        add_issue(
             {
                 "check": "link",
                 "severity": _normalize_severity(issue.level),
@@ -124,7 +140,7 @@ def _build_report(route_input: Path, link_input: Path, locals_input: Path, *, pa
         )
 
     for issue in locals_issues:
-        issues.append(
+        add_issue(
             {
                 "check": "locals",
                 "severity": _normalize_severity(issue.level),
@@ -140,7 +156,7 @@ def _build_report(route_input: Path, link_input: Path, locals_input: Path, *, pa
         ("locals", locals_issues),
     ):
         if not check_issues:
-            issues.append(
+            add_issue(
                 {
                     "check": check_name,
                     "severity": "info",
@@ -150,17 +166,10 @@ def _build_report(route_input: Path, link_input: Path, locals_input: Path, *, pa
                 }
             )
 
-    summary = {
-        "error": sum(1 for issue in issues if issue["severity"] == "error"),
-        "warn": sum(1 for issue in issues if issue["severity"] == "warn"),
-        "info": sum(1 for issue in issues if issue["severity"] == "info"),
-        "total": len(issues),
-    }
-
     issues = sorted(
         issues,
         key=lambda item: (
-            _severity_order(item["severity"]),
+            _SEVERITY_RANK.get(item["severity"], 99),
             item["check"],
             item["path"],
             item["code"],
@@ -258,7 +267,13 @@ def main() -> int:
     elif args.deterministic_sort:
         sort_mode = "grouped"
 
-    report = _build_report(Path(args.route_input), Path(args.link_input), Path(args.locals_input), sort_mode)
+    report = _build_report(
+        Path(args.route_input),
+        Path(args.link_input),
+        Path(args.locals_input),
+        parallel=args.parallel,
+        sort_mode=sort_mode,
+    )
 
     if args.format == "json":
         print(json.dumps(report, ensure_ascii=False, indent=2))
