@@ -62,6 +62,16 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
     issues: list[ValidationIssue] = []
     adjacency: dict[str, set[str]] = {}
 
+    if len(rows) == 0:
+        _append_issue(
+            issues,
+            "ERROR",
+            "<payload>",
+            "empty_payload",
+            "input must contain at least one area",
+        )
+        return issues
+
     for index, row in enumerate(rows):
         if not isinstance(row, dict):
             _append_issue(issues, "ERROR", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}")
