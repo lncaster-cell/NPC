@@ -27,7 +27,8 @@ int AL_BlockedTryDoorFirst(object oNpc)
     ClearAllActions(TRUE);
     ActionOpenDoor(oDoor);
     ActionWait(0.2);
-    ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_BLOCKED_RESUME)));
+    SetLocalInt(oNpc, "al_action_signal_event", AL_EVENT_BLOCKED_RESUME);
+    ActionDoCommand(ExecuteScript("al_action_signal_ud", OBJECT_SELF));
     return TRUE;
 }
 

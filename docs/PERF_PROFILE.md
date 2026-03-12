@@ -24,6 +24,7 @@
 Ожидаемый эффект для оптимизаций write-on-change в area health snapshot:
 
 - снижение частоты local write-операций (`SetLocalInt`/`SetLocalString`) при стабильных значениях;
+- снижение CPU на `AL_AreaTick` в части area health snapshot за счёт popcount LUT (`0..255`) вместо побитового цикла в стандартном 8-тиковом окне resync;
 - без изменения диагностических метрик, включая `al_h_recent_resync` и логи `[AL][AreaHealthDelta]`.
 
 ## 2) Обязательные метрики (must-have)

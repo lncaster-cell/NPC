@@ -46,9 +46,11 @@ int AL_SleepQueueOnPlace(object oNpc, int nDurSec)
     }
 
     ClearAllActions(TRUE);
-    ActionDoCommand(SetLocalString(oNpc, "al_mode", "sleep"));
+    SetLocalString(oNpc, "al_action_mode_value", "sleep");
+    ActionDoCommand(ExecuteScript("al_action_set_mode", OBJECT_SELF));
     ActionWait(IntToFloat(nDurSec));
-    ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
+    SetLocalInt(oNpc, "al_action_signal_event", AL_EVENT_ROUTE_REPEAT);
+    ActionDoCommand(ExecuteScript("al_action_signal_ud", OBJECT_SELF));
 
     return TRUE;
 }
@@ -88,9 +90,11 @@ int AL_SleepQueueFromStep(object oNpc, object oStep)
     ClearAllActions(TRUE);
     ActionMoveToObject(oApproach, TRUE, 1.5);
     ActionJumpToLocation(GetLocation(oPose));
-    ActionDoCommand(SetLocalString(oNpc, "al_mode", "sleep"));
+    SetLocalString(oNpc, "al_action_mode_value", "sleep");
+    ActionDoCommand(ExecuteScript("al_action_set_mode", OBJECT_SELF));
     ActionWait(IntToFloat(nDur));
-    ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
+    SetLocalInt(oNpc, "al_action_signal_event", AL_EVENT_ROUTE_REPEAT);
+    ActionDoCommand(ExecuteScript("al_action_signal_ud", OBJECT_SELF));
 
     return TRUE;
 }
