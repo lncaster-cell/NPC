@@ -9,6 +9,7 @@ const int AL_SIM_TIER_WARM = 1;
 const int AL_SIM_TIER_HOT = 2;
 const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
+const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 
 int AL_ComputeAreaSlot()
 {
@@ -263,10 +264,16 @@ void AL_OnAreaEnter(object oArea, object oEnter)
         return;
     }
 
-    SetLocalInt(oEnter, "al_exit_counted", 0);
+    object oCountedArea = GetLocalObject(oEnter, AL_COUNTED_AREA_LOCAL);
+    if (GetIsObjectValid(oCountedArea) && oCountedArea == oArea)
+    {
+        return;
+    }
 
-    int nPlayers = GetLocalInt(oArea, "al_player_count") + 1;
+    int nPlayers = GetLocalInt(oArea, "al_player_count");
+    nPlayers = nPlayers + 1;
     SetLocalInt(oArea, "al_player_count", nPlayers);
+    SetLocalObject(oEnter, AL_COUNTED_AREA_LOCAL, oArea);
 
     AL_AreaActivate(oArea);
     AL_MarkAreaWarm(oArea);
@@ -280,19 +287,21 @@ void AL_OnAreaExit(object oArea, object oExit)
         return;
     }
 
-    if (GetLocalInt(oExit, "al_exit_counted") == 1)
+    object oCountedArea = GetLocalObject(oExit, AL_COUNTED_AREA_LOCAL);
+    if (!GetIsObjectValid(oCountedArea) || oCountedArea != oArea)
     {
         return;
     }
 
     int nPlayers = GetLocalInt(oArea, "al_player_count") - 1;
+    DeleteLocalObject(oExit, AL_COUNTED_AREA_LOCAL);
+
     if (nPlayers < 0)
     {
         nPlayers = 0;
     }
 
     SetLocalInt(oArea, "al_player_count", nPlayers);
-    SetLocalInt(oExit, "al_exit_counted", 1);
 
     if (nPlayers == 0)
     {
@@ -309,12 +318,7 @@ void AL_OnModuleLeave(object oPC)
         return;
     }
 
-    if (GetLocalInt(oPC, "al_exit_counted") == 1)
-    {
-        return;
-    }
-
-    object oArea = GetArea(oPC);
+    object oArea = GetLocalObject(oPC, AL_COUNTED_AREA_LOCAL);
     if (!GetIsObjectValid(oArea))
     {
         return;
