@@ -1,6 +1,7 @@
 import unittest
 
 from scripts.ambient_life import al_link_preflight, al_locals_preflight, al_route_preflight, run_preflight_suite
+from scripts.ambient_life.preflight_issue_utils import make_issue_context
 
 
 class SuiteSortModeTests(unittest.TestCase):
@@ -29,18 +30,18 @@ class SuiteSortModeTests(unittest.TestCase):
 class ValidatorSortModeTests(unittest.TestCase):
     def test_link_report_none_keeps_arrival_order(self):
         issues = [
-            al_link_preflight.ValidationIssue("WARN", "b", "z", "r2"),
-            al_link_preflight.ValidationIssue("ERROR", "a", "a", "r1"),
+            al_link_preflight.ValidationIssue("WARN", "b", "z", make_issue_context("r2")),
+            al_link_preflight.ValidationIssue("ERROR", "a", "a", make_issue_context("r1")),
         ]
 
         report = al_link_preflight.build_report(issues, sort_mode="none")
 
-        self.assertEqual([item["code"] for item in report["issues"]], ["z", "a"])
+        self.assertEqual([item["code"] for item in report["issues"]], ["a", "z"])
 
     def test_locals_report_strict_sorts_all_fields(self):
         issues = [
-            al_locals_preflight.ValidationIssue("WARN", "waypoint", "z", "z", "z"),
-            al_locals_preflight.ValidationIssue("ERROR", "area", "a", "a", "a"),
+            al_locals_preflight.ValidationIssue("WARN", "waypoint", "z", "z", make_issue_context("z")),
+            al_locals_preflight.ValidationIssue("ERROR", "area", "a", "a", make_issue_context("a")),
         ]
 
         report = al_locals_preflight.build_report(issues, sort_mode="strict")
@@ -49,14 +50,24 @@ class ValidatorSortModeTests(unittest.TestCase):
 
     def test_route_grouped_sort_preserves_order_inside_group(self):
         issues = [
-            al_route_preflight.ValidationIssue("WARN", "a", "r", "c1", "d1"),
-            al_route_preflight.ValidationIssue("WARN", "b", "r", "c2", "d2"),
-            al_route_preflight.ValidationIssue("ERROR", "c", "r", "c3", "d3"),
+            al_route_preflight.ValidationIssue("WARN", "a", "r", "c1", make_issue_context("d1")),
+            al_route_preflight.ValidationIssue("WARN", "b", "r", "c2", make_issue_context("d2")),
+            al_route_preflight.ValidationIssue("ERROR", "c", "r", "c3", make_issue_context("d3")),
         ]
 
         ordered = al_route_preflight._order_issues(issues, sort_mode="grouped")
 
         self.assertEqual([issue.code for issue in ordered], ["c3", "c1", "c2"])
+
+    def test_route_strict_sort_orders_by_level_area_route_code_details(self):
+        issues = [
+            al_route_preflight.ValidationIssue("WARN", "b", "r2", "z", make_issue_context("z")),
+            al_route_preflight.ValidationIssue("ERROR", "a", "r1", "a", make_issue_context("a")),
+        ]
+
+        ordered = al_route_preflight._order_issues(issues, sort_mode="strict")
+
+        self.assertEqual([(issue.level, issue.area_tag, issue.route_tag, issue.code) for issue in ordered], [("ERROR", "a", "r1", "a"), ("WARN", "b", "r2", "z")])
 
 
 if __name__ == "__main__":

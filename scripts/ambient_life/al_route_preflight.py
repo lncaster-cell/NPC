@@ -27,9 +27,11 @@ from typing import Any
 try:
     from scripts.ambient_life.preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
     from scripts.ambient_life.preflight_issue_utils import make_issue_context, render_issue_message
+    from scripts.ambient_life.preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
 except ImportError:
     from preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
     from preflight_issue_utils import make_issue_context, render_issue_message
+    from preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
 
 try:
     from scripts.ambient_life.preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
@@ -403,8 +405,8 @@ def print_report(issues: list[ValidationIssue], sort_mode: str = "none") -> None
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Ambient Life route markup offline")
     parser.add_argument("--input", required=True, help="Path to JSON with waypoint route markup")
-    parser.add_argument("--fail-fast", action="store_true", help="Stop validation after first error")
-    parser.add_argument("--max-errors", type=int, default=None, help="Stop after reaching this number of errors (requires --fail-fast)")
+    parser.add_argument("--fail-fast", action="store_true", help="Stop validation after first error (or after --max-errors)")
+    parser.add_argument("--max-errors", type=int, default=None, help="Error limit used with --fail-fast")
     sort_group = parser.add_mutually_exclusive_group()
     sort_group.add_argument(
         "--deterministic-sort",

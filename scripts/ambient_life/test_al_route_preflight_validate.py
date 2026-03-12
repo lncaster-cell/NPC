@@ -87,6 +87,54 @@ class ValidateRouteMarkupFailFastTests(unittest.TestCase):
         self.assertEqual(len(issues), 1)
         self.assertEqual(issues[0].code, "invalid_step_range")
 
+    def test_max_errors_stops_after_requested_error_count(self):
+        rows = [
+            {"area_tag": "a", "route_tag": "r", "waypoint_tag": "wp0", "al_step": -1},
+            {"area_tag": "a", "route_tag": "r", "waypoint_tag": "wp1", "al_step": 99},
+            {"area_tag": "a", "route_tag": "r", "waypoint_tag": "wp2", "al_step": 100},
+        ]
+
+        issues = validate_route_markup(rows, fail_fast=True, max_errors=2)
+
+        self.assertEqual(len(issues), 2)
+        self.assertTrue(all(issue.code == "invalid_step_range" for issue in issues))
+
+
+class ValidateRouteMarkupStructureTests(unittest.TestCase):
+    def test_invalid_row_type_reports_error(self):
+        rows = [
+            {"area_tag": "a", "route_tag": "r", "waypoint_tag": "wp0", "al_step": 0},
+            "bad-row",
+        ]
+
+        issues = validate_route_markup(rows)
+
+        invalid_row_issues = [issue for issue in issues if issue.code == "invalid_row_type"]
+        self.assertEqual(len(invalid_row_issues), 1)
+        self.assertIn("index=1", invalid_row_issues[0].details)
+
+    def test_non_contiguous_steps_reports_gap(self):
+        rows = [
+            {"area_tag": "a", "route_tag": "r", "waypoint_tag": "wp0", "al_step": 0},
+            {"area_tag": "a", "route_tag": "r", "waypoint_tag": "wp2", "al_step": 2},
+        ]
+
+        issues = validate_route_markup(rows)
+
+        gap_issues = [issue for issue in issues if issue.code == "non_contiguous_steps"]
+        self.assertEqual(len(gap_issues), 1)
+        self.assertIn("missing_step=1", gap_issues[0].details)
+
+    def test_missing_step_zero_uses_valid_steps_mask_logic(self):
+        rows = [
+            {"area_tag": "a", "route_tag": "r", "waypoint_tag": "wp2", "al_step": 2},
+        ]
+
+        issues = validate_route_markup(rows)
+
+        self.assertEqual(len(issues), 1)
+        self.assertEqual(issues[0].code, "missing_step_0")
+
 
 class ValidateRouteMarkupSmokeTests(unittest.TestCase):
     def test_basic_validation_runs(self):
