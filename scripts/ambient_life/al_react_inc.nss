@@ -44,8 +44,10 @@ void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurS
         return;
     }
 
-    // Ensure queued animation/activity actions execute on oNpc, not the caller's OBJECT_SELF.
-    AssignCommand(oNpc, AL_ActivityApplyStep(oNpc, nStepActivity, nDurSec));
+    // Ensure queued activity actions are pushed onto oNpc's action queue.
+    SetLocalInt(oNpc, "al_react_step_activity", nStepActivity);
+    SetLocalInt(oNpc, "al_react_step_dur", nDurSec);
+    AssignCommand(oNpc, ActionDoCommand(ExecuteScript("al_react_apply_step", OBJECT_SELF)));
 }
 
 object AL_ReactFindNearestSafeWaypoint(object oNpc)
@@ -644,7 +646,7 @@ void AL_ReactFinishCreature(object oNpc)
         return;
     }
 
-    AssignCommand(oNpc, ActionDoCommand(AL_ReactResumeOrResetOnSelf()));
+    AssignCommand(oNpc, ActionDoCommand(ExecuteScript("al_react_resume_reset", OBJECT_SELF)));
 }
 
 void AL_OnDisturbed(object oActor)
