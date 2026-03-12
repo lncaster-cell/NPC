@@ -1,0 +1,59 @@
+{
+  "areas": [
+    {
+      "area_tag": "area_hub",
+      "locals": {
+        "al_link_count": 8,
+        "al_link_0": "area_hub",
+        "al_link_1": "area_a",
+        "al_link_2": "area_a",
+        "al_link_3": "area_b",
+        "al_link_4": "area_c",
+        "al_link_5": "area_d",
+        "al_link_6": "area_e",
+        "al_link_7": "area_f"
+      }
+    },
+    {
+      "area_tag": "area_a",
+      "locals": {
+        "al_link_count": 1,
+        "al_link_0": "area_hub"
+      }
+    },
+    {
+      "area_tag": "area_b",
+      "locals": {
+        "al_link_count": 1,
+        "al_link_0": "area_hub"
+      }
+    },
+    {
+      "area_tag": "area_c",
+      "locals": {
+        "al_link_count": 1,
+        "al_link_0": "area_unknown"
+      }
+    },
+    {
+      "area_tag": "area_d",
+      "locals": {
+        "al_link_count": 0
+      }
+    },
+    {
+      "area_tag": "area_e",
+      "locals": {
+        "al_link_count": 1,
+        "al_link_0": "area_hub"
+      }
+    },
+    {
+      "area_tag": "area_f",
+      "locals": {
+        "al_link_count": 1,
+        "al_link_0": "area_hub"
+      }
+    }
+  ]
+}
