@@ -37,14 +37,11 @@
    - `al_h_tier` и `al_h_slot` соответствуют текущей фазе,
    - `al_h_reg_overflow_count=0` и `al_h_route_overflow_count=0` в штатном контенте,
    - `al_h_recent_resync` в норме низкий и растёт в окне только при реальных RESYNC.
-4. Для debug-анализа смотрите module log: `[AL][AreaHealthDelta]` пишется только при изменении ключевых метрик.
-
-
-## Check-list валидации подключения hooks (toolset + runtime)
-
-- [ ] **Toolset / Module:** `OnClientLeave=al_mod_onleave`.
-- [ ] **Toolset / Area:** `OnEnter=al_area_onenter`, `OnExit=al_area_onexit`; `OnHeartbeat` либо пустой (рекомендуется), либо legacy-bootstrap с `al_area_tick` без второго loop.
-- [ ] **Toolset / NPC:** `OnSpawn=al_npc_onspawn`, `OnDeath=al_npc_ondeath`, `OnUserDefined=al_npc_onud`, `OnBlocked=al_npc_onblocked`, `OnDisturbed=al_npc_ondisturbed`.
-- [ ] **Runtime (после входа игрока):** в area locals появляются `al_tick_token`, `al_player_count`, `al_sim_tier`, `al_slot`.
-- [ ] **Runtime smoke (2–3 тика):** появляются health locals `al_h_npc_count`, `al_h_tier`, `al_h_slot`; overflow-метрики `al_h_reg_overflow_count` и `al_h_route_overflow_count` остаются `0` для штатной сцены.
-- [ ] **Runtime logs:** фиксируется `[AL][AreaHealthDelta]` при изменении ключевых метрик; нет признаков дублированного heartbeat-loop.
+4. Интерпретируйте обязательные пороги (`al_dispatch_q_len`, `al_dispatch_q_overflow`, `al_reg_overflow_count`, `al_route_overflow_count`, `al_h_recent_resync`) по таблицам из `docs/PERF_RUNBOOK.md` / `docs/PERF_PROFILE.md`:
+   - `OK` — ниже warn-порога,
+   - `WARN` — в warn-диапазоне,
+   - `CRITICAL` — на critical-пороге и выше.
+5. Действия оператора при превышении:
+   - при `WARN`: зафиксировать инцидент в отчёте, приложить delta и повторить замер на ещё одном 20-тиковом окне для подтверждения;
+   - при `CRITICAL` по любой метрике или при любом росте `*_overflow*`: остановить rollout/мердж, открыть follow-up (route/registry/dispatcher triage), приложить логи `[AL][AreaHealthDelta]` и значения до/после.
+6. Для debug-анализа смотрите module log: `[AL][AreaHealthDelta]` пишется только при изменении ключевых метрик.
