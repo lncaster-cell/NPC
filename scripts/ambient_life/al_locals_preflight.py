@@ -212,6 +212,26 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
             code = "missing_waypoint_tag" if isinstance(wp_tag_raw, str) else "invalid_waypoint_tag_type"
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "waypoint_tag must be non-empty string")
 
+        area_tag_raw = row.get("area_tag")
+        area_tag = _read_tag(area_tag_raw)
+        if area_tag is None:
+            code = (
+                "missing_area_tag"
+                if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
+                else "invalid_area_tag_type"
+            )
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "area_tag must be non-empty string")
+
+        route_tag_raw = row.get("route_tag")
+        route_tag = _read_tag(route_tag_raw)
+        if route_tag is None:
+            code = (
+                "missing_route_tag"
+                if route_tag_raw is None or (isinstance(route_tag_raw, str) and route_tag_raw.strip() == "")
+                else "invalid_route_tag_type"
+            )
+            _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "route_tag must be non-empty string")
+
         locals_map, has_invalid_locals_type = _extract_locals(row, {"waypoint_tag", "tag", "name", "area_tag", "route_tag", "locals"})
         if has_invalid_locals_type:
             _append_issue(
