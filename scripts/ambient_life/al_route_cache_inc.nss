@@ -89,10 +89,16 @@ int AL_ComputeRouteFingerprintFromCandidates(object oArea, string sRouteTag, int
         nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_step") + 37);
         nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_activity") + 41);
         nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_dur_sec") + 43);
-        nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_transition") + 47);
-        nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_sleep") + 53);
+
+        int nTransitionType = GetLocalInt(oWp, "al_trans_type");
+        nFingerprint = AL_RouteHashMix(nFingerprint, nTransitionType + 47);
+        nFingerprint = AL_RouteHashString(nFingerprint, GetLocalString(oWp, "al_trans_src_wp"));
+        nFingerprint = AL_RouteHashString(nFingerprint, GetLocalString(oWp, "al_trans_dst_wp"));
+
+        nFingerprint = AL_RouteHashString(nFingerprint, GetLocalString(oWp, "al_bed_id"));
     }
 
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
     if (nSyncTick > 0)
     {
         SetLocalInt(oArea, AL_RouteAreaFingerprintTickKey(sRouteTag), nSyncTick);

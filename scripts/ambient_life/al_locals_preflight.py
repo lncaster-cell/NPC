@@ -231,9 +231,29 @@ def _validate_npcs(
             if not is_strict_int(role_val) or role_val < NPC_ROLE_MIN or role_val > NPC_ROLE_MAX:
                 _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_npc_role", "al_npc_role must be int in range 0..2", limits=limits)
 
-        safe_wp_val = locals_map.get("al_safe_wp")
-        if safe_wp_val is not None and not _is_non_empty_string(safe_wp_val):
+        safe_wp_tag_val = locals_map.get("al_safe_wp_tag")
+        safe_wp_legacy_val = locals_map.get("al_safe_wp")
+
+        if safe_wp_tag_val is not None and not _is_non_empty_string(safe_wp_tag_val):
+            _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_safe_wp_tag", "al_safe_wp_tag must be non-empty string waypoint tag", limits=limits)
+
+        if safe_wp_legacy_val is not None and not _is_non_empty_string(safe_wp_legacy_val):
             _append_issue(issues, "ERROR", "npc", npc_tag, "invalid_safe_wp", "al_safe_wp must be non-empty string waypoint tag", limits=limits)
+
+        if (
+            _is_non_empty_string(safe_wp_tag_val)
+            and _is_non_empty_string(safe_wp_legacy_val)
+            and safe_wp_tag_val != safe_wp_legacy_val
+        ):
+            _append_issue(
+                issues,
+                "WARN",
+                "npc",
+                npc_tag,
+                "conflicting_safe_wp_tags",
+                "al_safe_wp_tag and legacy al_safe_wp differ",
+                limits=limits,
+            )
 
         for flag_name in ("al_allow_all", "al_force_witness"):
             flag_val = locals_map.get(flag_name)
@@ -301,6 +321,14 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue], limits: 
             _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_step_type", "al_step must be int", limits=limits)
         elif step_val < 0 or step_val >= AL_ROUTE_MAX_STEPS:
             _append_issue(issues, "ERROR", "waypoint", wp_tag, "invalid_step_range", f"al_step must be in range 0..{AL_ROUTE_MAX_STEPS - 1}", limits=limits)
+
+        safe_marker_val = locals_map.get("al_is_safe_wp")
+        if safe_marker_val is not None and (not is_strict_int(safe_marker_val) or safe_marker_val not in (0, 1)):
+            _append_issue(issues, "WARN", "waypoint", wp_tag, "invalid_safe_marker", "al_is_safe_wp should be 0 or 1", limits=limits)
+
+        safe_marker_legacy_val = locals_map.get("al_safe_wp")
+        if safe_marker_legacy_val is not None and (not is_strict_int(safe_marker_legacy_val) or safe_marker_legacy_val not in (0, 1)):
+            _append_issue(issues, "WARN", "waypoint", wp_tag, "invalid_safe_marker_legacy", "legacy waypoint al_safe_wp should be 0 or 1", limits=limits)
 
         trans_type = locals_map.get("al_trans_type")
         has_any_trans_key = any(key in locals_map for key in ("al_trans_type", "al_trans_src_wp", "al_trans_dst_wp"))

@@ -50,6 +50,74 @@ void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurS
     AssignCommand(oNpc, ActionDoCommand(ExecuteScript("al_react_apply_step", OBJECT_SELF)));
 }
 
+string AL_ReactNpcSafeWaypointTag(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return "";
+    }
+
+    string sSafeTag = GetLocalString(oNpc, "al_safe_wp_tag");
+    if (sSafeTag != "")
+    {
+        return sSafeTag;
+    }
+
+    return GetLocalString(oNpc, "al_safe_wp");
+}
+
+int AL_ReactIsSafeWaypoint(object oWaypoint)
+{
+    if (!GetIsObjectValid(oWaypoint) || GetObjectType(oWaypoint) != OBJECT_TYPE_WAYPOINT)
+    {
+        return FALSE;
+    }
+
+    if (GetLocalInt(oWaypoint, "al_is_safe_wp") == TRUE)
+    {
+        return TRUE;
+    }
+
+    // Legacy fallback marker used by older scenes.
+    if (GetLocalInt(oWaypoint, "al_safe_wp") == TRUE)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+object AL_FindNearestSafeWaypointFromCache(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea))
+    {
+        return OBJECT_INVALID;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    object oCachedArea = GetLocalObject(oNpc, "al_safe_lookup_area");
+    if (oCachedArea == oArea && GetLocalInt(oNpc, "al_safe_lookup_tick") == nSyncTick)
+    {
+        object oCachedWp = GetLocalObject(oNpc, "al_safe_lookup_wp");
+        if (GetIsObjectValid(oCachedWp) && GetObjectType(oCachedWp) == OBJECT_TYPE_WAYPOINT && GetArea(oCachedWp) == oArea)
+        {
+            SetLocalInt(oNpc, "al_safe_lookup_hit", GetLocalInt(oNpc, "al_safe_lookup_hit") + 1);
+            return oCachedWp;
+        }
+
+        SetLocalInt(oNpc, "al_safe_lookup_miss", GetLocalInt(oNpc, "al_safe_lookup_miss") + 1);
+        return OBJECT_INVALID;
+    }
+
+    return OBJECT_INVALID;
+}
+
 object AL_ReactFindNearestSafeWaypoint(object oNpc)
 {
     if (!GetIsObjectValid(oNpc))
@@ -75,20 +143,32 @@ object AL_ReactFindNearestSafeWaypoint(object oNpc)
     {
         if (GetArea(oWaypoint) == oArea)
         {
-            if (GetLocalInt(oWaypoint, "al_safe_wp") == TRUE)
+            if (AL_ReactIsSafeWaypoint(oWaypoint))
             {
+                SetLocalObject(oNpc, "al_safe_lookup_area", oArea);
+                SetLocalInt(oNpc, "al_safe_lookup_tick", GetLocalInt(oArea, "al_sync_tick"));
+                SetLocalObject(oNpc, "al_safe_lookup_wp", oWaypoint);
+                SetLocalInt(oNpc, "al_safe_lookup_miss", GetLocalInt(oNpc, "al_safe_lookup_miss") + 1);
                 return oWaypoint;
             }
 
             string sTag = GetTag(oWaypoint);
             if (FindSubString(sTag, "safe") >= 0 || FindSubString(sTag, "SAFE") >= 0)
             {
+                SetLocalObject(oNpc, "al_safe_lookup_area", oArea);
+                SetLocalInt(oNpc, "al_safe_lookup_tick", GetLocalInt(oArea, "al_sync_tick"));
+                SetLocalObject(oNpc, "al_safe_lookup_wp", oWaypoint);
+                SetLocalInt(oNpc, "al_safe_lookup_miss", GetLocalInt(oNpc, "al_safe_lookup_miss") + 1);
                 return oWaypoint;
             }
 
             string sName = GetName(oWaypoint);
             if (FindSubString(sName, "safe") >= 0 || FindSubString(sName, "SAFE") >= 0)
             {
+                SetLocalObject(oNpc, "al_safe_lookup_area", oArea);
+                SetLocalInt(oNpc, "al_safe_lookup_tick", GetLocalInt(oArea, "al_sync_tick"));
+                SetLocalObject(oNpc, "al_safe_lookup_wp", oWaypoint);
+                SetLocalInt(oNpc, "al_safe_lookup_miss", GetLocalInt(oNpc, "al_safe_lookup_miss") + 1);
                 return oWaypoint;
             }
         }
@@ -96,6 +176,11 @@ object AL_ReactFindNearestSafeWaypoint(object oNpc)
         nIndex = nIndex + 1;
         oWaypoint = GetNearestObject(OBJECT_TYPE_WAYPOINT, oNpc, nIndex);
     }
+
+    SetLocalObject(oNpc, "al_safe_lookup_area", oArea);
+    SetLocalInt(oNpc, "al_safe_lookup_tick", GetLocalInt(oArea, "al_sync_tick"));
+    DeleteLocalObject(oNpc, "al_safe_lookup_wp");
+    SetLocalInt(oNpc, "al_safe_lookup_miss", GetLocalInt(oNpc, "al_safe_lookup_miss") + 1);
 
     return OBJECT_INVALID;
 }
@@ -391,7 +476,7 @@ void AL_ReactCivilianResponse(object oNpc, object oSource)
 
     AssignCommand(oNpc, ActionSpeakString("Thief! Help!", TALKVOLUME_SHOUT));
 
-    object oSafe = AL_ReactResolveSafeWaypointInArea(oNpc, GetLocalString(oNpc, "al_safe_wp"));
+    object oSafe = AL_ReactResolveSafeWaypointInArea(oNpc, AL_ReactNpcSafeWaypointTag(oNpc));
     if (GetIsObjectValid(oSafe))
     {
         AssignCommand(oNpc, ActionMoveToObject(oSafe, TRUE, 1.5));
