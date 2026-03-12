@@ -10,6 +10,7 @@ const int AL_SIM_TIER_HOT = 2;
 const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
 const int AL_WP_CACHE_TTL_TICKS = 10;
+const int AL_SAFE_WP_CACHE_MAX = 32;
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
 
