@@ -24,7 +24,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from scripts.ambient_life.preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
+try:
+    from scripts.ambient_life.preflight_issue_utils import make_issue_context, render_issue_message
+except ImportError:
+    from preflight_issue_utils import make_issue_context, render_issue_message
 
 AL_ROUTE_MAX_STEPS = 16
 
@@ -46,7 +49,21 @@ class ValidationIssue:
     area_tag: str
     route_tag: str
     code: str
-    details: str
+    context: dict[str, Any]
+
+    @property
+    def details(self) -> str:
+        return render_issue_message(self.code, self.context)
+
+
+def _issue(*, level: str, area_tag: str, route_tag: str, code: str, details: str) -> ValidationIssue:
+    return ValidationIssue(
+        level=level,
+        area_tag=area_tag,
+        route_tag=route_tag,
+        code=code,
+        context=make_issue_context(details),
+    )
 
 
 def _read_input(path: Path) -> list[dict[str, Any]]:
@@ -66,7 +83,7 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
     if al_bed_id_raw is None:
         al_bed_id = ""
     elif not isinstance(al_bed_id_raw, str):
-        return None, ValidationIssue(
+        return None, _issue(
             level="ERROR",
             area_tag=area_tag or "<unknown-area>",
             route_tag=route_tag or "<unknown-route>",
@@ -77,8 +94,12 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
         al_bed_id = al_bed_id_raw.strip()
 
     if area_tag is None:
-        code = tag_error_code(area_tag_raw, missing_code="missing_area_tag", invalid_type_code="invalid_area_tag_type")
-        return None, ValidationIssue(
+        code = (
+            "missing_area_tag"
+            if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
+            else "invalid_area_tag_type"
+        )
+        return None, _issue(
             level="ERROR",
             area_tag="<unknown-area>",
             route_tag=route_tag or "<unknown-route>",
@@ -87,8 +108,12 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
         )
 
     if route_tag is None:
-        code = tag_error_code(route_tag_raw, missing_code="missing_route_tag", invalid_type_code="invalid_route_tag_type")
-        return None, ValidationIssue(
+        code = (
+            "missing_route_tag"
+            if route_tag_raw is None or (isinstance(route_tag_raw, str) and route_tag_raw.strip() == "")
+            else "invalid_route_tag_type"
+        )
+        return None, _issue(
             level="ERROR",
             area_tag=area_tag,
             route_tag="<unknown-route>",
@@ -102,7 +127,7 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
             missing_code="missing_waypoint_tag",
             invalid_type_code="invalid_waypoint_tag_type",
         )
-        return None, ValidationIssue(
+        return None, _issue(
             level="ERROR",
             area_tag=area_tag,
             route_tag=route_tag,
@@ -111,7 +136,7 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
         )
 
     if not is_strict_int(step_raw):
-        return None, ValidationIssue(
+        return None, _issue(
             level="ERROR",
             area_tag=area_tag,
             route_tag=route_tag,
@@ -142,7 +167,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
     for index, raw in enumerate(rows):
         if not isinstance(raw, dict):
             issues.append(
-                ValidationIssue(
+                _issue(
                     level="ERROR",
                     area_tag="<unknown-area>",
                     route_tag="<unknown-route>",
@@ -171,7 +196,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
         sleep_meta = _sleep_suffix(waypoint.waypoint_tag)
         if sleep_meta and waypoint.al_bed_id and waypoint.al_bed_id != sleep_meta[0]:
             issues.append(
-                ValidationIssue(
+                _issue(
                     level="ERROR",
                     area_tag=waypoint.area_tag,
                     route_tag=waypoint.route_tag,
@@ -191,7 +216,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
         for wp in waypoints:
             if wp.al_step < 0 or wp.al_step >= AL_ROUTE_MAX_STEPS:
                 issues.append(
-                    ValidationIssue(
+                    _issue(
                         level="ERROR",
                         area_tag=area_tag,
                         route_tag=route_tag,
@@ -203,7 +228,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
 
             if wp.al_step in step_to_waypoint:
                 issues.append(
-                    ValidationIssue(
+                    _issue(
                         level="ERROR",
                         area_tag=area_tag,
                         route_tag=route_tag,
@@ -226,7 +251,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
 
         if (valid_steps_mask & 1) == 0:
             issues.append(
-                ValidationIssue(
+                _issue(
                     level="ERROR",
                     area_tag=area_tag,
                     route_tag=route_tag,
@@ -240,7 +265,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             if (valid_steps_mask & (1 << expected)) == 0:
                 present_steps = [step for step in range(0, max_valid_step + 1) if (valid_steps_mask & (1 << step)) != 0]
                 issues.append(
-                    ValidationIssue(
+                    _issue(
                         level="ERROR",
                         area_tag=area_tag,
                         route_tag=route_tag,
@@ -257,7 +282,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
             issues.append(
-                ValidationIssue(
+                _issue(
                     level="ERROR",
                     area_tag=area_tag,
                     route_tag=route_tag,
@@ -276,7 +301,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
                 continue
 
             issues.append(
-                ValidationIssue(
+                _issue(
                     level="ERROR",
                     area_tag=sleep_step.area_tag,
                     route_tag=sleep_step.route_tag,
@@ -295,7 +320,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
             issues.append(
-                ValidationIssue(
+                _issue(
                     level="ERROR",
                     area_tag=area_tag,
                     route_tag="<sleep>",
@@ -312,7 +337,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
         ordered = ",".join(sorted(area_tags))
         for area_tag in sorted(area_tags):
             issues.append(
-                ValidationIssue(
+                _issue(
                     level="ERROR",
                     area_tag=area_tag,
                     route_tag="<sleep>",

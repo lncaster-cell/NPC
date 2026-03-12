@@ -18,11 +18,14 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from scripts.ambient_life.preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
+try:
+    from scripts.ambient_life.preflight_issue_utils import make_issue_context, render_issue_message
+except ImportError:
+    from preflight_issue_utils import make_issue_context, render_issue_message
 
 TARGET_DEGREE_MIN = 2
 TARGET_DEGREE_MAX = 4
@@ -37,7 +40,11 @@ class ValidationIssue:
     level: str
     area_tag: str
     code: str
-    reason: str
+    context: dict[str, Any]
+
+    @property
+    def reason(self) -> str:
+        return render_issue_message(self.code, self.context)
 
 
 def _read_input(path: Path) -> list[dict[str, Any]]:
@@ -55,7 +62,7 @@ def _extract_locals(raw: dict[str, Any]) -> tuple[dict[str, Any], bool]:
 
 
 def _append_issue(issues: list[ValidationIssue], level: str, area_tag: str, code: str, reason: str) -> None:
-    issues.append(ValidationIssue(level=level, area_tag=area_tag, code=code, reason=reason))
+    issues.append(ValidationIssue(level=level, area_tag=area_tag, code=code, context=make_issue_context(reason)))
 
 
 def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
@@ -198,7 +205,15 @@ def build_report(issues: list[ValidationIssue], sort_mode: str = "none") -> dict
     return {
         "status": "ERROR" if errors else "OK",
         "summary": {"errors": errors, "warnings": warns, "total": len(issues)},
-        "issues": [asdict(issue) for issue in ordered_issues],
+        "issues": [
+            {
+                "level": issue.level,
+                "area_tag": issue.area_tag,
+                "code": issue.code,
+                "reason": issue.reason,
+            }
+            for issue in sorted(issues, key=lambda i: (i.level, i.area_tag, i.code, i.reason))
+        ],
     }
 
 
