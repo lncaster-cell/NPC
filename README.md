@@ -105,9 +105,9 @@
 
 ## Границы Stage I.2
 
-- Crime/alarm работает только в пределах текущей area (без global/world alarm).
+- Crime/alarm работает только в пределах текущей area (без global/world alarm), с bounded nearby реакцией уже существующих NPC.
 - Используются уже существующие NPC в runtime-контексте; guard spawn/reinforcements не реализованы.
-- Surrender/arrest/trial не реализованы (оставлены future hooks).
+- Guard-path учитывает built-in hostility/faction NWN2; surrender/arrest/trial не реализованы (оставлены future hooks).
 - Ordinary Stage D/E/F/G/H flow остаётся default path вне локальных инцидентов.
 
 ## Структура репозитория
