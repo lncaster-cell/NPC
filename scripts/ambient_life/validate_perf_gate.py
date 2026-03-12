@@ -47,11 +47,35 @@ def load_baseline(path: Path) -> Dict[Tuple[str, str], float]:
     values: Dict[Tuple[str, str], float] = {}
     with path.open(newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
-        for row in reader:
-            key = (row["scenario"].strip(), row["metric"].strip())
+        required_fields = ("scenario", "metric", "baseline_value")
+        missing_fields = [field for field in required_fields if field not in (reader.fieldnames or [])]
+        if missing_fields:
+            raise ValidationError(
+                "Baseline CSV is missing required columns: " + ", ".join(missing_fields)
+            )
+
+        for idx, row in enumerate(reader, start=2):
+            scenario_raw = row.get("scenario")
+            metric_raw = row.get("metric")
+            baseline_raw = row.get("baseline_value")
+
+            scenario = str(scenario_raw).strip() if scenario_raw is not None else ""
+            metric = str(metric_raw).strip() if metric_raw is not None else ""
+            if not scenario:
+                raise ValidationError(f"Baseline CSV row {idx}: missing value for 'scenario'")
+            if not metric:
+                raise ValidationError(f"Baseline CSV row {idx}: missing value for 'metric'")
+
+            key = (scenario, metric)
             if key[1] not in REQUIRED_METRICS:
                 continue
-            values[key] = _to_float(row["baseline_value"], "baseline_value", *key)
+
+            if baseline_raw in (None, ""):
+                raise ValidationError(
+                    f"Baseline CSV row {idx}: missing value for 'baseline_value' in {scenario}/{metric}"
+                )
+
+            values[key] = _to_float(str(baseline_raw), "baseline_value", *key)
 
     missing = [f"{s}/{m}" for s in REQUIRED_SCENARIOS for m in REQUIRED_METRICS if (s, m) not in values]
     if missing:
@@ -72,10 +96,19 @@ def _normalize_rows_json(raw: object) -> List[dict]:
 def load_report(path: Path) -> Dict[Tuple[str, str], dict]:
     ext = path.suffix.lower()
     rows: Iterable[dict]
+    strict_csv = False
 
     if ext == ".csv":
         with path.open(newline="", encoding="utf-8") as f:
-            rows = list(csv.DictReader(f))
+            reader = csv.DictReader(f)
+            required_fields = ("scenario", "metric", "after_value")
+            missing_fields = [field for field in required_fields if field not in (reader.fieldnames or [])]
+            if missing_fields:
+                raise ValidationError(
+                    "Report CSV is missing required columns: " + ", ".join(missing_fields)
+                )
+            rows = list(reader)
+            strict_csv = True
     elif ext == ".json":
         with path.open(encoding="utf-8") as f:
             rows = _normalize_rows_json(json.load(f))
@@ -83,13 +116,25 @@ def load_report(path: Path) -> Dict[Tuple[str, str], dict]:
         raise ValidationError("Unsupported report format. Use .csv or .json")
 
     parsed: Dict[Tuple[str, str], dict] = {}
-    for row in rows:
-        scenario = str(row.get("scenario", "")).strip()
-        metric = str(row.get("metric", "")).strip()
+    for idx, row in enumerate(rows, start=2):
+        scenario_raw = row.get("scenario")
+        metric_raw = row.get("metric")
+
+        scenario = str(scenario_raw).strip() if scenario_raw is not None else ""
+        metric = str(metric_raw).strip() if metric_raw is not None else ""
+
+        if strict_csv and not scenario:
+            raise ValidationError(f"Report CSV row {idx}: missing value for 'scenario'")
+        if strict_csv and not metric:
+            raise ValidationError(f"Report CSV row {idx}: missing value for 'metric'")
+
+        after_raw = row.get("after_value")
+        if strict_csv and after_raw in (None, ""):
+            raise ValidationError(f"Report CSV row {idx}: missing value for 'after_value'")
+
         if scenario not in REQUIRED_SCENARIOS or metric not in REQUIRED_METRICS:
             continue
 
-        after_raw = row.get("after_value")
         if after_raw in (None, ""):
             raise ValidationError(f"Missing after_value for {scenario}/{metric}")
         after_value = _to_float(str(after_raw), "after_value", scenario, metric)
