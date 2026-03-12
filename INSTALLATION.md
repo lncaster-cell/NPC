@@ -1,67 +1,58 @@
-# Установка Ambient Life v2 (актуальная)
+# Установка и подключение Ambient Life v2
 
-## 1. Импорт скриптов
+## 1) Импорт скриптов
 
-Импортируйте **все** `.nss` из `scripts/ambient_life/` в модуль NWN2 и скомпилируйте.
+Импортируйте и скомпилируйте все `.nss` из `scripts/ambient_life/`.
 
-## 2. Привязка entry scripts
+## 2) Привязка entry scripts
 
 ### Area
 - `OnEnter` → `al_area_onenter`
 - `OnExit` → `al_area_onexit`
-- `OnHeartbeat` / area tick hook → `al_area_tick` (если в модуле это отдельный entry)
+- `OnHeartbeat` (или отдельный area tick hook) → `al_area_tick`
 
 ### Module
 - `OnClientLeave` → `al_mod_onleave`
 
-### NPC (шаблон/экземпляр)
+### NPC
 - `OnSpawn` → `al_npc_onspawn`
 - `OnDeath` → `al_npc_ondeath`
 - `OnUserDefined` → `al_npc_onud`
 - `OnBlocked` → `al_npc_onblocked`
 - `OnDisturbed` → `al_npc_ondisturbed`
 
-## 3. Базовая настройка area locals
+## 3) Обязательная настройка контента
 
-На area:
-- `al_link_count` и `al_link_0..N` — опционально для WARM-подогрева linked areas.
+### NPC
+- `alwp0..alwp5` — route tag по 6 слотам суток.
+- `al_default_activity` — fallback activity.
 
-Runtime сам ведёт:
-- `al_player_count`, `al_tick_token`, `al_slot`, `al_sync_tick`, `al_warm_until_sync`, `al_sim_tier`, `al_npc_count`, `al_npc_<idx>`.
+(Опционально для legacy-контента: `AL_WP_S0..AL_WP_S5`.)
 
-## 4. Базовая настройка NPC locals
+### Waypoint (обычные шаги)
+- `al_step` (int, >=0)
+- `al_activity` (int, optional)
+- `al_dur_sec` (int, optional)
 
-Минимум:
-- `alwp0..alwp5` — теги маршрутов на слоты суток;
-- `al_default_activity` — fallback activity id.
+### Waypoint (спец-шаги)
+- transition: `al_trans_type`, `al_trans_src_wp`, `al_trans_dst_wp`
+- sleep: `al_bed_id` + waypoint tags `{bed}_approach`, `{bed}_pose`
 
-Опционально для совместимости старых конфигов:
-- `AL_WP_S0..AL_WP_S5`.
+### Area (опционально)
+- `al_link_count`
+- `al_link_0..N`
 
-## 5. Настройка waypoint шагов маршрута
+## 4) Smoke-check после подключения
 
-Для каждого waypoint шага:
-- `al_step` (int, >= 0);
-- `al_activity` (int, optional, иначе берётся `al_default_activity` NPC);
-- `al_dur_sec` (int, optional).
+1. Войти игроком в area с настроенными NPC.
+2. Проверить запуск `RESYNC` и старт routine.
+3. Сменить время на следующий 4-часовой слот — routine должен переключиться.
+4. Проверить blocked-кейс (дверь/проход) — должен отработать resume/resync.
+5. Проверить disturbed-кейс (инвентарь/кража) — bounded-реакция с возвратом к routine.
 
-Спец-шаги:
-- transition: `al_trans_type`, `al_trans_src_wp`, `al_trans_dst_wp`;
-- sleep: `al_bed_id` (+ `{bed}_approach`, `{bed}_pose` waypoint tags).
+## 5) Типичные проблемы
 
-Полный список и правила — в `docs/TOOLSET_CONTRACT.md`.
-
-## 6. Smoke check
-
-1. Зайдите игроком в область с настроенными NPC.
-2. Убедитесь, что при входе идёт `RESYNC` и NPC начинают routine.
-3. Поменяйте игровое время на следующий 4-часовой слот — NPC должны перезапустить routine для нового маршрута.
-4. Проверьте blocked кейс (дверь): должен сработать door-first и resume.
-5. Проверьте disturbed кейс (добавление/кража предмета): реакция bounded, затем возврат в routine.
-
-## 7. Частые ошибки
-
-- Не назначен `OnUserDefined` у NPC → система почти «молчит».
-- Не задан `al_step` у waypoint → шаг игнорируется в cache build.
-- Маршрутный tag существует в другой area → шаги отфильтровываются.
-- Переполнение area-реестра (`>100`) → лишние NPC не регистрируются.
+- Нет `OnUserDefined` у NPC — core-логика не исполняется.
+- Не задан `al_step` у waypoint — шаг не попадает в route cache.
+- Route tag указывает на waypoint в другой area — шаги фильтруются, возможен fallback.
+- В area больше 100 NPC — часть NPC не регистрируется в runtime.
