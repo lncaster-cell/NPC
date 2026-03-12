@@ -104,6 +104,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
     grouped: dict[tuple[str, str], list[Waypoint]] = defaultdict(list)
     route_to_areas: dict[str, set[str]] = defaultdict(set)
     area_waypoint_tags: dict[str, set[str]] = defaultdict(set)
+    route_waypoint_tags: dict[tuple[str, str], set[str]] = defaultdict(set)
     waypoint_tag_to_areas: dict[str, set[str]] = defaultdict(set)
     bed_id_to_areas: dict[str, set[str]] = defaultdict(set)
     sleep_steps: list[Waypoint] = []
@@ -130,6 +131,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
         grouped[(waypoint.area_tag, waypoint.route_tag)].append(waypoint)
         route_to_areas[waypoint.route_tag].add(waypoint.area_tag)
         area_waypoint_tags[waypoint.area_tag].add(waypoint.waypoint_tag)
+        route_waypoint_tags[(waypoint.area_tag, waypoint.route_tag)].add(waypoint.waypoint_tag)
         waypoint_tag_to_areas[waypoint.waypoint_tag].add(waypoint.area_tag)
 
         if waypoint.al_bed_id:
@@ -236,7 +238,7 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             f"{sleep_step.al_bed_id}_pose",
         )
         for expected_tag in expected_tags:
-            if expected_tag in area_waypoint_tags[sleep_step.area_tag]:
+            if expected_tag in route_waypoint_tags[(sleep_step.area_tag, sleep_step.route_tag)]:
                 continue
 
             issues.append(
