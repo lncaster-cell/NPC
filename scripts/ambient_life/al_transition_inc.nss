@@ -8,6 +8,7 @@
 #include "al_area_inc"
 #include "al_activity_inc"
 #include "al_events_inc"
+#include "al_registry_inc"
 
 const int AL_TRANSITION_NONE = 0;
 const int AL_TRANSITION_AREA_HELPER = 1;
@@ -71,6 +72,24 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
     return TRUE;
 }
 
+
+void AL_TransitionPostAreaHelper(object oNpc, object oFromArea)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    object oToArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oToArea))
+    {
+        return;
+    }
+
+    AL_TransferNPCRegistry(oNpc, oFromArea, oToArea);
+    SignalEvent(oNpc, EventUserDefined(AL_EVENT_RESYNC));
+}
+
 int AL_TransitionQueueAreaHelper(object oNpc, object oStep, object oSrc, object oDst)
 {
     object oArea = GetArea(oNpc);
@@ -100,8 +119,8 @@ int AL_TransitionQueueAreaHelper(object oNpc, object oStep, object oSrc, object 
     ClearAllActions(TRUE);
     ActionMoveToObject(oSrc, TRUE, 1.5);
     ActionJumpToLocation(GetLocation(oDst));
+    ActionDoCommand(AL_TransitionPostAreaHelper(oNpc, oArea));
     AL_ActivityApplyStep(oNpc, nActivity, nDur);
-    ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
 
     return TRUE;
 }
