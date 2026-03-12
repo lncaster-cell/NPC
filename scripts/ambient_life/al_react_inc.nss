@@ -61,14 +61,31 @@ object AL_ReactFindNearestSafeWaypoint(object oNpc)
         return OBJECT_INVALID;
     }
 
+    object oCached = AL_FindNearestSafeWaypointFromCache(oNpc);
+    if (GetIsObjectValid(oCached))
+    {
+        return oCached;
+    }
+
     int nIndex = 1;
     object oWaypoint = GetNearestObject(OBJECT_TYPE_WAYPOINT, oNpc, nIndex);
     while (GetIsObjectValid(oWaypoint) && nIndex <= 24)
     {
         if (GetArea(oWaypoint) == oArea)
         {
+            if (GetLocalInt(oWaypoint, "al_safe_wp") == TRUE)
+            {
+                return oWaypoint;
+            }
+
             string sTag = GetTag(oWaypoint);
             if (FindSubString(sTag, "safe") >= 0 || FindSubString(sTag, "SAFE") >= 0)
+            {
+                return oWaypoint;
+            }
+
+            string sName = GetName(oWaypoint);
+            if (FindSubString(sName, "safe") >= 0 || FindSubString(sName, "SAFE") >= 0)
             {
                 return oWaypoint;
             }
