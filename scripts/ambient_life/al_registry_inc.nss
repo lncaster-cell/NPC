@@ -5,6 +5,8 @@ const int AL_MAX_NPCS_MIN = 20;
 const int AL_MAX_NPCS_MAX = 200;
 const int AL_REG_COMPACT_MIN_SYNC_TICKS = 4;
 const int AL_REG_COMPACT_METRICS_WINDOW_TICKS = 100;
+const int AL_REG_MAINTENANCE_PERIOD_TICKS = 5;
+const int AL_REG_MAINTENANCE_MAX_CHECKS_PER_STEP = 6;
 
 int AL_GetEffectiveNpcCap(object oArea)
 {
@@ -114,6 +116,18 @@ int AL_FindNPCInRegistry(object oArea, object oNpc)
     SetLocalInt(oArea, "al_reg_reverse_miss", GetLocalInt(oArea, "al_reg_reverse_miss") + 1);
     SetLocalInt(oArea, "al_reg_index_miss", GetLocalInt(oArea, "al_reg_index_miss") + 1);
 
+    int bReverseMissing = (nReverseIdx < 0);
+    if (bReverseMissing)
+    {
+        SetLocalInt(oArea, "al_reg_index_miss_cold_start", GetLocalInt(oArea, "al_reg_index_miss_cold_start") + 1);
+        SetLocalString(oArea, "al_reg_index_miss_last_type", "cold-start");
+    }
+    else
+    {
+        SetLocalInt(oArea, "al_reg_index_miss_stale", GetLocalInt(oArea, "al_reg_index_miss_stale") + 1);
+        SetLocalString(oArea, "al_reg_index_miss_last_type", "stale");
+    }
+
     int nCount = GetLocalInt(oArea, "al_npc_count");
     int i = 0;
 
@@ -121,6 +135,7 @@ int AL_FindNPCInRegistry(object oArea, object oNpc)
     {
         if (GetLocalObject(oArea, AL_RegKey(i)) == oNpc)
         {
+            // Miss был отработан fallback-ом: сразу восстанавливаем reverse-index.
             AL_RegReverseSet(oArea, oNpc, i);
             SetLocalObject(oNpc, "al_reg_area", oArea);
             SetLocalInt(oNpc, "al_reg_idx", i);
@@ -129,7 +144,70 @@ int AL_FindNPCInRegistry(object oArea, object oNpc)
         i = i + 1;
     }
 
+    // Reverse lookup не сошёлся и линейный fallback тоже не нашёл запись.
+    SetLocalInt(oArea, "al_reg_index_miss_orphan", GetLocalInt(oArea, "al_reg_index_miss_orphan") + 1);
+    SetLocalString(oArea, "al_reg_index_miss_last_type", "orphan");
+
     return -1;
+}
+
+void AL_RegistryMaintenanceStep(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    if (nSyncTick <= 0 || (nSyncTick % AL_REG_MAINTENANCE_PERIOD_TICKS) != 0)
+    {
+        return;
+    }
+
+    int nCount = GetLocalInt(oArea, "al_npc_count");
+    if (nCount <= 0)
+    {
+        SetLocalInt(oArea, "al_reg_maint_cursor", 0);
+        return;
+    }
+
+    int nCursor = GetLocalInt(oArea, "al_reg_maint_cursor");
+    if (nCursor < 0 || nCursor >= nCount)
+    {
+        nCursor = 0;
+    }
+
+    int nChecked = 0;
+    int nFixed = 0;
+
+    while (nChecked < AL_REG_MAINTENANCE_MAX_CHECKS_PER_STEP && nCursor < nCount)
+    {
+        object oNpc = GetLocalObject(oArea, AL_RegKey(nCursor));
+        if (AL_IsRuntimeNpc(oNpc) && GetArea(oNpc) == oArea)
+        {
+            int nReverseIdx = AL_RegReverseGet(oArea, oNpc);
+            if (nReverseIdx != nCursor)
+            {
+                AL_RegReverseSet(oArea, oNpc, nCursor);
+                nFixed = nFixed + 1;
+            }
+        }
+
+        nCursor = nCursor + 1;
+        nChecked = nChecked + 1;
+    }
+
+    if (nCursor >= nCount)
+    {
+        nCursor = 0;
+    }
+
+    SetLocalInt(oArea, "al_reg_maint_cursor", nCursor);
+    SetLocalInt(oArea, "al_reg_maint_checks", GetLocalInt(oArea, "al_reg_maint_checks") + nChecked);
+    SetLocalInt(oArea, "al_reg_maint_fixups", GetLocalInt(oArea, "al_reg_maint_fixups") + nFixed);
+    SetLocalInt(oArea, "al_reg_maint_last_checked", nChecked);
+    SetLocalInt(oArea, "al_reg_maint_last_fixed", nFixed);
+    SetLocalInt(oArea, "al_reg_maint_last_tick", nSyncTick);
 }
 
 int AL_UnregisterNPCFromArea(object oNpc, object oArea)

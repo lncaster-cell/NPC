@@ -164,8 +164,8 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 | `al_reg_overflow_count` | warn: `1`, critical: `>=2` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | Переполнение registry недопустимо в baseline, в stress — сигнал дефицита ёмкости. |
 | `al_route_overflow_count` | warn: `1`, critical: `>=2` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | Переполнение route-cache/route-пула: риск деградации маршрутизации и повторных rebuild. |
 | `al_h_recent_resync` | warn: `3..4`, critical: `>=5` | warn: `3..5`, critical: `>=6` | warn: `4..7`, critical: `>=8` | Частые resync без явных контентных причин — симптом нестабильности состояния NPC. |
-| `al_h_reg_index_miss_delta` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..3`, critical: `>=4` | Пер-тиковый рост miss-дельты показывает кратковременные всплески рассинхрона reverse-index. |
-| `al_h_reg_index_miss_window_delta` | warn: `1..2`, critical: `>=3` | warn: `1..3`, critical: `>=4` | warn: `2..4`, critical: `>=5` | Рост miss-дельты в окне означает рассинхрон reverse-index: реестр чаще уходит в линейный поиск. |
+| `al_h_reg_index_miss_delta` | warn: `2`, critical: `>=3` | warn: `2..3`, critical: `>=4` | warn: `3..4`, critical: `>=5` | Пер-тиковый рост miss-дельты теперь включает self-heal miss-ы (cold-start/stale); одиночные события чаще допустимы. |
+| `al_h_reg_index_miss_window_delta` | warn: `2..3`, critical: `>=4` | warn: `2..4`, critical: `>=5` | warn: `3..5`, critical: `>=6` | Рост miss-дельты в окне отражает профиль cold-start+stale; orphan miss должен оставаться редким. |
 
 Правило статуса:
 - `OK` — значение ниже warn-порога;
@@ -183,9 +183,9 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 Для `*_overflow*` дополнительно фиксируйте и в комментарии, и в выводе отчёта факт роста (`0 -> N`), даже если значение пока в зоне `WARN`.
 
 Для `al_h_reg_index_miss_delta` и `al_h_reg_index_miss_window_delta` операторские действия при росте:
-- `OK`: фиксировать в отчёте как «без роста miss-дельты», продолжать прогон.
-- `WARN`: сохранить 20-тиковое окно, приложить `[AL][RegIndexMiss]`-логи и проверить, что у NPC/area не теряются `al_reg_area`/`al_reg_idx`.
-- `CRITICAL`: остановить perf-сравнение как нестабильное, выполнить triage реестра (компактация/перерегистрация NPC, проверка массовых transition), затем повторить прогон.
+- `OK`: фиксировать в отчёте как «допустимый self-heal профиль». Если miss_type=`cold-start`/`stale` и `orphan=0`, прогон продолжается.
+- `WARN`: сохранить 20-тиковое окно и приложить `[AL][RegIndexMiss]`-логи с полями `miss_type`, `cold`, `stale`, `orphan`; проверить, что orphan-вклад не доминирует.
+- `CRITICAL`: остановить perf-сравнение как нестабильное, выполнить triage реестра (компактация/перерегистрация NPC, проверка массовых transition). Если `miss_type=orphan`, эскалировать как инцидент консистентности idx<->rev.
 
 ### Целевые пороги «до/после» для dispatch-degradation (обязательно для PR)
 

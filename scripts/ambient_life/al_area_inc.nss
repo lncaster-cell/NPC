@@ -830,6 +830,7 @@ void AL_AreaTick(object oArea, int nToken)
         }
     }
 
+    AL_RegistryMaintenanceStep(oArea);
     AL_UpdateAreaHealthSnapshot(oArea);
 
     AL_ScheduleAreaTick(oArea, nToken);
