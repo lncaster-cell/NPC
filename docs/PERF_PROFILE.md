@@ -39,6 +39,12 @@
 - `al_h_reg_index_miss_window_delta` должен оставаться на уровне `<=1` для S80/S100 и `<=2` для S120;
 - при включённом debug допускаются только threshold/throttled-сообщения `[AL][RegistryMissRate]` (без per-miss spam).
 
+Целевой эффект для оптимизации cache lookup fast-accessor + per-tag/per-tick validation guard:
+
+- в сценах `S80/S100/S120` ожидается снижение `al_dispatch_ticks_to_drain` и/или `al_cache_miss` относительно baseline;
+- если `al_cache_miss` не снижается, необходимо объяснить контентные причины (например, churn waypoint-объектов в окне замера);
+- рост `al_cache_miss` без обоснования считается регрессией perf-gate.
+
 ## 2) Обязательные метрики (must-have)
 
 Во всех отчётах фиксируются следующие метрики:
