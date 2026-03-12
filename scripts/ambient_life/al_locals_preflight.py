@@ -88,7 +88,7 @@ def _is_non_empty_string(value: Any) -> bool:
     return isinstance(value, str) and value.strip() != ""
 
 
-def _validate_npcs(rows: list[Any], issues: list[ValidationIssue]) -> None:
+def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[ValidationIssue]) -> None:
     for index, row in enumerate(rows):
         if not isinstance(row, dict):
             _append_issue(issues, "ERROR", "npc", f"<idx:{index}>", "invalid_row_type", f"expected object, got {type(row).__name__}")
@@ -124,9 +124,27 @@ def _validate_npcs(rows: list[Any], issues: list[ValidationIssue]) -> None:
 
             if _is_non_empty_string(primary_val):
                 has_primary_route = True
+                if primary_val not in known_route_tags:
+                    _append_issue(
+                        issues,
+                        "ERROR",
+                        "npc",
+                        npc_tag,
+                        "unknown_route_tag_ref",
+                        f"slot={primary_key} references unknown route tag {primary_val!r}",
+                    )
             if _is_non_empty_string(legacy_val):
                 has_legacy_route = True
                 _append_issue(issues, "WARN", "npc", npc_tag, "legacy_route_alias_in_use", f"{legacy_key} is used")
+                if legacy_val not in known_route_tags:
+                    _append_issue(
+                        issues,
+                        "ERROR",
+                        "npc",
+                        npc_tag,
+                        "unknown_route_tag_ref",
+                        f"slot={legacy_key} references unknown route tag {legacy_val!r}",
+                    )
 
             if _is_non_empty_string(primary_val) and _is_non_empty_string(legacy_val) and primary_val != legacy_val:
                 _append_issue(
@@ -286,7 +304,15 @@ def validate_locals(payload: dict[str, Any]) -> list[ValidationIssue]:
         _append_issue(issues, "ERROR", "payload", "areas", "invalid_collection_type", "areas must be array")
         areas = []
 
-    _validate_npcs(npcs, issues)
+    known_route_tags = {
+        route_tag.strip()
+        for row in waypoints
+        if isinstance(row, dict)
+        for route_tag in (row.get("route_tag"),)
+        if isinstance(route_tag, str) and route_tag.strip() != ""
+    }
+
+    _validate_npcs(npcs, known_route_tags, issues)
     _validate_waypoints(waypoints, issues)
     _validate_areas(areas, issues)
 
