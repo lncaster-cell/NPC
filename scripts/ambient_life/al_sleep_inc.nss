@@ -4,25 +4,12 @@
 #include "al_area_inc"
 #include "al_events_inc"
 
-const int AL_SLEEP_PHASE_NONE = 0;
-const int AL_SLEEP_PHASE_PLACE = 1;
-const int AL_SLEEP_PHASE_APPROACH = 2;
-const int AL_SLEEP_PHASE_POSE = 3;
-
-string AL_SleepRtActiveKey() { return "al_sleep_rt_active"; }
-string AL_SleepRtBedIdKey() { return "al_sleep_rt_bed_id"; }
-string AL_SleepRtPhaseKey() { return "al_sleep_rt_phase"; }
-
 void AL_SleepRuntimeClear(object oNpc)
 {
     if (!GetIsObjectValid(oNpc))
     {
         return;
     }
-
-    SetLocalInt(oNpc, AL_SleepRtActiveKey(), FALSE);
-    SetLocalInt(oNpc, AL_SleepRtPhaseKey(), AL_SLEEP_PHASE_NONE);
-    DeleteLocalString(oNpc, AL_SleepRtBedIdKey());
 }
 
 int AL_SleepIsStep(object oStep)
@@ -73,10 +60,6 @@ int AL_SleepQueueOnPlace(object oNpc, int nDurSec)
     ActionDoCommand(SetLocalString(oNpc, "al_mode", "sleep"));
     ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
 
-    SetLocalInt(oNpc, AL_SleepRtActiveKey(), TRUE);
-    SetLocalInt(oNpc, AL_SleepRtPhaseKey(), AL_SLEEP_PHASE_PLACE);
-    DeleteLocalString(oNpc, AL_SleepRtBedIdKey());
-
     return TRUE;
 }
 
@@ -115,14 +98,9 @@ int AL_SleepQueueFromStep(object oNpc, object oStep)
     ClearAllActions(TRUE);
     ActionMoveToObject(oApproach, TRUE, 1.5);
     ActionJumpToLocation(GetLocation(oPose));
-    ActionDoCommand(SetLocalInt(oNpc, AL_SleepRtPhaseKey(), AL_SLEEP_PHASE_POSE));
     ActionWait(IntToFloat(nDur));
     ActionDoCommand(SetLocalString(oNpc, "al_mode", "sleep"));
     ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
-
-    SetLocalInt(oNpc, AL_SleepRtActiveKey(), TRUE);
-    SetLocalInt(oNpc, AL_SleepRtPhaseKey(), AL_SLEEP_PHASE_APPROACH);
-    SetLocalString(oNpc, AL_SleepRtBedIdKey(), sBedId);
 
     return TRUE;
 }
