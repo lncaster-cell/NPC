@@ -70,12 +70,16 @@ Crime/alarm на Stage I.2 намеренно **не** добавляет нов
 - Dispatch использует приоритеты:
   - `critical`: `ROUTE_REPEAT`, `BLOCKED_RESUME`;
   - `normal`: slot events + `RESYNC`.
-- Планировщик применяет critical-burst quota (несколько critical подряд), после чего гарантирует выполнение normal-события при наличии очереди normal (anti-starvation).
+- На каждом dispatch-тик вычисляется `drain_budget`: базовый для normal/critical, с backlog-boost при превышении порога backlog и с мягким cap для `WARM`-tier.
+- Планировщик применяет critical-burst quota (несколько critical подряд), после чего принудительно даёт пройти normal-событию (как минимум одному при наличии normal-очереди) — anti-starvation.
 - Введён cycle-guard на ключе `(event + cycle key)`: повторный старт одинакового цикла не допускается, дубликаты в active/queued состоянии отбрасываются.
 - Метрики runtime-loop для диагностики шины:
   - `al_dispatch_queue_depth` — текущая глубина (active + queued);
   - `al_dispatch_ticks_to_drain` — ticks до полного опустошения очереди за последний цикл drain;
-  - `al_dispatch_max_backlog` — максимальный observed backlog за lifetime area.
+  - `al_dispatch_max_backlog` — максимальный observed backlog за lifetime area;
+  - `al_dispatch_budget_current` — текущий drain budget для активного dispatch-тика;
+  - `al_dispatch_processed_tick` — число NPC-событий, обработанных в текущем dispatch-тике;
+  - `al_dispatch_backlog_before` / `al_dispatch_backlog_after` — backlog до и после обработки dispatch-тика.
 
 
 ### 4.2 Area health snapshot locals
