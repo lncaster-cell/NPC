@@ -91,6 +91,15 @@ void AL_OnNpcUserDefined(object oNpc)
 void AL_OnNpcSpawn(object oNpc)
 {
     AL_RegisterNPC(oNpc);
+
+    object oArea = GetArea(oNpc);
+    if (GetIsObjectValid(oArea) && GetLocalInt(oArea, "al_sim_tier") == AL_SIM_TIER_HOT)
+    {
+        int nSlot = GetLocalInt(oArea, "al_slot");
+        SetLocalInt(oNpc, "al_last_slot", nSlot);
+        AL_RouteRoutineStart(oNpc, nSlot, FALSE);
+    }
+
     AL_RouteBlockedRuntimeReset(oNpc);
     SetLocalString(oNpc, "al_mode", "idle");
 }
