@@ -14,3 +14,4 @@
 - [ ] **Perf gate passed** для PR с изменениями в `scripts/ambient_life/al_*`:
   - [ ] CI job `Ambient Life Perf Gate` зелёный;
   - [ ] заполнен machine-readable отчёт (`docs/perf/baselines/perf_gate_report.csv` или `.json`) и валидирован скриптом `scripts/ambient_life/validate_perf_gate.py`.
+- [ ] К PR приложен preflight summary из `scripts/ambient_life/run_preflight_suite.py` (JSON или text), подтверждающий актуальное состояние route/link/locals.

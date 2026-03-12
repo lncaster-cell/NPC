@@ -1,12 +1,18 @@
 # PERF Runbook (Ambient Life)
 
-## 0) Обязательный preflight: оффлайн-валидатор route-разметки
+## 0) Обязательный preflight: единый preflight-suite (route/link/locals)
 
-Перед **каждым** perf-прогоном (S80/S100/S120) оператор обязан прогнать оффлайн-валидатор:
+Перед **каждым** perf-прогоном (S80/S100/S120) оператор обязан прогнать единый preflight-suite:
 
 ```bash
-python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.json>
+python3 scripts/ambient_life/run_preflight_suite.py \
+  --route-input <path/to/waypoints.json> \
+  --link-input <path/to/areas_links.json> \
+  --locals-input <path/to/locals_payload.json> \
+  --format text
 ```
+
+Альтернативно для CI/артефактов используйте `--format json`.
 
 Требования к входному JSON:
 - корень: либо массив waypoint-объектов, либо объект с ключом `waypoints`;
@@ -20,12 +26,12 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 - дубликаты `al_step` внутри `(area_tag, route_tag)`;
 - area consistency: один `route_tag` не должен одновременно жить в нескольких `area_tag`.
 
-Формат отчёта: одна строка на проблему с обязательной привязкой `area=<area_tag>` и `route=<route_tag>`,
-чтобы контент-команда могла исправить данные до запуска сценариев S80/S100/S120.
+Формат отчёта suite: единый JSON + человекочитаемый summary, каждая проблема содержит `severity` (`error/warn/info`) и `path` к объекту (`area:<tag>/route:<tag>`, `area:<tag>`, `npc:<tag>` и т.д.), чтобы контент-команда могла быстро исправить данные.
 
 Политика gate:
-- если есть `[ERROR]` — perf-прогон блокируется;
-- если есть только `[WARN]` — требуется ручной triage, но запуск допускается.
+- если есть `severity=error` — preflight считается "грязным", perf-прогон блокируется;
+- если есть только `warn/info` — требуется ручной triage, но запуск допускается.
+- **Любые perf-замеры считаются валидными только после "чистого" preflight (без `error`).**
 
 Цель: дать **воспроизводимый** протокол производственных perf-прогонов для сравнения «до/после» изменений в `scripts/ambient_life/*`.
 
