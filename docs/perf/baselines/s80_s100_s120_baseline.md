@@ -1,4 +1,7 @@
 # S80/S100/S120 baseline (operator view)
+<!-- DOCSYNC:2026-03-12 -->
+> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+
 
 Источник истины для автоматизации: `docs/perf/baselines/s80_s100_s120_baseline.csv`.
 
