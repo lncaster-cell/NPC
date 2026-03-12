@@ -1,54 +1,46 @@
-# Ambient Life v2 (NWN2)
+# NPC Ambient Life v2 (NWN2)
 
-Актуальный статус репозитория: **Stages A–I.1 реализованы в коде**.
+Система событийной симуляции NPC без heartbeat/polling на каждом NPC.
 
-Этот README — короткая «точка входа» для разработчика и билдера модуля. Подробные контракты вынесены в `docs/`.
+## Текущий статус
 
-## Что это
-
-Ambient Life v2 — событийная система поведения NPC для NWN2 без heartbeat/polling.
-
-Ключевые свойства текущей реализации:
-- плотный area-регистр NPC (`al_npc_0..N`) с лимитом `AL_MAX_NPCS = 100`;
-- area-driven runtime с LOD-режимами `FREEZE/WARM/HOT`;
-- тик области только по токену и только через единый loop (`DelayCommand`);
-- смена поведения через user-defined события;
-- маршруты по слотам времени (0..5), bounded routine execution;
-- поддержка transition-step, sleep-step, OnBlocked, OnDisturbed (I.1 foundation).
-
-## Реализованные стадии
-
-- **A**: архитектурные контракты;
-- **B**: event-bus + плотный реестр;
-- **C**: area lifecycle, tier policy, linked areas warm retention;
-- **D/E**: route cache и bounded routine progression;
-- **F**: transition subsystem (area helper / intra teleport);
-- **G**: sleep runtime;
-- **H**: canonical activity semantics;
-- **I.0**: local OnBlocked door-first resume;
-- **I.1**: OnDisturbed inventory/theft foundation.
+Репозиторий содержит рабочую реализацию **Stages A–I.1**:
+- A: базовая архитектура и контракты;
+- B: event bus + плотный area-регистр;
+- C: lifecycle области и LOD-tier модель FREEZE/WARM/HOT;
+- D/E: route cache и bounded routine progression;
+- F: transition steps;
+- G: sleep steps;
+- H: activity semantics;
+- I.0: локальная реакция на OnBlocked;
+- I.1: foundation для OnDisturbed (inventory/theft).
 
 ## Быстрый старт
 
-1. Импортируйте все скрипты из `scripts/ambient_life`.
-2. Подключите entry-скрипты к событиям area/module/NPC (см. `INSTALLATION.md`).
-3. Проставьте locals NPC/waypoint/area по `docs/TOOLSET_CONTRACT.md`.
-4. Проверьте smoke-сценарий из `TASKS.md`.
+1. Импортировать все скрипты из `scripts/ambient_life/` в модуль.
+2. Привязать entry scripts (см. `INSTALLATION.md`).
+3. Настроить locals у NPC/waypoints/areas (см. `docs/TOOLSET_CONTRACT.md`).
+4. Пройти smoke-check из `TASKS.md`.
 
-## Основные runtime-константы (по коду)
+## Ключевые runtime-константы
 
-- area tick: `AL_AREA_TICK_SEC = 30.0`;
-- слот времени: `GetTimeHour() / 4` (6 слотов);
-- события шины: `AL_EVENT_SLOT_0..5 = 3100..3105`, `AL_EVENT_RESYNC = 3106`, `AL_EVENT_ROUTE_REPEAT = 3107`, `AL_EVENT_BLOCKED_RESUME = 3108`;
-- лимит реестра: `AL_MAX_NPCS = 100`.
+- `AL_AREA_TICK_SEC = 30.0`
+- `AL_MAX_NPCS = 100`
+- `AL_ROUTE_MAX_STEPS = 16`
+- события шины: `AL_EVENT_SLOT_0..5 = 3100..3105`, `AL_EVENT_RESYNC = 3106`, `AL_EVENT_ROUTE_REPEAT = 3107`, `AL_EVENT_BLOCKED_RESUME = 3108`
 
 ## Структура репозитория
 
-- `scripts/ambient_life/` — runtime-код NWScript;
-- `docs/ARCHITECTURE.md` — архитектура и границы подсистем;
-- `docs/TOOLSET_CONTRACT.md` — канонический контракт locals;
-- `docs/IMPLEMENTATION_ROADMAP.md` — статус стадий и следующие шаги;
-- `INSTALLATION.md` — практическая настройка в toolset;
-- `AUDIT.md` — актуальные риски и технический долг;
-- `TASKS.md` — приоритетный рабочий backlog;
-- `REPORT.md` — короткий прогресс-репорт по текущей итерации.
+- `scripts/ambient_life/` — NWScript runtime.
+- `docs/ARCHITECTURE.md` — архитектурная модель и инварианты.
+- `docs/TOOLSET_CONTRACT.md` — контракт locals для toolset.
+- `docs/IMPLEMENTATION_ROADMAP.md` — дорожная карта.
+- `INSTALLATION.md` — установка и подключение в модуле.
+- `AUDIT.md` — текущие риски и контрольные меры.
+- `TASKS.md` — активный backlog.
+
+## Что важно помнить
+
+- Централизованный area tick — единственный runtime loop.
+- Обработка событий идёт через `OnUserDefined` NPC.
+- Переполнение area-реестра (`>100`) приводит к отказу регистрации дополнительных NPC.
