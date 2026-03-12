@@ -38,6 +38,48 @@ class ValidatorSortModeTests(unittest.TestCase):
 
         self.assertEqual([item["code"] for item in report["issues"]], ["z", "a"])
 
+    def test_link_report_grouped_sorts_by_severity_then_code(self):
+        issues = [
+            al_link_preflight.ValidationIssue("WARN", "z", "z", make_issue_context("r3")),
+            al_link_preflight.ValidationIssue("ERROR", "b", "b", make_issue_context("r2")),
+            al_link_preflight.ValidationIssue("ERROR", "a", "a", make_issue_context("r1")),
+        ]
+
+        report = al_link_preflight.build_report(issues, sort_mode="grouped")
+
+        self.assertEqual([item["code"] for item in report["issues"]], ["a", "b", "z"])
+
+    def test_link_report_strict_sorts_all_fields(self):
+        issues = [
+            al_link_preflight.ValidationIssue("WARN", "b", "a", make_issue_context("r2")),
+            al_link_preflight.ValidationIssue("ERROR", "a", "z", make_issue_context("r1")),
+        ]
+
+        report = al_link_preflight.build_report(issues, sort_mode="strict")
+
+        self.assertEqual([(item["level"], item["area_tag"], item["code"]) for item in report["issues"]], [("ERROR", "a", "z"), ("WARN", "b", "a")])
+
+    def test_locals_report_none_keeps_arrival_order(self):
+        issues = [
+            al_locals_preflight.ValidationIssue("WARN", "waypoint", "z", "z", make_issue_context("z")),
+            al_locals_preflight.ValidationIssue("ERROR", "area", "a", "a", make_issue_context("a")),
+        ]
+
+        report = al_locals_preflight.build_report(issues, sort_mode="none")
+
+        self.assertEqual([item["code"] for item in report["issues"]], ["z", "a"])
+
+    def test_locals_report_grouped_sorts_by_severity_then_scope(self):
+        issues = [
+            al_locals_preflight.ValidationIssue("WARN", "waypoint", "w", "z", make_issue_context("z")),
+            al_locals_preflight.ValidationIssue("ERROR", "waypoint", "w", "b", make_issue_context("b")),
+            al_locals_preflight.ValidationIssue("ERROR", "area", "a", "a", make_issue_context("a")),
+        ]
+
+        report = al_locals_preflight.build_report(issues, sort_mode="grouped")
+
+        self.assertEqual([(item["level"], item["scope"], item["code"]) for item in report["issues"]], [("ERROR", "area", "a"), ("ERROR", "waypoint", "b"), ("WARN", "waypoint", "z")])
+
     def test_locals_report_strict_sorts_all_fields(self):
         issues = [
             al_locals_preflight.ValidationIssue("WARN", "waypoint", "z", "z", make_issue_context("z")),
