@@ -27,6 +27,8 @@ from typing import Any
 
 AL_ROUTE_MAX_STEPS = 16
 
+_SEVERITY_RANK = {"ERROR": 0, "WARN": 1, "INFO": 2}
+
 
 @dataclass
 class Waypoint:
@@ -349,12 +351,20 @@ def validate_route_markup(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
     return issues
 
 
-def print_report(issues: list[ValidationIssue]) -> None:
+def _order_issues(issues: list[ValidationIssue], sort_mode: str) -> list[ValidationIssue]:
+    if sort_mode == "strict":
+        return sorted(issues, key=lambda x: (x.level, x.area_tag, x.route_tag, x.code, x.details))
+    if sort_mode == "grouped":
+        return sorted(issues, key=lambda x: (_SEVERITY_RANK.get(x.level, 99), x.code))
+    return issues
+
+
+def print_report(issues: list[ValidationIssue], sort_mode: str = "none") -> None:
     if not issues:
         print("[OK] route preflight passed: no issues found")
         return
 
-    for issue in sorted(issues, key=lambda x: (x.level, x.area_tag, x.route_tag, x.code, x.details)):
+    for issue in _order_issues(issues, sort_mode):
         print(
             f"[{issue.level}] area={issue.area_tag} route={issue.route_tag} "
             f"code={issue.code} {issue.details}"
@@ -368,6 +378,17 @@ def print_report(issues: list[ValidationIssue]) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Ambient Life route markup offline")
     parser.add_argument("--input", required=True, help="Path to JSON with waypoint route markup")
+    sort_group = parser.add_mutually_exclusive_group()
+    sort_group.add_argument(
+        "--deterministic-sort",
+        action="store_true",
+        help="Enable grouped deterministic ordering (severity/code) while preserving issue arrival order inside groups",
+    )
+    sort_group.add_argument(
+        "--strict-deterministic-sort",
+        action="store_true",
+        help="Enable strict deterministic ordering with full issue sort",
+    )
     args = parser.parse_args()
 
     try:
@@ -377,7 +398,14 @@ def main() -> int:
         return 2
 
     issues = validate_route_markup(rows)
-    print_report(issues)
+
+    sort_mode = "none"
+    if args.strict_deterministic_sort:
+        sort_mode = "strict"
+    elif args.deterministic_sort:
+        sort_mode = "grouped"
+
+    print_report(issues, sort_mode=sort_mode)
 
     return 1 if any(i.level == "ERROR" for i in issues) else 0
 
