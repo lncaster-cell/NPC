@@ -33,6 +33,12 @@
 - снижение CPU на `AL_AreaTick` в части area health snapshot за счёт popcount LUT (`0..255`) вместо побитового цикла в стандартном 8-тиковом окне resync;
 - без изменения диагностических метрик, включая `al_h_recent_resync` и логи `[AL][AreaHealthDelta]`.
 
+Целевой эффект для оптимизации registry fallback-path:
+
+- `al_h_reg_index_miss_delta` должен оставаться на уровне `0` для S80/S100 и `<=1` для S120;
+- `al_h_reg_index_miss_window_delta` должен оставаться на уровне `<=1` для S80/S100 и `<=2` для S120;
+- при включённом debug допускаются только threshold/throttled-сообщения `[AL][RegistryMissRate]` (без per-miss spam).
+
 ## 2) Обязательные метрики (must-have)
 
 Во всех отчётах фиксируются следующие метрики:
@@ -81,8 +87,8 @@
 | `al_reg_overflow_count` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..4`, critical: `>=5` |
 | `al_route_overflow_count` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..4`, critical: `>=5` |
 | `al_h_recent_resync` | warn: `3..5`, critical: `>=6` | warn: `4..7`, critical: `>=8` | warn: `6..10`, critical: `>=11` |
-| `al_h_reg_index_miss_delta` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..3`, critical: `>=4` |
-| `al_h_reg_index_miss_window_delta` | warn: `1..2`, critical: `>=3` | warn: `1..3`, critical: `>=4` | warn: `2..4`, critical: `>=5` |
+| `al_h_reg_index_miss_delta` | warn: `1`, critical: `>=2` | warn: `1`, critical: `>=2` | warn: `2`, critical: `>=3` |
+| `al_h_reg_index_miss_window_delta` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..3`, critical: `>=4` |
 
 Единое правило:
 - `OK` — значение ниже warn-порога;
