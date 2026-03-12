@@ -32,6 +32,7 @@ void AL_RouteBlockedRuntimeReset(object oNpc);
 int AL_ReactShouldOverrideRoutine(object oActor);
 void AL_ReactRuntimeBegin(object oActor, int nReactType, object oSource, object oItem);
 void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind);
+void AL_ReactResumeOrResetOnSelf();
 void AL_ReactFinishCreature(object oNpc);
 
 int AL_ReactGetAreaSyncTick(object oArea)
@@ -290,34 +291,39 @@ void AL_ReactRaiseAreaAlarm(object oActor, object oSource, int nCrimeKind)
 
 void AL_ReactCivilianResponse(object oNpc, object oSource)
 {
-    ActionSpeakString("Thief! Help!", TALKVOLUME_SHOUT);
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    AssignCommand(oNpc, ActionSpeakString("Thief! Help!", TALKVOLUME_SHOUT));
 
     object oSafe = GetObjectByTag(GetLocalString(oNpc, "al_safe_wp"), 0);
     if (GetIsObjectValid(oSafe) && GetArea(oSafe) == GetArea(oNpc))
     {
-        ActionMoveToObject(oSafe, TRUE, 1.5);
+        AssignCommand(oNpc, ActionMoveToObject(oSafe, TRUE, 1.5));
         return;
     }
 
     if (GetIsObjectValid(oSource))
     {
-        ActionMoveToObject(oSource, FALSE, 14.0);
+        AssignCommand(oNpc, ActionMoveToObject(oSource, FALSE, 14.0));
     }
 }
 
 void AL_ReactMilitiaResponse(object oNpc, object oSource)
 {
-    if (!GetIsObjectValid(oSource))
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oSource))
     {
         return;
     }
 
-    ActionAttack(oSource);
+    AssignCommand(oNpc, ActionAttack(oSource));
 }
 
 void AL_ReactGuardResponse(object oNpc, object oSource, int nCrimeKind)
 {
-    if (!GetIsObjectValid(oSource))
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oSource))
     {
         return;
     }
@@ -327,12 +333,12 @@ void AL_ReactGuardResponse(object oNpc, object oSource, int nCrimeKind)
     int bBuiltInHostile = GetIsReactionTypeHostile(oNpc, oSource);
     if (nCrimeKind >= AL_CRIME_KIND_HOSTILE_LEGAL || bBuiltInHostile || bFactionMismatch)
     {
-        ActionAttack(oSource);
+        AssignCommand(oNpc, ActionAttack(oSource));
         return;
     }
 
-    ActionSpeakString("Stop!", TALKVOLUME_SHOUT);
-    ActionMoveToObject(oSource, TRUE, 2.0);
+    AssignCommand(oNpc, ActionSpeakString("Stop!", TALKVOLUME_SHOUT));
+    AssignCommand(oNpc, ActionMoveToObject(oSource, TRUE, 2.0));
 }
 
 int AL_ReactShouldNpcJoinLocalAlarm(object oNpc, object oSource)
@@ -373,6 +379,7 @@ void AL_ReactNotifyNearbyResponders(object oActor, object oSource, int nCrimeKin
 
         if (oCandidate != oActor && AL_ReactShouldNpcJoinLocalAlarm(oCandidate, oSource))
         {
+            // Fan-out responders are non-OBJECT_SELF targets: all behavior must be enqueued via AssignCommand.
             AL_ReactRuntimeBegin(oCandidate, AL_REACT_TYPE_STOLEN, oSource, OBJECT_INVALID);
             SetLocalInt(oCandidate, "al_react_resume_flag", TRUE);
             AL_ReactRunBoundedOverride(oCandidate, GetIsObjectValid(oSource), nCrimeKind);
@@ -467,7 +474,7 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeK
         return;
     }
 
-    ClearAllActions(TRUE);
+    AssignCommand(oNpc, ClearAllActions(TRUE));
 
     if (nCrimeKind > AL_CRIME_KIND_NONE)
     {
@@ -491,10 +498,19 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeK
     else if (bHasCredibleSource)
     {
         object oSource = GetLocalObject(oNpc, "al_react_last_source");
-        ActionMoveToObject(oSource, TRUE, 2.0);
+        AssignCommand(oNpc, ActionMoveToObject(oSource, TRUE, 2.0));
     }
 
-    ActionWait(0.8);
+    AssignCommand(oNpc, ActionWait(0.8));
+}
+
+void AL_ReactResumeOrResetOnSelf()
+{
+    if (!AL_RouteRoutineResumeCurrent(OBJECT_SELF))
+    {
+        AL_RouteBlockedRuntimeReset(OBJECT_SELF);
+        SignalEvent(OBJECT_SELF, EventUserDefined(AL_EVENT_RESYNC));
+    }
 }
 
 void AL_ReactFinishCreature(object oNpc)
@@ -513,11 +529,7 @@ void AL_ReactFinishCreature(object oNpc)
         return;
     }
 
-    if (!AL_RouteRoutineResumeCurrent(oNpc))
-    {
-        AL_RouteBlockedRuntimeReset(oNpc);
-        SignalEvent(oNpc, EventUserDefined(AL_EVENT_RESYNC));
-    }
+    AssignCommand(oNpc, AL_ReactResumeOrResetOnSelf());
 }
 
 void AL_OnDisturbed(object oActor)
