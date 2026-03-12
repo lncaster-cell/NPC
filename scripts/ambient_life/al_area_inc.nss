@@ -336,9 +336,9 @@ void AL_OnAreaExit(object oArea, object oExit)
 
     if (oCountedArea != oArea)
     {
-        // Enter/exit callbacks can arrive reordered during area transitions.
-        // If exit is for a stale area, keep current counted area local intact,
-        // otherwise we can lose authoritative area state and double-adjust counts.
+        // Enter/exit callbacks can be reordered for area transitions, so this exit may
+        // arrive for an area that is no longer the actor's counted area. Clearing the
+        // local here risks dropping the new counted area and desynchronizing counts.
         return;
     }
 
