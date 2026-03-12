@@ -480,34 +480,15 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
             );
         }
 
-        if (nRegIndexMissStatus > 0)
-        {
-            int nLastWarnTick = GetLocalInt(oArea, "al_h_reg_index_miss_warn_last_tick");
-            int nPrevWarnStatus = GetLocalInt(oArea, "al_h_reg_index_miss_warn_prev_status");
-            if (nSyncTick <= 0 || nLastWarnTick <= 0 || (nSyncTick - nLastWarnTick) >= AL_HEALTH_RESYNC_WINDOW_TICKS || nRegIndexMissStatus != nPrevWarnStatus)
-            {
-                string sWarnStatus = "WARN";
-                if (nRegIndexMissStatus >= 2)
-                {
-                    sWarnStatus = "CRITICAL";
-                }
-
-                WriteTimestampedLogEntry(
-                    "[AL][RegIndexMiss] area=" + GetTag(oArea)
-                    + " status=" + sWarnStatus
-                    + " sync_tick=" + IntToString(nSyncTick)
-                    + " window_delta=" + IntToString(nRegIndexMissWindowDelta)
-                    + " window_ticks=" + IntToString(nRegIndexMissWindowTicks)
-                    + " tick_delta=" + IntToString(nRegIndexMissDelta)
-                    + " total=" + IntToString(nRegIndexMiss)
-                );
-
-                if (nSyncTick > 0)
-                {
-                    SetLocalInt(oArea, "al_h_reg_index_miss_warn_last_tick", nSyncTick);
-                }
-            }
-        }
+        AL_DebugLogRegIndexMissStatus(
+            oArea,
+            nSyncTick,
+            nRegIndexMissStatus,
+            nRegIndexMissWindowDelta,
+            nRegIndexMissWindowTicks,
+            nRegIndexMissDelta,
+            nRegIndexMiss
+        );
     }
 
     AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_npc_count", nNpcCount);

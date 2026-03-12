@@ -11,6 +11,7 @@
 | al_reg_overflow_count | 0 | count | 1 / >=2 | OK |
 | al_route_overflow_count | 0 | count | 1 / >=2 | OK |
 | al_h_recent_resync | 2 | count | 3..5 / >=6 | OK |
+| al_h_reg_index_miss_delta | 0 | count | 1 / >=2 | OK |
 | al_reg_compact_calls | 6 | count | n/a | n/a |
 | al_reg_compact_calls_window | 2 | count | n/a | n/a |
 | al_dispatch_ticks_to_drain | 3 | ticks | n/a | n/a |
@@ -24,6 +25,7 @@
 | al_reg_overflow_count | 0 | count | 1..2 / >=3 | OK |
 | al_route_overflow_count | 0 | count | 1..2 / >=3 | OK |
 | al_h_recent_resync | 3 | count | 4..7 / >=8 | OK |
+| al_h_reg_index_miss_delta | 0 | count | 1..2 / >=3 | OK |
 | al_reg_compact_calls | 8 | count | n/a | n/a |
 | al_reg_compact_calls_window | 3 | count | n/a | n/a |
 | al_dispatch_ticks_to_drain | 4 | ticks | n/a | n/a |
@@ -37,6 +39,7 @@
 | al_reg_overflow_count | 1 | count | 2..4 / >=5 | OK |
 | al_route_overflow_count | 1 | count | 2..4 / >=5 | OK |
 | al_h_recent_resync | 5 | count | 6..10 / >=11 | OK |
+| al_h_reg_index_miss_delta | 1 | count | 2..3 / >=4 | OK |
 | al_reg_compact_calls | 11 | count | n/a | n/a |
 | al_reg_compact_calls_window | 4 | count | n/a | n/a |
 | al_dispatch_ticks_to_drain | 5 | ticks | n/a | n/a |
