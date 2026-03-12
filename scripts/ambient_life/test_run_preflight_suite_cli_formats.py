@@ -78,7 +78,8 @@ class PreflightSuiteCliFormatsTests(unittest.TestCase):
             output_format,
             *extra,
         ]
-        return subprocess.run(cmd, cwd="/workspace/NPC", capture_output=True, text=True, check=False)
+        repo_root = Path(__file__).resolve().parents[2]
+        return subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True, check=False)
 
     def test_text_and_json_have_matching_status_and_summary(self):
         with tempfile.TemporaryDirectory() as temp_dir:

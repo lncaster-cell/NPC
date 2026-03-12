@@ -36,6 +36,25 @@ class PreflightSuiteTextOutputTests(unittest.TestCase):
         self.assertEqual(report["aggregates"]["code"]["route.missing_step"], 1)
         self.assertEqual(report["aggregates"]["code"]["link.duplicate"], 2)
 
+
+    def test_build_report_aggregates_check_and_severity_match_summary(self):
+        with (
+            mock.patch.object(run_preflight_suite, "_run_route_check", return_value=[]),
+            mock.patch.object(run_preflight_suite, "_run_link_check", return_value=[]),
+            mock.patch.object(run_preflight_suite, "_run_locals_check", return_value=[]),
+        ):
+            report = run_preflight_suite._build_report(
+                route_input=run_preflight_suite.Path("route.json"),
+                link_input=run_preflight_suite.Path("link.json"),
+                locals_input=run_preflight_suite.Path("locals.json"),
+            )
+
+        self.assertEqual(report["status"], "OK")
+        self.assertEqual(report["summary"], {"error": 0, "warn": 0, "info": 3, "total": 3})
+        self.assertEqual(report["aggregates"]["severity"], {"error": 0, "warn": 0, "info": 3})
+        self.assertEqual(report["aggregates"]["check"], {"route": 1, "link": 1, "locals": 1})
+        self.assertEqual(report["aggregates"]["code"], {"ok": 3})
+
     def test_main_text_output_prints_top_issue_codes_without_key_error(self):
         report = {
             "status": "ERROR",

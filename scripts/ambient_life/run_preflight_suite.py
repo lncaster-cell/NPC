@@ -13,7 +13,6 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import json
-from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -195,11 +194,7 @@ def _build_report(
             "locals": str(locals_input),
         },
         "summary": summary,
-        "aggregates": {
-            "code": dict(code_counts),
-            "check": dict(check_counts),
-            "severity": dict(severity_counts),
-        },
+        "aggregates": aggregates,
         "issues": _order_issues(issues, sort_mode),
     }
 
