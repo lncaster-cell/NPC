@@ -1,0 +1,44 @@
+import unittest
+
+from scripts.ambient_life.al_locals_preflight import validate_locals
+
+
+class ValidateLocalsRouteRefsTests(unittest.TestCase):
+    def test_npc_route_tag_typo_reports_unknown_route_error(self):
+        payload = {
+            "npcs": [
+                {
+                    "npc_tag": "merchant_01",
+                    "locals": {
+                        "al_default_activity": 1,
+                        "alwp0": "market_rute",
+                    },
+                }
+            ],
+            "waypoints": [
+                {
+                    "area_tag": "area_market",
+                    "route_tag": "market_route",
+                    "waypoint_tag": "market_0",
+                    "locals": {"al_step": 0},
+                }
+            ],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertTrue(
+            any(
+                issue.level == "ERROR"
+                and issue.code == "unknown_route_tag_ref"
+                and issue.object_id == "merchant_01"
+                and "slot=alwp0" in issue.reason
+                and "market_rute" in issue.reason
+                for issue in issues
+            )
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()
