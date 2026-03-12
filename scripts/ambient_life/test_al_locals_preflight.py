@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.ambient_life.al_locals_preflight import validate_locals
+from scripts.ambient_life.al_locals_preflight import build_report, validate_locals
 
 
 class ValidateLocalsRouteRefsTests(unittest.TestCase):
@@ -197,6 +197,84 @@ class ValidateLocalsFailFastTests(unittest.TestCase):
         issues = validate_locals(payload, fail_fast=True)
 
         self.assertEqual(sum(1 for issue in issues if issue.level == "ERROR"), 1)
+
+
+class ValidateLocalsCoreScenariosTests(unittest.TestCase):
+    def test_invalid_row_reports_invalid_row_type(self):
+        payload = {
+            "npcs": ["not_an_object"],
+            "waypoints": [],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertTrue(
+            any(
+                issue.level == "ERROR"
+                and issue.scope == "npc"
+                and issue.code == "invalid_row_type"
+                and issue.object_id == "<idx:0>"
+                for issue in issues
+            )
+        )
+
+    def test_invalid_locals_type_reports_error(self):
+        payload = {
+            "npcs": [
+                {
+                    "npc_tag": "merchant_01",
+                    "locals": "not-an-object",
+                }
+            ],
+            "waypoints": [],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertTrue(
+            any(
+                issue.level == "ERROR"
+                and issue.scope == "npc"
+                and issue.code == "invalid_locals_type"
+                and issue.object_id == "merchant_01"
+                for issue in issues
+            )
+        )
+
+    def test_happy_path_builds_ok_report(self):
+        payload = {
+            "npcs": [
+                {
+                    "npc_tag": "merchant_01",
+                    "locals": {
+                        "al_default_activity": 1,
+                        "alwp0": "market_route",
+                    },
+                }
+            ],
+            "waypoints": [
+                {
+                    "area_tag": "area_market",
+                    "route_tag": "market_route",
+                    "waypoint_tag": "market_0",
+                    "locals": {"al_step": 0},
+                }
+            ],
+            "areas": [
+                {
+                    "area_tag": "area_market",
+                    "locals": {"al_link_count": 0},
+                }
+            ],
+        }
+
+        report = build_report(validate_locals(payload))
+
+        self.assertEqual(report["status"], "OK")
+        self.assertEqual(report["summary"], {"errors": 0, "warnings": 0, "total": 0})
+        self.assertEqual(report["issues"], [])
 
 
 if __name__ == "__main__":
