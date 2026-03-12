@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offline locals preflight validator for Ambient Life content objects.
 
-Expected JSON input shape:
+Expected JSON input shape (all three top-level sections are required):
 {
   "npcs": [
     {"npc_tag": "npc_a", "locals": {"alwp0": "market_route", "al_default_activity": 1}}
@@ -52,11 +52,18 @@ def _read_input(path: Path) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise ValueError("JSON root must be an object")
 
-    return {
-        "npcs": payload.get("npcs", []),
-        "waypoints": payload.get("waypoints", []),
-        "areas": payload.get("areas", []),
-    }
+    result: dict[str, Any] = {}
+    for key in ("npcs", "waypoints", "areas"):
+        if key not in payload:
+            raise ValueError(f"JSON object must contain required '{key}' array")
+
+        value = payload[key]
+        if not isinstance(value, list):
+            raise ValueError(f"'{key}' must be an array")
+
+        result[key] = value
+
+    return result
 
 
 def _extract_locals(raw: dict[str, Any], reserved_fields: set[str]) -> dict[str, Any]:
