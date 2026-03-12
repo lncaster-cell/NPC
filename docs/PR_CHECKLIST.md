@@ -11,7 +11,6 @@
   - [ ] CSV (machine-readable, единый формат)
 - [ ] Для core-изменений (`al_area_inc.nss`, `al_registry_inc.nss`, `al_route_inc.nss`) подтверждено, что без baseline-vs-after PR считается неполным.
 - [ ] Если baseline обновлён, соблюдено правило из `docs/perf/baselines/README.md` (подтверждённое улучшение или обоснованное изменение поведения + ссылка на PR/commit).
-
-## Linked graph changes
-
-- [ ] Для изменений linked-area данных/скриптов (`al_link_*`, `scripts/ambient_life/al_link_preflight.py`) запущен `python3 scripts/ambient_life/al_link_preflight.py --input <linked_areas.json>`; при `ERROR` merge блокируется.
+- [ ] **Perf gate passed** для PR с изменениями в `scripts/ambient_life/al_*`:
+  - [ ] CI job `Ambient Life Perf Gate` зелёный;
+  - [ ] заполнен machine-readable отчёт (`docs/perf/baselines/perf_gate_report.csv` или `.json`) и валидирован скриптом `scripts/ambient_life/validate_perf_gate.py`.

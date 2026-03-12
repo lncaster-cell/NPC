@@ -39,6 +39,7 @@
 - Для правок в route/registry/dispatcher: обязательный PR-отчёт «до/после» по шаблону из `docs/PERF_RUNBOOK.md`.
 - High-impact perf-priority: `scripts/ambient_life/al_area_inc.nss`, `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_route_inc.nss`, `scripts/ambient_life/al_dispatch_inc.nss`.
 - Gate (core): изменения в high-impact файлах считаются неполными без perf-сводки по `docs/PERF_PROFILE.md`.
+- Для любого PR с изменениями в `scripts/ambient_life/al_*` обязательный чек: **Perf gate passed** (CI `Ambient Life Perf Gate` + machine-readable отчёт `docs/perf/baselines/perf_gate_report.csv|.json`).
 
 ## Runbook: Area Health Snapshot (операторский минимум)
 

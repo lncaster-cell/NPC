@@ -1,0 +1,7 @@
+scenario,metric,baseline_value,after_value,delta,unit,warn_threshold,critical_threshold,status,notes
+S80,al_dispatch_q_overflow,0,,,count,1..2,>=3,,Fill `after_value` from PR perf run
+S80,al_dispatch_ticks_to_drain,3,,,ticks,n/a,n/a,,Fail if delta > +1 or after > 3
+S100,al_dispatch_q_overflow,0,,,count,1..3,>=4,,Fill `after_value` from PR perf run
+S100,al_dispatch_ticks_to_drain,4,,,ticks,n/a,n/a,,Fail if delta > +1 or after > 4
+S120,al_dispatch_q_overflow,1,,,count,2..4,>=5,,Fill `after_value` from PR perf run
+S120,al_dispatch_ticks_to_drain,5,,,ticks,n/a,n/a,,Fail if delta > +1 or after > 5
