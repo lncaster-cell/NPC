@@ -257,7 +257,7 @@ int AL_TransitionQueueFromStep(object oNpc, object oStep)
     }
 
     object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return FALSE;
     }

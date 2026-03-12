@@ -456,7 +456,7 @@ void AL_ReactGuardResponse(object oNpc, object oSource, int nCrimeKind)
 
 int AL_ReactShouldNpcJoinLocalAlarm(object oNpc, object oSource)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    if (!AL_IsRuntimeNpc(oNpc))
     {
         return FALSE;
     }
@@ -477,7 +477,7 @@ void AL_ReactNotifyNearbyResponders(object oActor, object oSource, int nCrimeKin
     }
 
     object oArea = GetArea(oActor);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return;
     }
@@ -532,7 +532,7 @@ int AL_ReactShouldOverrideRoutine(object oActor)
     }
 
     object oArea = GetArea(oActor);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return FALSE;
     }

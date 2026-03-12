@@ -11,7 +11,7 @@
 void AL_NpcHandleResync(object oNpc)
 {
     object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return;
     }
@@ -23,7 +23,7 @@ void AL_NpcHandleResync(object oNpc)
 void AL_NpcHandleSlotChanged(object oNpc, int nSlot)
 {
     object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return;
     }
@@ -33,7 +33,7 @@ void AL_NpcHandleSlotChanged(object oNpc, int nSlot)
 
 void AL_OnNpcUserDefined(object oNpc)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    if (!AL_IsRuntimeNpc(oNpc))
     {
         return;
     }
@@ -93,7 +93,7 @@ void AL_OnNpcSpawn(object oNpc)
     AL_RegisterNPC(oNpc);
 
     object oArea = GetArea(oNpc);
-    if (GetIsObjectValid(oArea) && GetLocalInt(oArea, "al_sim_tier") == AL_SIM_TIER_HOT)
+    if (AL_IsHotArea(oArea))
     {
         int nSlot = GetLocalInt(oArea, "al_slot");
         SetLocalInt(oNpc, "al_last_slot", nSlot);

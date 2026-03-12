@@ -37,6 +37,9 @@
 
 Источник: `scripts/ambient_life/al_acts_inc.nss`.
 
+> Поддержка activity-таблицы (группы кодов и возвращаемые анимации/waypoint tags) ведётся в `scripts/ambient_life/al_acts_inc.nss`
+> в блоке helper-предикатов `AL_IsActivityInGroup*` и в публичных мапперах `AL_GetActivity*`.
+
 | Код | Константа |
 | ---: | --- |
 | 0 | `AL_ACT_NPC_HIDDEN` |
@@ -115,12 +118,21 @@
 
 - `scripts/ambient_life/` — NWScript runtime.
 - `docs/ARCHITECTURE.md` — архитектурная модель и инварианты.
+- `docs/TECH_PASSPORT.md` — единый технический паспорт системы (архитектура, runtime-поток, роли файлов, инварианты, диагностика).
 - `docs/TOOLSET_CONTRACT.md` — контракт locals для toolset.
 - `docs/IMPLEMENTATION_ROADMAP.md` — дорожная карта.
 - `INSTALLATION.md` — установка и подключение в модуле.
 - `AUDIT.md` — текущие риски и контрольные меры.
 - `TASKS.md` — активный backlog.
 - `docs/PERF_RUNBOOK.md` — воспроизводимый perf-протокол и PR-шаблон отчёта «до/после».
+
+
+## Deprecated / stub includes
+
+- `scripts/ambient_life/al_debug_inc.nss` и `scripts/ambient_life/al_schedule_inc.nss` помечены как **DEPRECATED/STUB**.
+- Эти файлы сохранены только для обратной совместимости старых include-графов и не содержат runtime-логики.
+- Для новых include действует правило: запрещено добавлять прямые или транзитивные зависимости на эти заглушки.
+- Удаление заглушек выполняется после подтверждения, что на них нет ссылок в entry/core include и модульном контенте.
 
 ## Что важно помнить
 

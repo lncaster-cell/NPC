@@ -1,0 +1,345 @@
+# Технический паспорт проекта: NPC Ambient Life v2 (NWN2)
+
+## 1) Назначение документа
+
+Этот документ — единая «точка входа» для инженеров и AI-агентов, которым нужно быстро понять:
+
+- что делает система Ambient Life v2;
+- как устроен runtime и какие инварианты нельзя нарушать;
+- какие файлы за что отвечают;
+- как правильно интегрировать, диагностировать и развивать систему.
+
+Документ агрегирует ключевую информацию из `README`, архитектурных и операционных документов, а также из runtime-скриптов.
+
+---
+
+## 2) Что такое Ambient Life v2
+
+Ambient Life v2 — это событийная система симуляции распорядка NPC в NWN2.
+
+Ключевая идея: **никаких per-NPC heartbeat/polling циклов**. Вместо этого используется:
+
+- area-centric цикл (`AL_ScheduleAreaTick` → `AL_AreaTick`),
+- event bus на `OnUserDefined`,
+- ограниченные (bounded) операции на каждом тике/событии.
+
+Это снижает нагрузку и даёт предсказуемость при высокой плотности NPC.
+
+---
+
+## 3) Границы реализации (текущее состояние)
+
+Реализованы стадии: **A–I.2**.
+
+- A: контракты и основа архитектуры.
+- B: event bus + area registry.
+- C: lifecycle и LOD tiers (`FREEZE/WARM/HOT`).
+- D/E: route cache + bounded routine progression.
+- F: transition subsystem.
+- G: sleep subsystem.
+- H: activity subsystem.
+- I.0: `OnBlocked` recovery.
+- I.1: `OnDisturbed` foundation.
+- I.2: локальный crime/alarm слой (в пределах area).
+
+Вне границ текущего релиза (I.3+):
+
+- guard spawn/reinforcements;
+- surrender/arrest/trial/legal pipeline.
+
+---
+
+## 4) Архитектурные принципы (обязательные)
+
+1. **Single runtime loop per area**: только scheduler на area-уровне.
+2. **Event-driven orchestration**: NPC обрабатывают команды через `OnUserDefined`.
+3. **Bounded execution**: маршруты, реактивные ветки и dispatch всегда ограничены по объёму.
+4. **Content-configured behavior**: поведение задаётся locals в toolset.
+5. **Runtime-owned locals immutable from content**: runtime-ключи руками не редактируются.
+
+Нарушение любого из этих принципов ведёт к деградации производительности и/или рассинхронизации состояния.
+
+---
+
+## 5) Карта репозитория и зоны ответственности
+
+### 5.1 Корневые документы
+
+- `README.md` — обзор проекта, статус стадий, быстрый старт.
+- `INSTALLATION.md` — пошаговая интеграция в модуль NWN2.
+- `TASKS.md` — backlog и регулярные QA-практики.
+- `AUDIT.md` — техаудит и рекомендации по приоритетам.
+
+### 5.2 Техническая документация
+
+- `docs/ARCHITECTURE.md` — архитектура, инварианты, event bus, health snapshot.
+- `docs/TOOLSET_CONTRACT.md` — полный контракт locals (NPC/Waypoint/Area).
+- `docs/MECHANICS_AND_SCENARIOS.md` — каталог механик и прикладные сценарии.
+- `docs/IMPLEMENTATION_ROADMAP.md` — дорожная карта развития.
+- `docs/PERF_PROFILE.md` — регламент perf-профилирования.
+- `docs/PERF_RUNBOOK.md` — воспроизводимый perf-runbook.
+- `docs/ERROR_SCAN.md` — скан ошибок и runtime-диагностика.
+
+### 5.3 Runtime-скрипты (`scripts/ambient_life/`)
+
+**Entry points (привязка к событиям движка):**
+
+- `al_mod_onleave.nss` — `OnClientLeave` модуля.
+- `al_area_onenter.nss` — `OnEnter` area.
+- `al_area_onexit.nss` — `OnExit` area.
+- `al_area_tick.nss` — legacy bootstrap hook (не основной тик).
+- `al_npc_onspawn.nss` — `OnSpawn` NPC.
+- `al_npc_ondeath.nss` — `OnDeath` NPC.
+- `al_npc_onud.nss` — `OnUserDefined` NPC.
+- `al_npc_onblocked.nss` — `OnBlocked` NPC.
+- `al_npc_ondisturbed.nss` — `OnDisturbed` NPC.
+
+**Core includes:**
+
+- `al_core_inc.nss` — центральный dispatcher и связка подсистем.
+- `al_area_inc.nss` — lifecycle/tiers/tick loop + health snapshot.
+- `al_dispatch_inc.nss` — queue-based dispatch, priorities, fairness, anti-dup.
+- `al_registry_inc.nss` — плотный area registry (`al_npc_0..N`, swap-remove).
+- `al_events_inc.nss` — константы шины событий.
+- `al_route_inc.nss` — route cache + bounded routine.
+- `al_transition_inc.nss` — transition runtime (area helper/intra-teleport).
+- `al_sleep_inc.nss` — sleep runtime.
+- `al_activity_inc.nss` + `al_acts_inc.nss` — activity semantics и канонические ID.
+- `al_blocked_inc.nss` — локальное восстановление после `OnBlocked`.
+- `al_react_inc.nss` — disturbed/crime/alarm реакции (I.1/I.2).
+- `al_debug_inc.nss`, `al_schedule_inc.nss` — **DEPRECATED/STUB** файлы Stage A;
+  оставлены только для обратной совместимости старых include-графов,
+  в новом коде использовать нельзя.
+
+### 5.4 Deprecated/STUB policy
+
+- `al_debug_inc.nss` и `al_schedule_inc.nss` не содержат runtime-логики и считаются
+  временными заглушками до полного удаления.
+- Условие удаления: подтверждено отсутствие прямых и транзитивных подключений этих
+  include в entry/core-скриптах и в модульном контенте.
+- Для новых include действует запрет: нельзя добавлять зависимости на
+  `al_debug_inc.nss` и `al_schedule_inc.nss`.
+
+---
+
+## 6) Сквозной runtime-поток (от и до)
+
+### 6.1 Инициализация
+
+1. Игрок входит в area → `al_area_onenter`.
+2. Lifecycle активирует area, повышает tier до HOT при необходимости.
+3. Запускается внутренний scheduler (`AL_ScheduleAreaTick`).
+
+### 6.2 Периодический цикл
+
+1. По интервалу `AL_AREA_TICK_SEC` выполняется `AL_AreaTick`.
+2. Обновляются lifecycle/slot/sync-маркеры.
+3. Формируются/очередятся area-события (slot/resync/служебные).
+4. Dispatch обрабатывает события batched-очередью по приоритетам.
+5. События доходят до NPC через `OnUserDefined`.
+6. `al_core_inc` делегирует в route/sleep/transition/react/blocked логику.
+
+### 6.3 Смена маршрута и routine progression
+
+1. Для активного slot берётся route tag из `alwp0..alwp5`.
+2. В area собираются waypoint с этим tag.
+3. Шаги сортируются по `al_step`, валидируются и кешируются.
+4. NPC выполняет bounded progression по шагам.
+5. При спец-шаге включается transition/sleep слой.
+
+### 6.4 Реактивные ветки
+
+- `OnBlocked` → door-first attempt + bounded resume/fallback.
+- `OnDisturbed` → классификация инцидента (none/suspicious/theft/hostile-legal),
+  локальная тревога area, bounded fan-out на nearby NPC, затем возврат к routine.
+
+### 6.5 Деактивация
+
+- При уходе игроков tier может снижаться HOT → WARM → FREEZE.
+- При FREEZE тик-инвалидируется token-механикой.
+- Повторная активация идёт через lifecycle события area.
+
+---
+
+## 7) Event bus и dispatch-контракт
+
+### 7.1 События
+
+- `AL_EVENT_SLOT_0..5 = 3100..3105`
+- `AL_EVENT_RESYNC = 3106`
+- `AL_EVENT_ROUTE_REPEAT = 3107`
+- `AL_EVENT_BLOCKED_RESUME = 3108`
+
+### 7.2 Политика обработки
+
+- Все area-scoped массовые события идут через `AL_DispatchEventToAreaRegistry`.
+- Очередь ограничена (`AL_DISPATCH_QUEUE_CAPACITY`).
+- Приоритеты:
+  - critical: `ROUTE_REPEAT`, `BLOCKED_RESUME`;
+  - normal: slot events, `RESYNC`.
+- Fairness: critical burst quota + anti-starvation normal.
+- Cycle-guard не допускает дубликаты активных/ожидающих циклов.
+
+### 7.3 Crime/alarm в I.2
+
+- Новые event-коды шины **не** добавляются.
+- Эскалация выполняется внутри bounded `OnDisturbed` пути.
+
+---
+
+## 8) Модель данных (locals)
+
+### 8.1 NPC (content-owned)
+
+Обязательные:
+
+- `alwp0..alwp5` (route tags по слотам)
+- `al_default_activity` (int)
+
+Опциональные:
+
+- `AL_WP_S0..AL_WP_S5` (legacy fallback)
+- `al_npc_role` (`0` civilian / `1` militia / `2` guard)
+- `al_safe_wp` (tag safe waypoint для fallback-поведения)
+
+### 8.2 Waypoint (content-owned)
+
+- `al_step` (обязателен для route-шага)
+- `al_activity`, `al_dur_sec` (опционально)
+- transition: `al_trans_type`, `al_trans_src_wp`, `al_trans_dst_wp`
+- sleep: `al_bed_id` + точки `{bed}_approach`, `{bed}_pose`
+- safe-point marker: `al_safe_wp = 1` (рекомендуемый явный формат)
+
+### 8.3 Area (content-owned)
+
+- `al_link_count`
+- `al_link_0..N`
+
+### 8.4 Runtime-owned (из toolset не редактировать)
+
+Примеры ключевых runtime locals:
+
+- area lifecycle: `al_player_count`, `al_sim_tier`, `al_slot`, `al_sync_tick`;
+- registry: `al_npc_count`, `al_npc_<idx>`;
+- route/runtime: `al_route_cache_*`, `al_route_rt_*`;
+- blocked/react/alarm runtime;
+- health snapshot: `al_h_*`.
+
+Полный контракт — в `docs/TOOLSET_CONTRACT.md`.
+
+---
+
+## 9) Константы и лимиты
+
+- `AL_AREA_TICK_SEC = 30.0`
+- `AL_MAX_NPCS = 100` на area
+- `AL_ROUTE_MAX_STEPS = 16`
+- `AL_WARM_RETENTION_TICKS = 2`
+- `AL_WP_CACHE_TTL_TICKS = 10`
+- `AL_HEALTH_RESYNC_WINDOW_TICKS = 8`
+
+Ограничения важны: overflow по registry/route не должен считаться нормальным рабочим состоянием.
+
+---
+
+## 10) Наблюдаемость и диагностика
+
+### 10.1 Area Health Snapshot (`al_h_*`)
+
+Ключевые метрики:
+
+- `al_h_npc_count`
+- `al_h_tier`
+- `al_h_slot`
+- `al_h_sync_tick`
+- `al_h_reg_overflow_count`
+- `al_h_route_overflow_count`
+- `al_h_recent_resync`
+
+### 10.2 Dispatch-метрики
+
+- `al_dispatch_queue_depth`
+- `al_dispatch_ticks_to_drain`
+- `al_dispatch_max_backlog`
+
+### 10.3 Alarm runtime
+
+- `al_alarm_state`, `al_alarm_until`, `al_alarm_source`
+- debounce-поля (`al_alarm_last_*`, `al_react_last_crime_*`)
+
+Эти поля используются как основной операторский срез состояния системы.
+
+---
+
+## 11) Интеграция в модуль NWN2 (кратко)
+
+1. Импортировать все `scripts/ambient_life/*.nss`, скомпилировать.
+2. Привязать скрипты на Module/Area/NPC события.
+3. Заполнить контентные locals по контракту.
+4. Пройти smoke-check и perf-check.
+
+Важно:
+
+- `OnHeartbeat` area не используется как основной периодический путь;
+- `al_area_tick` допускается только как legacy bootstrap.
+
+Подробно — `INSTALLATION.md`.
+
+---
+
+## 12) Производительность и QA-практика
+
+- Использовать `docs/PERF_RUNBOOK.md` для сцен L/M/H.
+- Сверять KPI и отчёт «до/после» по шаблону из `docs/PERF_PROFILE.md`.
+- В регулярной QA-практике контролировать пороги health snapshot и признаки overflow/backlog.
+
+---
+
+## 13) Известные риски и техдолг
+
+Приоритетные темы (по backlog/аудиту):
+
+- диагностика отказа `AL_RegisterNPC` при `AL_MAX_NPCS`;
+- унификация подключения `al_area_tick` в разных шаблонах модулей;
+- контент-валидация маршрутов и locals;
+- расширение legal/reinforcement цепочек (Stage I.3).
+
+---
+
+## 14) Правила безопасных изменений для AI-агентов
+
+1. Не вводить heartbeat-loop на NPC/area.
+2. Не обходить dispatch-очередь для массовых area-событий.
+3. Сохранять bounded-характер любых новых веток.
+4. Не писать вручную в runtime-owned locals.
+5. Для новых механик сначала фиксировать контракт locals и инварианты в документации.
+6. Любые изменения Stage I.2+ проверять на совместимость с:
+   - role split (civilian/militia/guard),
+   - area-local scope,
+   - anti-spam/debounce.
+
+---
+
+## 15) Быстрый глоссарий
+
+- **Area-centric runtime** — единый цикл симуляции на area.
+- **Slot** — 4-часовой интервал времени суток (`0..5`).
+- **Route tag** — тег маршрута, связывающий NPC и waypoint-группу.
+- **Bounded** — ограниченное, предсказуемое по объёму выполнение.
+- **RESYNC** — синхронизация NPC с актуальным slot/route-состоянием.
+- **WARM retention** — кратковременное удержание контекста area без полного HOT-режима.
+
+---
+
+## 16) Ссылки на первоисточники
+
+- `README.md`
+- `INSTALLATION.md`
+- `docs/ARCHITECTURE.md`
+- `docs/TOOLSET_CONTRACT.md`
+- `docs/MECHANICS_AND_SCENARIOS.md`
+- `docs/PERF_RUNBOOK.md`
+- `docs/PERF_PROFILE.md`
+- `docs/IMPLEMENTATION_ROADMAP.md`
+- `TASKS.md`
+- `AUDIT.md`
