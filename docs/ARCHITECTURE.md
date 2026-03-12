@@ -6,7 +6,7 @@
 
 ## 2. Архитектурные принципы
 
-- **Area-centric execution**: активность координируется из area tick.
+- **Area-centric execution**: активность координируется из area tick scheduler (`AL_ScheduleAreaTick`).
 - **Event-driven orchestration**: NPC получают сигналы через `OnUserDefined`.
 - **Bounded processing**: маршруты, реакции и спец-шаги выполняются ограниченно и предсказуемо.
 - **Content-configured behavior**: поведение задаётся locals на NPC/waypoints/areas.
@@ -66,6 +66,7 @@ Crime/alarm на Stage I.2 намеренно **не** добавляет нов
 ## 5. Инварианты
 
 - Нет heartbeat/polling loop на NPC.
-- Центральный runtime loop — только area tick (`DelayCommand`).
+- Центральный runtime loop — только area tick scheduler (`AL_ScheduleAreaTick` → `DelayCommand` → `AL_AreaTick`).
+- Toolset `OnHeartbeat` не является штатным периодическим путём и не должен дублировать scheduler-цикл.
 - Dispatch событий работает по текущему area registry.
 - Stage I.2 не включает guard spawn/reinforcements и не включает surrender/arrest/trial (оставлены только future hooks `al_legal_followup_pending`).

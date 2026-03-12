@@ -109,7 +109,14 @@ void AL_OnNpcDeath(object oNpc)
     AL_UnregisterNPC(oNpc);
 }
 
-void AL_OnAreaTick(object oArea)
+void AL_OnAreaTickBootstrap(object oArea)
 {
-    AL_AreaTick(oArea, GetLocalInt(oArea, "al_tick_token"));
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return;
+    }
+
+    // Bootstrap-only entrypoint (toolset OnHeartbeat safety hook).
+    // Periodic loop is owned exclusively by AL_ScheduleAreaTick/AL_AreaTick.
+    AL_AreaActivate(oArea);
 }
