@@ -47,6 +47,9 @@ _SEVERITY_RANK = {"error": 0, "warn": 1, "info": 2}
 
 
 def _order_issues(issues: list[dict[str, Any]], sort_mode: str) -> list[dict[str, Any]]:
+    # Complexity goals: avoid repeated global sorts in the hot path.
+    # - none: O(n) copy that keeps the build order stable/deterministic.
+    # - grouped/strict: single O(n log n) sort depending on requested guarantees.
     if sort_mode == "strict":
         return sorted(
             issues,
@@ -66,7 +69,7 @@ def _order_issues(issues: list[dict[str, Any]], sort_mode: str) -> list[dict[str
                 _SEVERITY_RANK.get(item["severity"], 99),
             ),
         )
-    return issues
+    return list(issues)
 
 
 def _run_route_check(route_input: Path) -> list[al_route_preflight.ValidationIssue]:
@@ -165,17 +168,6 @@ def _build_report(
                     "message": "preflight passed without issues",
                 }
             )
-
-    issues = sorted(
-        issues,
-        key=lambda item: (
-            _SEVERITY_RANK.get(item["severity"], 99),
-            item["check"],
-            item["path"],
-            item["code"],
-            item["message"],
-        ),
-    )
 
     return {
         "status": "ERROR" if summary["error"] else "OK",
