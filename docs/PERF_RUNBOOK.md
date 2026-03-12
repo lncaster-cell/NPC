@@ -122,6 +122,25 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
      - M: `<= 20` за окно
      - H: `<= 35` за окно
 
+### Пороговая интерпретация обязательных метрик (warn/critical)
+
+Для метрик ниже статус в отчёте ставится по значению **«После»** в окне 20 тиков.
+
+| Метрика | Scene L (20 NPC) | Scene M (60 NPC) | Scene H (95 NPC) | Как трактовать |
+| --- | --- | --- | --- | --- |
+| `al_dispatch_q_len` | warn: `4..6`, critical: `>=7` | warn: `6..9`, critical: `>=10` | warn: `9..13`, critical: `>=14` | Рост очереди = система не успевает разгребать dispatch в целевом темпе. |
+| `al_dispatch_q_overflow` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `1..3`, critical: `>=4` | Overflow очереди означает потерю/пропуск работы диспетчера под нагрузкой. |
+| `al_reg_overflow_count` | warn: `1`, critical: `>=2` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | Переполнение registry недопустимо в baseline, в stress — сигнал дефицита ёмкости. |
+| `al_route_overflow_count` | warn: `1`, critical: `>=2` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | Переполнение route-cache/route-пула: риск деградации маршрутизации и повторных rebuild. |
+| `al_h_recent_resync` | warn: `3..4`, critical: `>=5` | warn: `3..5`, critical: `>=6` | warn: `4..7`, critical: `>=8` | Частые resync без явных контентных причин — симптом нестабильности состояния NPC. |
+
+Правило статуса:
+- `OK` — значение ниже warn-порога;
+- `WARN` — попадает в warn-диапазон;
+- `CRITICAL` — достигает или превышает critical-порог.
+
+Для `*_overflow*` дополнительно фиксируйте и в комментарии, и в выводе отчёта факт роста (`0 -> N`), даже если значение пока в зоне `WARN`.
+
 ## 4) Шаблон отчёта для PR («до/после»)
 
 ```md
@@ -134,16 +153,18 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 - Tick window: warmup 2 ticks + measure 20 ticks
 
 ### Scene L (`al_perf_low`)
-| Metric | До | После | Delta | Статус |
-| --- | ---: | ---: | ---: | --- |
-| al_h_npc_count (range) |  |  |  | ✅/⚠️/❌ |
-| al_h_recent_resync (range) |  |  |  | ✅/⚠️/❌ |
-| reg_overflow |  |  |  | ✅/❌ |
-| route_overflow |  |  |  | ✅/❌ |
-| avg_dispatch_drain |  |  |  | ✅/⚠️/❌ |
-| hit_share / miss_share |  |  |  | ✅/⚠️/❌ |
-| compaction_frequency |  |  |  | ✅/⚠️/❌ |
-| route_rebuild_count |  |  |  | ✅/⚠️/❌ |
+| Metric | До | После | Delta | Порог (warn/critical) | Статус vs пороги | Комментарий |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| al_h_npc_count (range) |  |  |  | см. §2 | OK/WARN/CRITICAL |  |
+| al_dispatch_q_len |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
+| al_dispatch_q_overflow |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
+| al_reg_overflow_count |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
+| al_route_overflow_count |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
+| al_h_recent_resync |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
+| avg_dispatch_drain |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
+| hit_share / miss_share |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
+| compaction_frequency |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
+| route_rebuild_count |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
 
 ### Scene M (`al_perf_mid`)
 (таблица как выше)
@@ -153,7 +174,7 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 
 ### Итог
 - Регрессия: yes/no
-- Краткая интерпретация (1-3 пункта)
+- Краткая интерпретация (1-3 пункта) с явным указанием метрик в WARN/CRITICAL
 - Приложенные логи/артефакты: <paths>
 ```
 
