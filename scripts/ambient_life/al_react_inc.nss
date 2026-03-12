@@ -513,6 +513,8 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeK
         AssignCommand(oNpc, ActionMoveToObject(oSource, TRUE, 2.0));
     }
 
+    // Keep ActionWait as the queue tail so AL_ReactFinishCreature can append
+    // ActionDoCommand(resume/reset) and restore routine only after react actions.
     AssignCommand(oNpc, ActionWait(0.8));
 }
 
@@ -541,7 +543,7 @@ void AL_ReactFinishCreature(object oNpc)
         return;
     }
 
-    AssignCommand(oNpc, AL_ReactResumeOrResetOnSelf());
+    AssignCommand(oNpc, ActionDoCommand(AL_ReactResumeOrResetOnSelf()));
 }
 
 void AL_OnDisturbed(object oActor)
