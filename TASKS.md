@@ -10,7 +10,8 @@
 
 - [x] Оффлайн/операторский preflight-валидатор маршрутов (`al_step` range, step continuity, duplicates, area consistency).
 - [x] Шаблон контент-подготовки sleep-точек (`_approach`/`_pose`) в `docs/SLEEP_MARKUP_TEMPLATE.md`.
-- [ ] Операторский гайд по linked areas (`al_link_*`) и warm-policy.
+- [x] Операторский гайд по linked areas (`al_link_*`) и warm-policy.
+- [x] Автоматизированный preflight-валидатор linked-графа (`al_link_count`, `al_link_*`, дубликаты, самоссылки, превышение degree-порогов).
 
 ## P2
 
@@ -24,6 +25,7 @@
 - Perf-check: см. `docs/PERF_RUNBOOK.md` (минимум Scene M для каждого заметного изменения ambient-life).
 - Preflight-gate перед S80/S100/S120: обязательный запуск `python3 scripts/ambient_life/al_route_preflight.py --input <waypoints.json>`; при `[ERROR]` запуск сценариев запрещён до исправления контента.
 - Locals-gate перед контентной выкладкой: обязательный запуск `python3 scripts/ambient_life/al_locals_preflight.py --input <locals.json>` (или `--format text` для операторского чтения); при `status=ERROR`/exit code `1` выкладка блокируется до исправления.
+- Linked-gate перед выкладкой linked-правок: обязательный запуск `python3 scripts/ambient_life/al_link_preflight.py --input <areas.json>` (или `--format text`); при `status=ERROR`/exit code `1` выкладка блокируется до исправления.
 - Для правок в route/registry/dispatcher: обязательный PR-отчёт «до/после» по шаблону из `docs/PERF_RUNBOOK.md`.
 - Gate (core): изменения в `scripts/ambient_life/al_area_inc.nss`, `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_route_inc.nss` считаются неполными без perf-сводки по `docs/PERF_PROFILE.md`.
 
