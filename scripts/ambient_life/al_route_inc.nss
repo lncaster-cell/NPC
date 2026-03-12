@@ -102,12 +102,19 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
         return FALSE;
     }
 
+    SetLocalInt(oNpc, "al_route_overflow_count", 0);
+    DeleteLocalString(oNpc, "al_route_overflow_tag");
+    SetLocalInt(oNpcArea, "al_route_overflow_count", 0);
+    DeleteLocalString(oNpcArea, "al_route_overflow_tag");
+
     int anStepVals[AL_ROUTE_MAX_STEPS];
     object aoStepRefs[AL_ROUTE_MAX_STEPS];
     int nFound = 0;
+    int nValidCandidates = 0;
+    int nOverflowCandidates = 0;
     int nSearchIdx = 0;
 
-    while (nFound < AL_ROUTE_MAX_STEPS)
+    while (TRUE)
     {
         object oWp = GetObjectByTag(sRouteTag, nSearchIdx);
         if (!GetIsObjectValid(oWp))
@@ -132,6 +139,8 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
             continue;
         }
 
+        nValidCandidates = nValidCandidates + 1;
+
         int bDuplicateStep = FALSE;
         int i = 0;
         while (i < nFound)
@@ -149,9 +158,40 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
             continue;
         }
 
+        if (nFound >= AL_ROUTE_MAX_STEPS)
+        {
+            nOverflowCandidates = nOverflowCandidates + 1;
+            continue;
+        }
+
         anStepVals[nFound] = nStep;
         aoStepRefs[nFound] = oWp;
         nFound = nFound + 1;
+    }
+
+    if (nOverflowCandidates > 0)
+    {
+        // Policy: hard-fail route cache if content exceeds AL_ROUTE_MAX_STEPS.
+        // This keeps behavior deterministic and forces content-side correction.
+        SetLocalInt(oNpc, "al_route_overflow_count", nValidCandidates);
+        SetLocalString(oNpc, "al_route_overflow_tag", sRouteTag);
+        SetLocalInt(oNpcArea, "al_route_overflow_count", nValidCandidates);
+        SetLocalString(oNpcArea, "al_route_overflow_tag", sRouteTag);
+
+        if (GetLocalInt(oNpcArea, "al_debug") > 0)
+        {
+            WriteTimestampedLogEntry(
+                "[AL][RouteOverflow] area=" + GetTag(oNpcArea)
+                + " npc=" + GetTag(oNpc)
+                + " route_tag=" + sRouteTag
+                + " valid_candidates=" + IntToString(nValidCandidates)
+                + " unique_overflow=" + IntToString(nOverflowCandidates)
+                + " max_steps=" + IntToString(AL_ROUTE_MAX_STEPS)
+            );
+        }
+
+        AL_RouteInvalidateCache(oNpc);
+        return FALSE;
     }
 
     if (nFound <= 0)

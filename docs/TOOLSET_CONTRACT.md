@@ -33,6 +33,10 @@
 - `al_step` (int, >=0)
 - `al_activity` (int, optional)
 - `al_dur_sec` (int, optional)
+- Ограничение контента: для каждого `route tag` в одной area допускается не более `16` уникальных
+  валидных шагов (`AL_ROUTE_MAX_STEPS`). При превышении route-cache помечается как невалидный
+  (hard-fail + fallback), а runtime пишет диагностику `al_route_overflow_count`/`al_route_overflow_tag`
+  на NPC и area.
 
 ### Transition-step
 - `al_trans_type`:
