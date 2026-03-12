@@ -55,8 +55,40 @@ string AL_TrimToken(string sToken)
     return GetSubString(sToken, nStart, nEnd - nStart + 1);
 }
 
-string AL_SelectRandomToken(string sCsv)
+string AL_AnimCacheBaseKey(int nActivity, string sType)
 {
+    return "al_activity_anim_cache_" + sType + "_" + IntToString(nActivity);
+}
+
+void AL_AnimCacheBumpCounter(string sCounter)
+{
+    object oModule = GetModule();
+    SetLocalInt(oModule, sCounter, GetLocalInt(oModule, sCounter) + 1);
+}
+
+void AL_ParseAnimCsvToCache(int nActivity, string sType, string sCsv)
+{
+    object oModule = GetModule();
+    string sBaseKey = AL_AnimCacheBaseKey(nActivity, sType);
+    string sSourceKey = sBaseKey + "_source";
+    string sSource = GetLocalString(oModule, sSourceKey);
+
+    if (sSource == sCsv)
+    {
+        AL_AnimCacheBumpCounter("al_anim_token_cache_hit");
+        return;
+    }
+
+    AL_AnimCacheBumpCounter("al_anim_token_cache_miss");
+
+    int nOldCount = GetLocalInt(oModule, sBaseKey + "_count");
+    int nOldIdx = 0;
+    while (nOldIdx < nOldCount)
+    {
+        DeleteLocalString(oModule, sBaseKey + "_token_" + IntToString(nOldIdx));
+        nOldIdx = nOldIdx + 1;
+    }
+
     string sList = sCsv;
     int nCount = 0;
 
@@ -71,6 +103,7 @@ string AL_SelectRandomToken(string sCsv)
         sToken = AL_TrimToken(sToken);
         if (sToken != "")
         {
+            SetLocalString(oModule, sBaseKey + "_token_" + IntToString(nCount), sToken);
             nCount = nCount + 1;
         }
 
@@ -82,43 +115,25 @@ string AL_SelectRandomToken(string sCsv)
         sList = GetSubString(sList, nComma + 1, GetStringLength(sList) - nComma - 1);
     }
 
+    SetLocalInt(oModule, sBaseKey + "_count", nCount);
+    SetLocalString(oModule, sSourceKey, sCsv);
+}
+
+string AL_SelectRandomToken(int nActivity, string sType, string sCsv)
+{
+    object oModule = GetModule();
+    AL_ParseAnimCsvToCache(nActivity, sType, sCsv);
+
+    string sBaseKey = AL_AnimCacheBaseKey(nActivity, sType);
+    int nCount = GetLocalInt(oModule, sBaseKey + "_count");
+
     if (nCount <= 0)
     {
         return "";
     }
 
     int nPick = Random(nCount);
-    sList = sCsv;
-    int nIdx = 0;
-
-    while (sList != "")
-    {
-        int nComma = FindSubString(sList, ",");
-        string sToken = sList;
-        if (nComma >= 0)
-        {
-            sToken = GetSubString(sList, 0, nComma);
-        }
-        sToken = AL_TrimToken(sToken);
-        if (sToken != "")
-        {
-            if (nIdx == nPick)
-            {
-                return sToken;
-            }
-
-            nIdx = nIdx + 1;
-        }
-
-        if (nComma < 0)
-        {
-            break;
-        }
-
-        sList = GetSubString(sList, nComma + 1, GetStringLength(sList) - nComma - 1);
-    }
-
-    return "";
+    return GetLocalString(oModule, sBaseKey + "_token_" + IntToString(nPick));
 }
 
 int AL_ShouldLoopCustomAnimation(int nActivity, string sAnimToken)
@@ -144,7 +159,7 @@ int AL_PlayCustomAnimation(object oNpc, int nActivity, int nDurSec)
         return FALSE;
     }
 
-    string sToken = AL_SelectRandomToken(AL_GetActivityCustomAnims(nActivity));
+    string sToken = AL_SelectRandomToken(nActivity, "custom", AL_GetActivityCustomAnims(nActivity));
     if (sToken == "")
     {
         return FALSE;
@@ -172,7 +187,7 @@ int AL_PlayNumericAnimation(object oNpc, int nActivity, int nDurSec)
         return FALSE;
     }
 
-    string sToken = AL_SelectRandomToken(AL_GetActivityNumericAnims(nActivity));
+    string sToken = AL_SelectRandomToken(nActivity, "numeric", AL_GetActivityNumericAnims(nActivity));
     if (sToken == "")
     {
         return FALSE;
