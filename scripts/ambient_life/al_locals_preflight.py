@@ -37,6 +37,11 @@ try:
 except ImportError:
     from preflight_issue_utils import make_issue_context, render_issue_message
 
+try:
+    from scripts.ambient_life.preflight_common import read_json_object_input, read_tag
+except ImportError:
+    from preflight_common import read_json_object_input, read_tag
+
 AL_ROUTE_MAX_STEPS = 16
 NPC_ROUTE_SLOTS = tuple(range(6))
 NPC_ROLE_MIN = 0
@@ -104,7 +109,15 @@ def _append_issue(
     reason: str,
     limits: ValidationLimits | None = None,
 ) -> None:
-    issues.append(ValidationIssue(level=level, scope=scope, object_id=object_id, code=code, reason=reason))
+    issues.append(
+        ValidationIssue(
+            level=level,
+            scope=scope,
+            object_id=object_id,
+            code=code,
+            context=make_issue_context(reason),
+        )
+    )
     if limits is not None and level == "ERROR":
         limits.error_count += 1
         if limits.error_limit is not None and limits.error_count >= limits.error_limit:
@@ -114,13 +127,6 @@ def _append_issue(
 def is_strict_int(value: Any) -> bool:
     # Exclude bool explicitly: JSON boolean is not a valid integer value for route/locals config fields.
     return isinstance(value, int) and not isinstance(value, bool)
-
-
-def _read_tag(value: Any) -> str | None:
-    if not isinstance(value, str):
-        return None
-    tag = value.strip()
-    return tag or None
 
 
 def _is_non_empty_string(value: Any) -> bool:
@@ -142,7 +148,7 @@ def _validate_npcs(
         npc_tag = read_tag(npc_tag_raw) or f"<idx:{index}>"
         if npc_tag_raw is None:
             _append_issue(issues, "ERROR", "npc", npc_tag, "missing_npc_tag", "npc_tag must be non-empty string", limits=limits)
-        elif _read_tag(npc_tag_raw) is None:
+        elif read_tag(npc_tag_raw) is None:
             code = "missing_npc_tag" if isinstance(npc_tag_raw, str) else "invalid_npc_tag_type"
             _append_issue(issues, "ERROR", "npc", npc_tag, code, "npc_tag must be non-empty string", limits=limits)
 
@@ -254,7 +260,7 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue], limits: 
         wp_tag = read_tag(wp_tag_raw) or f"<idx:{index}>"
         if wp_tag_raw is None:
             _append_issue(issues, "ERROR", "waypoint", wp_tag, "missing_waypoint_tag", "waypoint_tag must be non-empty string", limits=limits)
-        elif _read_tag(wp_tag_raw) is None:
+        elif read_tag(wp_tag_raw) is None:
             code = "missing_waypoint_tag" if isinstance(wp_tag_raw, str) else "invalid_waypoint_tag_type"
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "waypoint_tag must be non-empty string", limits=limits)
 
