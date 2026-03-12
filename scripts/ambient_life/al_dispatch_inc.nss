@@ -16,6 +16,38 @@ const int AL_DISPATCH_DRAIN_BUDGET_BACKLOG_THRESHOLD = 6;
 const int AL_DISPATCH_DRAIN_BUDGET_BACKLOG_BOOST = 4;
 const int AL_DISPATCH_DRAIN_BUDGET_WARM_SOFT_CAP = 5;
 const int AL_DISPATCH_REF_AUDIT_INTERVAL_TICKS = 48;
+const int AL_DISPATCH_DIAG_SAMPLE_PERIOD_TICKS = 6;
+
+int AL_DispatchDiagnosticsEnabled(object oArea)
+{
+    return GetLocalInt(oArea, "al_debug") > 0;
+}
+
+int AL_DispatchDiagnosticsSampleTick(object oArea)
+{
+    if (!AL_DispatchDiagnosticsEnabled(oArea))
+    {
+        return FALSE;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    if (nSyncTick <= 0)
+    {
+        return TRUE;
+    }
+
+    return (nSyncTick % AL_DISPATCH_DIAG_SAMPLE_PERIOD_TICKS) == 0;
+}
+
+void AL_DispatchRecordRefAuditMismatch(object oArea)
+{
+    if (!AL_DispatchDiagnosticsEnabled(oArea))
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, "al_dispatch_ref_audit_mismatch", GetLocalInt(oArea, "al_dispatch_ref_audit_mismatch") + 1);
+}
 
 string AL_DispatchQueueKey(string sField, int nIdx)
 {
@@ -236,7 +268,8 @@ void AL_AccumulateDispatchRefAuditActualCount(object oArea, int nCycleId)
 
 void AL_DebugAuditDispatchRefCounts(object oArea)
 {
-    if (GetLocalInt(oArea, "al_debug") <= 0)
+    // HEAVY DIAGNOSTICS (dispatch ref-audit): явный gating по al_debug и sampling-периоду.
+    if (!AL_DispatchDiagnosticsEnabled(oArea) || !AL_DispatchDiagnosticsSampleTick(oArea))
     {
         return;
     }
@@ -282,7 +315,7 @@ void AL_DebugAuditDispatchRefCounts(object oArea)
         int nRefCount = GetLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId));
         if (nActualCount != nRefCount)
         {
-            SetLocalInt(oArea, "al_dispatch_ref_audit_mismatch", GetLocalInt(oArea, "al_dispatch_ref_audit_mismatch") + 1);
+            AL_DispatchRecordRefAuditMismatch(oArea);
             if (nActualCount <= 0)
             {
                 DeleteLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId));

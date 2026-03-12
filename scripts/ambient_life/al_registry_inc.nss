@@ -12,6 +12,88 @@ const int AL_REG_MISS_LOG_WINDOW_TICKS = 20;
 const int AL_REG_MISS_LOG_MIN_SAMPLES = 10;
 const int AL_REG_MISS_LOG_THRESHOLD_PCT = 25;
 const int AL_REG_MISS_LOG_COOLDOWN_TICKS = 50;
+const int AL_REG_DIAG_SAMPLE_PERIOD_TICKS = 5;
+const int AL_REG_DIAG_BATCH_PERIOD_TICKS = 10;
+
+int AL_RegDiagnosticsEnabled(object oArea)
+{
+    return GetLocalInt(oArea, "al_debug") > 0;
+}
+
+int AL_RegDiagnosticsSampleTick(object oArea)
+{
+    if (!AL_RegDiagnosticsEnabled(oArea))
+    {
+        return FALSE;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    if (nSyncTick <= 0)
+    {
+        return TRUE;
+    }
+
+    return (nSyncTick % AL_REG_DIAG_SAMPLE_PERIOD_TICKS) == 0;
+}
+
+string AL_RegDiagPendingKey(string sMetric)
+{
+    return "al_reg_diag_pending_" + sMetric;
+}
+
+void AL_RegDiagAccumulate(object oArea, string sMetric, int nDelta)
+{
+    if (!AL_RegDiagnosticsEnabled(oArea) || nDelta == 0)
+    {
+        return;
+    }
+
+    string sPendingKey = AL_RegDiagPendingKey(sMetric);
+    SetLocalInt(oArea, sPendingKey, GetLocalInt(oArea, sPendingKey) + nDelta);
+}
+
+void AL_RegDiagFlushMetric(object oArea, string sMetric)
+{
+    int nPending = GetLocalInt(oArea, AL_RegDiagPendingKey(sMetric));
+    if (nPending == 0)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, sMetric, GetLocalInt(oArea, sMetric) + nPending);
+    DeleteLocalInt(oArea, AL_RegDiagPendingKey(sMetric));
+}
+
+void AL_RegFlushDiagnostics(object oArea, int bForce)
+{
+    if (!AL_RegDiagnosticsEnabled(oArea))
+    {
+        return;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nLastFlushTick = GetLocalInt(oArea, "al_reg_diag_last_flush_tick");
+    if (!bForce && nSyncTick > 0 && nLastFlushTick > 0 && (nSyncTick - nLastFlushTick) < AL_REG_DIAG_BATCH_PERIOD_TICKS)
+    {
+        return;
+    }
+
+    AL_RegDiagFlushMetric(oArea, "al_reg_lookup_total");
+    AL_RegDiagFlushMetric(oArea, "al_reg_lookup_window_total");
+    AL_RegDiagFlushMetric(oArea, "al_reg_lookup_window_miss");
+    AL_RegDiagFlushMetric(oArea, "al_reg_reverse_hit");
+    AL_RegDiagFlushMetric(oArea, "al_reg_reverse_miss");
+    AL_RegDiagFlushMetric(oArea, "al_reg_index_miss");
+    AL_RegDiagFlushMetric(oArea, "al_reg_index_miss_cold_start");
+    AL_RegDiagFlushMetric(oArea, "al_reg_index_miss_stale");
+    AL_RegDiagFlushMetric(oArea, "al_reg_index_miss_orphan");
+    AL_RegDiagFlushMetric(oArea, "al_reg_index_miss_fast_candidate_hit");
+
+    if (nSyncTick > 0)
+    {
+        SetLocalInt(oArea, "al_reg_diag_last_flush_tick", nSyncTick);
+    }
+}
 
 int AL_GetEffectiveNpcCap(object oArea)
 {
@@ -119,7 +201,7 @@ int AL_RegValidateCandidateIdx(object oArea, object oNpc, int nCandidateIdx, int
     AL_RegReverseSet(oArea, oNpc, nCandidateIdx);
     SetLocalObject(oNpc, "al_reg_area", oArea);
     SetLocalInt(oNpc, "al_reg_idx", nCandidateIdx);
-    SetLocalInt(oArea, "al_reg_index_miss_fast_candidate_hit", GetLocalInt(oArea, "al_reg_index_miss_fast_candidate_hit") + 1);
+    AL_RegDiagAccumulate(oArea, "al_reg_index_miss_fast_candidate_hit", 1);
     return nCandidateIdx;
 }
 
@@ -148,10 +230,12 @@ int AL_RegTryConsumeLinearFallbackBudget(object oArea)
 
 void AL_RegMaybeLogMissRate(object oArea)
 {
-    if (GetLocalInt(oArea, "al_debug") <= 0)
+    if (!AL_RegDiagnosticsEnabled(oArea) || !AL_RegDiagnosticsSampleTick(oArea))
     {
         return;
     }
+
+    AL_RegFlushDiagnostics(oArea, TRUE);
 
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
     int nChecks = GetLocalInt(oArea, "al_reg_lookup_window_total");
@@ -191,7 +275,9 @@ void AL_RegMaybeLogMissRate(object oArea)
 
 int AL_FindNPCInRegistry(object oArea, object oNpc)
 {
-    SetLocalInt(oArea, "al_reg_lookup_total", GetLocalInt(oArea, "al_reg_lookup_total") + 1);
+    // HEAVY DIAGNOSTICS (registry lookup triage): gated by al_debug and batched writes.
+    AL_RegDiagAccumulate(oArea, "al_reg_lookup_total", 1);
+    AL_RegFlushDiagnostics(oArea, FALSE);
 
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
     int nLookupWindowStart = GetLocalInt(oArea, "al_reg_lookup_window_start_tick");
@@ -201,35 +287,41 @@ int AL_FindNPCInRegistry(object oArea, object oNpc)
         SetLocalInt(oArea, "al_reg_lookup_window_total", 0);
         SetLocalInt(oArea, "al_reg_lookup_window_miss", 0);
     }
-    SetLocalInt(oArea, "al_reg_lookup_window_total", GetLocalInt(oArea, "al_reg_lookup_window_total") + 1);
+    AL_RegDiagAccumulate(oArea, "al_reg_lookup_window_total", 1);
 
     int nReverseIdx = AL_RegReverseGet(oArea, oNpc);
     if (nReverseIdx >= 0)
     {
         if (GetLocalObject(oArea, AL_RegKey(nReverseIdx)) == oNpc)
         {
-            SetLocalInt(oArea, "al_reg_reverse_hit", GetLocalInt(oArea, "al_reg_reverse_hit") + 1);
+            AL_RegDiagAccumulate(oArea, "al_reg_reverse_hit", 1);
             SetLocalObject(oNpc, "al_reg_area", oArea);
             SetLocalInt(oNpc, "al_reg_idx", nReverseIdx);
             return nReverseIdx;
         }
     }
 
-    SetLocalInt(oArea, "al_reg_reverse_miss", GetLocalInt(oArea, "al_reg_reverse_miss") + 1);
-    SetLocalInt(oArea, "al_reg_index_miss", GetLocalInt(oArea, "al_reg_index_miss") + 1);
-    SetLocalInt(oArea, "al_reg_lookup_window_miss", GetLocalInt(oArea, "al_reg_lookup_window_miss") + 1);
+    AL_RegDiagAccumulate(oArea, "al_reg_reverse_miss", 1);
+    AL_RegDiagAccumulate(oArea, "al_reg_index_miss", 1);
+    AL_RegDiagAccumulate(oArea, "al_reg_lookup_window_miss", 1);
     AL_RegMaybeLogMissRate(oArea);
 
     int bReverseMissing = (nReverseIdx < 0);
     if (bReverseMissing)
     {
-        SetLocalInt(oArea, "al_reg_index_miss_cold_start", GetLocalInt(oArea, "al_reg_index_miss_cold_start") + 1);
-        SetLocalString(oArea, "al_reg_index_miss_last_type", "cold-start");
+        AL_RegDiagAccumulate(oArea, "al_reg_index_miss_cold_start", 1);
+        if (AL_RegDiagnosticsEnabled(oArea))
+        {
+            SetLocalString(oArea, "al_reg_index_miss_last_type", "cold-start");
+        }
     }
     else
     {
-        SetLocalInt(oArea, "al_reg_index_miss_stale", GetLocalInt(oArea, "al_reg_index_miss_stale") + 1);
-        SetLocalString(oArea, "al_reg_index_miss_last_type", "stale");
+        AL_RegDiagAccumulate(oArea, "al_reg_index_miss_stale", 1);
+        if (AL_RegDiagnosticsEnabled(oArea))
+        {
+            SetLocalString(oArea, "al_reg_index_miss_last_type", "stale");
+        }
     }
 
     int nCount = GetLocalInt(oArea, "al_npc_count");
@@ -255,7 +347,10 @@ int AL_FindNPCInRegistry(object oArea, object oNpc)
 
     if (!AL_RegTryConsumeLinearFallbackBudget(oArea))
     {
-        SetLocalString(oArea, "al_reg_index_miss_last_type", "deferred");
+        if (AL_RegDiagnosticsEnabled(oArea))
+        {
+            SetLocalString(oArea, "al_reg_index_miss_last_type", "deferred");
+        }
         return -1;
     }
 
@@ -275,8 +370,11 @@ int AL_FindNPCInRegistry(object oArea, object oNpc)
     }
 
     // Reverse lookup не сошёлся и линейный fallback тоже не нашёл запись.
-    SetLocalInt(oArea, "al_reg_index_miss_orphan", GetLocalInt(oArea, "al_reg_index_miss_orphan") + 1);
-    SetLocalString(oArea, "al_reg_index_miss_last_type", "orphan");
+    AL_RegDiagAccumulate(oArea, "al_reg_index_miss_orphan", 1);
+    if (AL_RegDiagnosticsEnabled(oArea))
+    {
+        SetLocalString(oArea, "al_reg_index_miss_last_type", "orphan");
+    }
 
     return -1;
 }
