@@ -37,6 +37,9 @@
 
 Источник: `scripts/ambient_life/al_acts_inc.nss`.
 
+> Поддержка activity-таблицы (группы кодов и возвращаемые анимации/waypoint tags) ведётся в `scripts/ambient_life/al_acts_inc.nss`
+> в блоке helper-предикатов `AL_IsActivityInGroup*` и в публичных мапперах `AL_GetActivity*`.
+
 | Код | Константа |
 | ---: | --- |
 | 0 | `AL_ACT_NPC_HIDDEN` |
