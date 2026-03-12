@@ -42,7 +42,33 @@ def _normalize_severity(level: str) -> str:
     return "info"
 
 
-def _build_report(route_input: Path, link_input: Path, locals_input: Path) -> dict[str, Any]:
+_SEVERITY_RANK = {"error": 0, "warn": 1, "info": 2}
+
+
+def _order_issues(issues: list[dict[str, Any]], sort_mode: str) -> list[dict[str, Any]]:
+    if sort_mode == "strict":
+        return sorted(
+            issues,
+            key=lambda item: (
+                _SEVERITY_RANK.get(item["severity"], 99),
+                item["check"],
+                item["path"],
+                item["code"],
+                item["message"],
+            ),
+        )
+    if sort_mode == "grouped":
+        return sorted(
+            issues,
+            key=lambda item: (
+                item["check"],
+                _SEVERITY_RANK.get(item["severity"], 99),
+            ),
+        )
+    return issues
+
+
+def _build_report(route_input: Path, link_input: Path, locals_input: Path, sort_mode: str = "none") -> dict[str, Any]:
     route_rows = al_route_preflight._read_input(route_input)
     link_rows = al_link_preflight._read_input(link_input)
     locals_payload = al_locals_preflight._read_input(locals_input)
@@ -117,7 +143,7 @@ def _build_report(route_input: Path, link_input: Path, locals_input: Path) -> di
             "locals": str(locals_input),
         },
         "summary": summary,
-        "issues": sorted(issues, key=lambda item: (item["severity"], item["check"], item["path"], item["code"], item["message"])),
+        "issues": _order_issues(issues, sort_mode),
     }
 
 
@@ -148,9 +174,26 @@ def main() -> int:
     parser.add_argument("--link-input", required=True, help="Path to link preflight JSON input")
     parser.add_argument("--locals-input", required=True, help="Path to locals preflight JSON input")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
+    sort_group = parser.add_mutually_exclusive_group()
+    sort_group.add_argument(
+        "--deterministic-sort",
+        action="store_true",
+        help="Enable grouped deterministic ordering (check, severity) while preserving issue arrival order inside groups",
+    )
+    sort_group.add_argument(
+        "--strict-deterministic-sort",
+        action="store_true",
+        help="Enable strict deterministic ordering with full issue sort (heavier than grouped ordering)",
+    )
     args = parser.parse_args()
 
-    report = _build_report(Path(args.route_input), Path(args.link_input), Path(args.locals_input))
+    sort_mode = "none"
+    if args.strict_deterministic_sort:
+        sort_mode = "strict"
+    elif args.deterministic_sort:
+        sort_mode = "grouped"
+
+    report = _build_report(Path(args.route_input), Path(args.link_input), Path(args.locals_input), sort_mode)
 
     if args.format == "json":
         print(json.dumps(report, ensure_ascii=False, indent=2))

@@ -27,6 +27,8 @@ TARGET_DEGREE_MAX = 4
 HUB_DEGREE_MAX = 6
 LINK_KEY_RE = re.compile(r"^al_link_(\d+)$")
 
+_SEVERITY_RANK = {"ERROR": 0, "WARN": 1, "INFO": 2}
+
 
 @dataclass
 class ValidationIssue:
@@ -198,13 +200,22 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
     return issues
 
 
-def build_report(issues: list[ValidationIssue]) -> dict[str, Any]:
+def _order_issues(issues: list[ValidationIssue], sort_mode: str) -> list[ValidationIssue]:
+    if sort_mode == "strict":
+        return sorted(issues, key=lambda i: (i.level, i.area_tag, i.code, i.reason))
+    if sort_mode == "grouped":
+        return sorted(issues, key=lambda i: (_SEVERITY_RANK.get(i.level, 99), i.code))
+    return issues
+
+
+def build_report(issues: list[ValidationIssue], sort_mode: str = "none") -> dict[str, Any]:
     errors = sum(1 for issue in issues if issue.level == "ERROR")
     warns = sum(1 for issue in issues if issue.level == "WARN")
+    ordered_issues = _order_issues(issues, sort_mode)
     return {
         "status": "ERROR" if errors else "OK",
         "summary": {"errors": errors, "warnings": warns, "total": len(issues)},
-        "issues": [asdict(issue) for issue in sorted(issues, key=lambda i: (i.level, i.area_tag, i.code, i.reason))],
+        "issues": [asdict(issue) for issue in ordered_issues],
     }
 
 
@@ -224,6 +235,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Ambient Life linked-area graph offline")
     parser.add_argument("--input", required=True, help="Path to JSON with area link locals")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
+    sort_group = parser.add_mutually_exclusive_group()
+    sort_group.add_argument(
+        "--deterministic-sort",
+        action="store_true",
+        help="Enable grouped deterministic ordering (severity/code) while preserving issue arrival order inside groups",
+    )
+    sort_group.add_argument(
+        "--strict-deterministic-sort",
+        action="store_true",
+        help="Enable strict deterministic ordering with full issue sort",
+    )
     args = parser.parse_args()
 
     try:
@@ -232,7 +254,13 @@ def main() -> int:
         print(json.dumps({"status": "FATAL", "reason": str(exc)}), file=sys.stderr)
         return 2
 
-    report = build_report(validate_links(rows))
+    sort_mode = "none"
+    if args.strict_deterministic_sort:
+        sort_mode = "strict"
+    elif args.deterministic_sort:
+        sort_mode = "grouped"
+
+    report = build_report(validate_links(rows), sort_mode=sort_mode)
 
     if args.format == "json":
         print(json.dumps(report, ensure_ascii=False, indent=2))
