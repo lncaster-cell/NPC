@@ -15,6 +15,7 @@ const int AL_DISPATCH_DRAIN_BUDGET_CRITICAL_BASE = 12;
 const int AL_DISPATCH_DRAIN_BUDGET_BACKLOG_THRESHOLD = 6;
 const int AL_DISPATCH_DRAIN_BUDGET_BACKLOG_BOOST = 4;
 const int AL_DISPATCH_DRAIN_BUDGET_WARM_SOFT_CAP = 5;
+const int AL_DISPATCH_REF_AUDIT_INTERVAL_TICKS = 48;
 
 string AL_DispatchQueueKey(string sField, int nIdx)
 {
@@ -64,6 +65,26 @@ string AL_DispatchCycleRefIndexMarkKey(int nCycleId)
 string AL_DispatchCycleRefIndexEntryKey(int nIdx)
 {
     return "al_dispatch_ref_idx_entry_" + IntToString(nIdx);
+}
+
+string AL_DispatchCycleRefCountKey(int nCycleId)
+{
+    return "al_dispatch_refcnt_" + IntToString(nCycleId);
+}
+
+string AL_DispatchRefAuditCycleMarkKey(int nCycleId)
+{
+    return "al_dispatch_ref_audit_mark_" + IntToString(nCycleId);
+}
+
+string AL_DispatchRefAuditCycleEntryKey(int nIdx)
+{
+    return "al_dispatch_ref_audit_entry_" + IntToString(nIdx);
+}
+
+string AL_DispatchRefAuditActualCountKey(int nCycleId)
+{
+    return "al_dispatch_ref_audit_actual_" + IntToString(nCycleId);
 }
 
 void AL_TrackDispatchPendingCycleId(object oArea, int nCycleId)
@@ -123,6 +144,164 @@ int AL_IsDispatchCycleReferenced(object oArea, int nCycleId)
     return FALSE;
 }
 
+int AL_GetDispatchCycleReferenceCountFullScan(object oArea, int nCycleId)
+{
+    if (nCycleId <= 0)
+    {
+        return 0;
+    }
+
+    int nCount = 0;
+    if (GetLocalInt(oArea, "al_dispatch_active") > 0 && GetLocalInt(oArea, "al_dispatch_cycle_id_active") == nCycleId)
+    {
+        nCount = nCount + 1;
+    }
+
+    int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
+    int nHead = GetLocalInt(oArea, "al_dispatch_q_head");
+    int nCapacity = AL_GetDispatchQueueCapacity(oArea);
+    int i = 0;
+    while (i < nLen)
+    {
+        int nIdx = (nHead + i) % nCapacity;
+        if (GetLocalInt(oArea, AL_DispatchQueueKey("cycle_id", nIdx)) == nCycleId)
+        {
+            nCount = nCount + 1;
+        }
+        i = i + 1;
+    }
+
+    return nCount;
+}
+
+void AL_IncrementDispatchCycleRefCount(object oArea, int nCycleId)
+{
+    if (nCycleId <= 0)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId), GetLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId)) + 1);
+}
+
+void AL_DecrementDispatchCycleRefCount(object oArea, int nCycleId)
+{
+    if (nCycleId <= 0)
+    {
+        return;
+    }
+
+    int nRefCount = GetLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId)) - 1;
+    if (nRefCount <= 0)
+    {
+        DeleteLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId));
+        return;
+    }
+
+    SetLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId), nRefCount);
+}
+
+void AL_MarkDispatchRefAuditCycle(object oArea, int nCycleId)
+{
+    if (nCycleId <= 0)
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, AL_DispatchRefAuditCycleMarkKey(nCycleId)) > 0)
+    {
+        return;
+    }
+
+    int nCount = GetLocalInt(oArea, "al_dispatch_ref_audit_count");
+    SetLocalInt(oArea, AL_DispatchRefAuditCycleEntryKey(nCount), nCycleId);
+    SetLocalInt(oArea, AL_DispatchRefAuditCycleMarkKey(nCycleId), 1);
+    SetLocalInt(oArea, "al_dispatch_ref_audit_count", nCount + 1);
+}
+
+void AL_AccumulateDispatchRefAuditActualCount(object oArea, int nCycleId)
+{
+    if (nCycleId <= 0)
+    {
+        return;
+    }
+
+    AL_MarkDispatchRefAuditCycle(oArea, nCycleId);
+    SetLocalInt(
+        oArea,
+        AL_DispatchRefAuditActualCountKey(nCycleId),
+        GetLocalInt(oArea, AL_DispatchRefAuditActualCountKey(nCycleId)) + 1
+    );
+}
+
+void AL_DebugAuditDispatchRefCounts(object oArea)
+{
+    if (GetLocalInt(oArea, "al_debug") <= 0)
+    {
+        return;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nLastAuditTick = GetLocalInt(oArea, "al_dispatch_ref_audit_sync_tick");
+    if (nLastAuditTick > 0 && nSyncTick > 0 && (nSyncTick - nLastAuditTick) < AL_DISPATCH_REF_AUDIT_INTERVAL_TICKS)
+    {
+        return;
+    }
+    SetLocalInt(oArea, "al_dispatch_ref_audit_sync_tick", nSyncTick);
+
+    if (GetLocalInt(oArea, "al_dispatch_active") > 0)
+    {
+        AL_AccumulateDispatchRefAuditActualCount(oArea, GetLocalInt(oArea, "al_dispatch_cycle_id_active"));
+    }
+
+    int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
+    int nHead = GetLocalInt(oArea, "al_dispatch_q_head");
+    int nCapacity = AL_GetDispatchQueueCapacity(oArea);
+    int i = 0;
+    while (i < nLen)
+    {
+        int nIdx = (nHead + i) % nCapacity;
+        AL_AccumulateDispatchRefAuditActualCount(oArea, GetLocalInt(oArea, AL_DispatchQueueKey("cycle_id", nIdx)));
+        i = i + 1;
+    }
+
+    int nTracked = GetLocalInt(oArea, "al_dispatch_pending_track_count");
+    i = 0;
+    while (i < nTracked)
+    {
+        AL_MarkDispatchRefAuditCycle(oArea, GetLocalInt(oArea, "al_dispatch_pending_track_" + IntToString(i)));
+        i = i + 1;
+    }
+
+    int nAuditCount = GetLocalInt(oArea, "al_dispatch_ref_audit_count");
+    i = 0;
+    while (i < nAuditCount)
+    {
+        int nCycleId = GetLocalInt(oArea, AL_DispatchRefAuditCycleEntryKey(i));
+        int nActualCount = GetLocalInt(oArea, AL_DispatchRefAuditActualCountKey(nCycleId));
+        int nRefCount = GetLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId));
+        if (nActualCount != nRefCount)
+        {
+            SetLocalInt(oArea, "al_dispatch_ref_audit_mismatch", GetLocalInt(oArea, "al_dispatch_ref_audit_mismatch") + 1);
+            if (nActualCount <= 0)
+            {
+                DeleteLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId));
+            }
+            else
+            {
+                SetLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId), nActualCount);
+            }
+        }
+
+        DeleteLocalInt(oArea, AL_DispatchRefAuditActualCountKey(nCycleId));
+        DeleteLocalInt(oArea, AL_DispatchRefAuditCycleMarkKey(nCycleId));
+        DeleteLocalInt(oArea, AL_DispatchRefAuditCycleEntryKey(i));
+        i = i + 1;
+    }
+
+    SetLocalInt(oArea, "al_dispatch_ref_audit_count", 0);
+}
+
 void AL_MarkDispatchCycleReference(object oArea, int nCycleId)
 {
     if (nCycleId <= 0)
@@ -143,6 +322,8 @@ void AL_MarkDispatchCycleReference(object oArea, int nCycleId)
 
 void AL_ClearDispatchCycleReferenceIndex(object oArea)
 {
+    // Legacy compatibility shim: ref-index больше не используется в hot-path prune.
+    // Оставляем очистку ключей, чтобы не копить мусор от старых сохранений/версий.
     int nCount = GetLocalInt(oArea, "al_dispatch_ref_idx_count");
     int i = 0;
     while (i < nCount)
@@ -158,22 +339,10 @@ void AL_ClearDispatchCycleReferenceIndex(object oArea)
 
 void AL_BuildDispatchCycleReferenceIndex(object oArea)
 {
+    // Legacy compatibility shim: модель references переведена на инкрементальный ref-count.
+    // Полный rebuild оставлен только как debug/self-heal аудит.
     AL_ClearDispatchCycleReferenceIndex(oArea);
-
-    if (GetLocalInt(oArea, "al_dispatch_active") > 0)
-    {
-        AL_MarkDispatchCycleReference(oArea, GetLocalInt(oArea, "al_dispatch_cycle_id_active"));
-    }
-
-    int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
-    int nHead = GetLocalInt(oArea, "al_dispatch_q_head");
-    int i = 0;
-    while (i < nLen)
-    {
-        int nIdx = (nHead + i) % AL_GetDispatchQueueCapacity(oArea);
-        AL_MarkDispatchCycleReference(oArea, GetLocalInt(oArea, AL_DispatchQueueKey("cycle_id", nIdx)));
-        i = i + 1;
-    }
+    AL_DebugAuditDispatchRefCounts(oArea);
 }
 
 void AL_PruneDispatchPendingIndex(object oArea)
@@ -183,8 +352,6 @@ void AL_PruneDispatchPendingIndex(object oArea)
     {
         return;
     }
-
-    AL_BuildDispatchCycleReferenceIndex(oArea);
 
     int nWrite = 0;
     int i = 0;
@@ -201,7 +368,7 @@ void AL_PruneDispatchPendingIndex(object oArea)
             }
             else
             {
-                bKeep = GetLocalInt(oArea, AL_DispatchCycleRefIndexMarkKey(nCycleId)) > 0;
+                bKeep = GetLocalInt(oArea, AL_DispatchCycleRefCountKey(nCycleId)) > 0;
             }
         }
 
@@ -230,7 +397,7 @@ void AL_PruneDispatchPendingIndex(object oArea)
     }
 
     SetLocalInt(oArea, "al_dispatch_pending_track_count", nWrite);
-    AL_ClearDispatchCycleReferenceIndex(oArea);
+    AL_DebugAuditDispatchRefCounts(oArea);
 }
 
 void AL_ResetDispatchPendingIndex(object oArea)

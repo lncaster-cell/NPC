@@ -137,6 +137,7 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 
    Дополнительно (для изменений dispatch/registry):
    - проверять `al_dispatch_ticks_to_drain`;
+   - для инкрементального ref-count dispatcher ожидать снижение jitter по `al_dispatch_ticks_to_drain` в стресс-сценах `S100/S120` (ровнее профиль между соседними окнами 20 тиков);
    - ожидание по оптимизациям compaction: **без деградации** относительно baseline (допускается только шум измерений).
 
 2. **Cache hit/miss share**

@@ -419,6 +419,7 @@ void AL_DequeueBatchedDispatch(object oArea)
     DeleteLocalInt(oArea, AL_DispatchQueueKey("event", nHead));
     DeleteLocalInt(oArea, AL_DispatchQueueKey("prio", nHead));
     DeleteLocalInt(oArea, AL_DispatchQueueKey("cycle_id", nHead));
+    AL_DecrementDispatchCycleRefCount(oArea, nCycleId);
     AL_ClearDispatchPendingCycleId(oArea, nCycleId);
 
     SetLocalInt(oArea, "al_dispatch_q_head", (nHead + 1) % AL_GetDispatchQueueCapacity(oArea));
@@ -560,6 +561,7 @@ void AL_ActivateQueuedDispatch(object oArea)
     SetLocalInt(oArea, "al_dispatch_event", nEvent);
     SetLocalInt(oArea, "al_dispatch_active", 1);
     SetLocalInt(oArea, "al_dispatch_cycle_id_active", nCycleId);
+    AL_IncrementDispatchCycleRefCount(oArea, nCycleId);
 
     if (nPriority == AL_DISPATCH_PRIORITY_CRITICAL)
     {
@@ -637,6 +639,7 @@ void AL_StartBatchedDispatch(object oArea, int nEvent)
     SetLocalInt(oArea, AL_DispatchQueueKey("prio", nTail), AL_DispatchPriorityFromEvent(nEvent));
     SetLocalInt(oArea, AL_DispatchQueueKey("cycle_id", nTail), nCycleId);
     SetLocalInt(oArea, "al_dispatch_q_len", nLen + 1);
+    AL_IncrementDispatchCycleRefCount(oArea, nCycleId);
 
     SetLocalInt(oArea, AL_DispatchPendingKey(nCycleId), 1);
     SetLocalInt(oArea, AL_DispatchPendingMemberKey(nCycleId), 1);
@@ -727,6 +730,7 @@ void AL_RunBatchedDispatch(object oArea)
         }
 
         SetLocalInt(oArea, "al_dispatch_active", 0);
+        AL_DecrementDispatchCycleRefCount(oArea, GetLocalInt(oArea, "al_dispatch_cycle_id_active"));
         AL_ClearDispatchPendingCycleId(oArea, GetLocalInt(oArea, "al_dispatch_cycle_id_active"));
         DeleteLocalInt(oArea, "al_dispatch_cycle_id_active");
         AL_PruneDispatchPendingIndex(oArea);
