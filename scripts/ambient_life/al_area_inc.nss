@@ -322,7 +322,9 @@ void AL_OnAreaExit(object oArea, object oExit)
 
     if (oCountedArea != oArea)
     {
-        DeleteLocalObject(oExit, AL_COUNTED_AREA_LOCAL);
+        // Enter/exit callbacks can be reordered for area transitions, so this exit may
+        // arrive for an area that is no longer the actor's counted area. Clearing the
+        // local here risks dropping the new counted area and desynchronizing counts.
         return;
     }
 
