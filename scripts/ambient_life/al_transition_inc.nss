@@ -1,5 +1,9 @@
 // Ambient Life Stage F transition subsystem.
 // Separate from Stage D/E area-scoped route cache runtime.
+//
+// NOTE: Transition runtime state is NOT persisted in locals.
+// We execute transition actions immediately and do not keep
+// al_trans_rt_* technical keys on NPCs.
 
 #include "al_area_inc"
 #include "al_activity_inc"
@@ -9,20 +13,9 @@ const int AL_TRANSITION_NONE = 0;
 const int AL_TRANSITION_AREA_HELPER = 1;
 const int AL_TRANSITION_INTRA_TELEPORT = 2;
 
-string AL_TransitionRtActiveKey() { return "al_trans_rt_active"; }
-string AL_TransitionRtTypeKey() { return "al_trans_rt_type"; }
-string AL_TransitionRtDstKey() { return "al_trans_rt_dst"; }
-
 void AL_TransitionRuntimeClear(object oNpc)
 {
-    if (!GetIsObjectValid(oNpc))
-    {
-        return;
-    }
-
-    SetLocalInt(oNpc, AL_TransitionRtActiveKey(), FALSE);
-    SetLocalInt(oNpc, AL_TransitionRtTypeKey(), AL_TRANSITION_NONE);
-    DeleteLocalObject(oNpc, AL_TransitionRtDstKey());
+    // Transition runtime state is not stored; keep function for API stability.
 }
 
 int AL_TransitionTypeFromStep(object oStep)
@@ -110,10 +103,6 @@ int AL_TransitionQueueAreaHelper(object oNpc, object oStep, object oSrc, object 
     AL_ActivityApplyStep(oNpc, nActivity, nDur);
     ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
 
-    SetLocalInt(oNpc, AL_TransitionRtActiveKey(), TRUE);
-    SetLocalInt(oNpc, AL_TransitionRtTypeKey(), AL_TRANSITION_AREA_HELPER);
-    SetLocalObject(oNpc, AL_TransitionRtDstKey(), oDst);
-
     return TRUE;
 }
 
@@ -143,10 +132,6 @@ int AL_TransitionQueueIntraTeleport(object oNpc, object oStep, object oSrc, obje
     ActionJumpToLocation(GetLocation(oDst));
     AL_ActivityApplyStep(oNpc, nActivity, nDur);
     ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
-
-    SetLocalInt(oNpc, AL_TransitionRtActiveKey(), TRUE);
-    SetLocalInt(oNpc, AL_TransitionRtTypeKey(), AL_TRANSITION_INTRA_TELEPORT);
-    SetLocalObject(oNpc, AL_TransitionRtDstKey(), oDst);
 
     return TRUE;
 }
