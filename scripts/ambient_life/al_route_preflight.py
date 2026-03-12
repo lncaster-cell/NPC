@@ -18,12 +18,13 @@ Expected fields contract:
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from scripts.ambient_life.preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
 
 AL_ROUTE_MAX_STEPS = 16
 
@@ -47,40 +48,16 @@ class ValidationIssue:
 
 
 def _read_input(path: Path) -> list[dict[str, Any]]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if isinstance(payload, dict):
-        if "waypoints" not in payload:
-            raise ValueError("missing required key 'waypoints'")
-        waypoints = payload["waypoints"]
-    elif isinstance(payload, list):
-        waypoints = payload
-    else:
-        raise ValueError("JSON root must be an object with key 'waypoints' or an array")
-
-    if not isinstance(waypoints, list):
-        raise ValueError("'waypoints' must be an array")
-    return waypoints
-
-
-def is_strict_int(value: Any) -> bool:
-    # Exclude bool explicitly: JSON boolean is not a valid integer value for route/locals config fields.
-    return isinstance(value, int) and not isinstance(value, bool)
-
-
-def _read_tag(value: Any) -> str | None:
-    if not isinstance(value, str):
-        return None
-    tag = value.strip()
-    return tag or None
+    return read_json_list_input(path, key="waypoints")
 
 
 def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, ValidationIssue | None]:
     area_tag_raw = raw.get("area_tag")
-    area_tag = _read_tag(area_tag_raw)
+    area_tag = read_tag(area_tag_raw)
     route_tag_raw = raw.get("route_tag")
-    route_tag = _read_tag(route_tag_raw)
+    route_tag = read_tag(route_tag_raw)
     waypoint_tag_raw = raw.get("waypoint_tag")
-    waypoint_tag = _read_tag(waypoint_tag_raw) or f"<idx:{index}>"
+    waypoint_tag = read_tag(waypoint_tag_raw) or f"<idx:{index}>"
     step_raw = raw.get("al_step")
 
     al_bed_id_raw = raw.get("al_bed_id")
@@ -98,11 +75,7 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
         al_bed_id = al_bed_id_raw.strip()
 
     if area_tag is None:
-        code = (
-            "missing_area_tag"
-            if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
-            else "invalid_area_tag_type"
-        )
+        code = tag_error_code(area_tag_raw, missing_code="missing_area_tag", invalid_type_code="invalid_area_tag_type")
         return None, ValidationIssue(
             level="ERROR",
             area_tag="<unknown-area>",
@@ -112,11 +85,7 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
         )
 
     if route_tag is None:
-        code = (
-            "missing_route_tag"
-            if route_tag_raw is None or (isinstance(route_tag_raw, str) and route_tag_raw.strip() == "")
-            else "invalid_route_tag_type"
-        )
+        code = tag_error_code(route_tag_raw, missing_code="missing_route_tag", invalid_type_code="invalid_route_tag_type")
         return None, ValidationIssue(
             level="ERROR",
             area_tag=area_tag,
@@ -125,11 +94,11 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
             details=f"waypoint={waypoint_tag}",
         )
 
-    if waypoint_tag.startswith(f"<idx:{index}>") and _read_tag(waypoint_tag_raw) is None:
-        code = (
-            "missing_waypoint_tag"
-            if waypoint_tag_raw is None or (isinstance(waypoint_tag_raw, str) and waypoint_tag_raw.strip() == "")
-            else "invalid_waypoint_tag_type"
+    if waypoint_tag.startswith(f"<idx:{index}>") and read_tag(waypoint_tag_raw) is None:
+        code = tag_error_code(
+            waypoint_tag_raw,
+            missing_code="missing_waypoint_tag",
+            invalid_type_code="invalid_waypoint_tag_type",
         )
         return None, ValidationIssue(
             level="ERROR",

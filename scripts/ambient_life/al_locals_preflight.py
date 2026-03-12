@@ -32,6 +32,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from scripts.ambient_life.preflight_common import is_strict_int, read_json_object_input, read_tag, tag_error_code
+
 AL_ROUTE_MAX_STEPS = 16
 NPC_ROUTE_SLOTS = tuple(range(6))
 NPC_ROLE_MIN = 0
@@ -48,9 +50,7 @@ class ValidationIssue:
 
 
 def _read_input(path: Path) -> dict[str, Any]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(payload, dict):
-        raise ValueError("JSON root must be an object")
+    payload = read_json_object_input(path)
 
     result: dict[str, Any] = {}
     for key in ("npcs", "waypoints", "areas"):
@@ -80,18 +80,6 @@ def _append_issue(issues: list[ValidationIssue], level: str, scope: str, object_
     issues.append(ValidationIssue(level=level, scope=scope, object_id=object_id, code=code, reason=reason))
 
 
-def is_strict_int(value: Any) -> bool:
-    # Exclude bool explicitly: JSON boolean is not a valid integer value for route/locals config fields.
-    return isinstance(value, int) and not isinstance(value, bool)
-
-
-def _read_tag(value: Any) -> str | None:
-    if not isinstance(value, str):
-        return None
-    tag = value.strip()
-    return tag or None
-
-
 def _is_non_empty_string(value: Any) -> bool:
     return isinstance(value, str) and value.strip() != ""
 
@@ -103,10 +91,10 @@ def _validate_npcs(rows: list[Any], known_route_tags: set[str], issues: list[Val
             continue
 
         npc_tag_raw = row.get("npc_tag", row.get("tag"))
-        npc_tag = _read_tag(npc_tag_raw) or f"<idx:{index}>"
+        npc_tag = read_tag(npc_tag_raw) or f"<idx:{index}>"
         if npc_tag_raw is None:
             _append_issue(issues, "ERROR", "npc", npc_tag, "missing_npc_tag", "npc_tag must be non-empty string")
-        elif _read_tag(npc_tag_raw) is None:
+        elif read_tag(npc_tag_raw) is None:
             code = "missing_npc_tag" if isinstance(npc_tag_raw, str) else "invalid_npc_tag_type"
             _append_issue(issues, "ERROR", "npc", npc_tag, code, "npc_tag must be non-empty string")
 
@@ -205,31 +193,23 @@ def _validate_waypoints(rows: list[Any], issues: list[ValidationIssue]) -> None:
             continue
 
         wp_tag_raw = row.get("waypoint_tag", row.get("tag"))
-        wp_tag = _read_tag(wp_tag_raw) or f"<idx:{index}>"
+        wp_tag = read_tag(wp_tag_raw) or f"<idx:{index}>"
         if wp_tag_raw is None:
             _append_issue(issues, "ERROR", "waypoint", wp_tag, "missing_waypoint_tag", "waypoint_tag must be non-empty string")
-        elif _read_tag(wp_tag_raw) is None:
+        elif read_tag(wp_tag_raw) is None:
             code = "missing_waypoint_tag" if isinstance(wp_tag_raw, str) else "invalid_waypoint_tag_type"
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "waypoint_tag must be non-empty string")
 
         area_tag_raw = row.get("area_tag")
-        area_tag = _read_tag(area_tag_raw)
+        area_tag = read_tag(area_tag_raw)
         if area_tag is None:
-            code = (
-                "missing_area_tag"
-                if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
-                else "invalid_area_tag_type"
-            )
+            code = tag_error_code(area_tag_raw, missing_code="missing_area_tag", invalid_type_code="invalid_area_tag_type")
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "area_tag must be non-empty string")
 
         route_tag_raw = row.get("route_tag")
-        route_tag = _read_tag(route_tag_raw)
+        route_tag = read_tag(route_tag_raw)
         if route_tag is None:
-            code = (
-                "missing_route_tag"
-                if route_tag_raw is None or (isinstance(route_tag_raw, str) and route_tag_raw.strip() == "")
-                else "invalid_route_tag_type"
-            )
+            code = tag_error_code(route_tag_raw, missing_code="missing_route_tag", invalid_type_code="invalid_route_tag_type")
             _append_issue(issues, "ERROR", "waypoint", wp_tag, code, "route_tag must be non-empty string")
 
         locals_map, has_invalid_locals_type = _extract_locals(row, {"waypoint_tag", "tag", "name", "area_tag", "route_tag", "locals"})
@@ -288,7 +268,7 @@ def _validate_areas(rows: list[Any], issues: list[ValidationIssue]) -> None:
             continue
 
         raw_area_tag = row.get("area_tag", row.get("tag"))
-        accepted_area_tag = _read_tag(raw_area_tag)
+        accepted_area_tag = read_tag(raw_area_tag)
         display_area_tag = accepted_area_tag or f"<idx:{index}>"
         if raw_area_tag is None:
             _append_issue(issues, "ERROR", "area", display_area_tag, "missing_area_tag", "area_tag must be non-empty string")
