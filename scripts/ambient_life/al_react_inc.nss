@@ -2,6 +2,7 @@
 // Scope: Stage I.1 foundation + bounded local crime/alarm escalation (area-local only).
 
 #include "al_area_inc"
+#include "al_activity_inc"
 #include "al_events_inc"
 
 const int AL_REACT_TYPE_NONE = 0;
@@ -34,6 +35,39 @@ void AL_ReactRuntimeBegin(object oActor, int nReactType, object oSource, object 
 void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind);
 void AL_ReactResumeOrResetOnSelf();
 void AL_ReactFinishCreature(object oNpc);
+
+object AL_ReactFindNearestSafeWaypoint(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea))
+    {
+        return OBJECT_INVALID;
+    }
+
+    int nIndex = 1;
+    object oWaypoint = GetNearestObject(OBJECT_TYPE_WAYPOINT, oNpc, nIndex);
+    while (GetIsObjectValid(oWaypoint) && nIndex <= 24)
+    {
+        if (GetArea(oWaypoint) == oArea)
+        {
+            string sTag = GetTag(oWaypoint);
+            if (FindSubString(sTag, "safe") >= 0 || FindSubString(sTag, "SAFE") >= 0)
+            {
+                return oWaypoint;
+            }
+        }
+
+        nIndex = nIndex + 1;
+        oWaypoint = GetNearestObject(OBJECT_TYPE_WAYPOINT, oNpc, nIndex);
+    }
+
+    return OBJECT_INVALID;
+}
 
 int AL_ReactGetAreaSyncTick(object oArea)
 {
@@ -317,10 +351,32 @@ void AL_ReactCivilianResponse(object oNpc, object oSource)
         return;
     }
 
-    if (GetIsObjectValid(oSource))
+    // Fallback intent: increase distance from threat (safe waypoint -> retreat vector),
+    // and if no retreat target can be built, keep the civilian in-place in panic state.
+    object oFallbackSafe = AL_ReactFindNearestSafeWaypoint(oNpc);
+    if (GetIsObjectValid(oFallbackSafe))
     {
-        AssignCommand(oNpc, ActionMoveToObject(oSource, FALSE, 14.0));
+        AssignCommand(oNpc, ActionMoveToObject(oFallbackSafe, TRUE, 1.5));
+        return;
     }
+
+    if (GetIsObjectValid(oSource) && GetArea(oSource) == GetArea(oNpc))
+    {
+        vector vNpcPos = GetPosition(oNpc);
+        vector vSrcPos = GetPosition(oSource);
+        vector vAwayDir = vNpcPos - vSrcPos;
+        float fAwayLen = VectorMagnitude(vAwayDir);
+
+        if (fAwayLen > 0.1)
+        {
+            vector vRetreatPos = vNpcPos + ((vAwayDir / fAwayLen) * 10.0);
+            location lRetreat = Location(GetArea(oNpc), vRetreatPos, GetFacing(oNpc));
+            AssignCommand(oNpc, ActionMoveToLocation(lRetreat, TRUE));
+            return;
+        }
+    }
+
+    AL_ActivityApplyStep(oNpc, AL_ACTIVITY_ANGRY, 4);
 }
 
 void AL_ReactMilitiaResponse(object oNpc, object oSource)
