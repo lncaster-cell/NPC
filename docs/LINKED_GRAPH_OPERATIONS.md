@@ -57,6 +57,14 @@
 
 Симптомы антипаттернов обычно видны как рост `al_h_recent_resync`, нестабильный `al_h_tier` и ненулевой прирост overflow-счётчиков.
 
+### 3.4 Связь порогов с perf-базой S80/S100/S120
+
+Пороги степени и размера кластера закреплены на базе наблюдений из `docs/perf/baselines/s80_s100_s120_baseline.md`:
+
+- На baseline S80/S100/S120 при контролируемом linked-графе (`degree` в основном `2..4`, локальные хабы до `6`, кластер обычно `3..8`) фиксируются стабильные значения `al_h_recent_resync` и отсутствие критического роста overflow-счётчиков.
+- При увеличении степени центральных узлов и/или укрупнении кластеров (>8 без сегментации) в операционных прогонах растут риски каскадного прогрева (`al_h_tier`), resync-волн (`al_h_recent_resync`) и переполнений (`al_reg_overflow_count`, `al_route_overflow_count`).
+- Поэтому policy сохраняет: target degree `2..4`, hard max `6`, рабочий размер кластера `3..8`, зона риска `9..12` (только с мостами/сегментацией), >12 без сегментации — антишаблон.
+
 ## 4) Операторский чек-лист перед запуском
 
 1. Проверить, что `al_link_count` корректен и без «дыр» по индексам.
@@ -109,6 +117,18 @@ python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/t
 - дубликаты linked area внутри одной area;
 - симметрия (`A -> B` требует `B -> A`);
 - degree-пороги (target `2..4`, hard max `6`).
+
+Policy уровней нарушений (merge gate):
+
+- **ERROR (merge-blocking):** `self_link`, `duplicate_links`, `symmetry_mismatch`, `unknown_link_target`, `degree_exceeds_hub_max`, а также структурные ошибки (`invalid_link_count`, `missing_link_slot`, `invalid_link_slot_*`, `invalid_locals_type`).
+- **WARN (не блокирует merge автоматически, но требует операторского решения):** `degree_below_target`, `degree_above_target` в пределах hard-max.
+
+Операторские примеры входа (`docs/`):
+
+```bash
+python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_PASS.json --format text
+python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_FAIL.json --format text
+```
 
 Коды завершения:
 

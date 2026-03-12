@@ -8,12 +8,19 @@ const int AL_REG_COMPACT_METRICS_WINDOW_TICKS = 100;
 
 int AL_GetEffectiveNpcCap(object oArea)
 {
-    if (!GetIsObjectValid(oArea))
+    object oModule = GetModule();
+    int nCap = 0;
+
+    if (GetIsObjectValid(oArea))
     {
-        return AL_MAX_NPCS_DEFAULT;
+        nCap = GetLocalInt(oArea, "al_max_npcs");
     }
 
-    int nCap = GetLocalInt(oArea, "al_max_npcs");
+    if (nCap <= 0 && GetIsObjectValid(oModule))
+    {
+        nCap = GetLocalInt(oModule, "al_max_npcs");
+    }
+
     if (nCap < AL_MAX_NPCS_MIN || nCap > AL_MAX_NPCS_MAX)
     {
         return AL_MAX_NPCS_DEFAULT;
