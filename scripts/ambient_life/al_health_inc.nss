@@ -362,6 +362,12 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     int nRouteOverflow = GetLocalInt(oArea, "al_route_overflow_count");
     int nRegIndexMiss = GetLocalInt(oArea, "al_reg_index_miss");
     int nRegIndexMissLast = GetLocalInt(oArea, "al_h_reg_index_miss_last");
+    int nRegIndexMissColdStart = GetLocalInt(oArea, "al_reg_index_miss_cold_start");
+    int nRegIndexMissColdStartLast = GetLocalInt(oArea, "al_h_reg_index_miss_cold_start_last");
+    int nRegIndexMissStale = GetLocalInt(oArea, "al_reg_index_miss_stale");
+    int nRegIndexMissStaleLast = GetLocalInt(oArea, "al_h_reg_index_miss_stale_last");
+    int nRegIndexMissOrphan = GetLocalInt(oArea, "al_reg_index_miss_orphan");
+    int nRegIndexMissOrphanLast = GetLocalInt(oArea, "al_h_reg_index_miss_orphan_last");
     int nRegIndexMissDelta = nRegIndexMiss - nRegIndexMissLast;
     if (nRegIndexMissDelta < 0)
     {
@@ -383,6 +389,24 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     }
 
     int nRegIndexMissWindowDelta = nRegIndexMiss - nRegIndexMissWindowStartValue;
+
+    int nRegIndexMissColdStartDelta = nRegIndexMissColdStart - nRegIndexMissColdStartLast;
+    if (nRegIndexMissColdStartDelta < 0)
+    {
+        nRegIndexMissColdStartDelta = nRegIndexMissColdStart;
+    }
+
+    int nRegIndexMissStaleDelta = nRegIndexMissStale - nRegIndexMissStaleLast;
+    if (nRegIndexMissStaleDelta < 0)
+    {
+        nRegIndexMissStaleDelta = nRegIndexMissStale;
+    }
+
+    int nRegIndexMissOrphanDelta = nRegIndexMissOrphan - nRegIndexMissOrphanLast;
+    if (nRegIndexMissOrphanDelta < 0)
+    {
+        nRegIndexMissOrphanDelta = nRegIndexMissOrphan;
+    }
     if (nRegIndexMissWindowDelta < 0)
     {
         nRegIndexMissWindowDelta = nRegIndexMiss;
@@ -398,11 +422,21 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     }
 
     int nRegIndexMissStatus = 0;
-    if (nRegIndexMissWindowDelta >= 3)
+    string sRegIndexMissDominantType = "cold-start";
+    if (nRegIndexMissStaleDelta > nRegIndexMissColdStartDelta)
+    {
+        sRegIndexMissDominantType = "stale";
+    }
+    if (nRegIndexMissOrphanDelta > nRegIndexMissColdStartDelta && nRegIndexMissOrphanDelta >= nRegIndexMissStaleDelta)
+    {
+        sRegIndexMissDominantType = "orphan";
+    }
+
+    if (nRegIndexMissWindowDelta >= 4)
     {
         nRegIndexMissStatus = 2;
     }
-    else if (nRegIndexMissWindowDelta >= 1)
+    else if (nRegIndexMissWindowDelta >= 2)
     {
         nRegIndexMissStatus = 1;
     }
@@ -419,6 +453,9 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
     AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_ticks", nRegIndexMissWindowTicks);
     AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_warn_status", nRegIndexMissStatus);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_cold_start_delta", nRegIndexMissColdStartDelta);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_stale_delta", nRegIndexMissStaleDelta);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_orphan_delta", nRegIndexMissOrphanDelta);
 
     if (GetLocalInt(oArea, "al_debug") > 0)
     {
@@ -468,7 +505,11 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
             sDelta = sDelta
                 + " reg_index_miss_delta=" + IntToString(nRegIndexMissDelta)
                 + " reg_index_miss_window=" + IntToString(nRegIndexMissWindowDelta)
-                + "/" + IntToString(AL_HEALTH_RESYNC_WINDOW_TICKS);
+                + "/" + IntToString(AL_HEALTH_RESYNC_WINDOW_TICKS)
+                + " miss_type=" + sRegIndexMissDominantType
+                + " cold=" + IntToString(nRegIndexMissColdStartDelta)
+                + " stale=" + IntToString(nRegIndexMissStaleDelta)
+                + " orphan=" + IntToString(nRegIndexMissOrphanDelta);
         }
 
         if (bChanged)
@@ -487,7 +528,11 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
             nRegIndexMissWindowDelta,
             nRegIndexMissWindowTicks,
             nRegIndexMissDelta,
-            nRegIndexMiss
+            nRegIndexMiss,
+            sRegIndexMissDominantType,
+            nRegIndexMissColdStartDelta,
+            nRegIndexMissStaleDelta,
+            nRegIndexMissOrphanDelta
         );
     }
 
@@ -502,4 +547,7 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_start_tick", nRegIndexMissWindowStartTick);
     AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_start_value", nRegIndexMissWindowStartValue);
     AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_warn_prev_status", nRegIndexMissStatus);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_cold_start_last", nRegIndexMissColdStart);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_stale_last", nRegIndexMissStale);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_orphan_last", nRegIndexMissOrphan);
 }

@@ -7,7 +7,11 @@ void AL_DebugLogRegIndexMissStatus(
     int nRegIndexMissWindowDelta,
     int nRegIndexMissWindowTicks,
     int nRegIndexMissTickDelta,
-    int nRegIndexMissTotal
+    int nRegIndexMissTotal,
+    string sMissType,
+    int nColdStartDelta,
+    int nStaleDelta,
+    int nOrphanDelta
 )
 {
     if (GetLocalInt(oArea, "al_debug") <= 0 || nRegIndexMissStatus <= 0)
@@ -33,6 +37,10 @@ void AL_DebugLogRegIndexMissStatus(
             + " window_ticks=" + IntToString(nRegIndexMissWindowTicks)
             + " tick_delta=" + IntToString(nRegIndexMissTickDelta)
             + " total=" + IntToString(nRegIndexMissTotal)
+            + " miss_type=" + sMissType
+            + " cold=" + IntToString(nColdStartDelta)
+            + " stale=" + IntToString(nStaleDelta)
+            + " orphan=" + IntToString(nOrphanDelta)
         );
 
         if (nSyncTick > 0)
