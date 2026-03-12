@@ -35,24 +35,24 @@ int AL_GetDispatchQueueCapacity(object oArea)
     return nCapacity;
 }
 
-string AL_DispatchPendingKey(string sCycleKey)
+string AL_DispatchPendingKey(int nCycleId)
 {
-    return "al_dispatch_pending_" + sCycleKey;
+    return "al_dispatch_pending_" + IntToString(nCycleId);
 }
 
-string AL_DispatchPendingMemberKey(string sCycleKey)
+string AL_DispatchPendingMemberKey(int nCycleId)
 {
-    return "al_dispatch_pending_member_" + sCycleKey;
+    return "al_dispatch_pending_member_" + IntToString(nCycleId);
 }
 
-string AL_DispatchPendingTrackMarkKey(string sCycleKey)
+string AL_DispatchPendingTrackMarkKey(int nCycleId)
 {
-    return "al_dispatch_pending_track_mark_" + sCycleKey;
+    return "al_dispatch_pending_track_mark_" + IntToString(nCycleId);
 }
 
-string AL_DispatchCycleRefIndexMarkKey(string sCycleKey)
+string AL_DispatchCycleRefIndexMarkKey(int nCycleId)
 {
-    return "al_dispatch_ref_idx_mark_" + sCycleKey;
+    return "al_dispatch_ref_idx_mark_" + IntToString(nCycleId);
 }
 
 string AL_DispatchCycleRefIndexEntryKey(int nIdx)
@@ -60,59 +60,42 @@ string AL_DispatchCycleRefIndexEntryKey(int nIdx)
     return "al_dispatch_ref_idx_entry_" + IntToString(nIdx);
 }
 
-int AL_DispatchCycleTick(string sCycleKey)
+void AL_TrackDispatchPendingCycleId(object oArea, int nCycleId)
 {
-    int nSep = FindSubString(sCycleKey, ":", 0);
-    if (nSep < 0)
-    {
-        return 0;
-    }
-
-    int nLen = GetStringLength(sCycleKey);
-    if (nSep + 1 >= nLen)
-    {
-        return 0;
-    }
-
-    return StringToInt(GetStringRight(sCycleKey, nLen - nSep - 1));
-}
-
-void AL_TrackDispatchPendingKey(object oArea, string sCycleKey)
-{
-    if (sCycleKey == "")
+    if (nCycleId <= 0)
     {
         return;
     }
 
-    if (GetLocalInt(oArea, AL_DispatchPendingTrackMarkKey(sCycleKey)) > 0)
+    if (GetLocalInt(oArea, AL_DispatchPendingTrackMarkKey(nCycleId)) > 0)
     {
         return;
     }
 
     int nTracked = GetLocalInt(oArea, "al_dispatch_pending_track_count");
-    SetLocalString(oArea, "al_dispatch_pending_track_" + IntToString(nTracked), sCycleKey);
-    SetLocalInt(oArea, AL_DispatchPendingTrackMarkKey(sCycleKey), 1);
+    SetLocalInt(oArea, "al_dispatch_pending_track_" + IntToString(nTracked), nCycleId);
+    SetLocalInt(oArea, AL_DispatchPendingTrackMarkKey(nCycleId), 1);
     SetLocalInt(oArea, "al_dispatch_pending_track_count", nTracked + 1);
 }
 
-void AL_ClearDispatchPendingKey(object oArea, string sCycleKey)
+void AL_ClearDispatchPendingCycleId(object oArea, int nCycleId)
 {
-    if (sCycleKey == "")
+    if (nCycleId <= 0)
     {
         return;
     }
 
-    DeleteLocalInt(oArea, AL_DispatchPendingKey(sCycleKey));
+    DeleteLocalInt(oArea, AL_DispatchPendingKey(nCycleId));
 }
 
-int AL_IsDispatchCycleReferenced(object oArea, string sCycleKey)
+int AL_IsDispatchCycleReferenced(object oArea, int nCycleId)
 {
-    if (sCycleKey == "")
+    if (nCycleId <= 0)
     {
         return FALSE;
     }
 
-    if (GetLocalInt(oArea, "al_dispatch_active") > 0 && GetLocalString(oArea, "al_dispatch_cycle_key") == sCycleKey)
+    if (GetLocalInt(oArea, "al_dispatch_active") > 0 && GetLocalInt(oArea, "al_dispatch_cycle_id_active") == nCycleId)
     {
         return TRUE;
     }
@@ -124,7 +107,7 @@ int AL_IsDispatchCycleReferenced(object oArea, string sCycleKey)
     while (i < nLen)
     {
         int nIdx = (nHead + i) % nCapacity;
-        if (GetLocalString(oArea, AL_DispatchQueueKey("cycle", nIdx)) == sCycleKey)
+        if (GetLocalInt(oArea, AL_DispatchQueueKey("cycle_id", nIdx)) == nCycleId)
         {
             return TRUE;
         }
@@ -134,21 +117,21 @@ int AL_IsDispatchCycleReferenced(object oArea, string sCycleKey)
     return FALSE;
 }
 
-void AL_MarkDispatchCycleReference(object oArea, string sCycleKey)
+void AL_MarkDispatchCycleReference(object oArea, int nCycleId)
 {
-    if (sCycleKey == "")
+    if (nCycleId <= 0)
     {
         return;
     }
 
-    if (GetLocalInt(oArea, AL_DispatchCycleRefIndexMarkKey(sCycleKey)) > 0)
+    if (GetLocalInt(oArea, AL_DispatchCycleRefIndexMarkKey(nCycleId)) > 0)
     {
         return;
     }
 
     int nCount = GetLocalInt(oArea, "al_dispatch_ref_idx_count");
-    SetLocalString(oArea, AL_DispatchCycleRefIndexEntryKey(nCount), sCycleKey);
-    SetLocalInt(oArea, AL_DispatchCycleRefIndexMarkKey(sCycleKey), 1);
+    SetLocalInt(oArea, AL_DispatchCycleRefIndexEntryKey(nCount), nCycleId);
+    SetLocalInt(oArea, AL_DispatchCycleRefIndexMarkKey(nCycleId), 1);
     SetLocalInt(oArea, "al_dispatch_ref_idx_count", nCount + 1);
 }
 
@@ -158,9 +141,9 @@ void AL_ClearDispatchCycleReferenceIndex(object oArea)
     int i = 0;
     while (i < nCount)
     {
-        string sCycleKey = GetLocalString(oArea, AL_DispatchCycleRefIndexEntryKey(i));
-        DeleteLocalInt(oArea, AL_DispatchCycleRefIndexMarkKey(sCycleKey));
-        DeleteLocalString(oArea, AL_DispatchCycleRefIndexEntryKey(i));
+        int nCycleId = GetLocalInt(oArea, AL_DispatchCycleRefIndexEntryKey(i));
+        DeleteLocalInt(oArea, AL_DispatchCycleRefIndexMarkKey(nCycleId));
+        DeleteLocalInt(oArea, AL_DispatchCycleRefIndexEntryKey(i));
         i = i + 1;
     }
 
@@ -173,7 +156,7 @@ void AL_BuildDispatchCycleReferenceIndex(object oArea)
 
     if (GetLocalInt(oArea, "al_dispatch_active") > 0)
     {
-        AL_MarkDispatchCycleReference(oArea, GetLocalString(oArea, "al_dispatch_cycle_key"));
+        AL_MarkDispatchCycleReference(oArea, GetLocalInt(oArea, "al_dispatch_cycle_id_active"));
     }
 
     int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
@@ -181,8 +164,8 @@ void AL_BuildDispatchCycleReferenceIndex(object oArea)
     int i = 0;
     while (i < nLen)
     {
-        int nIdx = (nHead + i) % AL_DISPATCH_QUEUE_CAPACITY;
-        AL_MarkDispatchCycleReference(oArea, GetLocalString(oArea, AL_DispatchQueueKey("cycle", nIdx)));
+        int nIdx = (nHead + i) % AL_GetDispatchQueueCapacity(oArea);
+        AL_MarkDispatchCycleReference(oArea, GetLocalInt(oArea, AL_DispatchQueueKey("cycle_id", nIdx)));
         i = i + 1;
     }
 }
@@ -197,34 +180,22 @@ void AL_PruneDispatchPendingIndex(object oArea)
 
     AL_BuildDispatchCycleReferenceIndex(oArea);
 
-    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
     int nWrite = 0;
     int i = 0;
     while (i < nTracked)
     {
-        string sCycleKey = GetLocalString(oArea, "al_dispatch_pending_track_" + IntToString(i));
+        int nCycleId = GetLocalInt(oArea, "al_dispatch_pending_track_" + IntToString(i));
         int bKeep = FALSE;
-        if (sCycleKey != "")
+        if (nCycleId > 0)
         {
-            int bPending = GetLocalInt(oArea, AL_DispatchPendingKey(sCycleKey)) > 0;
-            int nCycleTick = AL_DispatchCycleTick(sCycleKey);
-
-            if (bPending)
-            {
-                if (nCycleTick > 0 && nCycleTick < nSyncTick)
-                {
-                    AL_ClearDispatchPendingKey(oArea, sCycleKey);
-                    bPending = FALSE;
-                }
-            }
-
+            int bPending = GetLocalInt(oArea, AL_DispatchPendingKey(nCycleId)) > 0;
             if (bPending)
             {
                 bKeep = TRUE;
             }
-            else if (nCycleTick <= 0 || nCycleTick >= nSyncTick)
+            else
             {
-                bKeep = GetLocalInt(oArea, AL_DispatchCycleRefIndexMarkKey(sCycleKey)) > 0;
+                bKeep = GetLocalInt(oArea, AL_DispatchCycleRefIndexMarkKey(nCycleId)) > 0;
             }
         }
 
@@ -232,15 +203,15 @@ void AL_PruneDispatchPendingIndex(object oArea)
         {
             if (nWrite != i)
             {
-                SetLocalString(oArea, "al_dispatch_pending_track_" + IntToString(nWrite), sCycleKey);
+                SetLocalInt(oArea, "al_dispatch_pending_track_" + IntToString(nWrite), nCycleId);
             }
             nWrite = nWrite + 1;
         }
         else
         {
-            AL_ClearDispatchPendingKey(oArea, sCycleKey);
-            DeleteLocalInt(oArea, AL_DispatchPendingMemberKey(sCycleKey));
-            DeleteLocalInt(oArea, AL_DispatchPendingTrackMarkKey(sCycleKey));
+            AL_ClearDispatchPendingCycleId(oArea, nCycleId);
+            DeleteLocalInt(oArea, AL_DispatchPendingMemberKey(nCycleId));
+            DeleteLocalInt(oArea, AL_DispatchPendingTrackMarkKey(nCycleId));
         }
 
         i = i + 1;
@@ -248,7 +219,7 @@ void AL_PruneDispatchPendingIndex(object oArea)
 
     while (nWrite < nTracked)
     {
-        DeleteLocalString(oArea, "al_dispatch_pending_track_" + IntToString(nWrite));
+        DeleteLocalInt(oArea, "al_dispatch_pending_track_" + IntToString(nWrite));
         nWrite = nWrite + 1;
     }
 
@@ -262,11 +233,11 @@ void AL_ResetDispatchPendingIndex(object oArea)
     int i = 0;
     while (i < nTracked)
     {
-        string sCycleKey = GetLocalString(oArea, "al_dispatch_pending_track_" + IntToString(i));
-        AL_ClearDispatchPendingKey(oArea, sCycleKey);
-        DeleteLocalInt(oArea, AL_DispatchPendingMemberKey(sCycleKey));
-        DeleteLocalInt(oArea, AL_DispatchPendingTrackMarkKey(sCycleKey));
-        DeleteLocalString(oArea, "al_dispatch_pending_track_" + IntToString(i));
+        int nCycleId = GetLocalInt(oArea, "al_dispatch_pending_track_" + IntToString(i));
+        AL_ClearDispatchPendingCycleId(oArea, nCycleId);
+        DeleteLocalInt(oArea, AL_DispatchPendingMemberKey(nCycleId));
+        DeleteLocalInt(oArea, AL_DispatchPendingTrackMarkKey(nCycleId));
+        DeleteLocalInt(oArea, "al_dispatch_pending_track_" + IntToString(i));
         i = i + 1;
     }
 
