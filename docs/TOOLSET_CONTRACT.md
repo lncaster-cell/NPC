@@ -22,7 +22,8 @@
 - transition runtime: `al_trans_rt_*`
 - sleep runtime: `al_sleep_rt_*`
 - blocked runtime: `al_blocked_rt_active`, `al_blocked_rt_retry`
-- react runtime: `al_react_active`, `al_react_type`, `al_react_resume_flag`, `al_react_last_source`, `al_react_last_item`
+- react runtime: `al_react_active`, `al_react_type`, `al_react_resume_flag`, `al_react_last_source`, `al_react_last_item`,
+  `al_react_last_crime_tick`, `al_react_last_crime_source`, `al_react_last_crime_kind` (actor-local debounce)
 - crime/alarm runtime: `al_legal_followup_pending` (future legal hook marker)
 - current state: `al_mode`, `al_activity_current`
 
@@ -67,5 +68,6 @@
 - Не изменяйте runtime-owned locals из toolset-скриптов.
 - Проверяйте area consistency waypoint-тегов в маршрутах.
 - Не превышайте cap `AL_MAX_NPCS = 100` в активной area.
-- Stage I.2 использует только area-local alarm scope (без global/world propagation).
+- Stage I.2 использует только area-local alarm scope (без global/world propagation) и bounded nearby fan-out в текущей area.
+- Guard-response опирается на built-in faction/hostility слоя NWN2, где он уже даёт корректную legal hostility базу.
 - Stage I.2 не реализует guard spawn/reinforcements и не реализует surrender/arrest/trial.
