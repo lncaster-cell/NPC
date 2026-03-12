@@ -9,7 +9,72 @@ const int AL_SIM_TIER_WARM = 1;
 const int AL_SIM_TIER_HOT = 2;
 const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
+const int AL_WP_CACHE_TTL_TICKS = 10;
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
+
+void AL_RecordLookupCacheHit(object oArea)
+{
+    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_debug") <= 0)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, "al_cache_hit", GetLocalInt(oArea, "al_cache_hit") + 1);
+}
+
+void AL_RecordLookupCacheMiss(object oArea)
+{
+    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_debug") <= 0)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, "al_cache_miss", GetLocalInt(oArea, "al_cache_miss") + 1);
+}
+
+object AL_ResolveWaypointInAreaCached(object oArea, string sTag)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA || sTag == "")
+    {
+        return OBJECT_INVALID;
+    }
+
+    string sCacheKey = "al_cache_wp_" + sTag;
+    string sCacheTickKey = "al_cache_wp_tick_" + sTag;
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+
+    object oCached = GetLocalObject(oArea, sCacheKey);
+    if (GetIsObjectValid(oCached) && GetObjectType(oCached) == OBJECT_TYPE_WAYPOINT && GetArea(oCached) == oArea)
+    {
+        int nCachedTick = GetLocalInt(oArea, sCacheTickKey);
+        if (nSyncTick > 0 && nCachedTick > 0 && nSyncTick <= (nCachedTick + AL_WP_CACHE_TTL_TICKS))
+        {
+            AL_RecordLookupCacheHit(oArea);
+            return oCached;
+        }
+    }
+
+    AL_RecordLookupCacheMiss(oArea);
+
+    int nIndex = 0;
+    object oCandidate = GetObjectByTag(sTag, nIndex);
+    while (GetIsObjectValid(oCandidate))
+    {
+        if (GetObjectType(oCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oCandidate) == oArea)
+        {
+            SetLocalObject(oArea, sCacheKey, oCandidate);
+            SetLocalInt(oArea, sCacheTickKey, nSyncTick);
+            return oCandidate;
+        }
+
+        nIndex = nIndex + 1;
+        oCandidate = GetObjectByTag(sTag, nIndex);
+    }
+
+    DeleteLocalObject(oArea, sCacheKey);
+    SetLocalInt(oArea, sCacheTickKey, nSyncTick);
+    return OBJECT_INVALID;
+}
 
 int AL_ComputeAreaSlot()
 {

@@ -52,6 +52,9 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
 
     int nDebug = GetLocalInt(oArea, "al_debug");
 
+    // Fast-path for common "unique in area" case.
+    oSrc = AL_ResolveWaypointInAreaCached(oArea, sSrcTag);
+
     // Resolve source waypoint by tag, explicitly restricted to NPC current area.
     int iSrc = 0;
     int nSrcMatches = 0;
@@ -61,7 +64,7 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
         if (GetObjectType(oSrcCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oSrcCandidate) == oArea)
         {
             nSrcMatches = nSrcMatches + 1;
-            if (nSrcMatches == 1)
+            if (nSrcMatches == 1 && !GetIsObjectValid(oSrc))
             {
                 oSrc = oSrcCandidate;
             }
@@ -131,6 +134,12 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
         }
     }
 
+    // Fast-path for common "unique in area" case when destination scope is explicit and area-local.
+    if (GetIsObjectValid(oDstTargetArea))
+    {
+        oDst = AL_ResolveWaypointInAreaCached(oDstTargetArea, sDstTag);
+    }
+
     // Resolve destination waypoint by tag using explicit target-area policy if configured.
     int iDst = 0;
     int nDstMatches = 0;
@@ -148,7 +157,7 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
             if (bAreaMatch)
             {
                 nDstMatches = nDstMatches + 1;
-                if (nDstMatches == 1)
+                if (nDstMatches == 1 && !GetIsObjectValid(oDst))
                 {
                     oDst = oDstCandidate;
                 }

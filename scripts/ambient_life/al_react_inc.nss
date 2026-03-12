@@ -94,20 +94,7 @@ object AL_ReactResolveSafeWaypointInArea(object oNpc, string sTag)
         return OBJECT_INVALID;
     }
 
-    int nIndex = 0;
-    object oCandidate = GetObjectByTag(sTag, nIndex);
-    while (GetIsObjectValid(oCandidate))
-    {
-        if (GetObjectType(oCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oCandidate) == oArea)
-        {
-            return oCandidate;
-        }
-
-        nIndex = nIndex + 1;
-        oCandidate = GetObjectByTag(sTag, nIndex);
-    }
-
-    return OBJECT_INVALID;
+    return AL_ResolveWaypointInAreaCached(oArea, sTag);
 }
 
 int AL_ReactGetAreaSyncTick(object oArea)
