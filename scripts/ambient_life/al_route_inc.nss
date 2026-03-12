@@ -87,6 +87,17 @@ void AL_RouteFallbackToDefault(object oNpc)
     AL_ActivityApplyStep(oNpc, AL_ACTIVITY_HIDDEN, 6);
 }
 
+void AL_RouteResetAreaOverflowMetrics(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, "al_route_overflow_count", 0);
+    DeleteLocalString(oArea, "al_route_overflow_tag");
+}
+
 int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
 {
     AL_RouteInvalidateCache(oNpc);
@@ -104,8 +115,6 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
 
     SetLocalInt(oNpc, "al_route_overflow_count", 0);
     DeleteLocalString(oNpc, "al_route_overflow_tag");
-    SetLocalInt(oNpcArea, "al_route_overflow_count", 0);
-    DeleteLocalString(oNpcArea, "al_route_overflow_tag");
 
     int anStepVals[AL_ROUTE_MAX_STEPS];
     object aoStepRefs[AL_ROUTE_MAX_STEPS];
@@ -175,7 +184,7 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
         // This keeps behavior deterministic and forces content-side correction.
         SetLocalInt(oNpc, "al_route_overflow_count", nValidCandidates);
         SetLocalString(oNpc, "al_route_overflow_tag", sRouteTag);
-        SetLocalInt(oNpcArea, "al_route_overflow_count", nValidCandidates);
+        SetLocalInt(oNpcArea, "al_route_overflow_count", GetLocalInt(oNpcArea, "al_route_overflow_count") + 1);
         SetLocalString(oNpcArea, "al_route_overflow_tag", sRouteTag);
 
         if (GetLocalInt(oNpcArea, "al_debug") > 0)
