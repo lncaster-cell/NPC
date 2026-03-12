@@ -33,6 +33,23 @@ S120,al_dispatch_ticks_to_drain,5
         with self.assertRaisesRegex(ValidationError, r"row 2: missing value for 'baseline_value'"):
             load_baseline(path)
 
+    def test_duplicate_baseline_entry_raises_validation_error(self):
+        csv_content = """scenario,metric,baseline_value
+S80,al_dispatch_q_overflow,0
+S80,al_dispatch_q_overflow,0
+S80,al_dispatch_ticks_to_drain,3
+S100,al_dispatch_q_overflow,0
+S100,al_dispatch_ticks_to_drain,4
+S120,al_dispatch_q_overflow,1
+S120,al_dispatch_ticks_to_drain,5
+"""
+        path = self._write_temp(csv_content)
+
+        with self.assertRaisesRegex(
+            ValidationError, r"duplicate entry for S80/al_dispatch_q_overflow \(row 3\)"
+        ):
+            load_baseline(path)
+
 
 class LoadReportCsvValidationTests(unittest.TestCase):
     def _write_temp(self, content: str, suffix: str = ".csv") -> Path:
@@ -60,6 +77,23 @@ S120,al_dispatch_ticks_to_drain,5
         path = self._write_temp(csv_content)
 
         with self.assertRaisesRegex(ValidationError, r"row 2: missing value for 'scenario'"):
+            load_report(path)
+
+    def test_duplicate_report_entry_raises_validation_error(self):
+        csv_content = """scenario,metric,after_value
+S80,al_dispatch_q_overflow,0
+S80,al_dispatch_q_overflow,0
+S80,al_dispatch_ticks_to_drain,3
+S100,al_dispatch_q_overflow,0
+S100,al_dispatch_ticks_to_drain,4
+S120,al_dispatch_q_overflow,1
+S120,al_dispatch_ticks_to_drain,5
+"""
+        path = self._write_temp(csv_content)
+
+        with self.assertRaisesRegex(
+            ValidationError, r"duplicate entry for S80/al_dispatch_q_overflow \(row 3\)"
+        ):
             load_report(path)
 
 

@@ -75,6 +75,9 @@ def load_baseline(path: Path) -> Dict[Tuple[str, str], float]:
                     f"Baseline CSV row {idx}: missing value for 'baseline_value' in {scenario}/{metric}"
                 )
 
+            if key in values:
+                raise ValidationError(f"duplicate entry for {scenario}/{metric} (row {idx})")
+
             values[key] = _to_float(str(baseline_raw), "baseline_value", *key)
 
     missing = [f"{s}/{m}" for s in REQUIRED_SCENARIOS for m in REQUIRED_METRICS if (s, m) not in values]
@@ -143,6 +146,9 @@ def load_report(path: Path) -> Dict[Tuple[str, str], dict]:
         baseline_value = None
         if baseline_raw not in (None, ""):
             baseline_value = _to_float(str(baseline_raw), "baseline_value", scenario, metric)
+
+        if (scenario, metric) in parsed:
+            raise ValidationError(f"duplicate entry for {scenario}/{metric} (row {idx})")
 
         parsed[(scenario, metric)] = {
             "after_value": after_value,
