@@ -10,6 +10,7 @@ const int AL_SIM_TIER_HOT = 2;
 const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
 const int AL_WP_CACHE_TTL_TICKS = 10;
+const int AL_WARM_COMPACT_MIN_SYNC_TICKS = 8;
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
 
@@ -415,7 +416,27 @@ void AL_RunBatchedDispatch(object oArea)
 
 void AL_DispatchEventToAreaRegistry(object oArea, int nEvent)
 {
-    AL_RegistryCompact(oArea);
+    int nCount = GetLocalInt(oArea, "al_npc_count");
+    int i = 0;
+    int bFoundInvalid = FALSE;
+
+    while (i < nCount)
+    {
+        object oNpc = GetLocalObject(oArea, AL_RegKey(i));
+        if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc) || GetArea(oNpc) != oArea)
+        {
+            bFoundInvalid = TRUE;
+            break;
+        }
+
+        i = i + 1;
+    }
+
+    if (AL_ShouldCompactRegistry(oArea, bFoundInvalid))
+    {
+        AL_RegistryCompact(oArea);
+        nCount = GetLocalInt(oArea, "al_npc_count");
+    }
 
     if (nEvent == AL_EVENT_RESYNC || AL_IsSlotEvent(nEvent))
     {
@@ -423,9 +444,7 @@ void AL_DispatchEventToAreaRegistry(object oArea, int nEvent)
         return;
     }
 
-    int nCount = GetLocalInt(oArea, "al_npc_count");
-    int i = 0;
-
+    i = 0;
     while (i < nCount)
     {
         object oNpc = GetLocalObject(oArea, AL_RegKey(i));
@@ -629,9 +648,13 @@ void AL_AreaTick(object oArea, int nToken)
     }
     else
     {
-        if ((nSyncTick % AL_WARM_MAINTENANCE_PERIOD) == 0)
+        if ((nSyncTick % AL_WARM_MAINTENANCE_PERIOD) == 0 && GetLocalInt(oArea, "al_reg_dirty") == TRUE)
         {
-            AL_RegistryCompact(oArea);
+            int nLastCompactTick = GetLocalInt(oArea, "al_reg_compact_tick");
+            if (nLastCompactTick <= 0 || (nSyncTick - nLastCompactTick) >= AL_WARM_COMPACT_MIN_SYNC_TICKS)
+            {
+                AL_RegistryCompact(oArea);
+            }
         }
     }
 

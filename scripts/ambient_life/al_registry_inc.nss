@@ -1,6 +1,8 @@
 // Ambient Life dense registry (Stage B).
 
 const int AL_MAX_NPCS = 100;
+const int AL_REG_COMPACT_MIN_SYNC_TICKS = 4;
+const int AL_REG_COMPACT_METRICS_WINDOW_TICKS = 100;
 
 string AL_RegKey(int nIdx)
 {
@@ -67,6 +69,7 @@ int AL_UnregisterNPCFromArea(object oNpc, object oArea)
 
     DeleteLocalObject(oNpc, "al_reg_area");
     DeleteLocalInt(oNpc, "al_reg_idx");
+    SetLocalInt(oArea, "al_reg_dirty", TRUE);
 
     return TRUE;
 }
@@ -101,6 +104,7 @@ void AL_RegisterNPCInArea(object oNpc, object oArea)
     SetLocalInt(oArea, "al_npc_count", nCount + 1);
     SetLocalObject(oNpc, "al_reg_area", oArea);
     SetLocalInt(oNpc, "al_reg_idx", nCount);
+    SetLocalInt(oArea, "al_reg_dirty", TRUE);
 }
 
 void AL_TransferNPCRegistry(object oNpc, object oFromArea, object oToArea)
@@ -116,6 +120,32 @@ void AL_TransferNPCRegistry(object oNpc, object oFromArea, object oToArea)
     }
 
     AL_RegisterNPCInArea(oNpc, oToArea);
+    if (GetIsObjectValid(oToArea))
+    {
+        SetLocalInt(oToArea, "al_reg_dirty", TRUE);
+    }
+}
+
+int AL_ShouldCompactRegistry(object oArea, int bFoundInvalid)
+{
+    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_reg_dirty") != TRUE)
+    {
+        return FALSE;
+    }
+
+    if (bFoundInvalid)
+    {
+        return TRUE;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nLastCompactTick = GetLocalInt(oArea, "al_reg_compact_tick");
+    if (nSyncTick <= 0)
+    {
+        return FALSE;
+    }
+
+    return (nSyncTick - nLastCompactTick) >= AL_REG_COMPACT_MIN_SYNC_TICKS;
 }
 
 void AL_MarkRegistryOverflow(object oArea, object oNpc)
@@ -182,8 +212,26 @@ void AL_UnregisterNPC(object oNpc)
 
 void AL_RegistryCompact(object oArea)
 {
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nWindowStart = GetLocalInt(oArea, "al_reg_compact_window_start_tick");
+    if (nSyncTick > 0 && (nWindowStart <= 0 || nSyncTick < nWindowStart || (nSyncTick - nWindowStart) >= AL_REG_COMPACT_METRICS_WINDOW_TICKS))
+    {
+        SetLocalInt(oArea, "al_reg_compact_window_start_tick", nSyncTick);
+        SetLocalInt(oArea, "al_reg_compact_calls_window", 0);
+        SetLocalInt(oArea, "al_reg_compact_removed_window", 0);
+    }
+
+    SetLocalInt(oArea, "al_reg_compact_calls", GetLocalInt(oArea, "al_reg_compact_calls") + 1);
+    SetLocalInt(oArea, "al_reg_compact_calls_window", GetLocalInt(oArea, "al_reg_compact_calls_window") + 1);
+
     int nCount = GetLocalInt(oArea, "al_npc_count");
     int i = 0;
+    int nRemoved = 0;
 
     while (i < nCount)
     {
@@ -214,6 +262,7 @@ void AL_RegistryCompact(object oArea)
             DeleteLocalObject(oArea, AL_RegKey(nLastIdx));
             nCount = nLastIdx;
             SetLocalInt(oArea, "al_npc_count", nCount);
+            nRemoved = nRemoved + 1;
             continue;
         }
 
@@ -222,4 +271,9 @@ void AL_RegistryCompact(object oArea)
         SetLocalInt(oNpc, "al_reg_idx", i);
         i = i + 1;
     }
+
+    SetLocalInt(oArea, "al_reg_compact_removed_total", GetLocalInt(oArea, "al_reg_compact_removed_total") + nRemoved);
+    SetLocalInt(oArea, "al_reg_compact_removed_window", GetLocalInt(oArea, "al_reg_compact_removed_window") + nRemoved);
+    SetLocalInt(oArea, "al_reg_compact_tick", nSyncTick);
+    SetLocalInt(oArea, "al_reg_dirty", FALSE);
 }
