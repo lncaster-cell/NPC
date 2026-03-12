@@ -81,6 +81,35 @@ object AL_ReactFindNearestSafeWaypoint(object oNpc)
     return OBJECT_INVALID;
 }
 
+object AL_ReactResolveSafeWaypointInArea(object oNpc, string sTag)
+{
+    if (!GetIsObjectValid(oNpc) || sTag == "")
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea))
+    {
+        return OBJECT_INVALID;
+    }
+
+    int nIndex = 0;
+    object oCandidate = GetObjectByTag(sTag, nIndex);
+    while (GetIsObjectValid(oCandidate))
+    {
+        if (GetObjectType(oCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oCandidate) == oArea)
+        {
+            return oCandidate;
+        }
+
+        nIndex = nIndex + 1;
+        oCandidate = GetObjectByTag(sTag, nIndex);
+    }
+
+    return OBJECT_INVALID;
+}
+
 int AL_ReactGetAreaSyncTick(object oArea)
 {
     if (!GetIsObjectValid(oArea))
@@ -356,8 +385,8 @@ void AL_ReactCivilianResponse(object oNpc, object oSource)
 
     AssignCommand(oNpc, ActionSpeakString("Thief! Help!", TALKVOLUME_SHOUT));
 
-    object oSafe = GetObjectByTag(GetLocalString(oNpc, "al_safe_wp"), 0);
-    if (GetIsObjectValid(oSafe) && GetArea(oSafe) == GetArea(oNpc))
+    object oSafe = AL_ReactResolveSafeWaypointInArea(oNpc, GetLocalString(oNpc, "al_safe_wp"));
+    if (GetIsObjectValid(oSafe))
     {
         AssignCommand(oNpc, ActionMoveToObject(oSafe, TRUE, 1.5));
         return;
