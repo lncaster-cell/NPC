@@ -22,10 +22,14 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from scripts.ambient_life.preflight_common import is_strict_int, read_json_list_input, read_tag, tag_error_code
+
 TARGET_DEGREE_MIN = 2
 TARGET_DEGREE_MAX = 4
 HUB_DEGREE_MAX = 6
 LINK_KEY_RE = re.compile(r"^al_link_(\d+)$")
+
+_SEVERITY_RANK = {"ERROR": 0, "WARN": 1, "INFO": 2}
 
 
 @dataclass
@@ -36,33 +40,8 @@ class ValidationIssue:
     reason: str
 
 
-def is_strict_int(value: Any) -> bool:
-    return isinstance(value, int) and not isinstance(value, bool)
-
-
-def _read_tag(value: Any) -> str | None:
-    if not isinstance(value, str):
-        return None
-    tag = value.strip()
-    return tag or None
-
-
 def _read_input(path: Path) -> list[dict[str, Any]]:
-    payload = json.loads(path.read_text(encoding="utf-8"))
-
-    if isinstance(payload, dict):
-        if "areas" not in payload:
-            raise ValueError("missing required key 'areas'")
-        areas = payload["areas"]
-    elif isinstance(payload, list):
-        areas = payload
-    else:
-        raise ValueError("JSON root must be an object with key 'areas' or an array")
-
-    if not isinstance(areas, list):
-        raise ValueError("'areas' must be an array")
-
-    return areas
+    return read_json_list_input(path, key="areas")
 
 
 def _extract_locals(raw: dict[str, Any]) -> tuple[dict[str, Any], bool]:
@@ -89,15 +68,11 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
             continue
 
         area_tag_raw = row.get("area_tag")
-        area_tag = _read_tag(area_tag_raw)
+        area_tag = read_tag(area_tag_raw)
         object_id = f"<idx:{index}>"
         issue_area_tag = area_tag or object_id
         if area_tag is None:
-            code = (
-                "missing_area_tag"
-                if area_tag_raw is None or (isinstance(area_tag_raw, str) and area_tag_raw.strip() == "")
-                else "invalid_area_tag_type"
-            )
+            code = tag_error_code(area_tag_raw, missing_code="missing_area_tag", invalid_type_code="invalid_area_tag_type")
             _append_issue(issues, "ERROR", object_id, code, "area_tag must be non-empty string")
 
         locals_map, invalid_locals = _extract_locals(row)
@@ -198,13 +173,22 @@ def validate_links(rows: list[dict[str, Any]]) -> list[ValidationIssue]:
     return issues
 
 
-def build_report(issues: list[ValidationIssue]) -> dict[str, Any]:
+def _order_issues(issues: list[ValidationIssue], sort_mode: str) -> list[ValidationIssue]:
+    if sort_mode == "strict":
+        return sorted(issues, key=lambda i: (i.level, i.area_tag, i.code, i.reason))
+    if sort_mode == "grouped":
+        return sorted(issues, key=lambda i: (_SEVERITY_RANK.get(i.level, 99), i.code))
+    return issues
+
+
+def build_report(issues: list[ValidationIssue], sort_mode: str = "none") -> dict[str, Any]:
     errors = sum(1 for issue in issues if issue.level == "ERROR")
     warns = sum(1 for issue in issues if issue.level == "WARN")
+    ordered_issues = _order_issues(issues, sort_mode)
     return {
         "status": "ERROR" if errors else "OK",
         "summary": {"errors": errors, "warnings": warns, "total": len(issues)},
-        "issues": [asdict(issue) for issue in sorted(issues, key=lambda i: (i.level, i.area_tag, i.code, i.reason))],
+        "issues": [asdict(issue) for issue in ordered_issues],
     }
 
 
@@ -224,6 +208,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate Ambient Life linked-area graph offline")
     parser.add_argument("--input", required=True, help="Path to JSON with area link locals")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
+    sort_group = parser.add_mutually_exclusive_group()
+    sort_group.add_argument(
+        "--deterministic-sort",
+        action="store_true",
+        help="Enable grouped deterministic ordering (severity/code) while preserving issue arrival order inside groups",
+    )
+    sort_group.add_argument(
+        "--strict-deterministic-sort",
+        action="store_true",
+        help="Enable strict deterministic ordering with full issue sort",
+    )
     args = parser.parse_args()
 
     try:
@@ -232,7 +227,13 @@ def main() -> int:
         print(json.dumps({"status": "FATAL", "reason": str(exc)}), file=sys.stderr)
         return 2
 
-    report = build_report(validate_links(rows))
+    sort_mode = "none"
+    if args.strict_deterministic_sort:
+        sort_mode = "strict"
+    elif args.deterministic_sort:
+        sort_mode = "grouped"
+
+    report = build_report(validate_links(rows), sort_mode=sort_mode)
 
     if args.format == "json":
         print(json.dumps(report, ensure_ascii=False, indent=2))

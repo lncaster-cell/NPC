@@ -39,6 +39,40 @@ class ValidateLocalsRouteRefsTests(unittest.TestCase):
             )
         )
 
+    def test_npc_route_tag_with_surrounding_whitespace_is_trimmed_for_lookup(self):
+        payload = {
+            "npcs": [
+                {
+                    "npc_tag": "merchant_01",
+                    "locals": {
+                        "al_default_activity": 1,
+                        "alwp0": " market_route ",
+                    },
+                }
+            ],
+            "waypoints": [
+                {
+                    "area_tag": "area_market",
+                    "route_tag": "market_route",
+                    "waypoint_tag": "market_0",
+                    "locals": {"al_step": 0},
+                }
+            ],
+            "areas": [],
+        }
+
+        issues = validate_locals(payload)
+
+        self.assertFalse(
+            any(
+                issue.level == "ERROR"
+                and issue.code == "unknown_route_tag_ref"
+                and issue.object_id == "merchant_01"
+                and "slot=alwp0" in issue.reason
+                for issue in issues
+            )
+        )
+
 
 class ValidateLocalsAreaTagValidationTests(unittest.TestCase):
     def test_area_tag_with_non_string_type_reports_invalid_type(self):

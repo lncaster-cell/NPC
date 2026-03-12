@@ -11,6 +11,7 @@ python3 -m scripts.ambient_life.run_preflight_suite \
   --link-input <path/to/areas_links.json> \
   --locals-input <path/to/locals_payload.json> \
   --format text
+  # performance-режим по умолчанию: порядок issue сохраняется как пришёл из валидаторов
 
 # Допустимый fallback (standalone-скрипт)
 python3 scripts/ambient_life/run_preflight_suite.py \
@@ -21,6 +22,13 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 ```
 
 Для CI/артефактов используйте `--format json`.
+
+Режимы сортировки issue для preflight-suite и отдельных валидаторов (`al_route_preflight.py`, `al_link_preflight.py`, `al_locals_preflight.py`):
+- по умолчанию (без флагов): **без сортировки**, сохраняется исходный порядок поступления issue (быстрее и ближе к runtime-диагностике);
+- `--deterministic-sort`: детерминируются только верхнеуровневые группы (suite: `check` + `severity`; одиночные валидаторы: `severity` + тип группы), порядок внутри группы остаётся исходным;
+- `--strict-deterministic-sort`: полная сортировка всех issue-полей (использовать только там, где CI/сравнение артефактов реально требует полностью стабильный порядок).
+
+Для CI рекомендуемый профиль: включать `--strict-deterministic-sort` только в job'ах, где есть жёсткое сравнение JSON-артефактов; в perf smoke/diagnostic job'ах оставлять режим по умолчанию или `--deterministic-sort`.
 
 Требования к входному JSON:
 - корень: либо массив waypoint-объектов, либо объект с ключом `waypoints`;
@@ -40,6 +48,27 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 - если есть `severity=error` — preflight считается "грязным", perf-прогон блокируется;
 - если есть только `warn/info` — требуется ручной triage, но запуск допускается.
 - **Любые perf-замеры считаются валидными только после "чистого" preflight (без `error`).**
+
+### 0.0.1) Triage-поток по unified preflight-suite
+
+Рекомендуемый порядок разбора preflight-результатов:
+
+1. Запустите suite в `text`-режиме для быстрого операционного обзора.
+   - Вывод начинается с блока `Critical errors` (все `severity=error`).
+   - Далее идёт агрегат `Top issue codes` (частотные коды проблем).
+   - После этого печатаются детальные строки в порядке приоритета: `ERROR` → `WARN` → `INFO`.
+2. Если в text-выводе сработал лимит детализации (`--detail-limit`), немедленно переснимите отчёт в `--format json` и приложите его как артефакт triage.
+3. Для root-cause анализа используйте раздел `aggregates` в JSON:
+   - `aggregates.severity` — объём проблем по уровням;
+   - `aggregates.check` — концентрация по подсистемам (`route/link/locals`);
+   - `aggregates.code` — частотный срез кодов, от которого строится порядок исправлений.
+4. При наличии `error`:
+   - остановите perf-прогон;
+   - исправьте сначала самые частые коды из `aggregates.code` (обычно это даёт максимальный эффект);
+   - повторите preflight до статуса без `error`.
+5. При отсутствии `error` и наличии только `warn/info`:
+   - зафиксируйте triage-note (какие коды и почему допускаются в текущем прогоне);
+   - запускайте perf только после сохранения JSON-артефакта preflight в PR/CI.
 
 Цель: дать **воспроизводимый** протокол производственных perf-прогонов для сравнения «до/после» изменений в `scripts/ambient_life/*`.
 

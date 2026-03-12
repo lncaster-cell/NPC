@@ -166,6 +166,11 @@ def load_report(path: Path) -> Dict[Tuple[str, str], dict]:
 
     parsed: Dict[Tuple[str, str], dict] = {}
     for idx, row in enumerate(rows, start=2):
+        if not isinstance(row, dict):
+            raise ValidationError(
+                f"Report JSON row {idx} must be object, got {type(row).__name__}"
+            )
+
         scenario_raw = row.get("scenario")
         metric_raw = row.get("metric")
 
