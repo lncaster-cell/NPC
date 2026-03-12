@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import concurrent.futures
 import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -47,6 +48,9 @@ _SEVERITY_RANK = {"error": 0, "warn": 1, "info": 2}
 
 
 def _order_issues(issues: list[dict[str, Any]], sort_mode: str) -> list[dict[str, Any]]:
+    # Complexity goals: avoid repeated global sorts in the hot path.
+    # - none: O(n) copy that keeps the build order stable/deterministic.
+    # - grouped/strict: single O(n log n) sort depending on requested guarantees.
     if sort_mode == "strict":
         return sorted(
             issues,
@@ -66,7 +70,7 @@ def _order_issues(issues: list[dict[str, Any]], sort_mode: str) -> list[dict[str
                 _SEVERITY_RANK.get(item["severity"], 99),
             ),
         )
-    return issues
+    return list(issues)
 
 
 def _run_route_check(route_input: Path) -> list[al_route_preflight.ValidationIssue]:
@@ -92,6 +96,15 @@ def _build_report(
     parallel: bool = False,
     sort_mode: str = "none",
 ) -> dict[str, Any]:
+    """Build a stable report payload for suite consumers.
+
+    Report contract (do not change without coordinating downstream integrations):
+    - ``status``: ``OK`` or ``ERROR``.
+    - ``inputs``: source file paths for ``route``, ``link``, ``locals`` checks.
+    - ``summary``: severity counters ``error``, ``warn``, ``info``, ``total``.
+    - ``aggregates``: grouped counters by ``code``, ``check``, ``severity``.
+    - ``issues``: normalized issue list with keys ``check``, ``severity``, ``code``, ``path``, ``message``.
+    """
     if parallel:
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             route_future = executor.submit(_run_route_check, route_input)
@@ -107,6 +120,11 @@ def _build_report(
 
     issues: list[dict[str, Any]] = []
     summary = {"error": 0, "warn": 0, "info": 0, "total": 0}
+    aggregates = {
+        "severity": {"error": 0, "warn": 0, "info": 0},
+        "check": {"route": 0, "link": 0, "locals": 0},
+        "code": {},
+    }
 
     def bump_summary(severity: str) -> None:
         normalized = _normalize_severity(severity)
@@ -116,6 +134,9 @@ def _build_report(
     def add_issue(payload: dict[str, Any]) -> None:
         issues.append(payload)
         bump_summary(payload["severity"])
+        for aggregate_name in ("code", "check", "severity"):
+            value = payload[aggregate_name]
+            aggregates[aggregate_name][value] = aggregates[aggregate_name].get(value, 0) + 1
 
     for issue in route_issues:
         add_issue(
@@ -166,17 +187,6 @@ def _build_report(
                 }
             )
 
-    issues = sorted(
-        issues,
-        key=lambda item: (
-            _SEVERITY_RANK.get(item["severity"], 99),
-            item["check"],
-            item["path"],
-            item["code"],
-            item["message"],
-        ),
-    )
-
     return {
         "status": "ERROR" if summary["error"] else "OK",
         "inputs": {
@@ -185,6 +195,11 @@ def _build_report(
             "locals": str(locals_input),
         },
         "summary": summary,
+        "aggregates": {
+            "code": dict(code_counts),
+            "check": dict(check_counts),
+            "severity": dict(severity_counts),
+        },
         "issues": _order_issues(issues, sort_mode),
     }
 
@@ -202,10 +217,12 @@ def _print_text_summary(report: dict[str, Any], detail_limit: int) -> None:
     if not report["issues"]:
         return
 
-    error_issues = [issue for issue in report["issues"] if issue["severity"] == "error"]
+    error_issues = report["aggregates"]["severity"].get("error", 0)
     print("\nCritical errors:")
     if error_issues:
-        for issue in error_issues:
+        for issue in report["issues"]:
+            if issue["severity"] != "error":
+                continue
             print(
                 f"- code={issue['code']} check={issue['check']} "
                 f"path={issue['path']} message={issue['message']}"

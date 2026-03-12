@@ -1,4 +1,7 @@
 # Каталог механик и сценариев Ambient Life v2
+<!-- DOCSYNC:2026-03-12 -->
+> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+
 
 Документ фиксирует **все реализованные на текущий момент механики** и **доступные сценарии поведения**, которые уже запрограммированы в системе.
 
