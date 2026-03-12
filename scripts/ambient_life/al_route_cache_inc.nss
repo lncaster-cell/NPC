@@ -65,28 +65,20 @@ int AL_RouteHashString(int nHash, string sValue)
     return AL_RouteHashMix(nHash, nLen + 17);
 }
 
-int AL_RouteBuildFingerprint(object oArea, string sRouteTag)
+int AL_ComputeRouteFingerprintFromCandidates(object oArea, string sRouteTag, int nCandidateCount)
 {
     if (!GetIsObjectValid(oArea) || sRouteTag == "")
     {
         return 0;
     }
 
-    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
-    int nFingerprintTick = GetLocalInt(oArea, AL_RouteAreaFingerprintTickKey(sRouteTag));
-    if (nSyncTick > 0 && nFingerprintTick == nSyncTick)
-    {
-        return GetLocalInt(oArea, AL_RouteAreaFingerprintValueKey(sRouteTag));
-    }
-
-    int nCandidateCount = AL_GetWaypointCandidatesCountCached(oArea, sRouteTag);
     int nFingerprint = AL_RouteHashString(23, sRouteTag);
     nFingerprint = AL_RouteHashMix(nFingerprint, nCandidateCount + 29);
 
     int nCandidateIdx = 0;
     while (nCandidateIdx < nCandidateCount)
     {
-        object oWp = AL_GetWaypointCandidateCached(oArea, sRouteTag, nCandidateIdx);
+        object oWp = AL_GetWaypointCandidateCachedFast(oArea, sRouteTag, nCandidateIdx);
         nCandidateIdx = nCandidateIdx + 1;
         if (!GetIsObjectValid(oWp) || GetObjectType(oWp) != OBJECT_TYPE_WAYPOINT || GetArea(oWp) != oArea)
         {
@@ -108,6 +100,12 @@ int AL_RouteBuildFingerprint(object oArea, string sRouteTag)
     }
 
     return nFingerprint;
+}
+
+int AL_RouteBuildFingerprint(object oArea, string sRouteTag)
+{
+    int nCandidateCount = AL_GetWaypointCandidatesCountCached(oArea, sRouteTag);
+    return AL_ComputeRouteFingerprintFromCandidates(oArea, sRouteTag, nCandidateCount);
 }
 
 void AL_RouteBlockedRuntimeReset(object oNpc)
@@ -227,7 +225,7 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
 
     while (nCandidateIdx < nCandidateCount)
     {
-        object oWp = AL_GetWaypointCandidateCached(oArea, sRouteTag, nCandidateIdx);
+        object oWp = AL_GetWaypointCandidateCachedFast(oArea, sRouteTag, nCandidateIdx);
         nCandidateIdx = nCandidateIdx + 1;
         if (!GetIsObjectValid(oWp) || GetObjectType(oWp) != OBJECT_TYPE_WAYPOINT || GetArea(oWp) != oArea)
         {
@@ -359,15 +357,19 @@ int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
         nContentVersion = GetLocalInt(oArea, "al_area_content_version");
     }
 
-    int nCandidateCount = AL_GetWaypointCandidatesCountCached(oArea, sRouteTag);
-
     SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), nFound);
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), GetLocalInt(oArea, "al_sync_tick"));
-    SetLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag), AL_RouteBuildFingerprint(oArea, sRouteTag));
+    SetLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag), AL_ComputeRouteFingerprintFromCandidates(oArea, sRouteTag, nCandidateCount));
     SetLocalInt(oArea, AL_RouteAreaContentVersionKey(sRouteTag), nContentVersion);
     SetLocalInt(oArea, AL_RouteAreaCandidateCountKey(sRouteTag), nCandidateCount);
     DeleteLocalString(oArea, "al_route_fail_reason");
     return TRUE;
+}
+
+
+int AL_RebuildRouteAreaCacheByTag(object oArea, string sRouteTag)
+{
+    return AL_RouteBuildAreaCache(oArea, sRouteTag);
 }
 
 int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
@@ -404,7 +406,7 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
     if (bCacheValid && bTriggersChanged)
     {
         SetLocalInt(oArea, "route_cache_full_rehashes", GetLocalInt(oArea, "route_cache_full_rehashes") + 1);
-        int nCurrentFingerprint = AL_RouteBuildFingerprint(oArea, sRouteTag);
+        int nCurrentFingerprint = AL_ComputeRouteFingerprintFromCandidates(oArea, sRouteTag, nCandidateCount);
         int nCachedFingerprint = GetLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag));
         if (nCurrentFingerprint != 0 && nCurrentFingerprint == nCachedFingerprint)
         {

@@ -101,5 +101,18 @@ class ValidateLinksFailFastTests(unittest.TestCase):
         self.assertEqual(sum(1 for issue in issues if issue.level == "ERROR"), 2)
 
 
+class ValidateLinksSmokeTests(unittest.TestCase):
+    def test_basic_validation_runs(self):
+        rows = [
+            {"area_tag": "market", "locals": {"al_link_count": 1, "al_link_0": "gate"}},
+            {"area_tag": "gate", "locals": {"al_link_count": 1, "al_link_0": "market"}},
+        ]
+
+        issues = validate_links(rows)
+
+        self.assertIsInstance(issues, list)
+        self.assertFalse(any(issue.level == "ERROR" for issue in issues))
+
+
 if __name__ == "__main__":
     unittest.main()
