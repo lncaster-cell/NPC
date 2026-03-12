@@ -78,7 +78,11 @@
 
 ## 4) Правила
 
+- Единственный источник периодического area tick — внутренний `DelayCommand`-scheduler (`AL_ScheduleAreaTick`).
+- `al_area_tick` в `OnHeartbeat` допускается только как bootstrap-вызов активации area; runtime loop через heartbeat запрещён.
 - Не изменяйте runtime-owned locals из toolset-скриптов.
+- Периодический area tick идёт только через runtime scheduler `AL_ScheduleAreaTick`.
+- Toolset `OnHeartbeat` не используется как штатный источник периодического тика (допустим только legacy bootstrap-hook без дублирования цикла).
 - Проверяйте area consistency waypoint-тегов в маршрутах.
 - Не превышайте cap `AL_MAX_NPCS = 100` в активной area.
 - Stage I.2 использует только area-local alarm scope (без global/world propagation) и bounded nearby fan-out в текущей area.

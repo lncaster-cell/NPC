@@ -26,9 +26,14 @@
 |---|---|
 | `OnEnter` | `al_area_onenter` |
 | `OnExit` | `al_area_onexit` |
-| `OnHeartbeat` | `al_area_tick` |
 
-> Если в вашем шаблоне area tick подключается отдельным hook-механизмом, `al_area_tick` должен быть вызван этим механизмом.
+`OnHeartbeat` **не используется как штатный периодический тик Ambient Life**.
+
+Периодический runtime-цикл идёт только через внутренний scheduler (`AL_ScheduleAreaTick`) и запускается из lifecycle
+(`OnEnter`/`OnExit` через `AL_AreaActivate`).
+
+`al_area_tick` можно оставлять только как legacy safety hook (bootstrap), если в вашем шаблоне уже есть такое подключение:
+он выполняет только активацию lifecycle и **не** должен быть единственным/основным источником периодического тика.
 
 ### 2.3 NPC (Свойства NPC → Scripts)
 
