@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -40,6 +41,19 @@ def _normalize_severity(level: str) -> str:
     if lowered in {"error", "warn", "info"}:
         return lowered
     return "info"
+
+
+def _severity_order(severity: str) -> int:
+    order = {"error": 0, "warn": 1, "info": 2}
+    return order.get(severity, 3)
+
+
+def _build_aggregates(issues: list[dict[str, Any]]) -> dict[str, dict[str, int]]:
+    return {
+        "check": dict(sorted(Counter(issue["check"] for issue in issues).items())),
+        "code": dict(sorted(Counter(issue["code"] for issue in issues).items())),
+        "severity": dict(sorted(Counter(issue["severity"] for issue in issues).items())),
+    }
 
 
 def _build_report(route_input: Path, link_input: Path, locals_input: Path) -> dict[str, Any]:
@@ -109,6 +123,17 @@ def _build_report(route_input: Path, link_input: Path, locals_input: Path) -> di
         "total": len(issues),
     }
 
+    issues = sorted(
+        issues,
+        key=lambda item: (
+            _severity_order(item["severity"]),
+            item["check"],
+            item["path"],
+            item["code"],
+            item["message"],
+        ),
+    )
+
     return {
         "status": "ERROR" if summary["error"] else "OK",
         "inputs": {
@@ -117,11 +142,12 @@ def _build_report(route_input: Path, link_input: Path, locals_input: Path) -> di
             "locals": str(locals_input),
         },
         "summary": summary,
-        "issues": sorted(issues, key=lambda item: (item["severity"], item["check"], item["path"], item["code"], item["message"])),
+        "aggregates": _build_aggregates(issues),
+        "issues": issues,
     }
 
 
-def _print_text_summary(report: dict[str, Any]) -> None:
+def _print_text_summary(report: dict[str, Any], detail_limit: int) -> None:
     print(f"[suite:{report['status']}] Ambient Life preflight suite")
     print(
         "Summary: "
@@ -134,12 +160,43 @@ def _print_text_summary(report: dict[str, Any]) -> None:
     if not report["issues"]:
         return
 
+    error_issues = [issue for issue in report["issues"] if issue["severity"] == "error"]
+    print("\nCritical errors:")
+    if error_issues:
+        for issue in error_issues:
+            print(
+                f"- code={issue['code']} check={issue['check']} "
+                f"path={issue['path']} message={issue['message']}"
+            )
+    else:
+        print("- none")
+
+    print("\nTop issue codes:")
+    top_codes = sorted(
+        (
+            (code, count)
+            for code, count in report["aggregates"]["code"].items()
+            if code != "ok"
+        ),
+        key=lambda item: (-item[1], item[0]),
+    )
+    if top_codes:
+        for code, count in top_codes[:5]:
+            print(f"- code={code} count={count}")
+    else:
+        print("- none")
+
     print("\nIssues:")
-    for issue in report["issues"]:
+    displayed = report["issues"][: max(detail_limit, 0)]
+    for issue in displayed:
         print(
             f"- [{issue['severity']}] check={issue['check']} code={issue['code']} "
             f"path={issue['path']} message={issue['message']}"
         )
+
+    omitted = len(report["issues"]) - len(displayed)
+    if omitted > 0:
+        print(f"... and {omitted} more issues (use --format json for full report)")
 
 
 def main() -> int:
@@ -148,6 +205,12 @@ def main() -> int:
     parser.add_argument("--link-input", required=True, help="Path to link preflight JSON input")
     parser.add_argument("--locals-input", required=True, help="Path to locals preflight JSON input")
     parser.add_argument("--format", choices=("json", "text"), default="json", help="Output format")
+    parser.add_argument(
+        "--detail-limit",
+        type=int,
+        default=20,
+        help="Max number of detailed issue lines in text mode",
+    )
     args = parser.parse_args()
 
     report = _build_report(Path(args.route_input), Path(args.link_input), Path(args.locals_input))
@@ -155,7 +218,7 @@ def main() -> int:
     if args.format == "json":
         print(json.dumps(report, ensure_ascii=False, indent=2))
     else:
-        _print_text_summary(report)
+        _print_text_summary(report, args.detail_limit)
 
     return 1 if report["summary"]["error"] else 0
 
