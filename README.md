@@ -14,7 +14,7 @@
 - H: activity semantics;
 - I.0: локальная реакция на OnBlocked;
 - I.1: foundation для OnDisturbed (inventory/theft);
-- I.2: local crime/alarm layer (area-local escalation, civilian/militia/guard split).
+- I.2: local crime/alarm layer (area-local escalation, civilian/militia/guard split, bounded debounce/fan-out).
 
 ## Быстрый старт
 
@@ -32,9 +32,9 @@
 
 ## Границы Stage I.2
 
-- Crime/alarm работает только в пределах текущей area (без global/world alarm).
+- Crime/alarm работает только в пределах текущей area (без global/world alarm), с bounded nearby реакцией уже существующих NPC.
 - Используются уже существующие NPC в runtime-контексте; guard spawn/reinforcements не реализованы.
-- Surrender/arrest/trial не реализованы (оставлены future hooks).
+- Guard-path учитывает built-in hostility/faction NWN2; surrender/arrest/trial не реализованы (оставлены future hooks).
 - Ordinary Stage D/E/F/G/H flow остаётся default path вне локальных инцидентов.
 
 ## Структура репозитория

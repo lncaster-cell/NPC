@@ -50,8 +50,9 @@
   - bounded классификация инцидента (`none/suspicious/theft/hostile-legal`);
   - area-local alarm state (`al_alarm_state`, `al_alarm_until`, `al_alarm_source`) с деэскалацией по `al_sync_tick`;
   - role split (`civilian/militia/guard`) без giant role framework;
-  - debounce anti-spam для повторных `OnDisturbed` инцидентов;
-  - только локальная эскалация (текущая area, уже присутствующие NPC), без global scan/spawn.
+  - guard-path опирается на built-in hostility/faction (`GetIsReactionTypeHostile`, `GetFactionEqual`) перед future legal-цепочкой;
+  - debounce anti-spam для повторных `OnDisturbed` инцидентов (actor-local + area-local);
+  - bounded локальный fan-out на nearby NPC текущей area (без world scan/spawn).
 
 ## 4. Event bus
 
@@ -67,4 +68,4 @@ Crime/alarm на Stage I.2 намеренно **не** добавляет нов
 - Нет heartbeat/polling loop на NPC.
 - Центральный runtime loop — только area tick (`DelayCommand`).
 - Dispatch событий работает по текущему area registry.
-- Stage I.2 не включает guard spawn/reinforcements и не включает surrender/arrest/trial (оставлены только future hooks).
+- Stage I.2 не включает guard spawn/reinforcements и не включает surrender/arrest/trial (оставлены только future hooks `al_legal_followup_pending`).
