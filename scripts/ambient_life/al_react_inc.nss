@@ -37,6 +37,29 @@ void AL_ReactResumeOrResetOnSelf();
 void AL_ReactFinishCreature(object oNpc);
 void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurSec);
 
+object AL_FindNearestSafeWaypointFromCache(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oCached = GetLocalObject(oNpc, "al_safe_wp_cache");
+    if (!GetIsObjectValid(oCached) || GetObjectType(oCached) != OBJECT_TYPE_WAYPOINT || GetArea(oCached) != oArea)
+    {
+        DeleteLocalObject(oNpc, "al_safe_wp_cache");
+        return OBJECT_INVALID;
+    }
+
+    return oCached;
+}
+
 void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurSec)
 {
     if (!GetIsObjectValid(oNpc))

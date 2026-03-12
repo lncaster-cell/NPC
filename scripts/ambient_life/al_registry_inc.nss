@@ -15,6 +15,31 @@ const int AL_REG_MISS_LOG_COOLDOWN_TICKS = 50;
 const int AL_REG_DIAG_SAMPLE_PERIOD_TICKS = 5;
 const int AL_REG_DIAG_BATCH_PERIOD_TICKS = 10;
 
+int AL_IsRuntimeNpc(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE)
+    {
+        return FALSE;
+    }
+
+    if (GetIsPC(oNpc) || GetIsDM(oNpc))
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+int AL_IsHotArea(object oArea)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return FALSE;
+    }
+
+    return GetLocalInt(oArea, "al_sim_tier") == 2;
+}
+
 int AL_RegDiagnosticsEnabled(object oArea)
 {
     return GetLocalInt(oArea, "al_debug") > 0;
