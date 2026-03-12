@@ -342,6 +342,17 @@ int AL_RouteRoutineResumeCurrent(object oNpc)
     return AL_RouteQueueStep(oNpc, nCurrent);
 }
 
+void AL_RouteResyncCurrentArea(object oNpc, int nSlot)
+{
+    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    {
+        return;
+    }
+
+    AL_RouteInvalidateCache(oNpc);
+    AL_RouteRoutineStart(oNpc, nSlot, TRUE);
+}
+
 void AL_RouteRoutineStart(object oNpc, int nSlot, int bForceRebuild)
 {
     if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
