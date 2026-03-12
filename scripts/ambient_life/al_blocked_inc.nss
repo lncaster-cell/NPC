@@ -33,13 +33,13 @@ int AL_BlockedTryDoorFirst(object oNpc)
 
 void AL_OnNpcBlocked(object oNpc)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    if (!AL_IsRuntimeNpc(oNpc))
     {
         return;
     }
 
     object oArea = GetArea(oNpc);
-    if (!GetIsObjectValid(oArea) || GetLocalInt(oArea, "al_sim_tier") != AL_SIM_TIER_HOT)
+    if (!AL_IsHotArea(oArea))
     {
         return;
     }

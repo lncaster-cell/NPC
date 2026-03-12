@@ -76,7 +76,7 @@ int AL_UnregisterNPCFromArea(object oNpc, object oArea)
 
 void AL_RegisterNPCInArea(object oNpc, object oArea)
 {
-    if (!GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc))
+    if (!AL_IsRuntimeNpc(oNpc))
     {
         return;
     }
@@ -236,7 +236,7 @@ void AL_RegistryCompact(object oArea)
     while (i < nCount)
     {
         object oNpc = GetLocalObject(oArea, AL_RegKey(i));
-        int bInvalid = !GetIsObjectValid(oNpc) || GetObjectType(oNpc) != OBJECT_TYPE_CREATURE || GetIsPC(oNpc) || (GetArea(oNpc) != oArea);
+        int bInvalid = !AL_IsRuntimeNpc(oNpc) || (GetArea(oNpc) != oArea);
 
         if (bInvalid)
         {
