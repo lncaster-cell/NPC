@@ -29,21 +29,8 @@ object AL_SleepResolveWaypoint(object oNpc, string sTag)
         return OBJECT_INVALID;
     }
 
-    int idx = 0;
     object oArea = GetArea(oNpc);
-    object oWp = GetObjectByTag(sTag, idx);
-    while (GetIsObjectValid(oWp))
-    {
-        if (GetObjectType(oWp) == OBJECT_TYPE_WAYPOINT && GetArea(oWp) == oArea)
-        {
-            return oWp;
-        }
-
-        idx = idx + 1;
-        oWp = GetObjectByTag(sTag, idx);
-    }
-
-    return OBJECT_INVALID;
+    return AL_ResolveWaypointInAreaCached(oArea, sTag);
 }
 
 int AL_SleepQueueOnPlace(object oNpc, int nDurSec)

@@ -12,6 +12,10 @@ string AL_RouteRtIdxKey() { return "al_route_rt_idx"; }
 string AL_RouteRtLeftKey() { return "al_route_rt_left"; }
 string AL_RouteRtCycleKey() { return "al_route_rt_cycle"; }
 
+string AL_RouteAreaCacheStepsKey(string sRouteTag) { return "al_route_area_steps_" + sRouteTag; }
+string AL_RouteAreaCacheTickKey(string sRouteTag) { return "al_route_area_tick_" + sRouteTag; }
+string AL_RouteAreaStepKey(string sRouteTag, int nIdx) { return "al_route_area_step_" + sRouteTag + "_" + IntToString(nIdx); }
+
 void AL_RouteBlockedRuntimeReset(object oNpc)
 {
     if (!GetIsObjectValid(oNpc))
@@ -64,6 +68,202 @@ void AL_RouteInvalidateCache(object oNpc)
     SetLocalInt(oNpc, "al_route_cache_slot", -1);
     SetLocalInt(oNpc, "al_route_cache_steps", 0);
     SetLocalInt(oNpc, "al_route_cache_valid", FALSE);
+}
+
+void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
+{
+    if (!GetIsObjectValid(oArea) || sRouteTag == "")
+    {
+        return;
+    }
+
+    int nSteps = GetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag));
+    int i = 0;
+    while (i < nSteps)
+    {
+        DeleteLocalObject(oArea, AL_RouteAreaStepKey(sRouteTag, i));
+        i = i + 1;
+    }
+
+    SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), 0);
+    SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), 0);
+}
+
+int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
+{
+    AL_RouteInvalidateAreaCache(oArea, sRouteTag);
+
+    if (!GetIsObjectValid(oArea) || sRouteTag == "")
+    {
+        return FALSE;
+    }
+
+    int anStepVals[AL_ROUTE_MAX_STEPS];
+    object aoStepRefs[AL_ROUTE_MAX_STEPS];
+    int nFound = 0;
+    int nValidCandidates = 0;
+    int nOverflowCandidates = 0;
+    int nSearchIdx = 0;
+
+    while (TRUE)
+    {
+        object oWp = GetObjectByTag(sRouteTag, nSearchIdx);
+        if (!GetIsObjectValid(oWp))
+        {
+            break;
+        }
+
+        nSearchIdx = nSearchIdx + 1;
+        if (GetObjectType(oWp) != OBJECT_TYPE_WAYPOINT || GetArea(oWp) != oArea)
+        {
+            continue;
+        }
+
+        int nStep = GetLocalInt(oWp, "al_step");
+        if (nStep < 0)
+        {
+            continue;
+        }
+
+        nValidCandidates = nValidCandidates + 1;
+
+        int bDuplicateStep = FALSE;
+        int i = 0;
+        while (i < nFound)
+        {
+            if (anStepVals[i] == nStep)
+            {
+                bDuplicateStep = TRUE;
+                break;
+            }
+            i = i + 1;
+        }
+
+        if (bDuplicateStep)
+        {
+            continue;
+        }
+
+        if (nFound >= AL_ROUTE_MAX_STEPS)
+        {
+            nOverflowCandidates = nOverflowCandidates + 1;
+            continue;
+        }
+
+        anStepVals[nFound] = nStep;
+        aoStepRefs[nFound] = oWp;
+        nFound = nFound + 1;
+    }
+
+    if (nOverflowCandidates > 0)
+    {
+        SetLocalInt(oArea, "al_route_overflow_count", GetLocalInt(oArea, "al_route_overflow_count") + 1);
+        SetLocalString(oArea, "al_route_overflow_tag", sRouteTag);
+
+        if (GetLocalInt(oArea, "al_debug") > 0)
+        {
+            WriteTimestampedLogEntry(
+                "[AL][RouteOverflow] area=" + GetTag(oArea)
+                + " route_tag=" + sRouteTag
+                + " valid_candidates=" + IntToString(nValidCandidates)
+                + " unique_overflow=" + IntToString(nOverflowCandidates)
+                + " max_steps=" + IntToString(AL_ROUTE_MAX_STEPS)
+            );
+        }
+
+        AL_RouteInvalidateAreaCache(oArea, sRouteTag);
+        return FALSE;
+    }
+
+    if (nFound <= 0)
+    {
+        return FALSE;
+    }
+
+    int iSort = 0;
+    while (iSort < nFound)
+    {
+        int iMin = iSort;
+        int j = iSort + 1;
+
+        while (j < nFound)
+        {
+            if (anStepVals[j] < anStepVals[iMin])
+            {
+                iMin = j;
+            }
+            j = j + 1;
+        }
+
+        if (iMin != iSort)
+        {
+            int nTmpStep = anStepVals[iSort];
+            object oTmpRef = aoStepRefs[iSort];
+            anStepVals[iSort] = anStepVals[iMin];
+            aoStepRefs[iSort] = aoStepRefs[iMin];
+            anStepVals[iMin] = nTmpStep;
+            aoStepRefs[iMin] = oTmpRef;
+        }
+
+        iSort = iSort + 1;
+    }
+
+    if (anStepVals[0] != 0)
+    {
+        AL_RouteInvalidateAreaCache(oArea, sRouteTag);
+        return FALSE;
+    }
+
+    int iCheck = 0;
+    while (iCheck < nFound)
+    {
+        if (anStepVals[iCheck] != iCheck)
+        {
+            AL_RouteInvalidateAreaCache(oArea, sRouteTag);
+            return FALSE;
+        }
+
+        SetLocalObject(oArea, AL_RouteAreaStepKey(sRouteTag, iCheck), aoStepRefs[iCheck]);
+        iCheck = iCheck + 1;
+    }
+
+    SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), nFound);
+    SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), GetLocalInt(oArea, "al_sync_tick"));
+    return TRUE;
+}
+
+int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
+{
+    if (!GetIsObjectValid(oArea) || sRouteTag == "")
+    {
+        return FALSE;
+    }
+
+    if (!bForceRebuild)
+    {
+        int nSteps = GetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag));
+        if (nSteps > 0)
+        {
+            int i = 0;
+            while (i < nSteps)
+            {
+                object oStep = GetLocalObject(oArea, AL_RouteAreaStepKey(sRouteTag, i));
+                if (!GetIsObjectValid(oStep) || GetObjectType(oStep) != OBJECT_TYPE_WAYPOINT || GetArea(oStep) != oArea)
+                {
+                    break;
+                }
+
+                i = i + 1;
+            }
+
+            if (i == nSteps)
+            {
+                return TRUE;
+            }
+        }
+    }
+
+    return AL_RouteBuildAreaCache(oArea, sRouteTag);
 }
 
 void AL_RouteRuntimeClear(object oNpc)
@@ -122,142 +322,29 @@ int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
     SetLocalInt(oNpc, "al_route_overflow_count", 0);
     DeleteLocalString(oNpc, "al_route_overflow_tag");
 
-    int anStepVals[AL_ROUTE_MAX_STEPS];
-    object aoStepRefs[AL_ROUTE_MAX_STEPS];
-    int nFound = 0;
-    int nValidCandidates = 0;
-    int nOverflowCandidates = 0;
-    int nSearchIdx = 0;
-
-    while (TRUE)
+    if (!AL_RouteEnsureAreaCache(oNpcArea, sRouteTag, FALSE))
     {
-        object oWp = GetObjectByTag(sRouteTag, nSearchIdx);
-        if (!GetIsObjectValid(oWp))
-        {
-            break;
-        }
-
-        nSearchIdx = nSearchIdx + 1;
-        if (GetObjectType(oWp) != OBJECT_TYPE_WAYPOINT)
-        {
-            continue;
-        }
-
-        if (GetArea(oWp) != oNpcArea)
-        {
-            continue;
-        }
-
-        int nStep = GetLocalInt(oWp, "al_step");
-        if (nStep < 0)
-        {
-            continue;
-        }
-
-        nValidCandidates = nValidCandidates + 1;
-
-        int bDuplicateStep = FALSE;
-        int i = 0;
-        while (i < nFound)
-        {
-            if (anStepVals[i] == nStep)
-            {
-                bDuplicateStep = TRUE;
-                break;
-            }
-            i = i + 1;
-        }
-
-        if (bDuplicateStep)
-        {
-            continue;
-        }
-
-        if (nFound >= AL_ROUTE_MAX_STEPS)
-        {
-            nOverflowCandidates = nOverflowCandidates + 1;
-            continue;
-        }
-
-        anStepVals[nFound] = nStep;
-        aoStepRefs[nFound] = oWp;
-        nFound = nFound + 1;
-    }
-
-    if (nOverflowCandidates > 0)
-    {
-        // Policy: hard-fail route cache if content exceeds AL_ROUTE_MAX_STEPS.
-        // This keeps behavior deterministic and forces content-side correction.
-        SetLocalInt(oNpc, "al_route_overflow_count", nValidCandidates);
-        SetLocalString(oNpc, "al_route_overflow_tag", sRouteTag);
-        SetLocalInt(oNpcArea, "al_route_overflow_count", GetLocalInt(oNpcArea, "al_route_overflow_count") + 1);
-        SetLocalString(oNpcArea, "al_route_overflow_tag", sRouteTag);
-
-        if (GetLocalInt(oNpcArea, "al_debug") > 0)
-        {
-            WriteTimestampedLogEntry(
-                "[AL][RouteOverflow] area=" + GetTag(oNpcArea)
-                + " npc=" + GetTag(oNpc)
-                + " route_tag=" + sRouteTag
-                + " valid_candidates=" + IntToString(nValidCandidates)
-                + " unique_overflow=" + IntToString(nOverflowCandidates)
-                + " max_steps=" + IntToString(AL_ROUTE_MAX_STEPS)
-            );
-        }
-
-        AL_RouteInvalidateCache(oNpc);
         return FALSE;
     }
 
+    int nFound = GetLocalInt(oNpcArea, AL_RouteAreaCacheStepsKey(sRouteTag));
     if (nFound <= 0)
     {
-        return FALSE;
-    }
-
-    int iSort = 0;
-    while (iSort < nFound)
-    {
-        int iMin = iSort;
-        int j = iSort + 1;
-
-        while (j < nFound)
-        {
-            if (anStepVals[j] < anStepVals[iMin])
-            {
-                iMin = j;
-            }
-            j = j + 1;
-        }
-
-        if (iMin != iSort)
-        {
-            int nTmpStep = anStepVals[iSort];
-            object oTmpRef = aoStepRefs[iSort];
-            anStepVals[iSort] = anStepVals[iMin];
-            aoStepRefs[iSort] = aoStepRefs[iMin];
-            anStepVals[iMin] = nTmpStep;
-            aoStepRefs[iMin] = oTmpRef;
-        }
-
-        iSort = iSort + 1;
-    }
-
-    if (anStepVals[0] != 0)
-    {
-        AL_RouteInvalidateCache(oNpc);
         return FALSE;
     }
 
     int iCheck = 0;
     while (iCheck < nFound)
     {
-        if (anStepVals[iCheck] != iCheck)
+        object oStep = GetLocalObject(oNpcArea, AL_RouteAreaStepKey(sRouteTag, iCheck));
+        if (!GetIsObjectValid(oStep) || GetObjectType(oStep) != OBJECT_TYPE_WAYPOINT || GetArea(oStep) != oNpcArea)
         {
+            AL_RouteInvalidateAreaCache(oNpcArea, sRouteTag);
             AL_RouteInvalidateCache(oNpc);
             return FALSE;
         }
 
-        SetLocalObject(oNpc, AL_RouteStepKey(iCheck), aoStepRefs[iCheck]);
+        SetLocalObject(oNpc, AL_RouteStepKey(iCheck), oStep);
         iCheck = iCheck + 1;
     }
 
@@ -295,6 +382,18 @@ int AL_RouteEnsureCache(object oNpc, int nSlot, int bForceRebuild)
         {
             return TRUE;
         }
+    }
+
+    object oCurrentArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oCurrentArea))
+    {
+        return FALSE;
+    }
+
+    if (!AL_RouteEnsureAreaCache(oCurrentArea, sRouteTag, bForceRebuild))
+    {
+        AL_RouteInvalidateCache(oNpc);
+        return FALSE;
     }
 
     return AL_RouteBuildCache(oNpc, nSlot, sRouteTag);
