@@ -12,6 +12,8 @@ const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
 const int AL_WP_CACHE_TTL_TICKS = 10;
 const int AL_HEALTH_RESYNC_WINDOW_TICKS = 8;
+const string AL_LOOKUP_INVALIDATE_REASON_ALL = "all";
+const string AL_LOOKUP_INVALIDATE_REASON_ROUTE = "route";
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
 
@@ -126,10 +128,26 @@ void AL_LookupBuildWaypointListCache(object oArea, string sTag)
     AL_LookupTrackTag(oArea, sTag);
 }
 
-void AL_LookupSoftInvalidateAreaCache(object oArea)
+void AL_LookupInvalidateTagCache(object oArea, string sTag)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA || sTag == "")
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, AL_LookupWpTickKey(sTag), 0);
+}
+
+void AL_LookupSoftInvalidateAreaCache(object oArea, string sReason, string sRouteTag)
 {
     if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
     {
+        return;
+    }
+
+    if (sReason == AL_LOOKUP_INVALIDATE_REASON_ROUTE && sRouteTag != "")
+    {
+        AL_LookupInvalidateTagCache(oArea, sRouteTag);
         return;
     }
 
@@ -140,7 +158,7 @@ void AL_LookupSoftInvalidateAreaCache(object oArea)
         string sTag = GetLocalString(oArea, "al_cache_wp_tag_" + IntToString(i));
         if (sTag != "")
         {
-            SetLocalInt(oArea, AL_LookupWpTickKey(sTag), 0);
+            AL_LookupInvalidateTagCache(oArea, sTag);
         }
         i = i + 1;
     }
@@ -383,7 +401,7 @@ void AL_AreaSetTier(object oArea, int nTier)
     }
 
     SetLocalInt(oArea, "al_sim_tier", nTier);
-    AL_LookupSoftInvalidateAreaCache(oArea);
+    AL_LookupSoftInvalidateAreaCache(oArea, AL_LOOKUP_INVALIDATE_REASON_ALL, "");
 
     if (nTier == AL_SIM_TIER_FREEZE)
     {

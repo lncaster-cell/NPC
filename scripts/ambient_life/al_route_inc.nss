@@ -6,6 +6,8 @@
 #include "al_sleep_inc"
 
 const int AL_ROUTE_MAX_STEPS = 16;
+const int AL_ROUTE_REBUILD_BUDGET_PER_TICK = 2;
+const int AL_ROUTE_REBUILD_FAIL_COOLDOWN_TICKS = 2;
 
 string AL_RouteRtActiveKey() { return "al_route_rt_active"; }
 string AL_RouteRtIdxKey() { return "al_route_rt_idx"; }
@@ -15,6 +17,73 @@ string AL_RouteRtCycleKey() { return "al_route_rt_cycle"; }
 string AL_RouteAreaCacheStepsKey(string sRouteTag) { return "al_route_area_steps_" + sRouteTag; }
 string AL_RouteAreaCacheTickKey(string sRouteTag) { return "al_route_area_tick_" + sRouteTag; }
 string AL_RouteAreaStepKey(string sRouteTag, int nIdx) { return "al_route_area_step_" + sRouteTag + "_" + IntToString(nIdx); }
+string AL_RouteAreaFailTickKey(string sRouteTag) { return "al_route_area_fail_tick_" + sRouteTag; }
+string AL_RouteAreaPendingKey(string sRouteTag) { return "al_route_area_pending_" + sRouteTag; }
+
+void AL_RouteMarkAreaPending(object oArea, string sRouteTag)
+{
+    if (!GetIsObjectValid(oArea) || sRouteTag == "")
+    {
+        return;
+    }
+
+    if (!GetLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag)))
+    {
+        SetLocalInt(oArea, "al_route_pending_count", GetLocalInt(oArea, "al_route_pending_count") + 1);
+    }
+
+    SetLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag), TRUE);
+    SetLocalInt(oArea, "al_route_pending_rebuild", TRUE);
+}
+
+void AL_RouteClearAreaPending(object oArea, string sRouteTag)
+{
+    if (!GetIsObjectValid(oArea) || sRouteTag == "")
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag)))
+    {
+        int nPendingCount = GetLocalInt(oArea, "al_route_pending_count") - 1;
+        if (nPendingCount < 0)
+        {
+            nPendingCount = 0;
+        }
+
+        SetLocalInt(oArea, "al_route_pending_count", nPendingCount);
+        SetLocalInt(oArea, "al_route_pending_rebuild", nPendingCount > 0);
+    }
+
+    DeleteLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag));
+}
+
+void AL_RouteResetRebuildBudgetTick(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    if (GetLocalInt(oArea, "al_route_rebuild_budget_tick") != nSyncTick)
+    {
+        SetLocalInt(oArea, "al_route_rebuild_budget_tick", nSyncTick);
+        SetLocalInt(oArea, "al_route_rebuild_budget_used", 0);
+    }
+}
+
+int AL_RouteCanRebuildThisTick(object oArea)
+{
+    AL_RouteResetRebuildBudgetTick(oArea);
+    return GetLocalInt(oArea, "al_route_rebuild_budget_used") < AL_ROUTE_REBUILD_BUDGET_PER_TICK;
+}
+
+void AL_RouteConsumeRebuildBudget(object oArea)
+{
+    AL_RouteResetRebuildBudgetTick(oArea);
+    SetLocalInt(oArea, "al_route_rebuild_budget_used", GetLocalInt(oArea, "al_route_rebuild_budget_used") + 1);
+}
 
 void AL_RouteBlockedRuntimeReset(object oNpc)
 {
@@ -87,7 +156,7 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
 
     SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), 0);
-    AL_LookupSoftInvalidateAreaCache(oArea);
+    AL_LookupSoftInvalidateAreaCache(oArea, AL_LOOKUP_INVALIDATE_REASON_ROUTE, sRouteTag);
 }
 
 int AL_RouteBuildAreaCache(object oArea, string sRouteTag)
@@ -254,6 +323,8 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
         return FALSE;
     }
 
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+
     if (!bForceRebuild)
     {
         int nSteps = GetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag));
@@ -273,12 +344,36 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
 
             if (i == nSteps)
             {
+                AL_RouteClearAreaPending(oArea, sRouteTag);
                 return TRUE;
             }
         }
+
+        int nLastFailTick = GetLocalInt(oArea, AL_RouteAreaFailTickKey(sRouteTag));
+        if (nLastFailTick > 0 && nSyncTick > 0 && (nSyncTick - nLastFailTick) < AL_ROUTE_REBUILD_FAIL_COOLDOWN_TICKS)
+        {
+            return FALSE;
+        }
+
+        if (!AL_RouteCanRebuildThisTick(oArea))
+        {
+            AL_RouteMarkAreaPending(oArea, sRouteTag);
+            SetLocalString(oArea, "al_route_fail_reason", "budget_deferred");
+            return FALSE;
+        }
     }
 
-    return AL_RouteBuildAreaCache(oArea, sRouteTag);
+    AL_RouteConsumeRebuildBudget(oArea);
+    int bBuilt = AL_RouteBuildAreaCache(oArea, sRouteTag);
+    if (!bBuilt)
+    {
+        SetLocalInt(oArea, AL_RouteAreaFailTickKey(sRouteTag), nSyncTick);
+        return FALSE;
+    }
+
+    DeleteLocalInt(oArea, AL_RouteAreaFailTickKey(sRouteTag));
+    AL_RouteClearAreaPending(oArea, sRouteTag);
+    return TRUE;
 }
 
 void AL_RouteRuntimeClear(object oNpc)
@@ -320,7 +415,11 @@ void AL_RouteResetAreaOverflowMetrics(object oArea)
     SetLocalInt(oArea, "al_route_duplicate_step_count", 0);
     DeleteLocalString(oArea, "al_route_overflow_tag");
     DeleteLocalString(oArea, "al_route_fail_reason");
+    SetLocalInt(oArea, "al_route_pending_rebuild", FALSE);
+    SetLocalInt(oArea, "al_route_pending_count", 0);
 }
+
+
 
 int AL_RouteBuildCache(object oNpc, int nSlot, string sRouteTag)
 {
