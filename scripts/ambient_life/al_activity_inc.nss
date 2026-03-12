@@ -347,23 +347,27 @@ void AL_ActivityApplyStep(object oNpc, int nStepActivity, int nDurSec)
         return;
     }
 
+    // 1) Prefer custom animation tokens when available.
     if (AL_PlayCustomAnimation(oNpc, nActivity, nDurSec))
     {
         SetLocalInt(oNpc, "al_activity_current", nActivity);
         return;
     }
 
+    // 2) Fallback to numeric animation table.
     if (AL_PlayNumericAnimation(oNpc, nActivity, nDurSec))
     {
         SetLocalInt(oNpc, "al_activity_current", nActivity);
         return;
     }
 
+    // 3) Run ordinary queued behavior for the resolved activity.
     if (AL_ActivityQueueOrdinary(oNpc, nActivity, nDurSec))
     {
         return;
     }
 
+    // 4) Last resort: mark idle.
     AL_ActivityApplyIdleFallback(oNpc);
 }
 
