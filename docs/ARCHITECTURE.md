@@ -63,10 +63,24 @@
 
 Crime/alarm на Stage I.2 намеренно **не** добавляет новые события шины: эскалация выполняется внутри bounded `OnDisturbed` пути.
 
+### 4.1 Dispatch runtime contract
+
+- Все area-scoped события шины, потенциально затрагивающие много NPC, проходят через единый batched-dispatch путь (`AL_DispatchEventToAreaRegistry` → queue → `AL_RunBatchedDispatch`).
+- Dispatch использует приоритеты:
+  - `critical`: `ROUTE_REPEAT`, `BLOCKED_RESUME`;
+  - `normal`: slot events + `RESYNC`.
+- Планировщик применяет critical-burst quota (несколько critical подряд), после чего гарантирует выполнение normal-события при наличии очереди normal (anti-starvation).
+- Введён cycle-guard на ключе `(event + cycle key)`: повторный старт одинакового цикла не допускается, дубликаты в active/queued состоянии отбрасываются.
+- Метрики runtime-loop для диагностики шины:
+  - `al_dispatch_queue_depth` — текущая глубина (active + queued);
+  - `al_dispatch_ticks_to_drain` — ticks до полного опустошения очереди за последний цикл drain;
+  - `al_dispatch_max_backlog` — максимальный observed backlog за lifetime area.
+
 ## 5. Инварианты
 
 - Нет heartbeat/polling loop на NPC.
 - Центральный runtime loop — только area tick scheduler (`AL_ScheduleAreaTick` → `DelayCommand` → `AL_AreaTick`).
 - Toolset `OnHeartbeat` не является штатным периодическим путём и не должен дублировать scheduler-цикл.
 - Dispatch событий работает по текущему area registry.
+- Event bus должен оставаться bounded: запуск через queue с защитой от дубликатов циклов и с fairness между critical/normal приоритетами.
 - Stage I.2 не включает guard spawn/reinforcements и не включает surrender/arrest/trial (оставлены только future hooks `al_legal_followup_pending`).
