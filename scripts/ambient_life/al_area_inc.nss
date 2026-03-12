@@ -641,7 +641,8 @@ void AL_StartBatchedDispatch(object oArea, int nEvent)
         return;
     }
 
-    if (GetLocalInt(oArea, AL_DispatchPendingKey(sCycleKey)) > 0)
+    if (GetLocalInt(oArea, AL_DispatchPendingMemberKey(sCycleKey)) > 0
+        || (GetLocalInt(oArea, "al_dispatch_active") > 0 && GetLocalString(oArea, "al_dispatch_cycle_key") == sCycleKey))
     {
         SetLocalInt(oArea, "al_dispatch_dedupe_hits", GetLocalInt(oArea, "al_dispatch_dedupe_hits") + 1);
         AL_UpdateDispatchQueueMetrics(oArea);
@@ -665,6 +666,7 @@ void AL_StartBatchedDispatch(object oArea, int nEvent)
     SetLocalInt(oArea, "al_dispatch_q_len", nLen + 1);
 
     SetLocalInt(oArea, AL_DispatchPendingKey(sCycleKey), 1);
+    SetLocalInt(oArea, AL_DispatchPendingMemberKey(sCycleKey), 1);
     AL_TrackDispatchPendingKey(oArea, sCycleKey);
     AL_OnDispatchWorkQueued(oArea);
     AL_ActivateQueuedDispatch(oArea);
