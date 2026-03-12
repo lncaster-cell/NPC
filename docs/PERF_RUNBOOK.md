@@ -31,7 +31,8 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 
 ## 1) Фиксированные тест-сцены (Low / Mid / High)
 
-> Во всех сценах используются одинаковые настройки рантайма: `AL_AREA_TICK_SEC=30`, `AL_MAX_NPCS=100`, `AL_ROUTE_MAX_STEPS=16`.
+> Во всех сценах используются одинаковые настройки рантайма: `AL_AREA_TICK_SEC=30`, `AL_MAX_NPCS_DEFAULT=100`, `AL_ROUTE_MAX_STEPS=16`.
+> Дополнительно для сравнений cap-профилей используется area-local `al_max_npcs` (`80`/`100`/`120`) в валидном диапазоне `20..200`.
 
 ### Scene L (низкая плотность)
 
@@ -69,6 +70,21 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
   - 12 × `rt_docks_workers`
   - 12 × `rt_temple_visitors`
   - 12 × `rt_craft_lane`
+
+
+## 1.1) Матрица прогона для cap-профилей
+
+Для оценки выбора effective-cap выполняется 3×3 матрица:
+
+- сценарии нагрузки: `S80`/`S100`/`S120`;
+- значения cap: `al_max_npcs=80`, `100`, `120`.
+
+Минимальная интерпретация:
+- если `NPC > cap`, ожидается рост `al_reg_overflow_count_cap`;
+- если `NPC <= cap`, `al_reg_overflow_count_cap` должен оставаться `0` в baseline без искусственных бурстов;
+- `al_reg_overflow_count` использовать только как lifetime-счётчик area, не как метрику текущего cap-контекста.
+
+Рекомендуемый порядок прогона: `(S80,S100,S120) × (cap=100,120,80)`, чтобы сначала снять baseline-профиль.
 
 ## 2) Длительность прогона и ожидаемые диапазоны `al_h_*`
 
@@ -138,6 +154,7 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 | `al_reg_overflow_count` | warn: `1`, critical: `>=2` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | Переполнение registry недопустимо в baseline, в stress — сигнал дефицита ёмкости. |
 | `al_route_overflow_count` | warn: `1`, critical: `>=2` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | Переполнение route-cache/route-пула: риск деградации маршрутизации и повторных rebuild. |
 | `al_h_recent_resync` | warn: `3..4`, critical: `>=5` | warn: `3..5`, critical: `>=6` | warn: `4..7`, critical: `>=8` | Частые resync без явных контентных причин — симптом нестабильности состояния NPC. |
+| `al_h_reg_index_miss_window_delta` | warn: `1..2`, critical: `>=3` | warn: `1..3`, critical: `>=4` | warn: `2..4`, critical: `>=5` | Рост miss-дельты означает рассинхрон reverse-index: реестр чаще уходит в линейный поиск. |
 
 Правило статуса:
 - `OK` — значение ниже warn-порога;
@@ -145,6 +162,10 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 - `CRITICAL` — достигает или превышает critical-порог.
 
 Для `*_overflow*` дополнительно фиксируйте и в комментарии, и в выводе отчёта факт роста (`0 -> N`), даже если значение пока в зоне `WARN`.
+
+Для `al_h_reg_index_miss_window_delta` операторские действия при росте:
+- `WARN`: сохранить 20-тиковое окно, приложить `[AL][RegIndexMiss]`-логи и проверить, что у NPC/area не теряются `al_reg_area`/`al_reg_idx`;
+- `CRITICAL`: остановить perf-сравнение как нестабильное, выполнить triage реестра (компактация/перерегистрация NPC, проверка массовых transition), затем повторить прогон.
 
 ### Целевые пороги «до/после» для dispatch-degradation (обязательно для PR)
 
@@ -175,6 +196,7 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 | al_reg_overflow_count |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
 | al_route_overflow_count |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
 | al_h_recent_resync |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL |  |
+| al_h_reg_index_miss_window_delta |  |  |  | см. таблицу порогов | OK/WARN/CRITICAL | окно `AL_HEALTH_RESYNC_WINDOW_TICKS` |
 | avg_dispatch_drain |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
 | al_dispatch_ticks_to_drain |  |  |  | baseline ± шум | OK/WARN/CRITICAL | ожидается без деградации |
 | hit_share / miss_share |  |  |  | см. KPI-цели | OK/WARN/CRITICAL |  |
@@ -204,7 +226,7 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 Минимальный операторский ответ:
 
 1. Зафиксировать окно: warmup 2 тика + measure 20 тиков.
-2. Снять значения `al_h_tier`, `al_h_recent_resync`, overflow-счётчиков до/после окна.
+2. Снять значения `al_h_tier`, `al_h_recent_resync`, `al_h_reg_index_miss_window_delta`, overflow-счётчиков до/после окна.
 3. Если есть рост overflow или устойчивый высокий resync-фон — пересобрать linked-граф (снижение степени хабов, декомпозиция кластера, удаление избыточных связей).
 
 ## 5) Встраивание в регулярный QA-процесс

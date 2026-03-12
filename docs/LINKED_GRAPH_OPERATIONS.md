@@ -78,3 +78,39 @@
    - убрать избыточные связи,
    - разделить крупный кластер на под-кластеры,
    - снизить степень центральных хабов.
+
+
+## 6) Offline preflight validator (`al_link_preflight.py`)
+
+Перед rollout изменений linked-графа запускайте сервисный валидатор:
+
+```bash
+python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_ok.json --format text
+```
+
+JSON-режим (для CI/автоматизации):
+
+```bash
+python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_ok.json --format json
+```
+
+Пример smoke-проверки с ошибками (ожидаем `exit code 1`):
+
+```bash
+python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_invalid.json --format text
+```
+
+Что проверяется:
+
+- валидность `al_link_count`;
+- диапазон индексов `al_link_0..al_link_{count-1}` и отсутствие «вне диапазона»;
+- self-link (`area -> area`);
+- дубликаты linked area внутри одной area;
+- симметрия (`A -> B` требует `B -> A`);
+- degree-пороги (target `2..4`, hard max `6`).
+
+Коды завершения:
+
+- `0` — ошибок нет (warnings допустимы);
+- `1` — обнаружены ошибки в linked-графе (rollout блокируется);
+- `2` — фатальная ошибка чтения/формата входного JSON.

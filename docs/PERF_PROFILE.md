@@ -45,6 +45,7 @@
 - `al_reg_overflow_count`
 - `al_route_overflow_count`
 - `al_h_recent_resync`
+- `al_h_reg_index_miss_window_delta`
 - `al_reg_compact_calls` / `al_reg_compact_calls_window`
 - `al_dispatch_ticks_to_drain`
 
@@ -75,6 +76,7 @@
 | `al_reg_overflow_count` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..4`, critical: `>=5` |
 | `al_route_overflow_count` | warn: `1`, critical: `>=2` | warn: `1..2`, critical: `>=3` | warn: `2..4`, critical: `>=5` |
 | `al_h_recent_resync` | warn: `3..5`, critical: `>=6` | warn: `4..7`, critical: `>=8` | warn: `6..10`, critical: `>=11` |
+| `al_h_reg_index_miss_window_delta` | warn: `1..2`, critical: `>=3` | warn: `1..3`, critical: `>=4` | warn: `2..4`, critical: `>=5` |
 
 Единое правило:
 - `OK` — значение ниже warn-порога;
@@ -106,6 +108,7 @@
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
 | al_h_recent_resync |  |  |  |  |  |  |
+| al_h_reg_index_miss_window_delta |  |  |  |  |  |  |
 | al_reg_compact_calls / al_reg_compact_calls_window |  |  |  | n/a | n/a | ожидается снижение |
 | al_dispatch_ticks_to_drain |  |  |  | n/a | n/a | без деградации vs baseline |
 
@@ -117,6 +120,7 @@
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
 | al_h_recent_resync |  |  |  |  |  |  |
+| al_h_reg_index_miss_window_delta |  |  |  |  |  |  |
 | al_reg_compact_calls / al_reg_compact_calls_window |  |  |  | n/a | n/a | ожидается снижение |
 | al_dispatch_ticks_to_drain |  |  |  | n/a | n/a | без деградации vs baseline |
 
@@ -128,6 +132,7 @@
 | al_reg_overflow_count |  |  |  |  |  |  |
 | al_route_overflow_count |  |  |  |  |  |  |
 | al_h_recent_resync |  |  |  |  |  |  |
+| al_h_reg_index_miss_window_delta |  |  |  |  |  |  |
 | al_reg_compact_calls / al_reg_compact_calls_window |  |  |  | n/a | n/a | ожидается снижение |
 | al_dispatch_ticks_to_drain |  |  |  | n/a | n/a | без деградации vs baseline |
 
@@ -136,6 +141,18 @@
 - Риск для production: low/medium/high
 - Нужны follow-up задачи: <да/нет + список>
 ```
+
+## 3.1) Сравнение S80/S100/S120 при cap=80/100/120 (decision aid)
+
+Используйте таблицу ниже как шаблон интерпретации результатов (после заполнения секции Baseline vs After):
+
+| Scenario | cap=80 | cap=100 | cap=120 | Suggested cap |
+| --- | --- | --- | --- | --- |
+| S80 | допустим при стабильном составе NPC, но чувствителен к burst-регистрациям | целевой baseline | запас без операционной необходимости | `100` |
+| S100 | ожидаемый рост `al_reg_overflow_count_cap` | целевой baseline | запас для burst/миграций | `100` (или `120` для пиковых area) |
+| S120 | устойчивый overflow (обычно WARN/CRITICAL) | вероятный overflow при пиках | целевой baseline | `120` |
+
+Критерий выбора: минимальный cap, при котором в штатном 20-тиковом окне `al_reg_overflow_count_cap` не растёт и нет деградации `al_dispatch_ticks_to_drain`.
 
 ## 4) Gate в TASKS / PR-review
 

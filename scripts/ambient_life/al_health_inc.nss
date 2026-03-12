@@ -360,6 +360,52 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     int nSlot = GetLocalInt(oArea, "al_slot");
     int nRegOverflow = GetLocalInt(oArea, "al_reg_overflow_count");
     int nRouteOverflow = GetLocalInt(oArea, "al_route_overflow_count");
+    int nRegIndexMiss = GetLocalInt(oArea, "al_reg_index_miss");
+    int nRegIndexMissLast = GetLocalInt(oArea, "al_h_reg_index_miss_last");
+    int nRegIndexMissDelta = nRegIndexMiss - nRegIndexMissLast;
+    if (nRegIndexMissDelta < 0)
+    {
+        nRegIndexMissDelta = nRegIndexMiss;
+    }
+
+    int nRegIndexMissWindowStartTick = GetLocalInt(oArea, "al_h_reg_index_miss_window_start_tick");
+    int nRegIndexMissWindowStartValue = GetLocalInt(oArea, "al_h_reg_index_miss_window_start_value");
+    if (nRegIndexMissWindowStartTick <= 0 || nSyncTick < nRegIndexMissWindowStartTick)
+    {
+        nRegIndexMissWindowStartTick = nSyncTick;
+        nRegIndexMissWindowStartValue = nRegIndexMiss;
+    }
+
+    int nRegIndexMissWindowTicks = nSyncTick - nRegIndexMissWindowStartTick;
+    if (nRegIndexMissWindowTicks < 0)
+    {
+        nRegIndexMissWindowTicks = 0;
+    }
+
+    int nRegIndexMissWindowDelta = nRegIndexMiss - nRegIndexMissWindowStartValue;
+    if (nRegIndexMissWindowDelta < 0)
+    {
+        nRegIndexMissWindowDelta = nRegIndexMiss;
+        nRegIndexMissWindowStartValue = 0;
+    }
+
+    if (nRegIndexMissWindowTicks >= AL_HEALTH_RESYNC_WINDOW_TICKS)
+    {
+        nRegIndexMissWindowStartTick = nSyncTick;
+        nRegIndexMissWindowStartValue = nRegIndexMiss;
+        nRegIndexMissWindowTicks = 0;
+        nRegIndexMissWindowDelta = 0;
+    }
+
+    int nRegIndexMissStatus = 0;
+    if (nRegIndexMissWindowDelta >= 3)
+    {
+        nRegIndexMissStatus = 2;
+    }
+    else if (nRegIndexMissWindowDelta >= 1)
+    {
+        nRegIndexMissStatus = 1;
+    }
 
     AL_SetLocalIntOnChange(oArea, "al_h_npc_count", nNpcCount);
     AL_SetLocalIntOnChange(oArea, "al_h_tier", nTier);
@@ -369,6 +415,10 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     AL_SetLocalIntOnChange(oArea, "al_h_route_overflow_count", nRouteOverflow);
     AL_SetLocalIntOnChange(oArea, "al_h_recent_resync", nRecentResync);
     AL_SetLocalIntOnChange(oArea, "al_h_recent_resync_mask", nResyncMask);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_delta", nRegIndexMissDelta);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_ticks", nRegIndexMissWindowTicks);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_warn_status", nRegIndexMissStatus);
 
     if (GetLocalInt(oArea, "al_debug") > 0)
     {
@@ -412,6 +462,15 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
                 + "/" + IntToString(AL_HEALTH_RESYNC_WINDOW_TICKS);
         }
 
+        if (nRegIndexMissDelta > 0 || nRegIndexMissWindowDelta != GetLocalInt(oArea, "al_h_dbg_prev_reg_index_miss_window_delta"))
+        {
+            bChanged = TRUE;
+            sDelta = sDelta
+                + " reg_index_miss_delta=" + IntToString(nRegIndexMissDelta)
+                + " reg_index_miss_window=" + IntToString(nRegIndexMissWindowDelta)
+                + "/" + IntToString(AL_HEALTH_RESYNC_WINDOW_TICKS);
+        }
+
         if (bChanged)
         {
             WriteTimestampedLogEntry(
@@ -419,6 +478,35 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
                 + " sync_tick=" + IntToString(nSyncTick)
                 + sDelta
             );
+        }
+
+        if (nRegIndexMissStatus > 0)
+        {
+            int nLastWarnTick = GetLocalInt(oArea, "al_h_reg_index_miss_warn_last_tick");
+            int nPrevWarnStatus = GetLocalInt(oArea, "al_h_reg_index_miss_warn_prev_status");
+            if (nSyncTick <= 0 || nLastWarnTick <= 0 || (nSyncTick - nLastWarnTick) >= AL_HEALTH_RESYNC_WINDOW_TICKS || nRegIndexMissStatus != nPrevWarnStatus)
+            {
+                string sWarnStatus = "WARN";
+                if (nRegIndexMissStatus >= 2)
+                {
+                    sWarnStatus = "CRITICAL";
+                }
+
+                WriteTimestampedLogEntry(
+                    "[AL][RegIndexMiss] area=" + GetTag(oArea)
+                    + " status=" + sWarnStatus
+                    + " sync_tick=" + IntToString(nSyncTick)
+                    + " window_delta=" + IntToString(nRegIndexMissWindowDelta)
+                    + " window_ticks=" + IntToString(nRegIndexMissWindowTicks)
+                    + " tick_delta=" + IntToString(nRegIndexMissDelta)
+                    + " total=" + IntToString(nRegIndexMiss)
+                );
+
+                if (nSyncTick > 0)
+                {
+                    SetLocalInt(oArea, "al_h_reg_index_miss_warn_last_tick", nSyncTick);
+                }
+            }
         }
     }
 
@@ -428,4 +516,9 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_reg_overflow", nRegOverflow);
     AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_route_overflow", nRouteOverflow);
     AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_recent_resync", nRecentResync);
+    AL_SetLocalIntOnChange(oArea, "al_h_dbg_prev_reg_index_miss_window_delta", nRegIndexMissWindowDelta);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_last", nRegIndexMiss);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_start_tick", nRegIndexMissWindowStartTick);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_window_start_value", nRegIndexMissWindowStartValue);
+    AL_SetLocalIntOnChange(oArea, "al_h_reg_index_miss_warn_prev_status", nRegIndexMissStatus);
 }
