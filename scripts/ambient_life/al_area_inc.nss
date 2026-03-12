@@ -10,6 +10,7 @@ const int AL_SIM_TIER_HOT = 2;
 const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
 const int AL_WP_CACHE_TTL_TICKS = 10;
+const int AL_SAFE_WP_CACHE_MAX = 32;
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
 const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
 
@@ -31,6 +32,172 @@ void AL_RecordLookupCacheMiss(object oArea)
     }
 
     SetLocalInt(oArea, "al_cache_miss", GetLocalInt(oArea, "al_cache_miss") + 1);
+}
+
+void AL_RecordSafeLookupHit(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, "al_safe_lookup_hit", GetLocalInt(oArea, "al_safe_lookup_hit") + 1);
+}
+
+void AL_RecordSafeLookupMiss(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, "al_safe_lookup_miss", GetLocalInt(oArea, "al_safe_lookup_miss") + 1);
+}
+
+int AL_IsSafeWaypointCandidate(object oWaypoint)
+{
+    if (!GetIsObjectValid(oWaypoint) || GetObjectType(oWaypoint) != OBJECT_TYPE_WAYPOINT)
+    {
+        return FALSE;
+    }
+
+    if (GetLocalInt(oWaypoint, "al_safe_wp") == TRUE)
+    {
+        return TRUE;
+    }
+
+    string sTag = GetTag(oWaypoint);
+    if (FindSubString(sTag, "safe") >= 0 || FindSubString(sTag, "SAFE") >= 0)
+    {
+        return TRUE;
+    }
+
+    string sName = GetName(oWaypoint);
+    if (FindSubString(sName, "safe") >= 0 || FindSubString(sName, "SAFE") >= 0)
+    {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+void AL_RebuildSafeWaypointCache(object oArea)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return;
+    }
+
+    int i = 0;
+    while (i < AL_SAFE_WP_CACHE_MAX)
+    {
+        DeleteLocalObject(oArea, "al_safe_wp_obj_" + IntToString(i));
+        i = i + 1;
+    }
+
+    int nCount = 0;
+    object oObj = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oObj))
+    {
+        if (AL_IsSafeWaypointCandidate(oObj))
+        {
+            if (nCount < AL_SAFE_WP_CACHE_MAX)
+            {
+                SetLocalObject(oArea, "al_safe_wp_obj_" + IntToString(nCount), oObj);
+                nCount = nCount + 1;
+            }
+        }
+
+        oObj = GetNextObjectInArea(oArea);
+    }
+
+    SetLocalInt(oArea, "al_safe_wp_count", nCount);
+    SetLocalInt(oArea, "al_safe_wp_tick", GetLocalInt(oArea, "al_sync_tick"));
+}
+
+int AL_IsSafeWaypointCacheFresh(object oArea)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return FALSE;
+    }
+
+    int nCount = GetLocalInt(oArea, "al_safe_wp_count");
+    if (nCount <= 0)
+    {
+        return FALSE;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nCachedTick = GetLocalInt(oArea, "al_safe_wp_tick");
+    if (nSyncTick <= 0 || nCachedTick <= 0)
+    {
+        return FALSE;
+    }
+
+    return (nSyncTick <= (nCachedTick + AL_WP_CACHE_TTL_TICKS));
+}
+
+object AL_FindNearestSafeWaypointFromCache(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return OBJECT_INVALID;
+    }
+
+    int bFresh = AL_IsSafeWaypointCacheFresh(oArea);
+    if (!bFresh)
+    {
+        AL_RebuildSafeWaypointCache(oArea);
+        bFresh = AL_IsSafeWaypointCacheFresh(oArea);
+    }
+
+    if (!bFresh)
+    {
+        AL_RecordSafeLookupMiss(oArea);
+        return OBJECT_INVALID;
+    }
+
+    int nCount = GetLocalInt(oArea, "al_safe_wp_count");
+    if (nCount <= 0)
+    {
+        AL_RecordSafeLookupMiss(oArea);
+        return OBJECT_INVALID;
+    }
+
+    float fBestDist = 1000000.0;
+    object oBest = OBJECT_INVALID;
+    int i = 0;
+    while (i < nCount)
+    {
+        object oWaypoint = GetLocalObject(oArea, "al_safe_wp_obj_" + IntToString(i));
+        if (GetIsObjectValid(oWaypoint) && GetObjectType(oWaypoint) == OBJECT_TYPE_WAYPOINT && GetArea(oWaypoint) == oArea)
+        {
+            float fDist = GetDistanceBetween(oNpc, oWaypoint);
+            if (!GetIsObjectValid(oBest) || fDist < fBestDist)
+            {
+                fBestDist = fDist;
+                oBest = oWaypoint;
+            }
+        }
+
+        i = i + 1;
+    }
+
+    if (GetIsObjectValid(oBest))
+    {
+        AL_RecordSafeLookupHit(oArea);
+        return oBest;
+    }
+
+    AL_RecordSafeLookupMiss(oArea);
+    return OBJECT_INVALID;
 }
 
 object AL_ResolveWaypointInAreaCached(object oArea, string sTag)
