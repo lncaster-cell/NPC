@@ -194,26 +194,6 @@ int AL_DispatchPriorityFromEvent(int nEvent)
     return AL_DISPATCH_PRIORITY_NORMAL;
 }
 
-// Diagnostic helper: not used in runtime dispatch hot-path.
-int AL_HasPendingPriority(object oArea, int nPriority)
-{
-    int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
-    int nHead = GetLocalInt(oArea, "al_dispatch_q_head");
-    int i = 0;
-
-    while (i < nLen)
-    {
-        int nIdx = (nHead + i) % AL_DISPATCH_QUEUE_CAPACITY;
-        if (GetLocalInt(oArea, AL_DispatchQueueKey("prio", nIdx)) == nPriority)
-        {
-            return TRUE;
-        }
-        i = i + 1;
-    }
-
-    return FALSE;
-}
-
 void AL_UpdateDispatchQueueDepthFast(object oArea)
 {
     int nDepth = GetLocalInt(oArea, "al_dispatch_q_len");
