@@ -125,12 +125,8 @@ int AL_ReactHasWitness(object oDisturbed, object oSource)
         return FALSE;
     }
 
+    // Content rule: forced witness flag on disturbed actor always enables witness path.
     if (GetLocalInt(oDisturbed, "al_force_witness") == TRUE)
-    {
-        return TRUE;
-    }
-
-    if (GetObjectType(oDisturbed) == OBJECT_TYPE_CREATURE)
     {
         return TRUE;
     }
@@ -141,14 +137,30 @@ int AL_ReactHasWitness(object oDisturbed, object oSource)
         return FALSE;
     }
 
-    if (GetIsObjectValid(oSource) && GetObjectType(oSource) == OBJECT_TYPE_CREATURE && GetArea(oSource) == oArea)
+    // Optional area-level override for staged scenes/scripts that need guaranteed witnesses.
+    if (GetLocalInt(oArea, "al_force_witness") == TRUE)
     {
-        return (GetLocalInt(oArea, "al_player_count") > 0);
+        return TRUE;
     }
 
-    return FALSE;
+    // Witnesses require a valid creature source physically in the same area.
+    if (!GetIsObjectValid(oSource) || GetObjectType(oSource) != OBJECT_TYPE_CREATURE || GetArea(oSource) != oArea)
+    {
+        return FALSE;
+    }
+
+    // Baseline witness signal: at least one player/observer tracked in area state.
+    return (GetLocalInt(oArea, "al_player_count") > 0);
+
 }
 
+// Crime classification is intentionally deterministic:
+// - witness = AL_ReactHasWitness(...), see witness criteria above;
+// - THEFT requires source + item + witness + not allowed;
+// - SUSPICIOUS covers non-allowed partial evidence (source and/or witness).
+// Debounce/alarm pipeline consumes nCrimeKind as-is, so witness changes only alter
+// classification inputs and remain stable through AL_ReactIncidentDebounced ->
+// AL_ReactRaiseAreaAlarm -> AL_ReactNotifyNearbyResponders.
 int AL_ReactClassifyCrime(object oActor, int nReactType, object oSource, object oItem)
 {
     if (nReactType == AL_REACT_TYPE_ADDED || nReactType == AL_REACT_TYPE_NONE)
@@ -558,6 +570,8 @@ void AL_OnDisturbed(object oActor)
     int nRole = AL_ReactGetNpcRole(oActor);
     nCrimeKind = AL_ReactPromoteByRole(nCrimeKind, nRole);
 
+    // Debounce/alarm fan-out uses the already-classified crime kind and does not
+    // re-evaluate witness criteria; this keeps THEFT/SUSPICIOUS transitions predictable.
     if (!AL_ReactIncidentDebounced(oActor, oSource, nCrimeKind))
     {
         AL_ReactRaiseAreaAlarm(oActor, oSource, nCrimeKind);
