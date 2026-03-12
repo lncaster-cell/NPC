@@ -51,27 +51,10 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
     }
 
     int nDebug = GetLocalInt(oArea, "al_debug");
-
-    // Fast-path for common "unique in area" case.
-    oSrc = AL_ResolveWaypointInAreaCached(oArea, sSrcTag);
-
-    // Resolve source waypoint by tag, explicitly restricted to NPC current area.
-    int iSrc = 0;
-    int nSrcMatches = 0;
-    object oSrcCandidate = GetObjectByTag(sSrcTag, iSrc);
-    while (GetIsObjectValid(oSrcCandidate))
+    int nSrcMatches = AL_GetWaypointCandidatesCountCached(oArea, sSrcTag);
+    if (nSrcMatches == 1)
     {
-        if (GetObjectType(oSrcCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oSrcCandidate) == oArea)
-        {
-            nSrcMatches = nSrcMatches + 1;
-            if (nSrcMatches == 1 && !GetIsObjectValid(oSrc))
-            {
-                oSrc = oSrcCandidate;
-            }
-        }
-
-        iSrc = iSrc + 1;
-        oSrcCandidate = GetObjectByTag(sSrcTag, iSrc);
+        oSrc = AL_GetWaypointCandidateCached(oArea, sSrcTag, 0);
     }
 
     if (nSrcMatches != 1)
@@ -82,6 +65,8 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
                 "[AL][TransitionResolve] ambiguous-or-missing src waypoint: area=" + GetTag(oArea)
                 + " src_tag=" + sSrcTag
                 + " matches_in_area=" + IntToString(nSrcMatches)
+                + " lookup_hits=" + IntToString(GetLocalInt(oArea, "al_cache_hit"))
+                + " lookup_misses=" + IntToString(GetLocalInt(oArea, "al_cache_miss"))
             );
         }
         return FALSE;
@@ -134,38 +119,16 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
         }
     }
 
-    // Fast-path for common "unique in area" case when destination scope is explicit and area-local.
+    object oDstLookupArea = oArea;
     if (GetIsObjectValid(oDstTargetArea))
     {
-        oDst = AL_ResolveWaypointInAreaCached(oDstTargetArea, sDstTag);
+        oDstLookupArea = oDstTargetArea;
     }
 
-    // Resolve destination waypoint by tag using explicit target-area policy if configured.
-    int iDst = 0;
-    int nDstMatches = 0;
-    object oDstCandidate = GetObjectByTag(sDstTag, iDst);
-    while (GetIsObjectValid(oDstCandidate))
+    int nDstMatches = AL_GetWaypointCandidatesCountCached(oDstLookupArea, sDstTag);
+    if (nDstMatches == 1)
     {
-        if (GetObjectType(oDstCandidate) == OBJECT_TYPE_WAYPOINT)
-        {
-            int bAreaMatch = TRUE;
-            if (GetIsObjectValid(oDstTargetArea))
-            {
-                bAreaMatch = (GetArea(oDstCandidate) == oDstTargetArea);
-            }
-
-            if (bAreaMatch)
-            {
-                nDstMatches = nDstMatches + 1;
-                if (nDstMatches == 1 && !GetIsObjectValid(oDst))
-                {
-                    oDst = oDstCandidate;
-                }
-            }
-        }
-
-        iDst = iDst + 1;
-        oDstCandidate = GetObjectByTag(sDstTag, iDst);
+        oDst = AL_GetWaypointCandidateCached(oDstLookupArea, sDstTag, 0);
     }
 
     if (nDstMatches != 1)
@@ -177,12 +140,18 @@ int AL_TransitionResolveEndpoints(object oStep, object oNpc, object oArea, objec
             {
                 sScope = GetTag(oDstTargetArea);
             }
+            else
+            {
+                sScope = GetTag(oArea);
+            }
 
             WriteTimestampedLogEntry(
                 "[AL][TransitionResolve] ambiguous-or-missing dst waypoint: area=" + GetTag(oArea)
                 + " dst_tag=" + sDstTag
                 + " scope=" + sScope
                 + " matches=" + IntToString(nDstMatches)
+                + " lookup_hits=" + IntToString(GetLocalInt(oDstLookupArea, "al_cache_hit"))
+                + " lookup_misses=" + IntToString(GetLocalInt(oDstLookupArea, "al_cache_miss"))
             );
         }
         return FALSE;
