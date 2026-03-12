@@ -147,17 +147,70 @@ string AL_RegKey(int nIdx)
 
 string AL_RegStableId(object oNpc)
 {
-    return GetTag(oNpc) + "#" + ObjectToString(oNpc);
+    if (!GetIsObjectValid(oNpc))
+    {
+        return "";
+    }
+
+    string sStableId = GetLocalString(oNpc, "al_reg_stable_id");
+    if (sStableId == "")
+    {
+        sStableId = GetTag(oNpc) + "#" + ObjectToString(oNpc);
+        SetLocalString(oNpc, "al_reg_stable_id", sStableId);
+    }
+
+    return sStableId;
 }
 
-string AL_RegReverseKey(string sStableId)
+int AL_RegStableIdHash(string sStableId)
 {
-    return "al_reg_rev_" + sStableId;
+    int nHash = 5381;
+    int nLen = GetStringLength(sStableId);
+    int i = 0;
+
+    while (i < nLen)
+    {
+        string sChar = GetSubString(sStableId, i, 1);
+        int nCode = FindSubString("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_-:#.", sChar);
+        if (nCode < 0)
+        {
+            nCode = 0;
+        }
+
+        nHash = ((nHash * 33) + nCode + 1) % 2147483629;
+        i = i + 1;
+    }
+
+    if (nHash < 0)
+    {
+        nHash = nHash + 2147483629;
+    }
+
+    return nHash;
+}
+
+string AL_RegReverseKey(object oNpc)
+{
+    string sStableId = AL_RegStableId(oNpc);
+    if (sStableId == "")
+    {
+        return "";
+    }
+
+    // Компактный ключ reverse-index: короткий префикс + hash stable-id + object id.
+    // Суффикс с object id оставляет уникальность ключа в пределах area даже при hash-collision.
+    return "al_rr_" + IntToString(AL_RegStableIdHash(sStableId)) + "_" + ObjectToString(oNpc);
 }
 
 int AL_RegReverseGet(object oArea, object oNpc)
 {
-    int nStored = GetLocalInt(oArea, AL_RegReverseKey(AL_RegStableId(oNpc)));
+    string sReverseKey = AL_RegReverseKey(oNpc);
+    if (sReverseKey == "")
+    {
+        return -1;
+    }
+
+    int nStored = GetLocalInt(oArea, sReverseKey);
     if (nStored <= 0)
     {
         return -1;
@@ -173,7 +226,13 @@ void AL_RegReverseSet(object oArea, object oNpc, int nIdx)
         return;
     }
 
-    SetLocalInt(oArea, AL_RegReverseKey(AL_RegStableId(oNpc)), nIdx + 1);
+    string sReverseKey = AL_RegReverseKey(oNpc);
+    if (sReverseKey == "")
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, sReverseKey, nIdx + 1);
 }
 
 void AL_RegReverseDelete(object oArea, object oNpc)
@@ -183,7 +242,13 @@ void AL_RegReverseDelete(object oArea, object oNpc)
         return;
     }
 
-    DeleteLocalInt(oArea, AL_RegReverseKey(AL_RegStableId(oNpc)));
+    string sReverseKey = AL_RegReverseKey(oNpc);
+    if (sReverseKey == "")
+    {
+        return;
+    }
+
+    DeleteLocalInt(oArea, sReverseKey);
 }
 
 int AL_RegValidateCandidateIdx(object oArea, object oNpc, int nCandidateIdx, int nCount)

@@ -37,7 +37,9 @@
 
 - `al_h_reg_index_miss_delta` должен оставаться на уровне `0` для S80/S100 и `<=1` для S120;
 - `al_h_reg_index_miss_window_delta` должен оставаться на уровне `<=1` для S80/S100 и `<=2` для S120;
-- при включённом debug допускаются только threshold/throttled-сообщения `[AL][RegistryMissRate]` (без per-miss spam).
+- при включённом debug допускаются только threshold/throttled-сообщения `[AL][RegistryMissRate]` (без per-miss spam);
+- наблюдаемый lookup miss-rate (`al_reg_lookup_window_miss / al_reg_lookup_window_total`) должен снижаться или оставаться не хуже baseline при той же нагрузке;
+- `al_reg_reverse_hit` не должен деградировать относительно baseline (допустим только шум измерений).
 
 Целевой эффект для оптимизации cache lookup fast-accessor + per-tag/per-tick validation guard:
 
@@ -59,6 +61,8 @@
 - `al_h_recent_resync`
 - `al_h_reg_index_miss_delta`
 - `al_h_reg_index_miss_window_delta`
+- `al_reg_lookup_window_total` / `al_reg_lookup_window_miss` (для расчёта lookup miss-rate)
+- `al_reg_reverse_hit`
 - `al_reg_compact_calls` / `al_reg_compact_calls_window`
 - `al_dispatch_ticks_to_drain`
 - `al_dispatch_budget_current`
