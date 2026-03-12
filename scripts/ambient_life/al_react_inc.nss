@@ -35,6 +35,18 @@ void AL_ReactRuntimeBegin(object oActor, int nReactType, object oSource, object 
 void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind);
 void AL_ReactResumeOrResetOnSelf();
 void AL_ReactFinishCreature(object oNpc);
+void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurSec);
+
+void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurSec)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    // Ensure queued animation/activity actions execute on oNpc, not the caller's OBJECT_SELF.
+    AssignCommand(oNpc, AL_ActivityApplyStep(oNpc, nStepActivity, nDurSec));
+}
 
 object AL_ReactFindNearestSafeWaypoint(object oNpc)
 {
@@ -376,7 +388,7 @@ void AL_ReactCivilianResponse(object oNpc, object oSource)
         }
     }
 
-    AL_ActivityApplyStep(oNpc, AL_ACTIVITY_ANGRY, 4);
+    AL_ReactApplyActivityStepSelfSafe(oNpc, AL_ACTIVITY_ANGRY, 4);
 }
 
 void AL_ReactMilitiaResponse(object oNpc, object oSource)
