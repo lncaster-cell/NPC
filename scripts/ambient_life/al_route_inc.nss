@@ -6,6 +6,7 @@
 #include "al_sleep_inc"
 
 const int AL_ROUTE_MAX_STEPS = 16;
+const int AL_ROUTE_REBUILD_COOLDOWN_TICKS = 2;
 
 string AL_RouteRtActiveKey() { return "al_route_rt_active"; }
 string AL_RouteRtIdxKey() { return "al_route_rt_idx"; }
@@ -15,6 +16,7 @@ string AL_RouteRtCycleKey() { return "al_route_rt_cycle"; }
 string AL_RouteAreaCacheStepsKey(string sRouteTag) { return "al_route_area_steps_" + sRouteTag; }
 string AL_RouteAreaCacheTickKey(string sRouteTag) { return "al_route_area_tick_" + sRouteTag; }
 string AL_RouteAreaStepKey(string sRouteTag, int nIdx) { return "al_route_area_step_" + sRouteTag + "_" + IntToString(nIdx); }
+string AL_RouteAreaRebuildCooldownUntilKey(string sRouteTag) { return "al_route_area_rebuild_cooldown_until_" + sRouteTag; }
 
 void AL_RouteBlockedRuntimeReset(object oNpc)
 {
@@ -87,6 +89,7 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
 
     SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), 0);
+    SetLocalInt(oArea, AL_RouteAreaRebuildCooldownUntilKey(sRouteTag), 0);
     AL_LookupSoftInvalidateAreaCache(oArea);
 }
 
@@ -256,6 +259,13 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
 
     if (!bForceRebuild)
     {
+        int nCooldownUntil = GetLocalInt(oArea, AL_RouteAreaRebuildCooldownUntilKey(sRouteTag));
+        int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+        if (nCooldownUntil > 0 && nSyncTick < nCooldownUntil)
+        {
+            return FALSE;
+        }
+
         int nSteps = GetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag));
         if (nSteps > 0)
         {
@@ -278,7 +288,18 @@ int AL_RouteEnsureAreaCache(object oArea, string sRouteTag, int bForceRebuild)
         }
     }
 
-    return AL_RouteBuildAreaCache(oArea, sRouteTag);
+    int bBuilt = AL_RouteBuildAreaCache(oArea, sRouteTag);
+    if (!bBuilt && !bForceRebuild)
+    {
+        int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+        SetLocalInt(
+            oArea,
+            AL_RouteAreaRebuildCooldownUntilKey(sRouteTag),
+            nSyncTick + AL_ROUTE_REBUILD_COOLDOWN_TICKS
+        );
+    }
+
+    return bBuilt;
 }
 
 void AL_RouteRuntimeClear(object oNpc)
