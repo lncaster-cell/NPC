@@ -10,6 +10,7 @@ const int AL_SIM_TIER_HOT = 2;
 const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
+const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
 
 int AL_ComputeAreaSlot()
 {
@@ -187,9 +188,16 @@ void AL_DispatchEventToAreaRegistry(object oArea, int nEvent)
 
 void AL_AreaTick(object oArea, int nToken);
 
+void AL_RunScheduledAreaTick(object oArea, int nToken)
+{
+    SetLocalInt(oArea, AL_TICK_SCHED_MARKER_LOCAL, TRUE);
+    AL_AreaTick(oArea, nToken);
+    DeleteLocalInt(oArea, AL_TICK_SCHED_MARKER_LOCAL);
+}
+
 void AL_ScheduleAreaTick(object oArea, int nToken)
 {
-    DelayCommand(AL_AREA_TICK_SEC, AL_AreaTick(oArea, nToken));
+    DelayCommand(AL_AREA_TICK_SEC, AL_RunScheduledAreaTick(oArea, nToken));
 }
 
 void AL_AreaActivate(object oArea)
@@ -206,6 +214,12 @@ void AL_AreaDeactivate(object oArea)
 void AL_AreaTick(object oArea, int nToken)
 {
     if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    // Единый контракт: периодический тик выполняется только из внутреннего DelayCommand-scheduler.
+    if (GetLocalInt(oArea, AL_TICK_SCHED_MARKER_LOCAL) != TRUE)
     {
         return;
     }

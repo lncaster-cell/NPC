@@ -26,9 +26,11 @@
 |---|---|
 | `OnEnter` | `al_area_onenter` |
 | `OnExit` | `al_area_onexit` |
-| `OnHeartbeat` | `al_area_tick` |
+| `OnHeartbeat` | *(опционально)* `al_area_tick` |
 
-> Если в вашем шаблоне area tick подключается отдельным hook-механизмом, `al_area_tick` должен быть вызван этим механизмом.
+> `al_area_tick` теперь работает как bootstrap-hook (активация area), а не как периодический runtime loop.
+> Если у вас уже используется встроенный scheduler через `AL_ScheduleAreaTick`, не привязывайте `al_area_tick` напрямую к `OnHeartbeat` (чтобы не делать лишние bootstrap-вызовы каждый heartbeat).
+> Допустимы оба варианта: либо вообще не вешать `al_area_tick` на heartbeat, либо вызывать его только в вашем внешнем hook-механизме как одноразовую/редкую активацию.
 
 ### 2.3 NPC (Свойства NPC → Scripts)
 

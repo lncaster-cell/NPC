@@ -9,6 +9,17 @@ string AL_RegKey(int nIdx)
 
 int AL_FindNPCInRegistry(object oArea, object oNpc)
 {
+    if (GetLocalObject(oNpc, "al_reg_area") == oArea)
+    {
+        int nFastIdx = GetLocalInt(oNpc, "al_reg_idx");
+        if (nFastIdx >= 0 && GetLocalObject(oArea, AL_RegKey(nFastIdx)) == oNpc)
+        {
+            return nFastIdx;
+        }
+
+        SetLocalInt(oArea, "al_reg_index_miss", GetLocalInt(oArea, "al_reg_index_miss") + 1);
+    }
+
     int nCount = GetLocalInt(oArea, "al_npc_count");
     int i = 0;
 
@@ -44,10 +55,18 @@ int AL_UnregisterNPCFromArea(object oNpc, object oArea)
     if (nIdx != nLastIdx)
     {
         SetLocalObject(oArea, AL_RegKey(nIdx), oLast);
+        if (GetIsObjectValid(oLast))
+        {
+            SetLocalInt(oLast, "al_reg_idx", nIdx);
+            SetLocalObject(oLast, "al_reg_area", oArea);
+        }
     }
 
     DeleteLocalObject(oArea, AL_RegKey(nLastIdx));
     SetLocalInt(oArea, "al_npc_count", nLastIdx);
+
+    DeleteLocalObject(oNpc, "al_reg_area");
+    DeleteLocalInt(oNpc, "al_reg_idx");
 
     return TRUE;
 }
@@ -80,6 +99,8 @@ void AL_RegisterNPCInArea(object oNpc, object oArea)
 
     SetLocalObject(oArea, AL_RegKey(nCount), oNpc);
     SetLocalInt(oArea, "al_npc_count", nCount + 1);
+    SetLocalObject(oNpc, "al_reg_area", oArea);
+    SetLocalInt(oNpc, "al_reg_idx", nCount);
 }
 
 void AL_TransferNPCRegistry(object oNpc, object oFromArea, object oToArea)
@@ -171,12 +192,23 @@ void AL_RegistryCompact(object oArea)
 
         if (bInvalid)
         {
+            if (GetIsObjectValid(oNpc))
+            {
+                DeleteLocalObject(oNpc, "al_reg_area");
+                DeleteLocalInt(oNpc, "al_reg_idx");
+            }
+
             int nLastIdx = nCount - 1;
             object oLast = GetLocalObject(oArea, AL_RegKey(nLastIdx));
 
             if (i != nLastIdx)
             {
                 SetLocalObject(oArea, AL_RegKey(i), oLast);
+                if (GetIsObjectValid(oLast))
+                {
+                    SetLocalInt(oLast, "al_reg_idx", i);
+                    SetLocalObject(oLast, "al_reg_area", oArea);
+                }
             }
 
             DeleteLocalObject(oArea, AL_RegKey(nLastIdx));
@@ -186,6 +218,8 @@ void AL_RegistryCompact(object oArea)
         }
 
         SetLocalObject(oNpc, "al_last_area", oArea);
+        SetLocalObject(oNpc, "al_reg_area", oArea);
+        SetLocalInt(oNpc, "al_reg_idx", i);
         i = i + 1;
     }
 }
