@@ -9,6 +9,12 @@ const int AL_DISPATCH_PRIORITY_NORMAL = 0;
 const int AL_DISPATCH_PRIORITY_CRITICAL = 1;
 const int AL_DISPATCH_CRITICAL_BURST_QUOTA = 3;
 const int AL_DISPATCH_METRICS_FULL_INTERVAL_TICKS = 6;
+const int AL_DISPATCH_TIER_WARM = 1;
+const int AL_DISPATCH_DRAIN_BUDGET_NORMAL_BASE = 8;
+const int AL_DISPATCH_DRAIN_BUDGET_CRITICAL_BASE = 12;
+const int AL_DISPATCH_DRAIN_BUDGET_BACKLOG_THRESHOLD = 6;
+const int AL_DISPATCH_DRAIN_BUDGET_BACKLOG_BOOST = 4;
+const int AL_DISPATCH_DRAIN_BUDGET_WARM_SOFT_CAP = 5;
 
 string AL_DispatchQueueKey(string sField, int nIdx)
 {
@@ -334,4 +340,46 @@ void AL_OnDispatchWorkDrained(object oArea)
     SetLocalInt(oArea, "al_dispatch_drain_tick_start", 0);
     AL_UpdateDispatchQueueDepthFast(oArea);
     AL_MaybeUpdateDispatchQueueMetricsFull(oArea, TRUE);
+}
+
+int AL_GetDispatchBacklogDepth(object oArea)
+{
+    int nDepth = GetLocalInt(oArea, "al_dispatch_q_len");
+    if (GetLocalInt(oArea, "al_dispatch_active") > 0)
+    {
+        nDepth = nDepth + 1;
+    }
+
+    if (nDepth < 0)
+    {
+        nDepth = 0;
+    }
+
+    return nDepth;
+}
+
+int AL_ComputeDispatchDrainBudget(object oArea, int nEvent, int nBacklogDepth)
+{
+    int nBudget = AL_DISPATCH_DRAIN_BUDGET_NORMAL_BASE;
+    if (AL_DispatchPriorityFromEvent(nEvent) == AL_DISPATCH_PRIORITY_CRITICAL)
+    {
+        nBudget = AL_DISPATCH_DRAIN_BUDGET_CRITICAL_BASE;
+    }
+
+    if (nBacklogDepth >= AL_DISPATCH_DRAIN_BUDGET_BACKLOG_THRESHOLD)
+    {
+        nBudget = nBudget + AL_DISPATCH_DRAIN_BUDGET_BACKLOG_BOOST;
+    }
+
+    if (GetLocalInt(oArea, "al_sim_tier") == AL_DISPATCH_TIER_WARM && nBudget > AL_DISPATCH_DRAIN_BUDGET_WARM_SOFT_CAP)
+    {
+        nBudget = AL_DISPATCH_DRAIN_BUDGET_WARM_SOFT_CAP;
+    }
+
+    if (nBudget < 1)
+    {
+        nBudget = 1;
+    }
+
+    return nBudget;
 }

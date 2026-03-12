@@ -46,6 +46,9 @@
 - `al_h_reg_index_miss_window_delta`
 - `al_reg_compact_calls` / `al_reg_compact_calls_window`
 - `al_dispatch_ticks_to_drain`
+- `al_dispatch_budget_current`
+- `al_dispatch_processed_tick`
+- `al_dispatch_backlog_before` / `al_dispatch_backlog_after`
 
 Минимальные требования интерпретации:
 
@@ -62,6 +65,7 @@
 | --- | --- | --- |
 | `al_dispatch_q_overflow` | `0` для S80/S100, `<=1` для S120 | `<= 0` (рост запрещён) |
 | `al_dispatch_ticks_to_drain` | S80: `<=3`, S100: `<=4`, S120: `<=5` | `<= +1` |
+| `al_dispatch_backlog_after` | не выше `al_dispatch_backlog_before` в steady-state окне | trend к снижению |
 
 ### Пороговые статусы обязательных метрик
 

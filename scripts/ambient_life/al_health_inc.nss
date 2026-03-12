@@ -1,6 +1,6 @@
 // Ambient Life area health snapshot helpers (extracted from al_area_inc).
 
-void AL_SetLocalIntOnChange(object oTarget, string sVar, int nValue)
+void AL_SetLocalIfChangedInt(object oTarget, string sVar, int nValue)
 {
     if (GetLocalInt(oTarget, sVar) != nValue)
     {
@@ -8,12 +8,52 @@ void AL_SetLocalIntOnChange(object oTarget, string sVar, int nValue)
     }
 }
 
-void AL_SetLocalStringOnChange(object oTarget, string sVar, string sValue)
+void AL_SetLocalIfChangedString(object oTarget, string sVar, string sValue)
 {
     if (GetLocalString(oTarget, sVar) != sValue)
     {
         SetLocalString(oTarget, sVar, sValue);
     }
+}
+
+void AL_SetLocalIfChangedObject(object oTarget, string sVar, object oValue)
+{
+    if (GetLocalObject(oTarget, sVar) != oValue)
+    {
+        SetLocalObject(oTarget, sVar, oValue);
+    }
+}
+
+int AL_GetHealthHeavySamplePeriod(int nTier)
+{
+    if (nTier == AL_SIM_TIER_HOT)
+    {
+        return 2;
+    }
+
+    if (nTier == AL_SIM_TIER_WARM)
+    {
+        return 4;
+    }
+
+    return 4;
+}
+
+int AL_ShouldSampleHealthHeavyMetrics(int nSyncTick, int nTier)
+{
+    int nPeriod = AL_GetHealthHeavySamplePeriod(nTier);
+
+    if (nPeriod <= 1)
+    {
+        return TRUE;
+    }
+
+    if (nSyncTick <= 0)
+    {
+        return TRUE;
+    }
+
+    return (nSyncTick % nPeriod) == 0;
 }
 
 int AL_ComputeHealthResyncWindowMask()
@@ -34,7 +74,7 @@ void AL_EnsureAreaHealthSnapshotInit(object oArea)
 {
     if (GetLocalInt(oArea, "al_h_resync_window_mask") <= 0)
     {
-        AL_SetLocalIntOnChange(oArea, "al_h_resync_window_mask", AL_ComputeHealthResyncWindowMask());
+        AL_SetLocalIfChangedInt(oArea, "al_h_resync_window_mask", AL_ComputeHealthResyncWindowMask());
     }
 }
 
@@ -373,6 +413,8 @@ void AL_UpdateAreaHealthSnapshot(object oArea)
     {
         nRegIndexMissDelta = nRegIndexMiss;
     }
+
+    int bSampleHeavyMetrics = AL_ShouldSampleHealthHeavyMetrics(nSyncTick, nTier);
 
     int nRegIndexMissWindowStartTick = GetLocalInt(oArea, "al_h_reg_index_miss_window_start_tick");
     int nRegIndexMissWindowStartValue = GetLocalInt(oArea, "al_h_reg_index_miss_window_start_value");
