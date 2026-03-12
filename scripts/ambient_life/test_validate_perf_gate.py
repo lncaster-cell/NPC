@@ -63,5 +63,32 @@ S120,al_dispatch_ticks_to_drain,5
             load_report(path)
 
 
+class LoadReportJsonValidationTests(unittest.TestCase):
+    def _write_temp(self, content: str, suffix: str = ".json") -> Path:
+        tmp = tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="", suffix=suffix, delete=False)
+        self.addCleanup(lambda: Path(tmp.name).unlink(missing_ok=True))
+        with tmp:
+            tmp.write(content)
+        return Path(tmp.name)
+
+    def test_non_object_row_raises_validation_error(self):
+        json_content = """{
+  "rows": [
+    {"scenario": "S80", "metric": "al_dispatch_q_overflow", "after_value": 0},
+    1,
+    {"scenario": "S80", "metric": "al_dispatch_ticks_to_drain", "after_value": 3},
+    {"scenario": "S100", "metric": "al_dispatch_q_overflow", "after_value": 0},
+    {"scenario": "S100", "metric": "al_dispatch_ticks_to_drain", "after_value": 4},
+    {"scenario": "S120", "metric": "al_dispatch_q_overflow", "after_value": 1},
+    {"scenario": "S120", "metric": "al_dispatch_ticks_to_drain", "after_value": 5}
+  ]
+}
+"""
+        path = self._write_temp(json_content)
+
+        with self.assertRaisesRegex(ValidationError, r"Report JSON row 3 must be object, got int"):
+            load_report(path)
+
+
 if __name__ == "__main__":
     unittest.main()
