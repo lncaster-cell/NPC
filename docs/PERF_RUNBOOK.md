@@ -246,6 +246,36 @@ Baseline в `docs/perf/baselines/*` обновляется только если
 - указать причину обновления и ссылку на PR/commit;
 - синхронно обновить CSV и Markdown представления baseline.
 
+
+## 4.3) CI perf-gate валидация (обязательно для PR с `scripts/ambient_life/al_*`)
+
+В CI выполняется job `Ambient Life Perf Gate`, которая парсит machine-readable отчёт и валидирует
+пороги из `docs/PERF_PROFILE.md`/`docs/PERF_RUNBOOK.md` относительно baseline.
+
+Ожидаемый входной файл отчёта:
+
+- `docs/perf/baselines/perf_gate_report.csv` (предпочтительно), либо
+- `docs/perf/baselines/perf_gate_report.json`.
+
+Шаблоны:
+
+- `docs/perf/baselines/perf_gate_report_template.csv`;
+- `docs/perf/baselines/perf_gate_report_template.json`.
+
+Локальная проверка перед push:
+
+```bash
+python3 scripts/ambient_life/validate_perf_gate.py \
+  --baseline docs/perf/baselines/s80_s100_s120_baseline.csv \
+  --report docs/perf/baselines/perf_gate_report.csv
+```
+
+Fail-условия gate:
+
+1. рост `al_dispatch_q_overflow` относительно baseline (запрещён);
+2. превышение целевого абсолютного порога `al_dispatch_ticks_to_drain` (S80<=3, S100<=4, S120<=5);
+3. `al_dispatch_ticks_to_drain` хуже baseline более чем на `+1` тик.
+
 ## 4.1) Диагностические признаки перегрева linked-графа
 
 Признаки «перегрева» linked-кластера (обычно после неудачной topology-настройки `al_link_*`):

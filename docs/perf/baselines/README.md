@@ -6,6 +6,8 @@
 
 - `s80_s100_s120_baseline.csv` — машинно-читаемый baseline (источник для автоматических проверок/диффов).
 - `s80_s100_s120_baseline.md` — операторское представление тех же значений в формате «до/после».
+- `perf_gate_report_template.csv` / `perf_gate_report_template.json` — шаблоны machine-readable отчёта для CI perf-gate.
+- `perf_gate_report.csv` (генерируется в PR) — фактический отчёт, который валидируется в CI.
 
 ## Базовое правило обновления baseline
 
@@ -19,3 +21,9 @@ Baseline **обновляется только** при одном из двух
 - ссылку на PR/commit, где подтверждён новый baseline;
 - приложенный отчёт `baseline-vs-after` по шаблону из `docs/PERF_PROFILE.md`;
 - заполненные поля `source_date`, `source_commit`, `notes` в CSV.
+
+## Perf gate (CI)
+
+Для PR с изменениями в `scripts/ambient_life/al_*` обязателен зелёный job `Ambient Life Perf Gate`.
+Проверка использует baseline `s80_s100_s120_baseline.csv` и отчёт `perf_gate_report.csv` (или `.json`)
+через `scripts/ambient_life/validate_perf_gate.py`.
