@@ -29,7 +29,7 @@
 - P0: унификация подключения `al_area_tick` для разных шаблонов модулей.
 - P1: чек-лист валидации маршрутов.
 - P1: шаблон контент-подготовки sleep-точек (`_approach`/`_pose`).
-- P1: операторский гайд по linked areas (`al_link_*`) и warm-policy.
+- P1: операторский гайд по linked areas (`al_link_*`) и warm-policy (см. `docs/LINKED_GRAPH_OPERATIONS.md`).
 - P2: сервисный валидатор locals (NPC/waypoints/areas).
 - P2: профилирование производительности на сценах с высокой плотностью NPC.
 
@@ -99,6 +99,7 @@
 3. Настроить locals у NPC/waypoints/areas (см. `docs/TOOLSET_CONTRACT.md`).
 4. Пройти smoke-check из `TASKS.md`.
 5. Выполнить perf-check по `docs/PERF_RUNBOOK.md` (как часть регулярного QA).
+6. Для linked-графа применять операторские правила из `docs/LINKED_GRAPH_OPERATIONS.md`.
 
 ## Ключевые runtime-константы
 

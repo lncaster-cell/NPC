@@ -4,13 +4,13 @@
 
 - [x] Stage I.2: crime/alarm escalation поверх disturbed foundation.
 - [x] Диагностика отказа `AL_RegisterNPC` при достижении `AL_MAX_NPCS`.
-- [ ] Унифицированная схема подключения `al_area_tick` для разных шаблонов модулей.
+- [x] Унифицированная схема подключения `al_area_tick` для разных шаблонов модулей (см. `INSTALLATION.md`, разделы 2.2.1 и 2.3).
 
 ## P1
 
 - [x] Оффлайн/операторский preflight-валидатор маршрутов (`al_step` range, step continuity, duplicates, area consistency).
 - [ ] Шаблон контент-подготовки sleep-точек (`_approach`/`_pose`).
-- [ ] Операторский гайд по linked areas (`al_link_*`) и warm-policy.
+- [x] Операторский гайд по linked areas (`al_link_*`) и warm-policy (см. `docs/LINKED_GRAPH_OPERATIONS.md`).
 
 ## P2
 
@@ -27,6 +27,8 @@
 - Gate (core): изменения в `scripts/ambient_life/al_area_inc.nss`, `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_route_inc.nss` считаются неполными без perf-сводки по `docs/PERF_PROFILE.md`.
 
 ## Runbook: Area Health Snapshot (операторский минимум)
+
+См. также: `docs/LINKED_GRAPH_OPERATIONS.md` (правила linked-графа и warm-policy).
 
 1. Включите debug на area: `al_debug=1` (опционально, только для delta-логов).
 2. Дождитесь минимум 2-3 тиков `AL_AreaTick`.
