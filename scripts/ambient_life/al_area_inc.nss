@@ -12,6 +12,7 @@ const int AL_WARM_RETENTION_TICKS = 2;
 const int AL_WARM_MAINTENANCE_PERIOD = 4;
 const int AL_WP_CACHE_TTL_TICKS = 10;
 const int AL_HEALTH_RESYNC_WINDOW_TICKS = 8;
+const int AL_LINK_REBUILD_METRICS_WINDOW_TICKS = 100;
 const string AL_LOOKUP_INVALIDATE_REASON_ALL = "all";
 const string AL_LOOKUP_INVALIDATE_REASON_ROUTE = "route";
 const string AL_COUNTED_AREA_LOCAL = "al_counted_area";
@@ -36,6 +37,23 @@ void AL_RebuildLinkedAreaCache(object oArea)
     {
         return;
     }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nLastRebuildTick = GetLocalInt(oArea, "al_link_cache_last_rebuild_tick");
+    if (nLastRebuildTick == nSyncTick)
+    {
+        return;
+    }
+
+    int nWindowStart = GetLocalInt(oArea, "al_link_rebuild_window_start_tick");
+    if (nSyncTick > 0 && (nWindowStart <= 0 || nSyncTick < nWindowStart || (nSyncTick - nWindowStart) >= AL_LINK_REBUILD_METRICS_WINDOW_TICKS))
+    {
+        SetLocalInt(oArea, "al_link_rebuild_window_start_tick", nSyncTick);
+        SetLocalInt(oArea, "al_link_rebuild_count_window", 0);
+    }
+
+    SetLocalInt(oArea, "al_link_cache_last_rebuild_tick", nSyncTick);
+    SetLocalInt(oArea, "al_link_rebuild_count_window", GetLocalInt(oArea, "al_link_rebuild_count_window") + 1);
 
     int nCfgCount = GetLocalInt(oArea, "al_link_count");
     if (nCfgCount < 0)
@@ -136,8 +154,9 @@ object AL_GetLinkedAreaByIndex(object oArea, int nIdx)
         return OBJECT_INVALID;
     }
 
+    int nCfgRev = GetLocalInt(oArea, "al_link_cfg_rev");
     int bRebuilt = FALSE;
-    if (GetLocalInt(oArea, "al_link_cache_rev") != GetLocalInt(oArea, "al_link_cfg_rev"))
+    if (GetLocalInt(oArea, "al_link_cache_rev") != nCfgRev)
     {
         AL_RebuildLinkedAreaCache(oArea);
         bRebuilt = TRUE;
@@ -145,8 +164,18 @@ object AL_GetLinkedAreaByIndex(object oArea, int nIdx)
 
     if (nIdx >= GetLocalInt(oArea, "al_link_obj_count"))
     {
+        if (GetLocalInt(oArea, "al_link_cache_rev") == nCfgRev)
+        {
+            return OBJECT_INVALID;
+        }
+
         AL_RebuildLinkedAreaCache(oArea);
         bRebuilt = TRUE;
+
+        if (nIdx >= GetLocalInt(oArea, "al_link_obj_count"))
+        {
+            return OBJECT_INVALID;
+        }
     }
 
     object oLinked = GetLocalObject(oArea, "al_link_obj_" + IntToString(nIdx));
@@ -235,7 +264,7 @@ void AL_RefreshLinkedAreasWarmth(object oArea)
 
     while (i < nCount)
     {
-        object oLinked = GetLocalObject(oArea, "al_link_obj_" + IntToString(i));
+        object oLinked = AL_GetLinkedAreaByIndex(oArea, i);
         if (GetIsObjectValid(oLinked) && oLinked != oArea)
         {
             AL_MarkAreaWarm(oLinked);
@@ -251,7 +280,7 @@ int AL_HasLinkedHotSource(object oArea)
 
     while (i < nCount)
     {
-        object oLinked = GetLocalObject(oArea, "al_link_obj_" + IntToString(i));
+        object oLinked = AL_GetLinkedAreaByIndex(oArea, i);
         if (GetIsObjectValid(oLinked) && GetLocalInt(oLinked, "al_player_count") > 0)
         {
             return TRUE;
