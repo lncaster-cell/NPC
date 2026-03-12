@@ -28,9 +28,14 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+try:
+    from scripts.ambient_life.preflight_issue_utils import make_issue_context, render_issue_message
+except ImportError:
+    from preflight_issue_utils import make_issue_context, render_issue_message
 
 AL_ROUTE_MAX_STEPS = 16
 NPC_ROUTE_SLOTS = tuple(range(6))
@@ -44,7 +49,11 @@ class ValidationIssue:
     scope: str
     object_id: str
     code: str
-    reason: str
+    context: dict[str, Any]
+
+    @property
+    def reason(self) -> str:
+        return render_issue_message(self.code, self.context)
 
 
 def _read_input(path: Path) -> dict[str, Any]:
@@ -77,7 +86,7 @@ def _extract_locals(raw: dict[str, Any], reserved_fields: set[str]) -> tuple[dic
 
 
 def _append_issue(issues: list[ValidationIssue], level: str, scope: str, object_id: str, code: str, reason: str) -> None:
-    issues.append(ValidationIssue(level=level, scope=scope, object_id=object_id, code=code, reason=reason))
+    issues.append(ValidationIssue(level=level, scope=scope, object_id=object_id, code=code, context=make_issue_context(reason)))
 
 
 def is_strict_int(value: Any) -> bool:
@@ -382,7 +391,16 @@ def build_report(issues: list[ValidationIssue]) -> dict[str, Any]:
             "warnings": warns,
             "total": len(issues),
         },
-        "issues": [asdict(issue) for issue in sorted(issues, key=lambda i: (i.level, i.scope, i.object_id, i.code, i.reason))],
+        "issues": [
+            {
+                "level": issue.level,
+                "scope": issue.scope,
+                "object_id": issue.object_id,
+                "code": issue.code,
+                "reason": issue.reason,
+            }
+            for issue in sorted(issues, key=lambda i: (i.level, i.scope, i.object_id, i.code, i.reason))
+        ],
     }
 
 
