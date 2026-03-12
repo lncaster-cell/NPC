@@ -27,6 +27,9 @@
 ### 3.3 Route engine (Stages D/E)
 - Маршрут выбирается по слоту времени (6 слотов в сутки).
 - Route cache ограничен `AL_ROUTE_MAX_STEPS = 16`.
+- Для area+route-tag ведётся fingerprint-кэш на locals `al_route_fp_tick_<tag>` и `al_route_fp_value_<tag>`.
+- Fingerprint считается валидным только в рамках текущего `al_sync_tick`: при повторном запросе в тот же тик возвращается сохранённое значение без повторного обхода waypoint-кандидатов.
+- Сброс fingerprint-кэша выполняется теми же точками инвалидирования, что и route/lookup cache (`AL_RouteInvalidateAreaCache`, `AL_LookupSoftInvalidateAreaCache`).
 - Выполнение routine bounded; при ошибках — безопасный fallback.
 
 ### 3.4 Transition subsystem (Stage F)

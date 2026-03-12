@@ -7,6 +7,8 @@ string AL_RouteAreaRebuildCooldownUntilKey(string sRouteTag) { return "al_route_
 string AL_RouteAreaFingerprintKey(string sRouteTag) { return "al_route_area_fingerprint_" + sRouteTag; }
 string AL_RouteAreaContentVersionKey(string sRouteTag) { return "al_route_area_content_ver_" + sRouteTag; }
 string AL_RouteAreaCandidateCountKey(string sRouteTag) { return "al_route_area_candidate_count_" + sRouteTag; }
+string AL_RouteAreaFingerprintTickKey(string sRouteTag) { return "al_route_fp_tick_" + sRouteTag; }
+string AL_RouteAreaFingerprintValueKey(string sRouteTag) { return "al_route_fp_value_" + sRouteTag; }
 
 int AL_RouteAreaCacheStepsValid(object oArea, string sRouteTag)
 {
@@ -70,6 +72,13 @@ int AL_RouteBuildFingerprint(object oArea, string sRouteTag)
         return 0;
     }
 
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nFingerprintTick = GetLocalInt(oArea, AL_RouteAreaFingerprintTickKey(sRouteTag));
+    if (nSyncTick > 0 && nFingerprintTick == nSyncTick)
+    {
+        return GetLocalInt(oArea, AL_RouteAreaFingerprintValueKey(sRouteTag));
+    }
+
     int nCandidateCount = AL_GetWaypointCandidatesCountCached(oArea, sRouteTag);
     int nFingerprint = AL_RouteHashString(23, sRouteTag);
     nFingerprint = AL_RouteHashMix(nFingerprint, nCandidateCount + 29);
@@ -90,6 +99,12 @@ int AL_RouteBuildFingerprint(object oArea, string sRouteTag)
         nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_dur_sec") + 43);
         nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_transition") + 47);
         nFingerprint = AL_RouteHashMix(nFingerprint, GetLocalInt(oWp, "al_sleep") + 53);
+    }
+
+    if (nSyncTick > 0)
+    {
+        SetLocalInt(oArea, AL_RouteAreaFingerprintTickKey(sRouteTag), nSyncTick);
+        SetLocalInt(oArea, AL_RouteAreaFingerprintValueKey(sRouteTag), nFingerprint);
     }
 
     return nFingerprint;
@@ -176,6 +191,8 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaRebuildCooldownUntilKey(sRouteTag), 0);
     DeleteLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag));
+    DeleteLocalInt(oArea, AL_RouteAreaFingerprintTickKey(sRouteTag));
+    DeleteLocalInt(oArea, AL_RouteAreaFingerprintValueKey(sRouteTag));
     DeleteLocalInt(oArea, AL_RouteAreaContentVersionKey(sRouteTag));
     DeleteLocalInt(oArea, AL_RouteAreaCandidateCountKey(sRouteTag));
     if (bHadCache)
