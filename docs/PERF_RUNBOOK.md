@@ -17,7 +17,7 @@ python3 scripts/ambient_life/run_preflight_suite.py \
 Требования к входному JSON:
 - корень: либо массив waypoint-объектов, либо объект с ключом `waypoints`;
 - обязательные поля для каждого waypoint: `area_tag`, `route_tag`, `al_step`;
-- опционально: `waypoint_tag` (для более удобной диагностики).
+- обязательное поле: `waypoint_tag` (его отсутствие/невалидный тип даёт validation error).
 
 Валидатор зеркалит проверки из `AL_RouteBuildAreaCache`:
 - диапазон `al_step`: только `0..15`;

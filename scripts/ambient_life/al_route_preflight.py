@@ -8,8 +8,11 @@ Input JSON can be either:
 Each waypoint entry should contain:
 - area_tag (str)
 - route_tag (str)
-- waypoint_tag (str, optional but recommended)
+- waypoint_tag (str, required)
 - al_step (int)
+
+Expected fields contract:
+- Missing or invalid `waypoint_tag` is a validation error (`missing_waypoint_tag` / `invalid_waypoint_tag_type`).
 """
 
 from __future__ import annotations
