@@ -1,0 +1,28 @@
+{
+  "areas": [
+    {
+      "area_tag": "area_market",
+      "locals": {
+        "al_link_count": 2,
+        "al_link_0": "area_gate",
+        "al_link_1": "area_square"
+      }
+    },
+    {
+      "area_tag": "area_gate",
+      "locals": {
+        "al_link_count": 2,
+        "al_link_0": "area_market",
+        "al_link_1": "area_square"
+      }
+    },
+    {
+      "area_tag": "area_square",
+      "locals": {
+        "al_link_count": 2,
+        "al_link_0": "area_market",
+        "al_link_1": "area_gate"
+      }
+    }
+  ]
+}
