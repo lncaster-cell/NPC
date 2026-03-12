@@ -263,7 +263,7 @@ def validate_route_markup(rows: list[dict[str, Any]], fail_fast: bool = False, m
         if valid_steps_mask == 0:
             continue
 
-        if 0 not in valid_steps:
+        if 0 not in step_to_waypoint:
             if add_issue(
                 ValidationIssue(
                     level="ERROR",
