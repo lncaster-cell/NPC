@@ -23,8 +23,10 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from scripts.ambient_life.preflight_common import is_strict_int, read_json_list_input, read_tag
     from scripts.ambient_life.preflight_issue_utils import make_issue_context, render_issue_message
 except ImportError:
+    from preflight_common import is_strict_int, read_json_list_input, read_tag
     from preflight_issue_utils import make_issue_context, render_issue_message
 
 TARGET_DEGREE_MIN = 2
