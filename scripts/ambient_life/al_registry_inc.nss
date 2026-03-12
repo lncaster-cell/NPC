@@ -1,8 +1,48 @@
 // Ambient Life dense registry (Stage B).
 
-const int AL_MAX_NPCS = 100;
+const int AL_MAX_NPCS_DEFAULT = 100;
+const int AL_MAX_NPCS_MIN = 20;
+const int AL_MAX_NPCS_MAX = 200;
 const int AL_REG_COMPACT_MIN_SYNC_TICKS = 4;
 const int AL_REG_COMPACT_METRICS_WINDOW_TICKS = 100;
+
+int AL_GetEffectiveNpcCap(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return AL_MAX_NPCS_DEFAULT;
+    }
+
+    int nCap = GetLocalInt(oArea, "al_max_npcs");
+    if (nCap < AL_MAX_NPCS_MIN || nCap > AL_MAX_NPCS_MAX)
+    {
+        return AL_MAX_NPCS_DEFAULT;
+    }
+
+    return nCap;
+}
+
+void AL_SyncRegistryCapDiagnostics(object oArea, int nEffectiveCap)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    int nPrevCap = GetLocalInt(oArea, "al_reg_cap_effective");
+    if (nPrevCap > 0 && nPrevCap != nEffectiveCap)
+    {
+        SetLocalInt(oArea, "al_reg_overflow_count_at_cap_change", GetLocalInt(oArea, "al_reg_overflow_count"));
+
+        int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+        if (nSyncTick > 0)
+        {
+            SetLocalInt(oArea, "al_reg_cap_changed_sync_tick", nSyncTick);
+        }
+    }
+
+    SetLocalInt(oArea, "al_reg_cap_effective", nEffectiveCap);
+}
 
 string AL_RegKey(int nIdx)
 {
@@ -144,8 +184,11 @@ void AL_RegisterNPCInArea(object oNpc, object oArea)
         return;
     }
 
+    int nCap = AL_GetEffectiveNpcCap(oArea);
+    AL_SyncRegistryCapDiagnostics(oArea, nCap);
+
     int nCount = GetLocalInt(oArea, "al_npc_count");
-    if (nCount >= AL_MAX_NPCS)
+    if (nCount >= nCap)
     {
         AL_MarkRegistryOverflow(oArea, oNpc);
         return;
@@ -202,8 +245,13 @@ int AL_ShouldCompactRegistry(object oArea, int bFoundInvalid)
 
 void AL_MarkRegistryOverflow(object oArea, object oNpc)
 {
+    int nCap = AL_GetEffectiveNpcCap(oArea);
+    AL_SyncRegistryCapDiagnostics(oArea, nCap);
+
     int nOverflowCount = GetLocalInt(oArea, "al_reg_overflow_count") + 1;
     SetLocalInt(oArea, "al_reg_overflow_count", nOverflowCount);
+    SetLocalInt(oArea, "al_reg_overflow_count_cap", nOverflowCount - GetLocalInt(oArea, "al_reg_overflow_count_at_cap_change"));
+    SetLocalInt(oArea, "al_reg_overflow_last_cap", nCap);
     SetLocalString(oArea, "al_reg_overflow_last_npc_tag", GetTag(oNpc));
 
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
@@ -222,8 +270,9 @@ void AL_MarkRegistryOverflow(object oArea, object oNpc)
                 "[AL][RegistryOverflow] area=" + GetTag(oArea)
                 + " npc=" + GetTag(oNpc)
                 + " count=" + IntToString(GetLocalInt(oArea, "al_npc_count"))
-                + " max=" + IntToString(AL_MAX_NPCS)
+                + " cap=" + IntToString(nCap)
                 + " overflows=" + IntToString(nOverflowCount)
+                + " overflows_cap=" + IntToString(GetLocalInt(oArea, "al_reg_overflow_count_cap"))
                 + " sync_tick=" + IntToString(nSyncTick)
             );
 

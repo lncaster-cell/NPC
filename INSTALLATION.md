@@ -206,13 +206,21 @@
 - `al_player_count`, `al_sim_tier`, `al_slot`
 - `al_tick_token`, `al_sync_tick`, `al_warm_until_sync`
 - `al_npc_count`, `al_npc_<idx>`
+- `al_reg_cap_effective`, `al_reg_overflow_count`, `al_reg_overflow_count_cap`, `al_reg_overflow_count_at_cap_change`
+
+### Area tuning locals (можно задавать вручную)
+- `al_max_npcs` (int, optional): effective cap для registry.
+  - Валидный диапазон: `20..200`.
+  - `<=19` или `>=201` => значение считается невалидным и применяется `AL_MAX_NPCS_DEFAULT=100`.
+  - Изменение cap в runtime не сбрасывает `al_reg_overflow_count`; для интерпретации текущего cap используется `al_reg_overflow_count_cap`.
 
 ---
 
 ## 5) Лимиты системы
 
 - `AL_AREA_TICK_SEC = 30.0`
-- `AL_MAX_NPCS = 100` на одну area
+- `AL_MAX_NPCS_DEFAULT = 100` на одну area (базовый cap)
+- `al_max_npcs` (area local, optional) переопределяет cap в безопасном диапазоне `20..200`; вне диапазона используется fallback `AL_MAX_NPCS_DEFAULT`
 - `AL_ROUTE_MAX_STEPS = 16`
 
 События шины:

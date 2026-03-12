@@ -31,7 +31,8 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
 
 ## 1) Фиксированные тест-сцены (Low / Mid / High)
 
-> Во всех сценах используются одинаковые настройки рантайма: `AL_AREA_TICK_SEC=30`, `AL_MAX_NPCS=100`, `AL_ROUTE_MAX_STEPS=16`.
+> Во всех сценах используются одинаковые настройки рантайма: `AL_AREA_TICK_SEC=30`, `AL_MAX_NPCS_DEFAULT=100`, `AL_ROUTE_MAX_STEPS=16`.
+> Дополнительно для сравнений cap-профилей используется area-local `al_max_npcs` (`80`/`100`/`120`) в валидном диапазоне `20..200`.
 
 ### Scene L (низкая плотность)
 
@@ -69,6 +70,21 @@ python3 scripts/ambient_life/al_route_preflight.py --input <path/to/waypoints.js
   - 12 × `rt_docks_workers`
   - 12 × `rt_temple_visitors`
   - 12 × `rt_craft_lane`
+
+
+## 1.1) Матрица прогона для cap-профилей
+
+Для оценки выбора effective-cap выполняется 3×3 матрица:
+
+- сценарии нагрузки: `S80`/`S100`/`S120`;
+- значения cap: `al_max_npcs=80`, `100`, `120`.
+
+Минимальная интерпретация:
+- если `NPC > cap`, ожидается рост `al_reg_overflow_count_cap`;
+- если `NPC <= cap`, `al_reg_overflow_count_cap` должен оставаться `0` в baseline без искусственных бурстов;
+- `al_reg_overflow_count` использовать только как lifetime-счётчик area, не как метрику текущего cap-контекста.
+
+Рекомендуемый порядок прогона: `(S80,S100,S120) × (cap=100,120,80)`, чтобы сначала снять baseline-профиль.
 
 ## 2) Длительность прогона и ожидаемые диапазоны `al_h_*`
 
