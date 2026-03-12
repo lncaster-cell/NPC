@@ -5,11 +5,11 @@
 ## 1) NPC locals
 
 ### Контентные (обязательные)
-- `alwp0..alwp5` (string) — route tag по слотам суток.
+- `alwp0..alwp5` (string) — route tag по слотам суток (primary lookup).
 - `al_default_activity` (int) — дефолтная активность NPC.
 
 ### Контентные (опциональные, legacy)
-- `AL_WP_S0..AL_WP_S5` (string) — алиасы route tags.
+- `AL_WP_S0..AL_WP_S5` (string) — legacy fallback-алиасы route tags (используются, только если `alwp*` пустой).
 - `al_npc_role` (int) — role hint для I.2 crime/alarm:
   - `0` civilian (default)
   - `1` militia
