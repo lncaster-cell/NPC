@@ -207,7 +207,8 @@ int AL_TransitionQueueAreaHelper(object oNpc, object oStep, object oSrc, object 
     ClearAllActions(TRUE);
     ActionMoveToObject(oSrc, TRUE, 1.5);
     ActionJumpToLocation(GetLocation(oDst));
-    ActionDoCommand(AL_TransitionPostAreaHelper(oNpc, oArea));
+    SetLocalObject(oNpc, "al_transition_post_from_area", oArea);
+    ActionDoCommand(ExecuteScript("al_transition_post_area", OBJECT_SELF));
     AL_ActivityApplyStep(oNpc, nActivity, nDur);
 
     return TRUE;
@@ -238,7 +239,8 @@ int AL_TransitionQueueIntraTeleport(object oNpc, object oStep, object oSrc, obje
     ActionMoveToObject(oSrc, TRUE, 1.5);
     ActionJumpToLocation(GetLocation(oDst));
     AL_ActivityApplyStep(oNpc, nActivity, nDur);
-    ActionDoCommand(SignalEvent(oNpc, EventUserDefined(AL_EVENT_ROUTE_REPEAT)));
+    SetLocalInt(oNpc, "al_action_signal_event", AL_EVENT_ROUTE_REPEAT);
+    ActionDoCommand(ExecuteScript("al_action_signal_ud", OBJECT_SELF));
 
     return TRUE;
 }
