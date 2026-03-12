@@ -1,4 +1,7 @@
 # PERF Profile Regulation (Ambient Life)
+<!-- DOCSYNC:2026-03-12 -->
+> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+
 
 Документ определяет обязательный perf-регламент для изменений в `scripts/ambient_life/al_*`.
 

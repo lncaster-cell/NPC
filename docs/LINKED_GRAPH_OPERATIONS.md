@@ -1,4 +1,7 @@
 # Linked Areas: operator guide (`al_link_*`) and warm-policy
+<!-- DOCSYNC:2026-03-12 -->
+> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+
 
 Документ фиксирует практические правила для контент-команды и операторов по настройке linked-графа area и контролю warm-retention.
 
