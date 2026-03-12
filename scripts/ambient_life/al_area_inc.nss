@@ -426,6 +426,32 @@ void AL_DequeueBatchedDispatch(object oArea)
     AL_UpdateDispatchQueueDepthFast(oArea);
 }
 
+
+int AL_HasQueuedNormalDispatch(object oArea)
+{
+    int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
+    if (nLen <= 0)
+    {
+        return FALSE;
+    }
+
+    int nHead = GetLocalInt(oArea, "al_dispatch_q_head");
+    int nCapacity = AL_GetDispatchQueueCapacity(oArea);
+    int i = 0;
+    while (i < nLen)
+    {
+        int nIdx = (nHead + i) % nCapacity;
+        if (GetLocalInt(oArea, AL_DispatchQueueKey("prio", nIdx)) == AL_DISPATCH_PRIORITY_NORMAL)
+        {
+            return TRUE;
+        }
+
+        i = i + 1;
+    }
+
+    return FALSE;
+}
+
 int AL_PickDispatchQueueIndex(object oArea)
 {
     int nLen = GetLocalInt(oArea, "al_dispatch_q_len");
@@ -647,10 +673,20 @@ void AL_RunBatchedDispatch(object oArea)
     int nCycleId = GetLocalInt(oArea, "al_dispatch_cycle");
     int nProcessed = 0;
     int bFoundInvalid = FALSE;
+    int nBacklogBefore = AL_GetDispatchBacklogDepth(oArea);
+    int nDrainBudget = AL_ComputeDispatchDrainBudget(oArea, nEvent, nBacklogBefore);
 
     SetLocalInt(oArea, "al_dispatch_ticks", GetLocalInt(oArea, "al_dispatch_ticks") + 1);
 
-    while (nCursor < nCount && nProcessed < AL_DISPATCH_BATCH_SIZE)
+    if (AL_DispatchPriorityFromEvent(nEvent) == AL_DISPATCH_PRIORITY_CRITICAL
+        && GetLocalInt(oArea, "al_dispatch_critical_streak") >= AL_DISPATCH_CRITICAL_BURST_QUOTA
+        && AL_HasQueuedNormalDispatch(oArea))
+    {
+        // Fairness guard: после burst critical пропускаем как минимум один normal event.
+        nDrainBudget = 1;
+    }
+
+    while (nCursor < nCount && nProcessed < nDrainBudget)
     {
         object oNpc = GetLocalObject(oArea, AL_RegKey(nCursor));
         int bInvalid = !AL_IsRuntimeNpc(oNpc) || (GetArea(oNpc) != oArea);
@@ -675,6 +711,11 @@ void AL_RunBatchedDispatch(object oArea)
     }
 
     SetLocalInt(oArea, "al_dispatch_cursor", nCursor);
+    SetLocalInt(oArea, "al_dispatch_budget_current", nDrainBudget);
+    SetLocalInt(oArea, "al_dispatch_processed_tick", nProcessed);
+    SetLocalInt(oArea, "al_dispatch_backlog_before", nBacklogBefore);
+    SetLocalInt(oArea, "al_dispatch_backlog_after", AL_GetDispatchBacklogDepth(oArea));
+
     if (nCursor >= nCount)
     {
         int bCycleFoundInvalid = GetLocalInt(oArea, "al_dispatch_found_invalid") == TRUE;
