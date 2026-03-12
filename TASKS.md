@@ -4,7 +4,7 @@
 
 - [x] Stage I.2: crime/alarm escalation поверх disturbed foundation.
 - [x] Диагностика отказа `AL_RegisterNPC` при достижении `AL_MAX_NPCS`.
-- [ ] Унифицированная схема подключения `al_area_tick` для разных шаблонов модулей.
+- [x] Унифицированная схема подключения `al_area_tick` для разных шаблонов модулей (см. `INSTALLATION.md`, разделы 2.2.1 и 2.3).
 
 ## P1
 
@@ -36,3 +36,13 @@
    - `al_h_reg_overflow_count=0` и `al_h_route_overflow_count=0` в штатном контенте,
    - `al_h_recent_resync` в норме низкий и растёт в окне только при реальных RESYNC.
 4. Для debug-анализа смотрите module log: `[AL][AreaHealthDelta]` пишется только при изменении ключевых метрик.
+
+
+## Check-list валидации подключения hooks (toolset + runtime)
+
+- [ ] **Toolset / Module:** `OnClientLeave=al_mod_onleave`.
+- [ ] **Toolset / Area:** `OnEnter=al_area_onenter`, `OnExit=al_area_onexit`; `OnHeartbeat` либо пустой (рекомендуется), либо legacy-bootstrap с `al_area_tick` без второго loop.
+- [ ] **Toolset / NPC:** `OnSpawn=al_npc_onspawn`, `OnDeath=al_npc_ondeath`, `OnUserDefined=al_npc_onud`, `OnBlocked=al_npc_onblocked`, `OnDisturbed=al_npc_ondisturbed`.
+- [ ] **Runtime (после входа игрока):** в area locals появляются `al_tick_token`, `al_player_count`, `al_sim_tier`, `al_slot`.
+- [ ] **Runtime smoke (2–3 тика):** появляются health locals `al_h_npc_count`, `al_h_tier`, `al_h_slot`; overflow-метрики `al_h_reg_overflow_count` и `al_h_route_overflow_count` остаются `0` для штатной сцены.
+- [ ] **Runtime logs:** фиксируется `[AL][AreaHealthDelta]` при изменении ключевых метрик; нет признаков дублированного heartbeat-loop.
