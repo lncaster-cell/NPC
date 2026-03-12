@@ -57,6 +57,11 @@ def _read_input(path: Path) -> list[dict[str, Any]]:
     return waypoints
 
 
+def is_strict_int(value: Any) -> bool:
+    # Exclude bool explicitly: JSON boolean is not a valid integer value for route/locals config fields.
+    return isinstance(value, int) and not isinstance(value, bool)
+
+
 def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, ValidationIssue | None]:
     area_tag = str(raw.get("area_tag", "")).strip()
     route_tag = str(raw.get("route_tag", "")).strip()
@@ -73,7 +78,7 @@ def _as_waypoint(raw: dict[str, Any], index: int) -> tuple[Waypoint | None, Vali
             details=f"waypoint={waypoint_tag}",
         )
 
-    if not isinstance(step_raw, int):
+    if not is_strict_int(step_raw):
         return None, ValidationIssue(
             level="ERROR",
             area_tag=area_tag,
