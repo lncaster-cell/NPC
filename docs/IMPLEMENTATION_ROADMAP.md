@@ -12,16 +12,17 @@
 - ✅ Stage H — activity subsystem.
 - ✅ Stage I.0 — OnBlocked local recovery.
 - ✅ Stage I.1 — OnDisturbed inventory/theft foundation.
+- ✅ Stage I.2 — local Crime/Alarm layer (area-local only, bounded escalation/de-escalation).
 
 ## Следующий этап
 
-### Stage I.2 — Crime/Alarm
+### Stage I.3 — Reinforcement/Legal extensions
 
 Планируемые задачи:
-1. Нормализация типа и тяжести события кражи/нарушения.
-2. Локальное распространение тревоги в пределах area scope.
-3. Роли guard/civilian и правила эскалации без глобального world scan.
-4. Защитные fallback-пути при неполных данных source/item/context.
+1. Guard spawn / reinforcement policy (опционально, без world-wide scan).
+2. Surrender / arrest / trial pipeline поверх Stage I.2 legal hooks.
+3. Расширение последствий crime incidents без giant diplomacy simulator.
+4. QA-smoke для расширенной legal/reinforcement цепочки.
 
 ## Сопутствующие работы
 
