@@ -336,7 +336,9 @@ void AL_OnAreaExit(object oArea, object oExit)
 
     if (oCountedArea != oArea)
     {
-        DeleteLocalObject(oExit, AL_COUNTED_AREA_LOCAL);
+        // Enter/exit callbacks can arrive reordered during area transitions.
+        // If exit is for a stale area, keep current counted area local intact,
+        // otherwise we can lose authoritative area state and double-adjust counts.
         return;
     }
 
