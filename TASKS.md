@@ -10,7 +10,7 @@
 
 - [x] Оффлайн/операторский preflight-валидатор маршрутов (`al_step` range, step continuity, duplicates, area consistency).
 - [x] Шаблон контент-подготовки sleep-точек (`_approach`/`_pose`) в `docs/SLEEP_MARKUP_TEMPLATE.md`.
-- [ ] Операторский гайд по linked areas (`al_link_*`) и warm-policy.
+- [x] Операторский гайд по linked areas (`al_link_*`) и warm-policy (см. `docs/LINKED_GRAPH_OPERATIONS.md`, разделы 1 «Контракт linked locals», 2 «Warm-policy», 3 «Правила проектирования linked-графа», 4 «Операторский чек-лист перед запуском», 5 «Быстрая диагностика перегрева linked-графа»).
 
 ## P2
 
