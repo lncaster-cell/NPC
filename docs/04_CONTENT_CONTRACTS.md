@@ -33,3 +33,24 @@
 - Нет битых route/waypoint tags.
 - Нет конфликтующих/дублированных linked-area записей.
 - Legacy-поля допускаются только как fallback, не как основной источник данных.
+
+
+## 7. Respawn population contracts
+### Area locals (контент/конфиг)
+- `al_city_respawn_tag` или `al_city_respawn_tag_<idx>` + `al_city_respawn_node_count` — разрешённые respawn nodes.
+- `al_city_respawn_resref` — area-level шаблон респауна (опционально).
+- `al_city_respawn_cooldown_ticks` — минимальный интервал между респаунами (опционально).
+- `al_city_respawn_budget_regen_ticks` — период восстановления бюджета (опционально).
+- `al_city_respawn_safe_dist` — безопасная дистанция от игроков для спавна (опционально).
+
+### NPC locals (классификация)
+- `al_population_named` / `al_is_named` — источник признака named NPC.
+- `al_population_is_named`, `al_population_classified`, `al_population_alive_registered` — runtime метки population-layer.
+
+### City/module runtime keys (через city key)
+- `population_target_named`, `population_target_unnamed`
+- `population_alive_named`, `population_alive_unnamed`
+- `population_deficit_unnamed`
+- `population_respawn_budget`, `population_respawn_budget_max`, `population_respawn_budget_initialized`
+- `population_last_respawn_tick`, `population_budget_last_regen_tick`
+- `population_respawn_resref`
