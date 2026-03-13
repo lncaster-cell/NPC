@@ -34,10 +34,8 @@
 ## Регулярная QA-практика
 
 - Smoke-check: см. раздел `Runbook: Area Health Snapshot` ниже.
+- Python preflight-утилиты удалены из репозитория; валидация маршрутов/locals/linked-графа выполняется внешними инструментами команды.
 - Perf-check: см. `docs/PERF_RUNBOOK.md` (минимум Scene M для каждого заметного изменения ambient-life).
-- Preflight-gate перед S80/S100/S120: обязательный запуск `python3 scripts/ambient_life/al_route_preflight.py --input <waypoints.json>`; при `[ERROR]` запуск сценариев запрещён до исправления контента.
-- Locals-gate перед контентной выкладкой: обязательный запуск `python3 scripts/ambient_life/al_locals_preflight.py --input <locals.json>` (или `--format text` для операторского чтения); при `status=ERROR`/exit code `1` выкладка блокируется до исправления.
-- Linked-gate для linked-area правок: обязательный запуск `python3 scripts/ambient_life/al_link_preflight.py --input <linked_areas.json>`; нарушения уровня `ERROR` (self-link, дубликаты, несимметрия, degree>6 и структурные ошибки) блокируют merge, `WARN` (degree вне target 2..4) требует операторского решения.
 - Для каждого perf-PR обязательна оценка: какую часть `AL_AreaTick` затрагивает изменение, и какой метрикой подтверждается эффект.
 - Для правок в route/registry/dispatcher: обязательный PR-отчёт «до/после» по шаблону из `docs/PERF_RUNBOOK.md`.
 - High-impact perf-priority: `scripts/ambient_life/al_area_inc.nss`, `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_route_inc.nss`, `scripts/ambient_life/al_dispatch_inc.nss`.
