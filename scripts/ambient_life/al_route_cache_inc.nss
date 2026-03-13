@@ -162,7 +162,6 @@ int AL_ComputeRouteFingerprintFromCandidates(object oArea, string sRouteTag, int
         nFingerprint = AL_RouteHashString(nFingerprint, GetLocalString(oWp, "al_bed_id"));
     }
 
-    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
     if (nSyncTick > 0)
     {
         SetLocalInt(oArea, AL_RouteAreaFingerprintTickKey(sRouteTag), nSyncTick);
