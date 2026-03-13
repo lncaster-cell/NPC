@@ -1,12 +1,12 @@
 # Ambient Life — глубокий технический аудит (Stage I.2 snapshot)
-<!-- DOCSYNC:2026-03-12 -->
-> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+<!-- DOCSYNC:2026-03-13 -->
+> Documentation sync: 2026-03-13. This file was reviewed and aligned with the current repository structure.
 
 
 ## 0) Область и ограничения аудита
 
 - Проверка выполнена по текущему коду `scripts/ambient_life` и актуальной документации в `docs/`.
-- Скрипты из `third party` **не анализировались**.
+- Скрипты из `third party` и вложенный в неё компилятор **не анализировались и не модифицировались**.
 - Фокус: архитектурная состоятельность, соответствие ограничениям NWN2/NWScript, эксплуатационные риски и приоритеты развития в рамках текущего среза Stage I.2.
 
 ---
@@ -34,7 +34,7 @@
 
 - Добавлена диагностика registry/route overflow (включая area-level счётчики snapshot).
 - Зафиксирован и документирован **health snapshot** (`al_h_*`) как штатная runtime-диагностика area.
-- Добавлен **preflight validator** locals (`scripts/ambient_life/al_locals_preflight.py`) с CI-friendly exit codes/форматами.
+- Preflight-практика по locals переведена во внешний контур команды (вне этого репозитория), а в репозитории сохранены только контракт и входные примеры.
 - Реализован **Stage I.2 policy-layer**: area-local alarm scope, bounded nearby fan-out, role hints через `al_npc_role`, safe-waypoint fallback-поведение.
 
 ### Что не закрыто (границы I.2)
