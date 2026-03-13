@@ -14,7 +14,7 @@
 - [x] Оффлайн/операторский preflight-валидатор маршрутов (`al_step` range, step continuity, duplicates, area consistency).
 - [x] Шаблон контент-подготовки sleep-точек (`_approach`/`_pose`) в `docs/SLEEP_MARKUP_TEMPLATE.md`.
 - [x] Операторский гайд по linked areas (`al_link_*`) и warm-policy.
-- [x] Автоматизированный preflight-валидатор linked-графа (`al_link_count`, `al_link_*`, дубликаты, самоссылки, превышение degree-порогов).
+- [~] Автоматизированный preflight-валидатор linked-графа (`al_link_count`, `al_link_*`, дубликаты, самоссылки, превышение degree-порогов): в репозитории отсутствует подтверждённый инструмент и задокументированный linked CI gate.
 
 ## P2
 
@@ -37,6 +37,7 @@
 
 - Smoke-check: см. раздел `Runbook: Area Health Snapshot` ниже.
 - Python preflight-утилиты удалены из репозитория; валидация маршрутов/locals/linked-графа выполняется внешними инструментами команды.
+- Для linked-графа автоматический внешний gate пока не зафиксирован документально (job/repo/pipeline); до фиксации источника исполнения применяется ручной операторский checklist.
 - Perf-check: см. `docs/PERF_RUNBOOK.md` (минимум Scene M для каждого заметного изменения ambient-life).
 - Для каждого perf-PR обязательна оценка: какую часть `AL_AreaTick` затрагивает изменение, и какой метрикой подтверждается эффект.
 - Для правок в route/registry/dispatcher: обязательный PR-отчёт «до/после» по шаблону из `docs/PERF_RUNBOOK.md`.

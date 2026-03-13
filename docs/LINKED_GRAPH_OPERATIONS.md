@@ -92,25 +92,13 @@
    - снизить степень центральных хабов.
 
 
-## 6) Offline preflight validator (`al_link_preflight.py`)
+## 6) Linked preflight: текущий режим и источник исполнения
 
-Перед rollout изменений linked-графа запускайте сервисный валидатор:
+На текущий момент в этом репозитории отсутствует рабочий in-repo инструмент `al_link_preflight.py` и не зафиксирован отдельный CI job для linked preflight.
 
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_ok.json --format text
-```
+Источник исполнения сейчас — ручной операторский preflight по разделам 1-5 этого документа и checklist в `docs/PR_CHECKLIST.md`.
 
-JSON-режим (для CI/автоматизации):
-
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_ok.json --format json
-```
-
-Пример smoke-проверки с ошибками (ожидаем `exit code 1`):
-
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_invalid.json --format text
-```
+До появления формализованного внешнего automation-gate (CI job / внешний репозиторий / internal service pipeline) linked-изменения проверяются вручную перед rollout.
 
 Что проверяется:
 
@@ -126,15 +114,8 @@ Policy уровней нарушений (merge gate):
 - **ERROR (merge-blocking):** `self_link`, `duplicate_links`, `symmetry_mismatch`, `unknown_link_target`, `degree_exceeds_hub_max`, а также структурные ошибки (`invalid_link_count`, `missing_link_slot`, `invalid_link_slot_*`, `invalid_locals_type`).
 - **WARN (не блокирует merge автоматически, но требует операторского решения):** `degree_below_target`, `degree_above_target` в пределах hard-max.
 
-Операторские примеры входа (`docs/`):
+Критерий верификации закрытия риска linked preflight:
 
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_PASS.json --format text
-python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_FAIL.json --format text
-```
-
-Коды завершения:
-
-- `0` — ошибок нет (warnings допустимы);
-- `1` — обнаружены ошибки в linked-графе (rollout блокируется);
-- `2` — фатальная ошибка чтения/формата входного JSON.
+1. В документации зафиксирован конкретный источник автоматического исполнения (имя CI job и/или ссылка на внешний/internal pipeline).
+2. В каждом PR с linked-изменениями приложен артефакт linked preflight (JSON/text отчёт или ссылка на лог джобы).
+3. Запуск соответствующей джобы/pipeline в PR имеет зелёный статус.
