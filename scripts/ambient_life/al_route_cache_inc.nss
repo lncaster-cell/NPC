@@ -1,6 +1,10 @@
 // Ambient Life route cache helpers (extracted from al_route_inc).
 
+const int AL_ROUTE_MAX_STEPS = 16;
+const int AL_ROUTE_REBUILD_COOLDOWN_TICKS = 2;
 const int AL_ROUTE_REBUILD_FAIL_COOLDOWN_TICKS = 2;
+const int AL_ROUTE_PENDING_SERVICE_BUDGET_PER_TICK = 2;
+const int AL_ROUTE_PENDING_MAX_TAGS = 64;
 
 // Authoritative route-area cache cardinality: number of contiguous step waypoints cached per route tag.
 string AL_RouteAreaCacheStepsKey(string sRouteTag) { return "al_route_area_steps_" + sRouteTag; }
@@ -25,6 +29,7 @@ string AL_RouteAreaFingerprintValueKey(string sRouteTag) { return "al_route_fp_v
 string AL_RouteAreaFailTickKey(string sRouteTag) { return "al_route_area_fail_tick_" + sRouteTag; }
 // Authoritative per-tag pending marker when rebuild is deferred by per-tick budget.
 string AL_RouteAreaPendingKey(string sRouteTag) { return "al_route_area_pending_" + sRouteTag; }
+string AL_RoutePendingTagKey(int nIdx) { return "al_route_pending_tag_" + IntToString(nIdx); }
 
 int AL_RouteCanRebuildThisTick(object oArea)
 {
@@ -57,6 +62,18 @@ void AL_RouteMarkAreaPending(object oArea, string sRouteTag)
     SetLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag), TRUE);
     SetLocalInt(oArea, "al_route_pending_rebuild", TRUE);
     SetLocalInt(oArea, "al_route_pending_count", GetLocalInt(oArea, "al_route_pending_count") + 1);
+
+    int nTagCount = GetLocalInt(oArea, "al_route_pending_tag_count");
+    if (nTagCount < 0)
+    {
+        nTagCount = 0;
+    }
+
+    if (nTagCount < AL_ROUTE_PENDING_MAX_TAGS)
+    {
+        SetLocalString(oArea, AL_RoutePendingTagKey(nTagCount), sRouteTag);
+        SetLocalInt(oArea, "al_route_pending_tag_count", nTagCount + 1);
+    }
 }
 
 void AL_RouteClearAreaPending(object oArea, string sRouteTag)
@@ -81,6 +98,119 @@ void AL_RouteClearAreaPending(object oArea, string sRouteTag)
 
     SetLocalInt(oArea, "al_route_pending_count", nPending);
     SetLocalInt(oArea, "al_route_pending_rebuild", nPending > 0);
+}
+
+int AL_RouteServicePendingTags(object oArea, int nBudget)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return 0;
+    }
+
+    if (nBudget <= 0)
+    {
+        nBudget = AL_ROUTE_PENDING_SERVICE_BUDGET_PER_TICK;
+    }
+
+    int nTagCount = GetLocalInt(oArea, "al_route_pending_tag_count");
+    if (nTagCount < 0)
+    {
+        nTagCount = 0;
+    }
+
+    if (nTagCount > AL_ROUTE_PENDING_MAX_TAGS)
+    {
+        nTagCount = AL_ROUTE_PENDING_MAX_TAGS;
+    }
+
+    if (nTagCount <= 0)
+    {
+        SetLocalInt(oArea, "al_route_pending_count", 0);
+        SetLocalInt(oArea, "al_route_pending_rebuild", FALSE);
+        SetLocalInt(oArea, "al_route_pending_tag_count", 0);
+        SetLocalInt(oArea, "al_route_pending_rr_cursor", 0);
+        return 0;
+    }
+
+    int nCursor = GetLocalInt(oArea, "al_route_pending_rr_cursor");
+    if (nCursor < 0)
+    {
+        nCursor = 0;
+    }
+    if (nTagCount > 0)
+    {
+        nCursor = nCursor % nTagCount;
+    }
+
+    string asUnattempted[AL_ROUTE_PENDING_MAX_TAGS];
+    int nUnattempted = 0;
+    string asAttemptedStillPending[AL_ROUTE_PENDING_MAX_TAGS];
+    int nAttemptedStillPending = 0;
+    int nHandled = 0;
+
+    int nOffset = 0;
+    while (nOffset < nTagCount)
+    {
+        int nIdx = (nCursor + nOffset) % nTagCount;
+        string sRouteTag = GetLocalString(oArea, AL_RoutePendingTagKey(nIdx));
+        nOffset = nOffset + 1;
+
+        if (sRouteTag == "" || GetLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag)) != TRUE)
+        {
+            continue;
+        }
+
+        int bAttempted = FALSE;
+        if (nHandled < nBudget)
+        {
+            AL_RouteEnsureAreaCache(oArea, sRouteTag, FALSE);
+            nHandled = nHandled + 1;
+            bAttempted = TRUE;
+        }
+
+        if (GetLocalInt(oArea, AL_RouteAreaPendingKey(sRouteTag)) != TRUE)
+        {
+            continue;
+        }
+
+        if (bAttempted)
+        {
+            asAttemptedStillPending[nAttemptedStillPending] = sRouteTag;
+            nAttemptedStillPending = nAttemptedStillPending + 1;
+        }
+        else
+        {
+            asUnattempted[nUnattempted] = sRouteTag;
+            nUnattempted = nUnattempted + 1;
+        }
+    }
+
+    int nNewCount = nUnattempted + nAttemptedStillPending;
+    int i = 0;
+    while (i < nNewCount)
+    {
+        if (i < nUnattempted)
+        {
+            SetLocalString(oArea, AL_RoutePendingTagKey(i), asUnattempted[i]);
+        }
+        else
+        {
+            SetLocalString(oArea, AL_RoutePendingTagKey(i), asAttemptedStillPending[i - nUnattempted]);
+        }
+        i = i + 1;
+    }
+
+    while (i < nTagCount)
+    {
+        DeleteLocalString(oArea, AL_RoutePendingTagKey(i));
+        i = i + 1;
+    }
+
+    SetLocalInt(oArea, "al_route_pending_tag_count", nNewCount);
+    SetLocalInt(oArea, "al_route_pending_count", nNewCount);
+    SetLocalInt(oArea, "al_route_pending_rebuild", nNewCount > 0);
+    SetLocalInt(oArea, "al_route_pending_rr_cursor", 0);
+    return nHandled;
 }
 
 int AL_RouteAreaCacheStepsValid(object oArea, string sRouteTag)
@@ -173,7 +303,6 @@ int AL_ComputeRouteFingerprintFromCandidates(object oArea, string sRouteTag, int
         nFingerprint = AL_RouteHashString(nFingerprint, GetLocalString(oWp, "al_bed_id"));
     }
 
-    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
     if (nSyncTick > 0)
     {
         SetLocalInt(oArea, AL_RouteAreaFingerprintTickKey(sRouteTag), nSyncTick);
@@ -269,11 +398,7 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
     SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaRebuildCooldownUntilKey(sRouteTag), 0);
-    DeleteLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag));
-    DeleteLocalInt(oArea, AL_RouteAreaFingerprintTickKey(sRouteTag));
-    DeleteLocalInt(oArea, AL_RouteAreaFingerprintValueKey(sRouteTag));
-    DeleteLocalInt(oArea, AL_RouteAreaContentVersionKey(sRouteTag));
-    DeleteLocalInt(oArea, AL_RouteAreaCandidateCountKey(sRouteTag));
+    AL_LookupInvalidateRouteRebuildCache(oArea, sRouteTag);
     DeleteLocalInt(oArea, AL_RouteAreaFailTickKey(sRouteTag));
     if (bHadCache)
     {

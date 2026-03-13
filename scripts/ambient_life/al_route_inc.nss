@@ -5,16 +5,11 @@
 #include "al_transition_inc"
 #include "al_sleep_inc"
 
-const int AL_ROUTE_MAX_STEPS = 16;
-const int AL_ROUTE_REBUILD_COOLDOWN_TICKS = 2;
-
 string AL_RouteRtActiveKey() { return "al_route_rt_active"; }
 string AL_RouteRtIdxKey() { return "al_route_rt_idx"; }
 string AL_RouteRtLeftKey() { return "al_route_rt_left"; }
 // Migration note: legacy `al_route_rt_cycle` runtime key contract removed (unused counter).
 // Consumers should rely on `al_route_rt_active` + `al_route_rt_idx` + `al_route_rt_left`.
-
-#include "al_route_cache_inc"
 
 void AL_RouteRuntimeClear(object oNpc)
 {

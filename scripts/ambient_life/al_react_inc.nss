@@ -4,6 +4,7 @@
 #include "al_area_inc"
 #include "al_activity_inc"
 #include "al_events_inc"
+#include "al_route_runtime_api_inc"
 
 const int AL_REACT_TYPE_NONE = 0;
 const int AL_REACT_TYPE_ADDED = 1;
@@ -24,15 +25,10 @@ const int AL_CRIME_DEBOUNCE_TICKS = 2;
 const float AL_LOCAL_ALARM_RADIUS = 18.0;
 const int AL_LOCAL_ALARM_MAX_RESPONDERS = 8;
 
-// Route runtime hooks consumed by Stage I.1 reaction layer.
-string AL_RouteRtActiveKey();
-int AL_RouteRoutineResumeCurrent(object oNpc);
-void AL_RouteBlockedRuntimeReset(object oNpc);
-
 // Local helper forward declarations used by bounded alarm fan-out path.
 int AL_ReactShouldOverrideRoutine(object oActor);
 void AL_ReactRuntimeBegin(object oActor, int nReactType, object oSource, object oItem);
-void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind);
+void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind, float fStartDelaySec = 0.0);
 void AL_ReactResumeOrResetOnSelf();
 void AL_ReactFinishCreature(object oNpc);
 void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurSec);
@@ -52,6 +48,22 @@ void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurS
     AssignCommand(oNpc, ActionDoCommand(ExecuteScript("al_react_apply_step", OBJECT_SELF)));
 }
 
+const string AL_REACT_SAFE_WP_TAG_KEY = "al_safe_wp_tag";
+const string AL_REACT_SAFE_WP_MARKER_KEY = "al_is_safe_wp";
+const string AL_REACT_SAFE_WP_LEGACY_KEY = "al_safe_wp";
+const string AL_REACT_SAFE_WP_LEGACY_FLAG = "al_ff_legacy_safe_wp_fallback";
+
+int AL_ReactLegacySafeWpFallbackEnabled()
+{
+    return GetLocalInt(GetModule(), AL_REACT_SAFE_WP_LEGACY_FLAG) == TRUE;
+}
+
+void AL_ReactRecordLegacySafeWpFallbackHit(string sMetricKey)
+{
+    object oModule = GetModule();
+    SetLocalInt(oModule, sMetricKey, GetLocalInt(oModule, sMetricKey) + 1);
+}
+
 string AL_ReactNpcSafeWaypointTag(object oNpc)
 {
     if (!GetIsObjectValid(oNpc))
@@ -59,13 +71,23 @@ string AL_ReactNpcSafeWaypointTag(object oNpc)
         return "";
     }
 
-    string sSafeTag = GetLocalString(oNpc, "al_safe_wp_tag");
+    string sSafeTag = GetLocalString(oNpc, AL_REACT_SAFE_WP_TAG_KEY);
     if (sSafeTag != "")
     {
         return sSafeTag;
     }
 
-    return GetLocalString(oNpc, "al_safe_wp");
+    if (AL_ReactLegacySafeWpFallbackEnabled())
+    {
+        string sLegacySafeTag = GetLocalString(oNpc, AL_REACT_SAFE_WP_LEGACY_KEY);
+        if (sLegacySafeTag != "")
+        {
+            AL_ReactRecordLegacySafeWpFallbackHit("al_safe_wp_legacy_tag_fallback_hits");
+            return sLegacySafeTag;
+        }
+    }
+
+    return "";
 }
 
 int AL_ReactIsSafeWaypoint(object oWaypoint)
@@ -75,14 +97,15 @@ int AL_ReactIsSafeWaypoint(object oWaypoint)
         return FALSE;
     }
 
-    if (GetLocalInt(oWaypoint, "al_is_safe_wp") == TRUE)
+    if (GetLocalInt(oWaypoint, AL_REACT_SAFE_WP_MARKER_KEY) == TRUE)
     {
         return TRUE;
     }
 
-    // Legacy fallback marker used by older scenes.
-    if (GetLocalInt(oWaypoint, "al_safe_wp") == TRUE)
+    // Temporary migration fallback: legacy marker support is controlled by feature-flag.
+    if (AL_ReactLegacySafeWpFallbackEnabled() && GetLocalInt(oWaypoint, AL_REACT_SAFE_WP_LEGACY_KEY) == TRUE)
     {
+        AL_ReactRecordLegacySafeWpFallbackHit("al_safe_wp_legacy_marker_fallback_hits");
         return TRUE;
     }
 
@@ -154,6 +177,8 @@ object AL_ReactFindNearestSafeWaypoint(object oNpc)
                 return oWaypoint;
             }
 
+            // Temporary compatibility fallback for scenes without explicit safe marker keys.
+            // Remove after migration to AL_REACT_SAFE_WP_MARKER_KEY is complete.
             string sTag = GetTag(oWaypoint);
             if (FindSubString(sTag, "safe") >= 0 || FindSubString(sTag, "SAFE") >= 0)
             {
@@ -581,10 +606,13 @@ void AL_ReactNotifyNearbyResponders(object oActor, object oSource, int nCrimeKin
 
         if (oCandidate != oActor && AL_ReactShouldNpcJoinLocalAlarm(oCandidate, oSource))
         {
+            float fStartDelaySec = IntToFloat(nJoined) * 0.15 + (IntToFloat(Random(3)) * 0.1);
+            int nReactType = AL_ReactTypeFromCrimeKind(nCrimeKind);
+
             // Fan-out responders are non-OBJECT_SELF targets: all behavior must be enqueued via AssignCommand.
-            AL_ReactRuntimeBegin(oCandidate, AL_REACT_TYPE_STOLEN, oSource, OBJECT_INVALID);
+            AL_ReactRuntimeBegin(oCandidate, nReactType, oSource, OBJECT_INVALID);
             SetLocalInt(oCandidate, "al_react_resume_flag", TRUE);
-            AL_ReactRunBoundedOverride(oCandidate, GetIsObjectValid(oSource), nCrimeKind);
+            AL_ReactRunBoundedOverride(oCandidate, GetIsObjectValid(oSource), nCrimeKind, fStartDelaySec);
             AL_ReactFinishCreature(oCandidate);
             nJoined = nJoined + 1;
         }
@@ -613,6 +641,21 @@ int AL_ReactTypeFromDisturb(int nDisturbType)
     return AL_REACT_TYPE_UNKNOWN;
 }
 
+int AL_ReactTypeFromCrimeKind(int nCrimeKind)
+{
+    if (nCrimeKind >= AL_CRIME_KIND_THEFT)
+    {
+        return AL_REACT_TYPE_STOLEN;
+    }
+
+    if (nCrimeKind == AL_CRIME_KIND_SUSPICIOUS)
+    {
+        return AL_REACT_TYPE_REMOVED;
+    }
+
+    return AL_REACT_TYPE_UNKNOWN;
+}
+
 int AL_ReactShouldOverrideRoutine(object oActor)
 {
     if (!GetIsObjectValid(oActor) || GetObjectType(oActor) != OBJECT_TYPE_CREATURE || GetIsPC(oActor))
@@ -626,7 +669,7 @@ int AL_ReactShouldOverrideRoutine(object oActor)
         return FALSE;
     }
 
-    return GetLocalInt(oActor, AL_RouteRtActiveKey());
+    return AL_RouteRuntimeIsActive(oActor);
 }
 
 void AL_ReactRuntimeClear(object oActor)
@@ -669,7 +712,7 @@ void AL_ReactRuntimeBegin(object oActor, int nReactType, object oSource, object 
     }
 }
 
-void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind)
+void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind, float fStartDelaySec = 0.0)
 {
     if (!GetIsObjectValid(oNpc))
     {
@@ -677,6 +720,11 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeK
     }
 
     AssignCommand(oNpc, ClearAllActions(TRUE));
+
+    if (fStartDelaySec > 0.0)
+    {
+        AssignCommand(oNpc, ActionWait(fStartDelaySec));
+    }
 
     if (nCrimeKind > AL_CRIME_KIND_NONE)
     {
@@ -710,9 +758,9 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeK
 
 void AL_ReactResumeOrResetOnSelf()
 {
-    if (!AL_RouteRoutineResumeCurrent(OBJECT_SELF))
+    if (!AL_RouteRuntimeResumeSafe(OBJECT_SELF))
     {
-        AL_RouteBlockedRuntimeReset(OBJECT_SELF);
+        AL_RouteRuntimeResetSafe(OBJECT_SELF);
         SignalEvent(OBJECT_SELF, EventUserDefined(AL_EVENT_RESYNC));
     }
 }
