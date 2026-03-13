@@ -11,7 +11,7 @@
   Для метрик с трендовой проверкой (`route_cache_hits`, `route_cache_rebuilds`, `route_cache_invalidations`)
   обязательны поля `expected_direction` (`up|down|stable`) и `trend_tolerance`.
 - `s80_s100_s120_baseline.md` — операторское представление тех же значений в формате «до/после».
-- `perf_gate_report_template.csv` / `perf_gate_report_template.json` — шаблоны machine-readable отчёта для CI perf-gate.
+- `perf_gate_report_template.csv` — шаблон machine-readable отчёта для CI perf-gate.
 - `perf_gate_report.csv` (генерируется в PR) — фактический отчёт, который валидируется в CI.
 
 ## Базовое правило обновления baseline
@@ -30,7 +30,7 @@ Baseline **обновляется только** при одном из двух
 ## Perf gate (CI)
 
 Для PR с изменениями в `scripts/ambient_life/al_*` обязателен зелёный job `Ambient Life Perf Gate`.
-Проверка использует baseline `s80_s100_s120_baseline.csv` и отчёт `perf_gate_report.csv` (или `.json`)
+Проверка использует baseline `s80_s100_s120_baseline.csv` и отчёт `perf_gate_report.csv`
 через `scripts/ambient_life/validate_perf_gate.py`.
 
 Скрипт `validate_perf_gate.py` использует локальный best-effort кэш нормализованных/распарсенных входов
