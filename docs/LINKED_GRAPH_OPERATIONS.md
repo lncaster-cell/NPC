@@ -1,6 +1,6 @@
 # Linked Areas: operator guide (`al_link_*`) and warm-policy
-<!-- DOCSYNC:2026-03-12 -->
-> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+<!-- DOCSYNC:2026-03-13 -->
+> Documentation sync: 2026-03-13. This file was reviewed and aligned with the current repository structure.
 
 
 Документ фиксирует практические правила для контент-команды и операторов по настройке linked-графа area и контролю warm-retention.
@@ -92,25 +92,17 @@
    - снизить степень центральных хабов.
 
 
-## 6) Offline preflight validator (`al_link_preflight.py`)
+## 6) Offline preflight validator (external-only)
 
-Перед rollout изменений linked-графа запускайте сервисный валидатор:
+Перед rollout изменений linked-графа запускайте preflight-проверку во **внешнем tooling** (external-only).
 
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_ok.json --format text
-```
+Локальный запуск через `scripts/ambient_life/al_link_preflight.py` больше недоступен в этом репозитории.
 
-JSON-режим (для CI/автоматизации):
+Рекомендуемый операционный процесс:
 
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_ok.json --format json
-```
-
-Пример smoke-проверки с ошибками (ожидаем `exit code 1`):
-
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_invalid.json --format text
-```
+1. Сформировать входной JSON linked-графа на основе текущего контента.
+2. Прогнать внешний preflight validator в двух форматах: `text` (triage) и `json` (артефакт для CI/PR).
+3. Приложить preflight summary к PR и зафиксировать вердикт (PASS/WARN/FAIL).
 
 Что проверяется:
 
@@ -121,17 +113,17 @@ python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/t
 - симметрия (`A -> B` требует `B -> A`);
 - degree-пороги (target `2..4`, hard max `6`).
 
-Policy уровней нарушений (merge gate):
+Policy уровней нарушений (merge gate, во внешнем validator):
 
 - **ERROR (merge-blocking):** `self_link`, `duplicate_links`, `symmetry_mismatch`, `unknown_link_target`, `degree_exceeds_hub_max`, а также структурные ошибки (`invalid_link_count`, `missing_link_slot`, `invalid_link_slot_*`, `invalid_locals_type`).
 - **WARN (не блокирует merge автоматически, но требует операторского решения):** `degree_below_target`, `degree_above_target` в пределах hard-max.
 
 Операторские примеры входа (`docs/`):
 
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_PASS.json --format text
-python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_FAIL.json --format text
-```
+- `docs/LINKED_PREFLIGHT_EXAMPLES_PASS.json`
+- `docs/LINKED_PREFLIGHT_EXAMPLES_FAIL.json`
+
+Эти файлы используются как reference-набор для внешнего preflight tooling.
 
 Коды завершения:
 

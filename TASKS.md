@@ -1,6 +1,6 @@
 # Task Board
-<!-- DOCSYNC:2026-03-12 -->
-> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+<!-- DOCSYNC:2026-03-13 -->
+> Documentation sync: 2026-03-13. This file was reviewed and aligned with the current repository structure.
 
 
 ## P0
@@ -43,6 +43,19 @@
 - High-impact perf-priority: `scripts/ambient_life/al_area_inc.nss`, `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_route_inc.nss`, `scripts/ambient_life/al_dispatch_inc.nss`.
 - Gate (core): изменения в high-impact файлах считаются неполными без perf-сводки по `docs/PERF_PROFILE.md`.
 - Для любого PR с изменениями в `scripts/ambient_life/al_*` обязательный чек: **Perf gate passed** (CI `Ambient Life Perf Gate` + machine-readable отчёт `docs/perf/baselines/perf_gate_report.csv|.json`).
+
+
+## Migration note
+
+Следующие старые команды больше не применимы (external-only):
+
+- `python3 -m scripts.ambient_life.run_preflight_suite ...`
+- `python3 scripts/ambient_life/run_preflight_suite.py ...`
+- `python3 scripts/ambient_life/al_link_preflight.py ...`
+- `python3 scripts/ambient_life/validate_perf_gate.py ...`
+
+Вместо них используйте внешний tooling команды и CI jobs `Ambient Life Integrity` / `Ambient Life Perf Gate`
+как единый источник истины для preflight/gate-проверок.
 
 ## Runbook: Area Health Snapshot (операторский минимум)
 

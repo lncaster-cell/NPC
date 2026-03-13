@@ -1,6 +1,6 @@
 # Ambient Life perf baselines (S80/S100/S120)
-<!-- DOCSYNC:2026-03-12 -->
-> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+<!-- DOCSYNC:2026-03-13 -->
+> Documentation sync: 2026-03-13. This file was reviewed and aligned with the current repository structure.
 
 
 Единая точка хранения baseline-замеров для обязательных perf-сценариев из `docs/PERF_RUNBOOK.md` и `docs/PERF_PROFILE.md`.
@@ -31,10 +31,10 @@ Baseline **обновляется только** при одном из двух
 
 Для PR с изменениями в `scripts/ambient_life/al_*` обязателен зелёный job `Ambient Life Perf Gate`.
 Проверка использует baseline `s80_s100_s120_baseline.csv` и отчёт `perf_gate_report.csv` (или `.json`)
-через `scripts/ambient_life/validate_perf_gate.py`.
+через внешний CI tooling (external-only, без локального Python-валидатора в этом репозитории).
 
-Скрипт `validate_perf_gate.py` использует локальный best-effort кэш нормализованных/распарсенных входов
+Во внешнем tooling допускается локальный best-effort кэш нормализованных/распарсенных входов
 в `.cache/perf_gate/` (ключ: `sha256(<baseline-bytes> + "\\0" + <report-bytes>)`).
 Кэш не влияет на логику PASS/FAIL (вердикт считается каждый запуск), а при любой ошибке чтения,
-декодирования или записи скрипт безопасно откатывается к прямому парсингу файлов.
-Для полностью детерминированных CI-прогонов используйте флаг `--no-cache`.
+декодирования или записи должен использоваться безопасный fallback на прямой парсинг файлов.
+Для полностью детерминированных CI-прогонов используйте режим без кэша (если поддерживается tooling).

@@ -1,35 +1,28 @@
 # PERF Runbook (Ambient Life)
-<!-- DOCSYNC:2026-03-12 -->
-> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+<!-- DOCSYNC:2026-03-13 -->
+> Documentation sync: 2026-03-13. This file was reviewed and aligned with the current repository structure.
 
 
-## 0) Обязательный preflight: единый preflight-suite (route/link/locals)
+## 0) Обязательный preflight: единый внешний preflight-pack (route/link/locals)
 
-Перед **каждым** perf-прогоном (S80/S100/S120) оператор обязан прогнать единый preflight-suite:
+Python preflight-утилиты `scripts/ambient_life/*.py` больше не поставляются в этом репозитории.
+Единый источник правды для preflight/gate-проверок — **внешний tooling команды + CI jobs**:
 
-```bash
-# Предпочтительно (пакетный запуск из корня репозитория)
-python3 -m scripts.ambient_life.run_preflight_suite \
-  --route-input <path/to/waypoints.json> \
-  --link-input <path/to/areas_links.json> \
-  --locals-input <path/to/locals_payload.json> \
-  --format text
-  # performance-режим по умолчанию: порядок issue сохраняется как пришёл из валидаторов
+- оператор запускает preflight во внешнем инструменте и прикладывает артефакт в PR;
+- CI job `Ambient Life Integrity` проверяет, что preflight summary приложен и имеет PASS-статус;
+- CI job `Ambient Life Perf Gate` валидирует machine-readable perf-отчёт против baseline.
 
-# Допустимый fallback (standalone-скрипт)
-python3 scripts/ambient_life/run_preflight_suite.py \
-  --route-input <path/to/waypoints.json> \
-  --link-input <path/to/areas_links.json> \
-  --locals-input <path/to/locals_payload.json> \
-  --format text
-```
+Обязательные входы preflight-pack (во внешнем инструменте):
 
-Для CI/артефактов используйте `--format json`.
+- `route-input` (`waypoints`);
+- `link-input` (`al_link_*` граф);
+- `locals-input` (NPC/area locals).
 
-Режимы запуска preflight-валидаторов:
-- **CI mode (быстрый fail):** запускать `al_route_preflight.py`, `al_link_preflight.py`, `al_locals_preflight.py` с `--fail-fast`.
-  При необходимости ограничить порог остановки: `--max-errors <N>`.
-- **Operator mode (полный triage):** запускать без `--fail-fast`, чтобы получить полный список ошибок/предупреждений в одном прогоне.
+Формат артефакта preflight: `text` для быстрого triage + `json` для CI/аудита.
+Режимы запуска (термины сохраняются для процесса):
+
+- **CI mode (быстрый fail):** fail-fast запуск внешних валидаторов;
+- **Operator mode (полный triage):** полный список issue без fail-fast.
 
 Требования к входному JSON:
 - корень: либо массив waypoint-объектов, либо объект с ключом `waypoints`;
@@ -349,21 +342,10 @@ Baseline в `docs/perf/baselines/*` обновляется только если
 - `docs/perf/baselines/perf_gate_report_template.csv`;
 - `docs/perf/baselines/perf_gate_report_template.json`.
 
-Локальная проверка перед push:
+Локальная проверка перед push выполняется **только через внешний tooling команды**
+(external-only; локальный `scripts/ambient_life/validate_perf_gate.py` отсутствует в репозитории).
 
-```bash
-python3 scripts/ambient_life/validate_perf_gate.py \
-  --baseline docs/perf/baselines/s80_s100_s120_baseline.csv \
-  --report docs/perf/baselines/perf_gate_report.csv
-
-# Для детерминированных CI-прогонов без локального кэша парсинга:
-python3 scripts/ambient_life/validate_perf_gate.py \
-  --baseline docs/perf/baselines/s80_s100_s120_baseline.csv \
-  --report docs/perf/baselines/perf_gate_report.csv \
-  --no-cache
-```
-
-Примечание по кэшу (`.cache/perf_gate/`):
+Примечание по кэшу (`.cache/perf_gate/`) для внешнего tooling:
 
 - кэш локальный (на машине/воркдире раннера), не является артефактом perf-gate и не должен коммититься;
 - ключ кэша: `sha256(<baseline-bytes> + "\\0" + <report-bytes>)`;
