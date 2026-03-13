@@ -1,6 +1,6 @@
 # Toolset Contract (Stage I.2)
-<!-- DOCSYNC:2026-03-12 -->
-> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+<!-- DOCSYNC:2026-03-13 -->
+> Documentation sync: 2026-03-13. This file was reviewed and aligned with the current repository structure.
 
 
 Документ определяет, какие locals задаются контентом, а какие принадлежат runtime.
@@ -110,20 +110,9 @@
 
 ## 5) Операторский preflight locals (CI-ready)
 
-Для сервисной проверки locals контента используйте:
+Python preflight-утилиты удалены из этого репозитория. Проверка locals выполняется внешним инструментом команды, который использует тот же контракт полей и уровней нарушений (`ERROR/WARN`).
 
-```bash
-python3 scripts/ambient_life/al_locals_preflight.py --input <locals.json>
-```
-
-- Формат по умолчанию: `json` (машиночитаемый для CI).
-- Человеко-читаемый формат: `--format text`.
-- Exit code:
-  - `0` — нет `ERROR`,
-  - `1` — есть хотя бы один `ERROR`,
-  - `2` — фатальная ошибка входных данных/парсинга.
-
-Минимальная структура входного JSON:
+Минимальная структура входного JSON остаётся неизменной и может использоваться как эталон для внешнего preflight:
 
 ```json
 {
@@ -160,30 +149,8 @@ python3 scripts/ambient_life/al_locals_preflight.py --input <locals.json>
 }
 ```
 
-Пример фрагмента JSON-отчёта:
-
-```json
-{
-  "status": "ERROR",
-  "summary": {
-    "errors": 2,
-    "warnings": 1,
-    "total": 3
-  },
-  "issues": [
-    {
-      "level": "ERROR",
-      "scope": "waypoint",
-      "object_id": "wp_sleep_1",
-      "code": "invalid_bed_id",
-      "reason": "al_bed_id must be non-empty string"
-    }
-  ]
-}
-```
-
-Интерпретация:
-- `ERROR` — блокирующая проблема контента (CI/preflight должен падать).
+Интерпретация результатов для CI/операторов:
+- `ERROR` — блокирующая проблема контента (rollout/merge блокируется).
 - `WARN` — неблокирующее отклонение/legacy-конфиг, требующее ревью контент-командой.
 
 

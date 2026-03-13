@@ -1,77 +1,33 @@
 # PERF Runbook (Ambient Life)
-<!-- DOCSYNC:2026-03-12 -->
-> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+<!-- DOCSYNC:2026-03-13 -->
+> Documentation sync: 2026-03-13. This file was reviewed and aligned with the current repository structure.
 
 
-## 0) Обязательный preflight: единый preflight-suite (route/link/locals)
+## 0) Обязательный preflight перед perf-прогоном (route/link/locals)
 
-Перед **каждым** perf-прогоном (S80/S100/S120) оператор обязан прогнать единый preflight-suite:
+Перед **каждым** perf-прогоном (S80/S100/S120) оператор обязан выполнить preflight route/link/locals во внешнем инструменте команды.
 
-```bash
-# Предпочтительно (пакетный запуск из корня репозитория)
-python3 -m scripts.ambient_life.run_preflight_suite \
-  --route-input <path/to/waypoints.json> \
-  --link-input <path/to/areas_links.json> \
-  --locals-input <path/to/locals_payload.json> \
-  --format text
-  # performance-режим по умолчанию: порядок issue сохраняется как пришёл из валидаторов
+Важно:
+- Python preflight-утилиты удалены из этого репозитория и не являются частью локального gate.
+- В preflight/audit не включаются `third party` и вложенный компилятор.
+- В PR/CI должен быть приложен воспроизводимый preflight summary (JSON или text) + указание входных payload.
 
-# Допустимый fallback (standalone-скрипт)
-python3 scripts/ambient_life/run_preflight_suite.py \
-  --route-input <path/to/waypoints.json> \
-  --link-input <path/to/areas_links.json> \
-  --locals-input <path/to/locals_payload.json> \
-  --format text
-```
-
-Для CI/артефактов используйте `--format json`.
-
-Режимы запуска preflight-валидаторов:
-- **CI mode (быстрый fail):** запускать `al_route_preflight.py`, `al_link_preflight.py`, `al_locals_preflight.py` с `--fail-fast`.
-  При необходимости ограничить порог остановки: `--max-errors <N>`.
-- **Operator mode (полный triage):** запускать без `--fail-fast`, чтобы получить полный список ошибок/предупреждений в одном прогоне.
-
-Требования к входному JSON:
-- корень: либо массив waypoint-объектов, либо объект с ключом `waypoints`;
-- обязательные поля для каждого waypoint: `area_tag`, `route_tag`, `al_step`;
-- обязательное поле: `waypoint_tag` (его отсутствие/невалидный тип даёт validation error).
-
-Валидатор зеркалит проверки из `AL_RouteBuildAreaCache`:
-- диапазон `al_step`: только `0..15`;
-- наличие шага `0`;
-- непрерывность шагов (`0..N` без пропусков);
-- дубликаты `al_step` внутри `(area_tag, route_tag)`;
-- area consistency: один `route_tag` не должен одновременно жить в нескольких `area_tag`.
-
-Формат отчёта suite: единый JSON + человекочитаемый summary, каждая проблема содержит `severity` (`error/warn/info`) и `path` к объекту (`area:<tag>/route:<tag>`, `area:<tag>`, `npc:<tag>` и т.д.), чтобы контент-команда могла быстро исправить данные.
+Минимальные требования к preflight-покрытию:
+- **route**: диапазон `al_step` (`0..15`), шаг `0`, непрерывность `0..N`, дубликаты шага в `(area_tag, route_tag)`, area consistency для `route_tag`;
+- **link**: валидность `al_link_count`, корректные `al_link_*`, отсутствие self-link/дубликатов, симметрия и degree-пороги;
+- **locals**: наличие обязательных полей NPC/waypoint/area и типовая валидность значений.
 
 Политика gate:
 - если есть `severity=error` — preflight считается "грязным", perf-прогон блокируется;
-- если есть только `warn/info` — требуется ручной triage, но запуск допускается.
-- **Любые perf-замеры считаются валидными только после "чистого" preflight (без `error`).**
+- если есть только `warn/info` — требуется ручной triage, запуск допускается;
+- perf-замеры считаются валидными только после preflight без `error`.
 
-### 0.0.1) Triage-поток по unified preflight-suite
+### 0.0.1) Triage-поток
 
-Рекомендуемый порядок разбора preflight-результатов:
-
-1. Запустите suite в `text`-режиме для быстрого операционного обзора.
-   - Вывод начинается с блока `Critical errors` (все `severity=error`).
-   - Далее идёт агрегат `Top issue codes` (частотные коды проблем).
-   - После этого печатаются детальные строки в порядке приоритета: `ERROR` → `WARN` → `INFO`.
-2. Если в text-выводе сработал лимит детализации (`--detail-limit`), немедленно переснимите отчёт в `--format json` и приложите его как артефакт triage.
-3. Для root-cause анализа используйте раздел `aggregates` в JSON:
-   - `aggregates.severity` — объём проблем по уровням;
-   - `aggregates.check` — концентрация по подсистемам (`route/link/locals`);
-   - `aggregates.code` — частотный срез кодов, от которого строится порядок исправлений.
-4. При наличии `error`:
-   - остановите perf-прогон;
-   - исправьте сначала самые частые коды из `aggregates.code` (обычно это даёт максимальный эффект);
-   - повторите preflight до статуса без `error`.
-5. При отсутствии `error` и наличии только `warn/info`:
-   - зафиксируйте triage-note (какие коды и почему допускаются в текущем прогоне);
-   - запускайте perf только после сохранения JSON-артефакта preflight в PR/CI.
-
-Цель: дать **воспроизводимый** протокол производственных perf-прогонов для сравнения «до/после» изменений в `scripts/ambient_life/*`.
+1. Зафиксируйте summary preflight в text-режиме для быстрого обзора.
+2. При спорных/массовых ошибках приложите JSON-артефакт с полным списком issues.
+3. При наличии `error` остановите perf-прогон, исправьте контент и повторите preflight.
+4. При только `warn/info` добавьте triage-note, почему запуск допустим.
 
 ## 0.1) Baseline-источник для S80/S100/S120
 

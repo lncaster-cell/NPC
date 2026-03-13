@@ -1,6 +1,6 @@
 # PR Checklist
-<!-- DOCSYNC:2026-03-12 -->
-> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+<!-- DOCSYNC:2026-03-13 -->
+> Documentation sync: 2026-03-13. This file was reviewed and aligned with the current repository structure.
 
 
 ## Core Ambient Life changes (`scripts/ambient_life/al_*`)
@@ -17,10 +17,6 @@
 - [ ] **Perf gate passed** для PR с изменениями в `scripts/ambient_life/al_*`:
   - [ ] CI job `Ambient Life Perf Gate` зелёный;
   - [ ] заполнен machine-readable отчёт (`docs/perf/baselines/perf_gate_report.csv` или `.json`) и валидирован скриптом `scripts/ambient_life/validate_perf_gate.py`.
-- [ ] К PR приложен preflight summary из `scripts/ambient_life/run_preflight_suite.py` (JSON или text), подтверждающий актуальное состояние route/link/locals.
-- [ ] **Integrity gate passed** для Python preflight-инструментов:
-  - [ ] CI job `Ambient Life Integrity` зелёный;
-  - [ ] локально проходят `python3 -m compileall -q scripts/ambient_life` и `pytest -q scripts/ambient_life`.
-- [ ] Для preflight-режимов явно указан контекст запуска:
-  - [ ] **CI mode**: `--fail-fast` (опционально `--max-errors N`) для быстрого early-fail.
-  - [ ] **Operator mode**: без `--fail-fast`, чтобы собрать полный список issue для triage.
+- [ ] К PR приложен preflight summary внешнего инструмента команды (JSON или text), подтверждающий актуальное состояние route/link/locals.
+- [ ] Для preflight-проверки приложены входные payload-файлы или ссылки на источники данных, чтобы результат можно было воспроизвести.
+- [ ] Явно отмечено, что в аудит/preflight не включались `third party` и вложенный компилятор.
