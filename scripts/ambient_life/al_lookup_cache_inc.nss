@@ -1,6 +1,12 @@
 // Ambient Life waypoint lookup cache helpers (extracted from al_area_inc).
 
 const int AL_LOOKUP_TRACKED_TAGS_MAX = 256;
+const int AL_LOOKUP_TAG_SCAN_BUDGET_PER_TICK = 64;
+
+int AL_LookupNowSecondOfDay()
+{
+    return (GetTimeHour() * 3600) + (GetTimeMinute() * 60) + GetTimeSecond();
+}
 
 void AL_RecordLookupCacheHit(object oArea)
 {
@@ -40,6 +46,89 @@ string AL_LookupWpItemKey(string sTag, int nIdx)
 string AL_LookupWpCheckedTickKey(string sTag)
 {
     return "al_cache_wp_checked_tick_" + sTag;
+}
+
+string AL_LookupWpBuildScanIdxKey(string sTag)
+{
+    return "al_cache_wp_build_scan_idx_" + sTag;
+}
+
+string AL_LookupWpBuildDoneKey(string sTag)
+{
+    return "al_cache_wp_build_done_" + sTag;
+}
+
+string AL_LookupWpBuildStartSecKey(string sTag)
+{
+    return "al_cache_wp_build_start_sec_" + sTag;
+}
+
+string AL_LookupWpScanItersLastKey(string sTag)
+{
+    return "al_cache_wp_scan_iters_last_" + sTag;
+}
+
+string AL_LookupWpScanItersTotalKey(string sTag)
+{
+    return "al_cache_wp_scan_iters_total_" + sTag;
+}
+
+string AL_LookupWpScanSecLastKey(string sTag)
+{
+    return "al_cache_wp_scan_sec_last_" + sTag;
+}
+
+string AL_LookupWpScanSecTotalKey(string sTag)
+{
+    return "al_cache_wp_scan_sec_total_" + sTag;
+}
+
+int AL_LookupAcquireTagScanBudget(object oArea)
+{
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nBudgetTick = GetLocalInt(oArea, "al_cache_wp_scan_budget_tick");
+    int nBudgetUsed = GetLocalInt(oArea, "al_cache_wp_scan_budget_used");
+    if (nBudgetTick != nSyncTick)
+    {
+        nBudgetTick = nSyncTick;
+        nBudgetUsed = 0;
+    }
+
+    int nRemaining = AL_LOOKUP_TAG_SCAN_BUDGET_PER_TICK - nBudgetUsed;
+    if (nRemaining < 0)
+    {
+        nRemaining = 0;
+    }
+
+    SetLocalInt(oArea, "al_cache_wp_scan_budget_tick", nBudgetTick);
+    SetLocalInt(oArea, "al_cache_wp_scan_budget_used", nBudgetUsed);
+    return nRemaining;
+}
+
+void AL_LookupConsumeTagScanBudget(object oArea, int nConsumed)
+{
+    if (nConsumed <= 0)
+    {
+        return;
+    }
+
+    int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
+    int nBudgetTick = GetLocalInt(oArea, "al_cache_wp_scan_budget_tick");
+    int nBudgetUsed = GetLocalInt(oArea, "al_cache_wp_scan_budget_used");
+    if (nBudgetTick != nSyncTick)
+    {
+        nBudgetTick = nSyncTick;
+        nBudgetUsed = 0;
+    }
+
+    nBudgetUsed = nBudgetUsed + nConsumed;
+    if (nBudgetUsed < 0)
+    {
+        nBudgetUsed = 0;
+    }
+
+    SetLocalInt(oArea, "al_cache_wp_scan_budget_tick", nBudgetTick);
+    SetLocalInt(oArea, "al_cache_wp_scan_budget_used", nBudgetUsed);
 }
 
 string AL_LookupWpTagEnumKey(int nIdx)
@@ -91,9 +180,16 @@ void AL_LookupClearTagCacheData(object oArea, string sTag, int bDeleteMark)
     DeleteLocalInt(oArea, AL_LookupWpCountKey(sTag));
     DeleteLocalInt(oArea, AL_LookupWpTickKey(sTag));
     DeleteLocalInt(oArea, AL_LookupWpCheckedTickKey(sTag));
+    DeleteLocalInt(oArea, AL_LookupWpBuildScanIdxKey(sTag));
+    DeleteLocalInt(oArea, AL_LookupWpBuildDoneKey(sTag));
+    DeleteLocalInt(oArea, AL_LookupWpBuildStartSecKey(sTag));
+    DeleteLocalInt(oArea, AL_LookupWpScanItersLastKey(sTag));
+    DeleteLocalInt(oArea, AL_LookupWpScanSecLastKey(sTag));
     if (bDeleteMark)
     {
         DeleteLocalInt(oArea, AL_LookupWpTagMarkKey(sTag));
+        DeleteLocalInt(oArea, AL_LookupWpScanItersTotalKey(sTag));
+        DeleteLocalInt(oArea, AL_LookupWpScanSecTotalKey(sTag));
     }
 }
 
@@ -147,17 +243,43 @@ void AL_LookupTrackTag(object oArea, string sTag)
 
 void AL_LookupBuildWaypointListCache(object oArea, string sTag)
 {
-    AL_LookupClearTagCacheData(oArea, sTag, FALSE);
-
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick");
-    int nFound = 0;
-    int nSearchIdx = 0;
+    int bBuildDone = GetLocalInt(oArea, AL_LookupWpBuildDoneKey(sTag));
+    int nSearchIdx = GetLocalInt(oArea, AL_LookupWpBuildScanIdxKey(sTag));
+    int nFound = GetLocalInt(oArea, AL_LookupWpCountKey(sTag));
 
-    while (TRUE)
+    if (bBuildDone > 0)
+    {
+        return;
+    }
+
+    if (nSearchIdx <= 0)
+    {
+        AL_LookupClearTagCacheData(oArea, sTag, FALSE);
+        nSearchIdx = 0;
+        nFound = 0;
+        SetLocalInt(oArea, AL_LookupWpBuildStartSecKey(sTag), AL_LookupNowSecondOfDay());
+    }
+
+    int nBudget = AL_LookupAcquireTagScanBudget(oArea);
+    int nIter = 0;
+
+    if (nBudget <= 0)
+    {
+        SetLocalInt(oArea, AL_LookupWpScanItersLastKey(sTag), 0);
+        SetLocalInt(oArea, AL_LookupWpScanSecLastKey(sTag), 0);
+        SetLocalInt(oArea, AL_LookupWpTickKey(sTag), 0);
+        AL_LookupTrackTag(oArea, sTag);
+        return;
+    }
+
+    while (nIter < nBudget)
     {
         object oCandidate = GetObjectByTag(sTag, nSearchIdx);
+        nIter = nIter + 1;
         if (!GetIsObjectValid(oCandidate))
         {
+            bBuildDone = TRUE;
             break;
         }
 
@@ -171,9 +293,40 @@ void AL_LookupBuildWaypointListCache(object oArea, string sTag)
         nFound = nFound + 1;
     }
 
+    AL_LookupConsumeTagScanBudget(oArea, nIter);
+    SetLocalInt(oArea, AL_LookupWpBuildScanIdxKey(sTag), nSearchIdx);
     SetLocalInt(oArea, AL_LookupWpCountKey(sTag), nFound);
-    SetLocalInt(oArea, AL_LookupWpTickKey(sTag), nSyncTick);
-    SetLocalInt(oArea, AL_LookupWpCheckedTickKey(sTag), nSyncTick);
+    SetLocalInt(oArea, AL_LookupWpBuildDoneKey(sTag), bBuildDone);
+    SetLocalInt(oArea, AL_LookupWpScanItersLastKey(sTag), nIter);
+    SetLocalInt(oArea, AL_LookupWpScanItersTotalKey(sTag), GetLocalInt(oArea, AL_LookupWpScanItersTotalKey(sTag)) + nIter);
+
+    int nElapsedSec = 0;
+    if (bBuildDone > 0)
+    {
+        int nStartSec = GetLocalInt(oArea, AL_LookupWpBuildStartSecKey(sTag));
+        if (nStartSec > 0)
+        {
+            nElapsedSec = AL_LookupNowSecondOfDay() - nStartSec;
+            if (nElapsedSec < 0)
+            {
+                nElapsedSec = nElapsedSec + 86400;
+            }
+        }
+    }
+
+    SetLocalInt(oArea, AL_LookupWpScanSecLastKey(sTag), nElapsedSec);
+    SetLocalInt(oArea, AL_LookupWpScanSecTotalKey(sTag), GetLocalInt(oArea, AL_LookupWpScanSecTotalKey(sTag)) + nElapsedSec);
+    if (bBuildDone > 0)
+    {
+        SetLocalInt(oArea, AL_LookupWpTickKey(sTag), nSyncTick);
+        SetLocalInt(oArea, AL_LookupWpCheckedTickKey(sTag), nSyncTick);
+    }
+    else
+    {
+        SetLocalInt(oArea, AL_LookupWpTickKey(sTag), 0);
+        DeleteLocalInt(oArea, AL_LookupWpCheckedTickKey(sTag));
+    }
+
     AL_LookupTrackTag(oArea, sTag);
 }
 
