@@ -75,4 +75,5 @@
 - Архитектура и поток исполнения: `docs/ARCHITECTURE.md`.
 - Технический паспорт: `docs/TECH_PASSPORT.md`.
 - Респаун города (диздок): `docs/NPC_RESPAWN_DESIGN.md`.
+- Все краткие дизайн-доки механик: `docs/MECHANICS_DESIGN_BRIEFS.md`.
 - Профилирование: `docs/PERF_RUNBOOK.md`.
