@@ -11,7 +11,9 @@
 3. **Route/transition/sleep/activity**
    - Файлы: `al_route_inc.nss`, `al_route_cache_inc.nss`, `al_route_runtime_api_inc.nss`, `al_transition_inc.nss`, `al_transition_post_area.nss`, `al_sleep_inc.nss`, `al_activity_inc.nss`, `al_acts_inc.nss`.
 4. **Reactive + city layer**
-   - Файлы: `al_blocked_inc.nss`, `al_react_inc.nss`, `al_city_registry_inc.nss`, `al_city_crime_inc.nss`, `al_city_alarm_inc.nss`.
+   - Файлы: `al_blocked_inc.nss`, `al_react_inc.nss`, `al_react_apply_step.nss`, `al_react_resume_reset.nss`, `al_city_registry_inc.nss`, `al_city_crime_inc.nss`, `al_city_alarm_inc.nss`, `al_city_population_inc.nss`, `al_health_inc.nss`.
+5. **Action wrappers и hook-скрипты NPC**
+   - Файлы: `al_action_signal_ud.nss`, `al_action_set_mode.nss`, `al_npc_onspawn.nss`, `al_npc_onud.nss`, `al_npc_onblocked.nss`, `al_npc_ondisturbed.nss`, `al_npc_ondamaged.nss`, `al_npc_onphysicalattacked.nss`, `al_npc_onspellcastat.nss`, `al_npc_ondeath.nss`.
 
 ## 2. Разработанные сценарии (runtime)
 
@@ -46,6 +48,11 @@
 - После активной тревоги система переводится в recovery-стадию.
 - Назначения/роли постепенно возвращаются в нормальный режим bounded-пачками.
 
+### 2.8 Сценарий population respawn
+- На `OnSpawn/OnDeath` поддерживаются alive/target/deficit счётчики city population runtime.
+- Респаун выполняется только для unnamed-дефицита, с cooldown, budget и safe-distance ограничениями.
+- Materialization и respawn разведены по разным контурам, чтобы не нарушать bounded-профиль.
+
 ## 3. Алгоритмы и стратегии (что реально используется)
 
 1. **Bounded dispatch queue**
@@ -73,7 +80,7 @@
 
 ## 5. Механики: статус синхронизации
 
-- **Реализованы:** lifecycle, registry/dispatch, route-cache, routine, transition, sleep, activity, blocked/disturbed, локальный city crime/alarm.
+- **Реализованы:** lifecycle, registry/dispatch, route-cache, routine, transition, sleep, activity, blocked/disturbed, локальный city crime/alarm, population respawn и runtime health checks.
 - **Подготовлены hooks:** legal followup marker (`al_legal_followup_pending`).
 - **Не завершены (Stage I.3):** reinforcement policy, surrender/arrest/trial pipeline, расширенный legal smoke контур.
 
