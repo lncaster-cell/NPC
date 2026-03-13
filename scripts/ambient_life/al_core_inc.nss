@@ -8,6 +8,7 @@
 #include "al_react_inc"
 #include "al_blocked_inc"
 #include "al_city_crime_inc"
+#include "al_city_population_inc"
 
 void AL_NpcHandleResync(object oNpc)
 {
@@ -157,6 +158,7 @@ void AL_OnNpcUserDefined(object oNpc)
 
 void AL_OnNpcSpawn(object oNpc)
 {
+    AL_CityPopulationOnNpcSpawn(oNpc);
     AL_RegisterNPC(oNpc);
 
     object oArea = GetArea(oNpc);
@@ -174,6 +176,7 @@ void AL_OnNpcSpawn(object oNpc)
 
 void AL_OnNpcDeath(object oNpc)
 {
+    AL_CityPopulationOnNpcDeath(oNpc);
     AL_CityCrimeOnDeath(oNpc);
     AL_UnregisterNPC(oNpc);
 }
