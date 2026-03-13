@@ -63,8 +63,8 @@
 - Поведение воспроизводимо в smoke-тестах.
 
 ## M-04 Population respawn policy (после выбытия)
-**Статус:** Planned / частично описано в механиках  
-**Опора в текущем runtime:** требования к bounded-поведениям и city-role контекст.
+**Статус:** In progress (core runtime реализован, нужен QA/perf контур)  
+**Опора в текущем runtime:** `al_city_population_inc.nss`, area tick integration, NPC spawn/death hooks.
 
 **Планируемое поведение**
 1. Респаун отделён от обычного route loop.
@@ -76,6 +76,9 @@
 - Нет массовых всплесков при множественных выбываниях.
 - Новые NPC корректно входят в registry и routine slot flow.
 - Есть preflight-проверка валидности точек респауна.
+- Есть отдельный операторский smoke-check и perf-замер S80/S100/S120 для respawn-нагрузки.
+
+См. детальное описание: `docs/10_NPC_RESPAWN_MECHANICS.md`.
 
 ## M-05 Legal/Reinforcement QA smoke pack
 **Статус:** Planned  
