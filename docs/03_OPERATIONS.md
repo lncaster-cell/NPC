@@ -15,7 +15,6 @@ Baseline и шаблоны отчётов:
 - `docs/perf/baselines/s80_s100_s120_baseline.csv`
 - `docs/perf/baselines/s80_s100_s120_baseline.md`
 - `docs/perf/baselines/perf_gate_report_template.csv`
-- `docs/perf/baselines/perf_gate_report_template.json`
 - `docs/perf/baselines/README.md`
 
 ## 2. Обязательные метрики
@@ -44,8 +43,6 @@ Baseline и шаблоны отчётов:
 - выявления WARN/ERROR до релиза.
 
 Примеры формата:
-- `docs/LINKED_PREFLIGHT_EXAMPLES_PASS.json`
-- `docs/LINKED_PREFLIGHT_EXAMPLES_FAIL.json`
 
 ## 5. Sleep markup — контентный минимум
 Для sleep-step задавайте:
