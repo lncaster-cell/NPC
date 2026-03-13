@@ -14,7 +14,7 @@
 3. Расширение последствий crime incidents без усложнения до «giant diplomacy simulator».
 4. QA smoke для legal/reinforcement цепочки.
 
-Источник: `docs/IMPLEMENTATION_ROADMAP.md`.
+Источник: `docs/01_PROJECT_OVERVIEW.md`, `docs/08_STAGE_I3_TRACKER.md`.
 
 ## Лист активностей
 
@@ -34,6 +34,9 @@
 - Эксплуатация и валидация: `docs/03_OPERATIONS.md`
 - Контракт контента: `docs/04_CONTENT_CONTRACTS.md`
 - Статус-аудит (что реализовано/что планируется): `docs/05_STATUS_AUDIT.md`
+- Инварианты и принципы системы: `docs/06_SYSTEM_INVARIANTS.md`
+- Каталог сценариев/алгоритмов/механик: `docs/07_SCENARIOS_AND_ALGORITHMS.md`
+- Трекер Stage I.3 (legal/reinforcement): `docs/08_STAGE_I3_TRACKER.md`
 - Perf baselines и шаблоны отчётов: `docs/perf/baselines/*`
 
 ## Ограничение для аудитов и инспекций
