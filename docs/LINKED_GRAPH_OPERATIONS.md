@@ -1,6 +1,6 @@
 # Linked Areas: operator guide (`al_link_*`) and warm-policy
-<!-- DOCSYNC:2026-03-12 -->
-> Documentation sync: 2026-03-12. This file was reviewed and aligned with the current repository structure.
+<!-- DOCSYNC:2026-03-13 -->
+> Documentation sync: 2026-03-13. This file was reviewed and aligned with the current repository structure.
 
 
 Документ фиксирует практические правила для контент-команды и операторов по настройке linked-графа area и контролю warm-retention.
@@ -92,27 +92,18 @@
    - снизить степень центральных хабов.
 
 
-## 6) Offline preflight validator (`al_link_preflight.py`)
+## 6) Offline preflight linked-графа (внешний инструмент команды)
 
-Перед rollout изменений linked-графа запускайте сервисный валидатор:
+Python-валидатор `al_link_preflight.py` удалён из этого репозитория. Для linked-графа используйте внешний preflight-инструмент команды с теми же правилами проверки и policy-уровнями (`ERROR/WARN`).
 
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_ok.json --format text
-```
+Эталонные входные примеры для smoke-проверок сохранены в репозитории:
 
-JSON-режим (для CI/автоматизации):
+- `docs/LINKED_PREFLIGHT_EXAMPLES_PASS.json`
+- `docs/LINKED_PREFLIGHT_EXAMPLES_FAIL.json`
+- `scripts/ambient_life/test_al_link_preflight_ok.json`
+- `scripts/ambient_life/test_al_link_preflight_invalid.json`
 
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_ok.json --format json
-```
-
-Пример smoke-проверки с ошибками (ожидаем `exit code 1`):
-
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input scripts/ambient_life/test_al_link_preflight_invalid.json --format text
-```
-
-Что проверяется:
+Что обязан проверять внешний preflight:
 
 - валидность `al_link_count`;
 - диапазон индексов `al_link_0..al_link_{count-1}` и отсутствие «вне диапазона»;
@@ -125,16 +116,3 @@ Policy уровней нарушений (merge gate):
 
 - **ERROR (merge-blocking):** `self_link`, `duplicate_links`, `symmetry_mismatch`, `unknown_link_target`, `degree_exceeds_hub_max`, а также структурные ошибки (`invalid_link_count`, `missing_link_slot`, `invalid_link_slot_*`, `invalid_locals_type`).
 - **WARN (не блокирует merge автоматически, но требует операторского решения):** `degree_below_target`, `degree_above_target` в пределах hard-max.
-
-Операторские примеры входа (`docs/`):
-
-```bash
-python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_PASS.json --format text
-python3 scripts/ambient_life/al_link_preflight.py --input docs/LINKED_PREFLIGHT_EXAMPLES_FAIL.json --format text
-```
-
-Коды завершения:
-
-- `0` — ошибок нет (warnings допустимы);
-- `1` — обнаружены ошибки в linked-графе (rollout блокируется);
-- `2` — фатальная ошибка чтения/формата входного JSON.
