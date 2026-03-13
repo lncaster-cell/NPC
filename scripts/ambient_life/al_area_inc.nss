@@ -772,14 +772,6 @@ void AL_ScheduleAreaTick(object oArea, int nToken)
     DelayCommand(AL_AREA_TICK_SEC, AL_RunScheduledAreaTick(oArea, nToken));
 }
 
-void AL_RunScheduledAreaTick(object oArea, int nToken)
-{
-    // Marker lifecycle: wrapper sets scheduler-origin marker just for this call and always clears it afterwards.
-    SetLocalInt(oArea, AL_TICK_SCHED_MARKER_LOCAL, TRUE);
-    AL_AreaTick(oArea, nToken);
-    DeleteLocalInt(oArea, AL_TICK_SCHED_MARKER_LOCAL);
-}
-
 void AL_AreaActivate(object oArea)
 {
     int nTier = AL_ResolveAreaTier(oArea);
