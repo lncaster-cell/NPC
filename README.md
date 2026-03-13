@@ -37,6 +37,7 @@
 - Инварианты и принципы системы: `docs/06_SYSTEM_INVARIANTS.md`
 - Каталог сценариев/алгоритмов/механик: `docs/07_SCENARIOS_AND_ALGORITHMS.md`
 - Трекер Stage I.3 (legal/reinforcement): `docs/08_STAGE_I3_TRACKER.md`
+- Восстановленные планируемые механизмы: `docs/09_PLANNED_MECHANISMS_RESTORED.md`
 - Perf baselines и шаблоны отчётов: `docs/perf/baselines/*`
 
 ## Ограничение для аудитов и инспекций

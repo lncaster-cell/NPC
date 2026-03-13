@@ -32,3 +32,8 @@ Stage I.3 продолжает Stage I.2 и добавляет legal/reinforceme
 
 1. `docs/09_LEGAL_REINFORCEMENT_SMOKE.md` — сценарии и чек-лист QA.
 2. `docs/10_DECISIONS_LOG.md` — фиксирование архитектурных решений/компромиссов.
+
+## 6. Детализация механизмов Stage I.3
+
+Подробная восстановленная спецификация планируемых механизмов вынесена в:  
+`docs/09_PLANNED_MECHANISMS_RESTORED.md`.
