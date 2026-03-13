@@ -32,7 +32,8 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeK
 void AL_ReactResumeOrResetOnSelf();
 void AL_ReactFinishCreature(object oNpc);
 void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurSec);
-int AL_ReactTypeFromCrimeKind(int nCrimeKind);
+
+// Migration note: legacy `al_safe_wp_cache` contract removed in favor of tick-scoped safe lookup cache.
 
 void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurSec)
 {

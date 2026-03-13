@@ -8,7 +8,8 @@
 string AL_RouteRtActiveKey() { return "al_route_rt_active"; }
 string AL_RouteRtIdxKey() { return "al_route_rt_idx"; }
 string AL_RouteRtLeftKey() { return "al_route_rt_left"; }
-string AL_RouteRtCycleKey() { return "al_route_rt_cycle"; }
+// Migration note: legacy `al_route_rt_cycle` runtime key contract removed (unused counter).
+// Consumers should rely on `al_route_rt_active` + `al_route_rt_idx` + `al_route_rt_left`.
 
 void AL_RouteRuntimeClear(object oNpc)
 {
@@ -309,7 +310,6 @@ void AL_RouteRoutineStart(object oNpc, int nSlot, int bForceRebuild)
     AL_RouteBlockedRuntimeReset(oNpc);
 
     SetLocalInt(oNpc, AL_RouteRtLeftKey(), nSteps);
-    SetLocalInt(oNpc, AL_RouteRtCycleKey(), GetLocalInt(oNpc, AL_RouteRtCycleKey()) + 1);
 
     if (!AL_RouteQueueStep(oNpc, 0))
     {
