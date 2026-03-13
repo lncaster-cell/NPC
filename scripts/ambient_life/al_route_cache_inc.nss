@@ -387,11 +387,7 @@ void AL_RouteInvalidateAreaCache(object oArea, string sRouteTag)
     SetLocalInt(oArea, AL_RouteAreaCacheStepsKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaCacheTickKey(sRouteTag), 0);
     SetLocalInt(oArea, AL_RouteAreaRebuildCooldownUntilKey(sRouteTag), 0);
-    DeleteLocalInt(oArea, AL_RouteAreaFingerprintKey(sRouteTag));
-    DeleteLocalInt(oArea, AL_RouteAreaFingerprintTickKey(sRouteTag));
-    DeleteLocalInt(oArea, AL_RouteAreaFingerprintValueKey(sRouteTag));
-    DeleteLocalInt(oArea, AL_RouteAreaContentVersionKey(sRouteTag));
-    DeleteLocalInt(oArea, AL_RouteAreaCandidateCountKey(sRouteTag));
+    AL_LookupInvalidateRouteRebuildCache(oArea, sRouteTag);
     DeleteLocalInt(oArea, AL_RouteAreaFailTickKey(sRouteTag));
     if (bHadCache)
     {

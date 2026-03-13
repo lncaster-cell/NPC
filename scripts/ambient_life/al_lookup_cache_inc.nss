@@ -62,15 +62,38 @@ string AL_LookupRouteFingerprintValueKey(string sTag)
     return "al_route_fp_value_" + sTag;
 }
 
-void AL_LookupInvalidateRouteFingerprintCache(object oArea, string sTag)
+string AL_LookupRouteAreaFingerprintKey(string sTag)
+{
+    return "al_route_area_fingerprint_" + sTag;
+}
+
+string AL_LookupRouteAreaContentVersionKey(string sTag)
+{
+    return "al_route_area_content_ver_" + sTag;
+}
+
+string AL_LookupRouteAreaCandidateCountKey(string sTag)
+{
+    return "al_route_area_candidate_count_" + sTag;
+}
+
+void AL_LookupInvalidateRouteRebuildCache(object oArea, string sTag)
 {
     if (sTag == "")
     {
         return;
     }
 
+    DeleteLocalInt(oArea, AL_LookupRouteAreaFingerprintKey(sTag));
+    DeleteLocalInt(oArea, AL_LookupRouteAreaContentVersionKey(sTag));
+    DeleteLocalInt(oArea, AL_LookupRouteAreaCandidateCountKey(sTag));
     DeleteLocalInt(oArea, AL_LookupRouteFingerprintTickKey(sTag));
     DeleteLocalInt(oArea, AL_LookupRouteFingerprintValueKey(sTag));
+}
+
+void AL_LookupInvalidateRouteFingerprintCache(object oArea, string sTag)
+{
+    AL_LookupInvalidateRouteRebuildCache(oArea, sTag);
 }
 
 void AL_LookupClearTagCacheData(object oArea, string sTag, int bDeleteMark)
@@ -107,7 +130,7 @@ void AL_LookupResetAreaCache(object oArea)
         if (sTag != "")
         {
             AL_LookupClearTagCacheData(oArea, sTag, TRUE);
-            AL_LookupInvalidateRouteFingerprintCache(oArea, sTag);
+            AL_LookupInvalidateRouteRebuildCache(oArea, sTag);
         }
         DeleteLocalString(oArea, AL_LookupWpTagEnumKey(i));
         i = i + 1;
@@ -198,7 +221,7 @@ void AL_LookupSoftInvalidateAreaCache(object oArea, string sReason, string sRout
     if (sReason == AL_LOOKUP_INVALIDATE_REASON_ROUTE && sRouteTag != "")
     {
         AL_LookupInvalidateTagCache(oArea, sRouteTag);
-        AL_LookupInvalidateRouteFingerprintCache(oArea, sRouteTag);
+        AL_LookupInvalidateRouteRebuildCache(oArea, sRouteTag);
         return;
     }
 
@@ -216,7 +239,7 @@ void AL_LookupSoftInvalidateAreaCache(object oArea, string sReason, string sRout
         if (sTag != "")
         {
             AL_LookupInvalidateTagCache(oArea, sTag);
-            AL_LookupInvalidateRouteFingerprintCache(oArea, sTag);
+            AL_LookupInvalidateRouteRebuildCache(oArea, sTag);
         }
         i = i + 1;
     }
