@@ -4,6 +4,7 @@
 #include "al_area_inc"
 #include "al_activity_inc"
 #include "al_events_inc"
+#include "al_route_runtime_api_inc"
 
 const int AL_REACT_TYPE_NONE = 0;
 const int AL_REACT_TYPE_ADDED = 1;
@@ -23,11 +24,6 @@ const int AL_NPC_ROLE_GUARD = 2;
 const int AL_CRIME_DEBOUNCE_TICKS = 2;
 const float AL_LOCAL_ALARM_RADIUS = 18.0;
 const int AL_LOCAL_ALARM_MAX_RESPONDERS = 8;
-
-// Route runtime hooks consumed by Stage I.1 reaction layer.
-string AL_RouteRtActiveKey();
-int AL_RouteRoutineResumeCurrent(object oNpc);
-void AL_RouteBlockedRuntimeReset(object oNpc);
 
 // Local helper forward declarations used by bounded alarm fan-out path.
 int AL_ReactShouldOverrideRoutine(object oActor);
@@ -672,7 +668,7 @@ int AL_ReactShouldOverrideRoutine(object oActor)
         return FALSE;
     }
 
-    return GetLocalInt(oActor, AL_RouteRtActiveKey());
+    return AL_RouteRuntimeIsActive(oActor);
 }
 
 void AL_ReactRuntimeClear(object oActor)
@@ -761,9 +757,9 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeK
 
 void AL_ReactResumeOrResetOnSelf()
 {
-    if (!AL_RouteRoutineResumeCurrent(OBJECT_SELF))
+    if (!AL_RouteRuntimeResumeSafe(OBJECT_SELF))
     {
-        AL_RouteBlockedRuntimeReset(OBJECT_SELF);
+        AL_RouteRuntimeResetSafe(OBJECT_SELF);
         SignalEvent(OBJECT_SELF, EventUserDefined(AL_EVENT_RESYNC));
     }
 }
