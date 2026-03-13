@@ -4,7 +4,7 @@
 #include "al_area_inc"
 #include "al_activity_inc"
 #include "al_events_inc"
-#include "al_route_runtime_api_inc"
+#include "al_city_crime_inc"
 
 const int AL_REACT_TYPE_NONE = 0;
 const int AL_REACT_TYPE_ADDED = 1;
@@ -821,6 +821,8 @@ void AL_OnDisturbed(object oActor)
     int nCrimeKind = AL_ReactClassifyCrime(oActor, nReactType, oSource, oItem);
     int nRole = AL_ReactGetNpcRole(oActor);
     nCrimeKind = AL_ReactPromoteByRole(nCrimeKind, nRole);
+
+    AL_CityCrimeOnDisturbed(oActor, oSource, nReactType, nCrimeKind);
 
     // Debounce/alarm fan-out uses the already-classified crime kind and does not
     // re-evaluate witness criteria; this keeps THEFT/SUSPICIOUS transitions predictable.

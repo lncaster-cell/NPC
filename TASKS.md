@@ -18,6 +18,8 @@
 
 ## P2
 
+- [x] Stage I.3 (Phase 1 foundation): city registry + city alarm FSM + initial city crime producers integrated additively over existing area runtime.
+
 ### High-impact perf (queue/overflow/drain/registry)
 
 - [ ] Dispatch queue: снизить пиковую `al_dispatch_q_len` в S100/S120 без роста latency drain.

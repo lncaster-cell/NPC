@@ -185,3 +185,23 @@ python3 scripts/ambient_life/al_locals_preflight.py --input <locals.json>
 Интерпретация:
 - `ERROR` — блокирующая проблема контента (CI/preflight должен падать).
 - `WARN` — неблокирующее отклонение/legacy-конфиг, требующее ревью контент-командой.
+
+
+## City layer (Phase 1)
+
+### Area content locals
+- `al_city_id` (string) — city cluster id for district membership.
+- `al_city_district_type` (int) — `1` interior, `2` exterior.
+- `al_is_interior` (int, legacy/content helper) — if `1`, district defaults to interior when `al_city_district_type` absent.
+- Optional city points (tag locals on area): `al_city_bell_tag`, `al_city_arsenal_tag`, `al_city_shelter_tag`, `al_city_war_post_tag_<idx>`, `al_city_war_post_count`.
+
+### Runtime locals (do not edit manually)
+- On module (city-keyed): `al_city_<city_id>_district_count`, `..._district_<idx>`, `..._enemy_count`, `..._enemy_<idx>`, `..._alarm_state`, `..._active_crime_case_id`, `..._active_alarm_case_id`.
+- On area: `al_city_alarm_desired_state`, `al_city_alarm_live_state`, `al_city_last_case_id`, `al_city_last_case_kind`, `al_city_hidden_case_pending`.
+
+### NPC event hooks (Phase 1 producers)
+- `OnDisturbed` -> theft producer (existing `al_npc_ondisturbed`).
+- `OnPhysicalAttacked` -> assault producer (`al_npc_onphysicalattacked`).
+- `OnDamaged` -> violent confirmation/escalation (`al_npc_ondamaged`).
+- `OnDeath` -> murder/hidden murder producer (existing `al_npc_ondeath`).
+- `OnSpellCastAt` -> hostile magic incident (`al_npc_onspellcastat`).
