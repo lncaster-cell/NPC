@@ -61,6 +61,12 @@
   - debounce anti-spam для повторных `OnDisturbed` инцидентов (actor-local + area-local);
   - bounded локальный fan-out на nearby NPC текущей area (без world scan/spawn).
 
+- I.3: city-layer foundation поверх area-runtime (Phase 1):
+  - city registry (`al_city_registry_inc`) с district membership/type и city-level active case refs;
+  - city alarm FSM (`IDLE/PENDING_ALARM/ACTIVE_ALARM/CLEARING/RECOVERY`) в `al_city_alarm_inc`;
+  - city crime producer/controller split в `al_city_crime_inc` с отдельными crime kinds (`THEFT/ASSAULT/MURDER/HIDDEN_MURDER/DISCOVERED_MURDER`);
+  - hot-only live alarm materialization для district runtime + desired-state locals для non-HOT district.
+
 ## 4. Event bus
 
 - Slot events: `3100..3105`

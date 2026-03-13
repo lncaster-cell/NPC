@@ -62,7 +62,10 @@
 | NPC `OnDeath` | `al_npc_ondeath` | NPC снимается с активного runtime-учёта area. |
 | NPC `OnUserDefined` | `al_npc_onud` | Обрабатываются события шины `AL_EVENT_SLOT_0..5`, `AL_EVENT_RESYNC`, `AL_EVENT_ROUTE_REPEAT`, `AL_EVENT_BLOCKED_RESUME`. |
 | NPC `OnBlocked` | `al_npc_onblocked` | bounded blocked-recovery без разрыва основного route-loop. |
-| NPC `OnDisturbed` | `al_npc_ondisturbed` | bounded disturbed-reaction c возвратом в routine. |
+| NPC `OnDisturbed` | `al_npc_ondisturbed` | bounded disturbed-reaction c возвратом в routine + theft producer для city-crime. |
+| NPC `OnPhysicalAttacked` | `al_npc_onphysicalattacked` | city-crime assault producer (city alarm escalation). |
+| NPC `OnDamaged` | `al_npc_ondamaged` | city-crime violent confirmation/escalation producer. |
+| NPC `OnSpellCastAt` | `al_npc_onspellcastat` | city-crime hostile magic producer. |
 
 ### 2.4 NPC (Свойства NPC → Scripts)
 
@@ -73,6 +76,9 @@
 | `OnUserDefined` | `al_npc_onud` |
 | `OnBlocked` | `al_npc_onblocked` |
 | `OnDisturbed` | `al_npc_ondisturbed` |
+| `OnPhysicalAttacked` | `al_npc_onphysicalattacked` |
+| `OnDamaged` | `al_npc_ondamaged` |
+| `OnSpellCastAt` | `al_npc_onspellcastat` |
 
 ---
 

@@ -7,6 +7,7 @@
 #include "al_sleep_inc"
 #include "al_react_inc"
 #include "al_blocked_inc"
+#include "al_city_crime_inc"
 
 void AL_NpcHandleResync(object oNpc)
 {
@@ -106,7 +107,23 @@ void AL_OnNpcSpawn(object oNpc)
 
 void AL_OnNpcDeath(object oNpc)
 {
+    AL_CityCrimeOnDeath(oNpc);
     AL_UnregisterNPC(oNpc);
+}
+
+void AL_OnNpcPhysicalAttacked(object oNpc)
+{
+    AL_CityCrimeOnPhysicalAttacked(oNpc);
+}
+
+void AL_OnNpcDamaged(object oNpc)
+{
+    AL_CityCrimeOnDamaged(oNpc);
+}
+
+void AL_OnNpcSpellCastAt(object oNpc)
+{
+    AL_CityCrimeOnSpellCastAt(oNpc);
 }
 
 void AL_OnAreaTickBootstrap(object oArea)
