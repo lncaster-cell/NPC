@@ -2,17 +2,28 @@
 
 const int AL_ROUTE_REBUILD_FAIL_COOLDOWN_TICKS = 2;
 
+// Authoritative route-area cache cardinality: number of contiguous step waypoints cached per route tag.
 string AL_RouteAreaCacheStepsKey(string sRouteTag) { return "al_route_area_steps_" + sRouteTag; }
+// Authoritative route-area cache build tick for TTL / freshness decisions.
 string AL_RouteAreaCacheTickKey(string sRouteTag) { return "al_route_area_tick_" + sRouteTag; }
+// Authoritative route-area step slots, indexed by normalized AL step order.
 string AL_RouteAreaStepKey(string sRouteTag, int nIdx) { return "al_route_area_step_" + sRouteTag + "_" + IntToString(nIdx); }
+// Authoritative rebuild backoff barrier after failed rebuild attempts.
 string AL_RouteAreaRebuildCooldownUntilKey(string sRouteTag) { return "al_route_area_rebuild_cooldown_until_" + sRouteTag; }
+// Authoritative route-area fingerprint used to validate cached steps without full rebuild.
 string AL_RouteAreaFingerprintKey(string sRouteTag) { return "al_route_area_fingerprint_" + sRouteTag; }
+// Authoritative content version snapshot paired with cached route data.
 string AL_RouteAreaContentVersionKey(string sRouteTag) { return "al_route_area_content_ver_" + sRouteTag; }
+// Authoritative candidate-count snapshot used as a cheap route-change trigger.
 string AL_RouteAreaCandidateCountKey(string sRouteTag) { return "al_route_area_candidate_count_" + sRouteTag; }
+// Authoritative producer for `al_route_fp_*`: stores sync tick of last computed route fingerprint.
 string AL_RouteAreaFingerprintTickKey(string sRouteTag) { return "al_route_fp_tick_" + sRouteTag; }
+// Authoritative producer for `al_route_fp_*`: stores fingerprint value for the corresponding sync tick.
 string AL_RouteAreaFingerprintValueKey(string sRouteTag) { return "al_route_fp_value_" + sRouteTag; }
 
+// Authoritative last-fail tick for anti-thrash rebuild cooldown policy.
 string AL_RouteAreaFailTickKey(string sRouteTag) { return "al_route_area_fail_tick_" + sRouteTag; }
+// Authoritative per-tag pending marker when rebuild is deferred by per-tick budget.
 string AL_RouteAreaPendingKey(string sRouteTag) { return "al_route_area_pending_" + sRouteTag; }
 
 int AL_RouteCanRebuildThisTick(object oArea)

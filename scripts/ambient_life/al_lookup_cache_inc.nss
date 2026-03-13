@@ -52,6 +52,8 @@ string AL_LookupWpTagMarkKey(string sTag)
     return "al_cache_wp_tag_mark_" + sTag;
 }
 
+// Migration note: key namespace `al_route_fp_*` is authored by route cache helpers
+// (`AL_RouteAreaFingerprintTickKey/ValueKey` in al_route_cache_inc); lookup cache only invalidates it.
 string AL_LookupRouteFingerprintTickKey(string sTag)
 {
     return "al_route_fp_tick_" + sTag;
