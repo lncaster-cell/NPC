@@ -50,6 +50,22 @@ void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurS
     AssignCommand(oNpc, ActionDoCommand(ExecuteScript("al_react_apply_step", OBJECT_SELF)));
 }
 
+const string AL_REACT_SAFE_WP_TAG_KEY = "al_safe_wp_tag";
+const string AL_REACT_SAFE_WP_MARKER_KEY = "al_is_safe_wp";
+const string AL_REACT_SAFE_WP_LEGACY_KEY = "al_safe_wp";
+const string AL_REACT_SAFE_WP_LEGACY_FLAG = "al_ff_legacy_safe_wp_fallback";
+
+int AL_ReactLegacySafeWpFallbackEnabled()
+{
+    return GetLocalInt(GetModule(), AL_REACT_SAFE_WP_LEGACY_FLAG) == TRUE;
+}
+
+void AL_ReactRecordLegacySafeWpFallbackHit(string sMetricKey)
+{
+    object oModule = GetModule();
+    SetLocalInt(oModule, sMetricKey, GetLocalInt(oModule, sMetricKey) + 1);
+}
+
 string AL_ReactNpcSafeWaypointTag(object oNpc)
 {
     if (!GetIsObjectValid(oNpc))
@@ -57,13 +73,23 @@ string AL_ReactNpcSafeWaypointTag(object oNpc)
         return "";
     }
 
-    string sSafeTag = GetLocalString(oNpc, "al_safe_wp_tag");
+    string sSafeTag = GetLocalString(oNpc, AL_REACT_SAFE_WP_TAG_KEY);
     if (sSafeTag != "")
     {
         return sSafeTag;
     }
 
-    return GetLocalString(oNpc, "al_safe_wp");
+    if (AL_ReactLegacySafeWpFallbackEnabled())
+    {
+        string sLegacySafeTag = GetLocalString(oNpc, AL_REACT_SAFE_WP_LEGACY_KEY);
+        if (sLegacySafeTag != "")
+        {
+            AL_ReactRecordLegacySafeWpFallbackHit("al_safe_wp_legacy_tag_fallback_hits");
+            return sLegacySafeTag;
+        }
+    }
+
+    return "";
 }
 
 int AL_ReactIsSafeWaypoint(object oWaypoint)
@@ -73,14 +99,15 @@ int AL_ReactIsSafeWaypoint(object oWaypoint)
         return FALSE;
     }
 
-    if (GetLocalInt(oWaypoint, "al_is_safe_wp") == TRUE)
+    if (GetLocalInt(oWaypoint, AL_REACT_SAFE_WP_MARKER_KEY) == TRUE)
     {
         return TRUE;
     }
 
-    // Legacy fallback marker used by older scenes.
-    if (GetLocalInt(oWaypoint, "al_safe_wp") == TRUE)
+    // Temporary migration fallback: legacy marker support is controlled by feature-flag.
+    if (AL_ReactLegacySafeWpFallbackEnabled() && GetLocalInt(oWaypoint, AL_REACT_SAFE_WP_LEGACY_KEY) == TRUE)
     {
+        AL_ReactRecordLegacySafeWpFallbackHit("al_safe_wp_legacy_marker_fallback_hits");
         return TRUE;
     }
 
@@ -152,6 +179,8 @@ object AL_ReactFindNearestSafeWaypoint(object oNpc)
                 return oWaypoint;
             }
 
+            // Temporary compatibility fallback for scenes without explicit safe marker keys.
+            // Remove after migration to AL_REACT_SAFE_WP_MARKER_KEY is complete.
             string sTag = GetTag(oWaypoint);
             if (FindSubString(sTag, "safe") >= 0 || FindSubString(sTag, "SAFE") >= 0)
             {
