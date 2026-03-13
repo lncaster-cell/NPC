@@ -197,11 +197,19 @@ python3 scripts/ambient_life/al_locals_preflight.py --input <locals.json>
 
 ### Runtime locals (do not edit manually)
 - On module (city-keyed): `al_city_<city_id>_district_count`, `..._district_<idx>`, `..._enemy_count`, `..._enemy_<idx>`, `..._alarm_state`, `..._active_crime_case_id`, `..._active_alarm_case_id`.
-- On area: `al_city_alarm_desired_state`, `al_city_alarm_live_state`, `al_city_last_case_id`, `al_city_last_case_kind`, `al_city_hidden_case_pending`.
+- On area: `al_city_alarm_desired_state`, `al_city_alarm_live_state`, `al_city_alarm_pending_started_tick`, `al_city_alarm_bell_on_running`, `al_city_alarm_rt_cursor`, `al_city_last_case_id`, `al_city_last_case_kind`, `al_city_hidden_case_pending`.
+- On area (war-post runtime): `al_city_war_post_occ_count_<idx>`, `al_city_war_post_occ_<idx>_<slot>`; capacity is fixed to 5 per post.
+- On NPC (alarm runtime): `al_city_alarm_assignment`, `al_city_alarm_assignment_target`, `al_city_alarm_post_idx`, `al_city_alarm_loadout_active`, `al_city_alarm_materialized_sheltered`.
 
-### NPC event hooks (Phase 1 producers)
-- `OnDisturbed` -> theft producer (existing `al_npc_ondisturbed`).
-- `OnPhysicalAttacked` -> assault producer (`al_npc_onphysicalattacked`).
-- `OnDamaged` -> violent confirmation/escalation (`al_npc_ondamaged`).
-- `OnDeath` -> murder/hidden murder producer (existing `al_npc_ondeath`).
-- `OnSpellCastAt` -> hostile magic incident (`al_npc_onspellcastat`).
+### NPC event hooks (crime producers + alarm assignments)
+- Producers:
+  - `OnDisturbed` -> theft producer (existing `al_npc_ondisturbed`).
+  - `OnPhysicalAttacked` -> assault producer (`al_npc_onphysicalattacked`).
+  - `OnDamaged` -> violent confirmation/escalation (`al_npc_ondamaged`).
+  - `OnDeath` -> murder/hidden murder producer (existing `al_npc_ondeath`).
+  - `OnSpellCastAt` -> hostile magic incident (`al_npc_onspellcastat`).
+- Internal UD assignment delivery (city alarm only):
+  - `AL_EVENT_CITY_ASSIGN_GO_SHELTER` (`go_shelter`)
+  - `AL_EVENT_CITY_ASSIGN_GO_ARSENAL` (`go_arsenal`)
+  - `AL_EVENT_CITY_ASSIGN_HOLD_WAR_POST` (`hold_war_post`)
+  - `AL_EVENT_CITY_ASSIGN_ALARM_RECOVERY` (`alarm_recovery`)

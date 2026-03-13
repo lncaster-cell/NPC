@@ -4,6 +4,7 @@
 #include "al_registry_inc"
 #include "al_dispatch_inc"
 #include "al_city_registry_inc"
+#include "al_city_alarm_inc"
 
 const float AL_AREA_TICK_SEC = 30.0;
 const int AL_SIM_TIER_FREEZE = 0;
@@ -777,6 +778,7 @@ void AL_ScheduleAreaTick(object oArea, int nToken)
 void AL_AreaActivate(object oArea)
 {
     AL_CityRegistryEnsureDistrict(oArea);
+    AL_CityAlarmOnAreaActivated(oArea);
 
     int nTier = AL_ResolveAreaTier(oArea);
     AL_AreaSetTier(oArea, nTier);
@@ -823,6 +825,7 @@ void AL_AreaTick(object oArea, int nToken)
     {
         AL_MarkAreaWarm(oArea);
         AL_RefreshLinkedAreasWarmth(oArea);
+        AL_CityAlarmRuntimeTickHot(oArea);
     }
 
     if (nTier == AL_SIM_TIER_HOT)

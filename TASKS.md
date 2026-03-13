@@ -65,3 +65,12 @@
    - при `WARN`: зафиксировать инцидент в отчёте, приложить delta и повторить замер на ещё одном 20-тиковом окне для подтверждения;
    - при `CRITICAL` по любой метрике или при любом росте `*_overflow*`: остановить rollout/мердж, открыть follow-up (route/registry/dispatcher triage), приложить логи `[AL][AreaHealthDelta]` и значения до/после.
 6. Для debug-анализа смотрите module log: `[AL][AreaHealthDelta]` пишется только при изменении ключевых метрик.
+
+
+## Phase 3 follow-ups (city/legal)
+
+- [ ] Investigators/searchers runtime for open/latent city cases.
+- [ ] Arrest/surrender/jail/court chain (legal follow-up execution).
+- [ ] Hidden murder discovery runtime (in-world discovery, no offscreen fake reveal).
+- [ ] OnPerception-driven reacquire/search hooks for post-loss hostile targets.
+- [ ] Diplomacy/legal history layer for case outcomes and faction/legal memory.

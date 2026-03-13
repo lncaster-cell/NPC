@@ -76,6 +76,19 @@ void AL_CityCrimeOpenTheft(object oArea, object oSource)
     AL_CityCrimeOpenCase(oArea, oSource, AL_CITY_CRIME_THEFT, AL_CITY_CASE_STATUS_OPEN);
 }
 
+
+void AL_CityCrimeEscalateAlarm(object oArea, int nCaseId, object oSource)
+{
+    int nAlarmState = AL_CityAlarmGetState(oArea);
+    if (nAlarmState == AL_CITY_ALARM_IDLE || nAlarmState == AL_CITY_ALARM_RECOVERY)
+    {
+        AL_CityAlarmRaisePending(oArea, nCaseId, oSource);
+        return;
+    }
+
+    AL_CityAlarmApplyCityState(oArea, AL_CITY_ALARM_ACTIVE_ALARM);
+}
+
 void AL_CityCrimeOpenAssault(object oArea, object oSource)
 {
     int nCaseId = AL_CityCrimeOpenCase(oArea, oSource, AL_CITY_CRIME_ASSAULT, AL_CITY_CASE_STATUS_OPEN);
@@ -84,9 +97,11 @@ void AL_CityCrimeOpenAssault(object oArea, object oSource)
         return;
     }
 
-    AL_CityRegistryEnemyAdd(oArea, oSource);
-    AL_CityAlarmRaisePending(oArea, nCaseId, oSource);
-    AL_CityAlarmActivate(oArea, nCaseId, oSource);
+    if (GetIsObjectValid(oSource) && GetObjectType(oSource) == OBJECT_TYPE_CREATURE)
+    {
+        AL_CityRegistryEnemyAdd(oArea, oSource);
+    }
+    AL_CityCrimeEscalateAlarm(oArea, nCaseId, oSource);
 }
 
 void AL_CityCrimeOpenDeathCase(object oArea, object oSource)
@@ -104,9 +119,11 @@ void AL_CityCrimeOpenDeathCase(object oArea, object oSource)
         return;
     }
 
-    AL_CityRegistryEnemyAdd(oArea, oSource);
-    AL_CityAlarmRaisePending(oArea, nCaseId, oSource);
-    AL_CityAlarmActivate(oArea, nCaseId, oSource);
+    if (GetIsObjectValid(oSource) && GetObjectType(oSource) == OBJECT_TYPE_CREATURE)
+    {
+        AL_CityRegistryEnemyAdd(oArea, oSource);
+    }
+    AL_CityCrimeEscalateAlarm(oArea, nCaseId, oSource);
 }
 
 void AL_CityCrimeOnDisturbed(object oActor, object oSource, int nReactType, int nCrimeKind)

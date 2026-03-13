@@ -405,14 +405,30 @@ Sampling-политика для тяжёлых полей:
 - `AUDIT.md`
 
 
-### 7.4 City Alarm FSM (Phase 1)
+### 7.4 City Alarm FSM + district runtime (Phase 2)
 - States: `IDLE`, `PENDING_ALARM`, `ACTIVE_ALARM`, `CLEARING`, `RECOVERY`.
 - Runtime source of truth: city locals on module keyed by `al_city_id`.
-- HOT district: live state is applied immediately (`al_city_alarm_live_state`).
-- non-HOT district: only desired state is updated (`al_city_alarm_desired_state`) and materialized on activation.
+- Integration: `AL_AreaTick` (HOT only) calls district runtime step `AL_CityAlarmRuntimeTickHot` with bounded batches; no per-NPC heartbeats added.
+- PENDING_ALARM bell workflow has timeout fallback (`AL_CITY_ALARM_BELL_TIMEOUT_TICKS`) so state cannot hang forever.
+- ACTIVE_ALARM behavior in HOT district:
+  - civilian -> `go_shelter`;
+  - militia -> `go_arsenal` (hide/show + alarm loadout) then `hold_war_post`;
+  - guard -> `hold_war_post` to nearest free post.
+- war-post occupancy:
+  - shared guard/militia pool;
+  - hard cap `AL_CITY_WAR_POST_CAPACITY=5` per post;
+  - nearest-free selection;
+  - if no free post exists, NPC keeps routine/guard path (no forced invalid assignment).
+- CLEARING/RECOVERY path:
+  - recovery assignment is issued in bounded batches;
+  - militia returns to arsenal and restores normal loadout;
+  - civilians/others are resynced back to routine model via existing `RESYNC` path.
+- non-HOT district:
+  - only desired state (`al_city_alarm_desired_state`) is stored;
+  - on area activate/NPC spawn runtime materializes expected state (sheltered civilians, militia alarm-loadout, war-post-ready defenders) without offscreen live simulation.
 
-### 7.5 City Crime foundation (Phase 1)
-- Theft opens city crime case without global alarm escalation.
-- Assault/hostile damage/spell opens assault case and escalates city alarm.
-- Single-NPC interior death opens latent `HIDDEN_MURDER` case (no immediate alarm).
-- Enemy clear path depends on creature-level enemy registry; alarm clear re-checks active enemies.
+### 7.5 City Crime foundation (Phase 2 escalation contract)
+- Theft opens city crime case only (no city alarm escalation).
+- Assault/hostile damage/spell opens assault case and escalates alarm via `PENDING_ALARM` (or reinforces ACTIVE if alarm already running).
+- Single-NPC interior death opens latent `HIDDEN_MURDER` case (no immediate alarm and no synthetic offscreen discovery).
+- Enemy clear path depends on creature-level enemy registry; alarm clear re-checks active enemies and enters CLEARING/RECOVERY.
