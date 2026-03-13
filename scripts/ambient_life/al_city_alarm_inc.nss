@@ -354,6 +354,7 @@ void AL_CityAlarmActivate(object oArea, int nCaseId, object oSource)
 void AL_CityAlarmTryClear(object oArea)
 {
     AL_CityRegistryEnsureDistrict(oArea);
+    AL_CityRegistryPruneEnemies(oArea);
 
     if (AL_CityRegistryEnemyCount(oArea) > 0)
     {

@@ -3,6 +3,41 @@
 
 const int AL_CITY_DISTRICT_INTERIOR = 1;
 const int AL_CITY_DISTRICT_EXTERIOR = 2;
+const int AL_CITY_ENEMY_INACTIVE_TICK_WINDOW = 24;
+
+void AL_CityRegistryEnemyClearState(object oEnemy)
+{
+    if (!GetIsObjectValid(oEnemy))
+    {
+        return;
+    }
+
+    DeleteLocalInt(oEnemy, "al_city_enemy_active");
+    DeleteLocalString(oEnemy, "al_city_enemy_city_id");
+    DeleteLocalInt(oEnemy, "al_city_enemy_last_active_tick");
+}
+
+int AL_CityRegistryEnemyCurrentTick(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return 0;
+    }
+
+    return GetLocalInt(oArea, "al_sync_tick");
+}
+
+void AL_CityRegistryEnemyTouch(object oEnemy, string sCityId, int nTick)
+{
+    if (!GetIsObjectValid(oEnemy))
+    {
+        return;
+    }
+
+    SetLocalInt(oEnemy, "al_city_enemy_active", TRUE);
+    SetLocalString(oEnemy, "al_city_enemy_city_id", sCityId);
+    SetLocalInt(oEnemy, "al_city_enemy_last_active_tick", nTick);
+}
 
 string AL_CityRegistryCityKey(string sCityId, string sSuffix)
 {
@@ -129,11 +164,13 @@ int AL_CityRegistryEnemyAdd(object oArea, object oEnemy)
 
     object oModule = GetModule();
     int nCount = GetLocalInt(oModule, AL_CityRegistryCityKey(sCityId, "enemy_count"));
+    int nTick = AL_CityRegistryEnemyCurrentTick(oArea);
     int i = 0;
     while (i < nCount)
     {
         if (GetLocalObject(oModule, AL_CityRegistryCityKey(sCityId, "enemy_" + IntToString(i))) == oEnemy)
         {
+            AL_CityRegistryEnemyTouch(oEnemy, sCityId, nTick);
             return FALSE;
         }
 
@@ -142,8 +179,7 @@ int AL_CityRegistryEnemyAdd(object oArea, object oEnemy)
 
     SetLocalObject(oModule, AL_CityRegistryCityKey(sCityId, "enemy_" + IntToString(nCount)), oEnemy);
     SetLocalInt(oModule, AL_CityRegistryCityKey(sCityId, "enemy_count"), nCount + 1);
-    SetLocalInt(oEnemy, "al_city_enemy_active", TRUE);
-    SetLocalString(oEnemy, "al_city_enemy_city_id", sCityId);
+    AL_CityRegistryEnemyTouch(oEnemy, sCityId, nTick);
     return TRUE;
 }
 
@@ -182,8 +218,82 @@ void AL_CityRegistryEnemyRemove(object oArea, object oEnemy)
         i = i + 1;
     }
 
-    DeleteLocalInt(oEnemy, "al_city_enemy_active");
-    DeleteLocalString(oEnemy, "al_city_enemy_city_id");
+    AL_CityRegistryEnemyClearState(oEnemy);
+}
+
+int AL_CityRegistryPruneEnemies(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return 0;
+    }
+
+    string sCityId = AL_CityRegistryResolveCityId(oArea);
+    if (sCityId == "")
+    {
+        return 0;
+    }
+
+    object oModule = GetModule();
+    int nCount = GetLocalInt(oModule, AL_CityRegistryCityKey(sCityId, "enemy_count"));
+    int nNowTick = AL_CityRegistryEnemyCurrentTick(oArea);
+    int nRemoved = 0;
+    int i = 0;
+
+    while (i < nCount)
+    {
+        string sEnemyKey = AL_CityRegistryCityKey(sCityId, "enemy_" + IntToString(i));
+        object oEnemy = GetLocalObject(oModule, sEnemyKey);
+        int bRemove = FALSE;
+
+        if (!GetIsObjectValid(oEnemy) || GetObjectType(oEnemy) != OBJECT_TYPE_CREATURE)
+        {
+            bRemove = TRUE;
+        }
+        else
+        {
+            object oEnemyArea = GetArea(oEnemy);
+            if (!GetIsObjectValid(oEnemyArea) || AL_CityRegistryResolveCityId(oEnemyArea) != sCityId)
+            {
+                bRemove = TRUE;
+            }
+            else if (nNowTick > 0)
+            {
+                int nLastActive = GetLocalInt(oEnemy, "al_city_enemy_last_active_tick");
+                if (nLastActive <= 0)
+                {
+                    nLastActive = nNowTick;
+                    SetLocalInt(oEnemy, "al_city_enemy_last_active_tick", nNowTick);
+                }
+
+                if ((nNowTick - nLastActive) > AL_CITY_ENEMY_INACTIVE_TICK_WINDOW)
+                {
+                    bRemove = TRUE;
+                }
+            }
+        }
+
+        if (!bRemove)
+        {
+            i = i + 1;
+            continue;
+        }
+
+        int nLast = nCount - 1;
+        if (i != nLast)
+        {
+            SetLocalObject(oModule, sEnemyKey, GetLocalObject(oModule, AL_CityRegistryCityKey(sCityId, "enemy_" + IntToString(nLast))));
+        }
+
+        DeleteLocalObject(oModule, AL_CityRegistryCityKey(sCityId, "enemy_" + IntToString(nLast)));
+        nCount = nLast;
+        nRemoved = nRemoved + 1;
+
+        AL_CityRegistryEnemyClearState(oEnemy);
+    }
+
+    SetLocalInt(oModule, AL_CityRegistryCityKey(sCityId, "enemy_count"), nCount);
+    return nRemoved;
 }
 
 int AL_CityRegistryEnemyCount(object oArea)
