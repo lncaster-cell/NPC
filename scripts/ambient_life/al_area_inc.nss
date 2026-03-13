@@ -22,6 +22,7 @@ const string AL_TICK_SCHED_MARKER_LOCAL = "al_tick_from_scheduler";
 #include "al_lookup_cache_inc"
 #include "al_debug_inc"
 #include "al_health_inc"
+#include "al_route_cache_inc"
 
 int AL_ComputeAreaSlot()
 {
@@ -811,6 +812,7 @@ void AL_AreaTick(object oArea, int nToken)
 
     int nSyncTick = GetLocalInt(oArea, "al_sync_tick") + 1;
     SetLocalInt(oArea, "al_sync_tick", nSyncTick);
+    AL_RouteServicePendingTags(oArea, AL_ROUTE_PENDING_SERVICE_BUDGET_PER_TICK);
     AL_TryRelieveDispatchBackpressure(oArea);
     AL_MaybeUpdateDispatchQueueMetricsFull(oArea, FALSE);
 
