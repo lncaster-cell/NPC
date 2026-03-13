@@ -25,18 +25,15 @@ const int AL_CRIME_DEBOUNCE_TICKS = 2;
 const float AL_LOCAL_ALARM_RADIUS = 18.0;
 const int AL_LOCAL_ALARM_MAX_RESPONDERS = 8;
 
-// Route runtime hooks consumed by Stage I.1 reaction layer.
-string AL_RouteRtActiveKey();
-int AL_RouteRoutineResumeCurrent(object oNpc);
-void AL_RouteBlockedRuntimeReset(object oNpc);
-
 // Local helper forward declarations used by bounded alarm fan-out path.
 int AL_ReactShouldOverrideRoutine(object oActor);
 void AL_ReactRuntimeBegin(object oActor, int nReactType, object oSource, object oItem);
-void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind);
+void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind, float fStartDelaySec = 0.0);
 void AL_ReactResumeOrResetOnSelf();
 void AL_ReactFinishCreature(object oNpc);
 void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurSec);
+
+// Migration note: legacy `al_safe_wp_cache` contract removed in favor of tick-scoped safe lookup cache.
 
 void AL_ReactApplyActivityStepSelfSafe(object oNpc, int nStepActivity, int nDurSec)
 {
@@ -609,10 +606,13 @@ void AL_ReactNotifyNearbyResponders(object oActor, object oSource, int nCrimeKin
 
         if (oCandidate != oActor && AL_ReactShouldNpcJoinLocalAlarm(oCandidate, oSource))
         {
+            float fStartDelaySec = IntToFloat(nJoined) * 0.15 + (IntToFloat(Random(3)) * 0.1);
+            int nReactType = AL_ReactTypeFromCrimeKind(nCrimeKind);
+
             // Fan-out responders are non-OBJECT_SELF targets: all behavior must be enqueued via AssignCommand.
-            AL_ReactRuntimeBegin(oCandidate, AL_REACT_TYPE_STOLEN, oSource, OBJECT_INVALID);
+            AL_ReactRuntimeBegin(oCandidate, nReactType, oSource, OBJECT_INVALID);
             SetLocalInt(oCandidate, "al_react_resume_flag", TRUE);
-            AL_ReactRunBoundedOverride(oCandidate, GetIsObjectValid(oSource), nCrimeKind);
+            AL_ReactRunBoundedOverride(oCandidate, GetIsObjectValid(oSource), nCrimeKind, fStartDelaySec);
             AL_ReactFinishCreature(oCandidate);
             nJoined = nJoined + 1;
         }
@@ -641,6 +641,21 @@ int AL_ReactTypeFromDisturb(int nDisturbType)
     return AL_REACT_TYPE_UNKNOWN;
 }
 
+int AL_ReactTypeFromCrimeKind(int nCrimeKind)
+{
+    if (nCrimeKind >= AL_CRIME_KIND_THEFT)
+    {
+        return AL_REACT_TYPE_STOLEN;
+    }
+
+    if (nCrimeKind == AL_CRIME_KIND_SUSPICIOUS)
+    {
+        return AL_REACT_TYPE_REMOVED;
+    }
+
+    return AL_REACT_TYPE_UNKNOWN;
+}
+
 int AL_ReactShouldOverrideRoutine(object oActor)
 {
     if (!GetIsObjectValid(oActor) || GetObjectType(oActor) != OBJECT_TYPE_CREATURE || GetIsPC(oActor))
@@ -654,7 +669,7 @@ int AL_ReactShouldOverrideRoutine(object oActor)
         return FALSE;
     }
 
-    return GetLocalInt(oActor, AL_RouteRtActiveKey());
+    return AL_RouteRuntimeIsActive(oActor);
 }
 
 void AL_ReactRuntimeClear(object oActor)
@@ -697,7 +712,7 @@ void AL_ReactRuntimeBegin(object oActor, int nReactType, object oSource, object 
     }
 }
 
-void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind)
+void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeKind, float fStartDelaySec = 0.0)
 {
     if (!GetIsObjectValid(oNpc))
     {
@@ -705,6 +720,11 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeK
     }
 
     AssignCommand(oNpc, ClearAllActions(TRUE));
+
+    if (fStartDelaySec > 0.0)
+    {
+        AssignCommand(oNpc, ActionWait(fStartDelaySec));
+    }
 
     if (nCrimeKind > AL_CRIME_KIND_NONE)
     {
@@ -738,9 +758,9 @@ void AL_ReactRunBoundedOverride(object oNpc, int bHasCredibleSource, int nCrimeK
 
 void AL_ReactResumeOrResetOnSelf()
 {
-    if (!AL_RouteRoutineResumeCurrent(OBJECT_SELF))
+    if (!AL_RouteRuntimeResumeSafe(OBJECT_SELF))
     {
-        AL_RouteBlockedRuntimeReset(OBJECT_SELF);
+        AL_RouteRuntimeResetSafe(OBJECT_SELF);
         SignalEvent(OBJECT_SELF, EventUserDefined(AL_EVENT_RESYNC));
     }
 }

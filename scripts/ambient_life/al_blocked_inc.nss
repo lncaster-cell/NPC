@@ -3,13 +3,9 @@
 
 #include "al_area_inc"
 #include "al_events_inc"
+#include "al_route_runtime_api_inc"
 
 const int AL_BLOCKED_MAX_RETRY = 1;
-
-// Route runtime hooks consumed by Stage I.0 local unblock layer.
-string AL_RouteRtActiveKey();
-int AL_RouteRoutineResumeCurrent(object oNpc);
-void AL_RouteBlockedRuntimeReset(object oNpc);
 
 int AL_BlockedTryDoorFirst(object oNpc)
 {
@@ -45,7 +41,7 @@ void AL_OnNpcBlocked(object oNpc)
         return;
     }
 
-    if (!GetLocalInt(oNpc, AL_RouteRtActiveKey()))
+    if (!AL_RouteRuntimeIsActive(oNpc))
     {
         return;
     }
@@ -65,12 +61,12 @@ void AL_OnNpcBlocked(object oNpc)
     int nRetry = GetLocalInt(oNpc, "al_blocked_rt_retry") + 1;
     SetLocalInt(oNpc, "al_blocked_rt_retry", nRetry);
 
-    if (nRetry <= AL_BLOCKED_MAX_RETRY && AL_RouteRoutineResumeCurrent(oNpc))
+    if (nRetry <= AL_BLOCKED_MAX_RETRY && AL_RouteRuntimeResumeSafe(oNpc))
     {
         SetLocalInt(oNpc, "al_blocked_rt_active", FALSE);
         return;
     }
 
-    AL_RouteBlockedRuntimeReset(oNpc);
+    AL_RouteRuntimeResetSafe(oNpc);
     SignalEvent(oNpc, EventUserDefined(AL_EVENT_RESYNC));
 }
