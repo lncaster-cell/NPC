@@ -63,27 +63,21 @@
 
 ## 4) Какие вопросы остаются открытыми
 
-1. **Нет явного трекера задач Stage I.3** (чек-листа статусов по подпунктам).
-2. **Нет отдельного операционного smoke-документа** именно для legal/reinforcement цепочки.
-3. **В README перечислены документы, которых сейчас нет в репозитории**:
-   - `docs/ARCHITECTURE.md`
-   - `docs/TECH_PASSPORT.md`
-   - `docs/IMPLEMENTATION_ROADMAP.md`
-   - `docs/MECHANICS_DESIGN_BRIEFS.md`
-   - `docs/TOOLSET_CONTRACT.md`
-   - `docs/PERF_RUNBOOK.md`
+1. **Stage I.3 остаётся в Planned**: есть трекер `docs/08_STAGE_I3_TRACKER.md`, но статусы подпунктов пока не переходили в `In Progress/Done`.
+2. **Нет отдельного smoke-runbook для legal/reinforcement**: в `docs/03_OPERATIONS.md` пока только общий perf/validation контур.
+3. **Каталог runtime-файлов в документации был неполным до этой синхронизации**:
+   - отдельно вынесены action-скрипты (`al_action_signal_ud.nss`, `al_action_set_mode.nss`),
+   - выделены runtime-утилиты (`al_health_inc.nss`, `al_react_apply_step.nss`, `al_react_resume_reset.nss`),
+   - добавлена population-подсистема (`al_city_population_inc.nss`) как часть актуального city layer.
 
-Это и создаёт эффект «контекст утерян / неполная документация».
+Результат: основной разрыв «документация vs код» смещён с отсутствующих файлов к рабочему бэклогу Stage I.3.
 
 ## 5) Рекомендованный порядок восстановления документации
 
-1. Создать `docs/06_STAGE_I3_TRACKER.md`:
-   - `Planned / In Progress / Done / Blocked` по 4 подпунктам Stage I.3.
-2. Создать `docs/07_DECISIONS_LOG.md`:
-   - короткие ADR-записи по спорным решениям (legal pipeline, reinforcement limits, escalation boundaries).
-3. Вынести в `docs/08_GAP_MAP.md`:
-   - «документ заявлен в README, но отсутствует в repo», с владельцем и сроком восстановления.
-4. Обновить README так, чтобы он ссылался только на реально существующие документы + этот аудит.
+1. Перевести минимум один подпункт `docs/08_STAGE_I3_TRACKER.md` в `In Progress` с owner/date.
+2. Добавить `docs/09_LEGAL_REINFORCEMENT_SMOKE.md` (операционный smoke-runbook для I.3).
+3. После старта I.3 синхронно обновлять `docs/02_MECHANICS.md`, `docs/03_OPERATIONS.md`, `docs/04_CONTENT_CONTRACTS.md` по каждому завершённому подпункту.
+4. Поддерживать каталог runtime-файлов в `docs/07_SCENARIOS_AND_ALGORITHMS.md` как актуальную карту подсистем.
 
 ## 6) Итог в одном абзаце
 
