@@ -7,6 +7,7 @@ const int AL_CITY_RESPAWN_BUDGET_MAX_DEFAULT = 3;
 const int AL_CITY_RESPAWN_BUDGET_REGEN_TICKS_DEFAULT = 4;
 const int AL_CITY_RESPAWN_COOLDOWN_TICKS_DEFAULT = 2;
 const float AL_CITY_RESPAWN_SAFE_DIST_DEFAULT = 20.0;
+const int AL_CITY_ALARM_STATE_PEACE = 0;
 
 int AL_CityPopulationIsNamedNpc(object oNpc)
 {
@@ -50,6 +51,7 @@ void AL_CityPopulationEnsureBudget(string sCityId)
     object oModule = GetModule();
     string sBudgetMaxKey = AL_CityRegistryCityKey(sCityId, "population_respawn_budget_max");
     string sBudgetKey = AL_CityRegistryCityKey(sCityId, "population_respawn_budget");
+    string sBudgetInitKey = AL_CityRegistryCityKey(sCityId, "population_respawn_budget_initialized");
 
     int nBudgetMax = GetLocalInt(oModule, sBudgetMaxKey);
     if (nBudgetMax <= 0)
@@ -58,8 +60,15 @@ void AL_CityPopulationEnsureBudget(string sCityId)
         SetLocalInt(oModule, sBudgetMaxKey, nBudgetMax);
     }
 
+    if (GetLocalInt(oModule, sBudgetInitKey) != TRUE)
+    {
+        SetLocalInt(oModule, sBudgetKey, nBudgetMax);
+        SetLocalInt(oModule, sBudgetInitKey, TRUE);
+        return;
+    }
+
     int nBudget = GetLocalInt(oModule, sBudgetKey);
-    if (nBudget <= 0)
+    if (nBudget > nBudgetMax)
     {
         SetLocalInt(oModule, sBudgetKey, nBudgetMax);
     }
@@ -109,6 +118,13 @@ void AL_CityPopulationOnNpcSpawn(object oNpc)
         if (nAliveUnnamed > GetLocalInt(oModule, sTargetUnnamedKey))
         {
             SetLocalInt(oModule, sTargetUnnamedKey, nAliveUnnamed);
+        }
+
+        string sDeficitKey = AL_CityRegistryCityKey(sCityId, "population_deficit_unnamed");
+        int nDeficit = GetLocalInt(oModule, sDeficitKey);
+        if (nDeficit > 0)
+        {
+            SetLocalInt(oModule, sDeficitKey, nDeficit - 1);
         }
     }
 
@@ -172,6 +188,26 @@ void AL_CityPopulationOnNpcDeath(object oNpc)
     DeleteLocalInt(oNpc, "al_population_alive_registered");
 }
 
+int AL_CityPopulationCanRespawnInArea(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return FALSE;
+    }
+
+    if (GetLocalInt(oArea, "al_city_alarm_desired_state") > AL_CITY_ALARM_STATE_PEACE)
+    {
+        return FALSE;
+    }
+
+    if (GetLocalInt(oArea, "al_city_alarm_live_state") > AL_CITY_ALARM_STATE_PEACE)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
 int AL_CityPopulationNodeIsSafe(object oArea, object oNode)
 {
     if (!GetIsObjectValid(oArea) || !GetIsObjectValid(oNode))
@@ -184,7 +220,12 @@ int AL_CityPopulationNodeIsSafe(object oArea, object oNode)
         return FALSE;
     }
 
-    float fSafeDist = IntToFloat(GetLocalInt(oArea, "al_city_respawn_safe_dist"));
+    float fSafeDist = GetLocalFloat(oArea, "al_city_respawn_safe_dist");
+    if (fSafeDist <= 0.0)
+    {
+        fSafeDist = IntToFloat(GetLocalInt(oArea, "al_city_respawn_safe_dist"));
+    }
+
     if (fSafeDist <= 0.0)
     {
         fSafeDist = AL_CITY_RESPAWN_SAFE_DIST_DEFAULT;
@@ -252,6 +293,11 @@ object AL_CityPopulationResolveRespawnNode(object oArea)
 void AL_CityPopulationTryRespawnTick(object oArea)
 {
     if (!GetIsObjectValid(oArea) || AL_IsHotArea(oArea) != TRUE)
+    {
+        return;
+    }
+
+    if (!AL_CityPopulationCanRespawnInArea(oArea))
     {
         return;
     }
@@ -343,8 +389,20 @@ void AL_CityPopulationTryRespawnTick(object oArea)
         return;
     }
 
-    SetLocalInt(oModule, sBudgetKey, nBudget - 1);
-    SetLocalInt(oModule, sDeficitKey, nDeficit - 1);
+    int nBudgetNext = nBudget - 1;
+    if (nBudgetNext < 0)
+    {
+        nBudgetNext = 0;
+    }
+
+    int nDeficitNext = nDeficit - 1;
+    if (nDeficitNext < 0)
+    {
+        nDeficitNext = 0;
+    }
+
+    SetLocalInt(oModule, sBudgetKey, nBudgetNext);
+    SetLocalInt(oModule, sDeficitKey, nDeficitNext);
     SetLocalInt(oModule, sLastRespawnTickKey, nSyncTick);
     SetLocalInt(oSpawned, "al_population_named", FALSE);
 }
