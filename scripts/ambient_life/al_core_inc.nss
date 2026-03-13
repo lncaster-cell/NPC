@@ -32,6 +32,63 @@ void AL_NpcHandleSlotChanged(object oNpc, int nSlot)
     AL_RouteRoutineStart(oNpc, nSlot, FALSE);
 }
 
+
+void AL_CityAlarmHandleAssignment(object oNpc, int nEvent)
+{
+    object oTarget = GetLocalObject(oNpc, "al_city_alarm_assignment_target");
+
+    if (nEvent == AL_EVENT_CITY_ASSIGN_GO_SHELTER)
+    {
+        if (GetIsObjectValid(oTarget))
+        {
+            AssignCommand(oNpc, ActionMoveToObject(oTarget, TRUE, 1.0));
+        }
+        return;
+    }
+
+    if (nEvent == AL_EVENT_CITY_ASSIGN_GO_ARSENAL)
+    {
+        if (GetIsObjectValid(oTarget))
+        {
+            AssignCommand(oNpc, ActionMoveToObject(oTarget, TRUE, 1.0));
+            AssignCommand(oNpc, ActionDoCommand(SetLocalInt(OBJECT_SELF, "al_city_alarm_hidden_in_arsenal", TRUE)));
+            AssignCommand(oNpc, ActionWait(0.2));
+            AssignCommand(oNpc, ActionDoCommand(DeleteLocalInt(OBJECT_SELF, "al_city_alarm_hidden_in_arsenal")));
+            AssignCommand(oNpc, ActionDoCommand(AL_CityAlarmSetMilitiaAlarmLoadout(OBJECT_SELF, TRUE)));
+        }
+        return;
+    }
+
+    if (nEvent == AL_EVENT_CITY_ASSIGN_HOLD_WAR_POST)
+    {
+        if (GetIsObjectValid(oTarget))
+        {
+            AssignCommand(oNpc, ActionMoveToObject(oTarget, TRUE, 1.0));
+        }
+        return;
+    }
+
+    if (nEvent == AL_EVENT_CITY_ASSIGN_ALARM_RECOVERY)
+    {
+        int nRole = AL_ReactGetNpcRole(oNpc);
+        if (nRole == AL_NPC_ROLE_MILITIA)
+        {
+            object oArea = GetArea(oNpc);
+            object oArsenal = AL_CityAlarmResolvePoint(oArea, AL_CityAlarmPointTag(oArea, "al_city_arsenal_tag"));
+            if (GetIsObjectValid(oArsenal))
+            {
+                AssignCommand(oNpc, ActionMoveToObject(oArsenal, TRUE, 1.0));
+            }
+            AssignCommand(oNpc, ActionDoCommand(AL_CityAlarmSetMilitiaAlarmLoadout(OBJECT_SELF, FALSE)));
+        }
+
+        DeleteLocalString(oNpc, "al_city_alarm_assignment");
+        DeleteLocalObject(oNpc, "al_city_alarm_assignment_target");
+        SignalEvent(oNpc, EventUserDefined(AL_EVENT_RESYNC));
+        return;
+    }
+}
+
 void AL_OnNpcUserDefined(object oNpc)
 {
     if (!AL_IsRuntimeNpc(oNpc))
@@ -65,6 +122,15 @@ void AL_OnNpcUserDefined(object oNpc)
 
         SetLocalInt(oNpc, "al_last_slot", nSlot);
         AL_NpcHandleSlotChanged(oNpc, nSlot);
+        return;
+    }
+
+    if (nEvent == AL_EVENT_CITY_ASSIGN_GO_SHELTER
+        || nEvent == AL_EVENT_CITY_ASSIGN_GO_ARSENAL
+        || nEvent == AL_EVENT_CITY_ASSIGN_HOLD_WAR_POST
+        || nEvent == AL_EVENT_CITY_ASSIGN_ALARM_RECOVERY)
+    {
+        AL_CityAlarmHandleAssignment(oNpc, nEvent);
         return;
     }
 
@@ -103,6 +169,7 @@ void AL_OnNpcSpawn(object oNpc)
 
     AL_RouteBlockedRuntimeReset(oNpc);
     SetLocalString(oNpc, "al_mode", "idle");
+    AL_CityAlarmMaterializeNpc(oNpc);
 }
 
 void AL_OnNpcDeath(object oNpc)

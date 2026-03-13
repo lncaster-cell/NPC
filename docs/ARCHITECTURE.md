@@ -61,11 +61,12 @@
   - debounce anti-spam для повторных `OnDisturbed` инцидентов (actor-local + area-local);
   - bounded локальный fan-out на nearby NPC текущей area (без world scan/spawn).
 
-- I.3: city-layer foundation поверх area-runtime (Phase 1):
+- I.3: city-layer runtime (Phase 2):
   - city registry (`al_city_registry_inc`) с district membership/type и city-level active case refs;
   - city alarm FSM (`IDLE/PENDING_ALARM/ACTIVE_ALARM/CLEARING/RECOVERY`) в `al_city_alarm_inc`;
-  - city crime producer/controller split в `al_city_crime_inc` с отдельными crime kinds (`THEFT/ASSAULT/MURDER/HIDDEN_MURDER/DISCOVERED_MURDER`);
-  - hot-only live alarm materialization для district runtime + desired-state locals для non-HOT district.
+  - district runtime hook from `AL_AreaTick`: HOT district выполняет bounded alarm execution пакетами; non-HOT хранит desired state и материализуется на activate/spawn;
+  - war-post occupancy: shared guard+militia pool, nearest free post, hard cap `5` NPC per post;
+  - city crime producer/controller split в `al_city_crime_inc` с отдельными crime kinds (`THEFT/ASSAULT/MURDER/HIDDEN_MURDER/DISCOVERED_MURDER`) и clean escalation (theft-only crime, assault/open violence -> alarm, hidden murder latent).
 
 ## 4. Event bus
 
@@ -73,8 +74,9 @@
 - `3106`: RESYNC
 - `3107`: ROUTE_REPEAT
 - `3108`: BLOCKED_RESUME
+- `3109..3112`: city alarm assignment delivery (`go_shelter`, `go_arsenal`, `hold_war_post`, `alarm_recovery`)
 
-Crime/alarm на Stage I.2 намеренно **не** добавляет новые события шины: эскалация выполняется внутри bounded `OnDisturbed` пути.
+Crime/alarm на Stage I.2 остаётся локальным producer-слоем; city runtime использует минимальный внутренний набор UD assignment hooks без превращения event bus в глобальный city-brain.
 
 ### 4.1 Dispatch runtime contract
 
