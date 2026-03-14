@@ -29,7 +29,7 @@
 | Свидетели преступления (witness) | Канон (дизайн) + частично planned pipeline | `docs/12A_WORLD_MODEL_CANON.md`, `docs/08_STAGE_I3_TRACKER.md` | Связана с crime/alarm/legal chain; полноценный end-to-end в I.3 ещё planned |
 | Переходы между зонами (transition) | Реализовано (Stage I.2) | `docs/02_MECHANICS.md` | Входит в бытовой pipeline Route → Transition → Activity/Sleep |
 | Лагерь (camp) как отдельная система | Нет в каноне | — | Может существовать как контентный паттерн, но не выделен как отдельный системный блок |
-| Торговля (trade/economy) как отдельная система | Нет в каноне | — | На текущем этапе не оформлена как самостоятельный runtime/legal subsystem |
+| Торговля (trade/economy) как отдельная система | Канон (дизайн) | `docs/12E_TRADE_AND_CITY_STATE_CANON.md` | Описана как агрегированная макросистема с разделением retail и supply-контура |
 
 > Если пункта нет в таблице выше, добавь его сюда в первую очередь, а уже потом расширяй общий реестр.
 
@@ -51,6 +51,7 @@
 | Журнал решений | Обязательная фиксация архитектурных решений/компромиссов (DEC-формат) | Active | `docs/10_DECISIONS_LOG.md` | `docs/15_DOCUMENTATION_INSPECTION_2026-03-14.md` |
 | Система имущества игрока | Ownership/title/rights and constraints как отдельный дизайн-блок | Канон (дизайн) | `docs/12C_PLAYER_PROPERTY_SYSTEM.md` | `docs/12A_WORLD_MODEL_CANON.md` |
 | Система travel | Node/edge world travel, land/sea pipelines, event encounters, engine limits | Канон (дизайн) | `docs/12D_WORLD_TRAVEL_CANON.md` | `docs/03_OPERATIONS.md` |
+| Торговля и городское состояние | Агрегированные шкалы города, retail vs supply, стадии кризиса, влияние на респаун/политику | Канон (дизайн) | `docs/12E_TRADE_AND_CITY_STATE_CANON.md` | `docs/12_MASTER_PLAN.md`, `docs/10_DECISIONS_LOG.md` |
 | Старение и наследование (v1) | Возрастной цикл + смерть + клановый transfer имущества/статуса | Концепт v1 (отдельная ветка дизайна) | `docs/13_AGING_AND_CLAN_SUCCESSION.md` | `docs/14_CLAN_SYSTEM_DESIGN.md` |
 | Дизайн системы кланов | Клановая структура, роли, эволюция, социальная динамика | Концепт/дизайн-блок | `docs/14_CLAN_SYSTEM_DESIGN.md` | `docs/13_AGING_AND_CLAN_SUCCESSION.md` |
 
@@ -59,7 +60,7 @@
 | Тема | Статус | Комментарий |
 |---|---|---|
 | Camp / лагеря (как системный модуль) | Не оформлено | Нет выделенного canon/design документа под отдельную camp-систему |
-| Trade / экономика / торговые циклы (как системный модуль) | Не оформлено | Нет выделенного canon/design документа под отдельную trade-систему |
+| Trade / экономика / торговые циклы (как системный модуль) | Оформлено | См. `docs/12E_TRADE_AND_CITY_STATE_CANON.md` |
 
 ## 3) Что уже «придумано окончательно» (не переизобретать)
 
