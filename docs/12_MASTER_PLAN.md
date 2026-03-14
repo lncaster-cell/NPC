@@ -1,21 +1,38 @@
-# Ambient Life v2 — Master Plan (единый мастер-документ)
+# Ambient Life v2 — MASTER PLAN (единый полный мастер-документ)
 
 Дата: 2026-03-14  
-Статус: единый источник контекста для разработки, эксплуатации, QA и восстановления системы «с нуля».  
-Область: `scripts/ambient_life/*`, `docs/*`, `README.md`.
+Версия: 2 (расширенная, «ответы на основные вопросы в одном файле»)  
+Статус: главный onboarding-документ проекта  
+Область: `README.md`, `docs/*`, `scripts/ambient_life/*`
 
 ---
 
-## 0. Как читать этот документ
+## 0) Для кого и зачем этот документ
 
-Этот мастер-план рассчитан на агента/разработчика, который **не знает ничего** о проекте и хочет:
-1. понять идею системы;
-2. восстановить архитектуру и границы;
-3. понять контракты контента и runtime;
-4. воспроизвести механики и сценарии;
-5. продолжить разработку (включая планируемые Stage I.3+ механизмы).
+Этот документ предназначен для агента/разработчика, который открывает репозиторий впервые и должен:
+- быстро понять идею и границы системы;
+- увидеть, какие механики уже реализованы, а какие планируются;
+- понять архитектурные решения и причины этих решений;
+- знать, где контент, где runtime, где эксплуатация и QA;
+- уметь восстановить систему с нуля, даже без чтения остальных документов.
 
-Документ объединяет и нормализует материалы из:
+Идея этого файла: **одна точка входа, которая отвечает на «что / почему / как / где / что дальше»**.
+
+---
+
+## 1) Executive summary (за 2 минуты)
+
+1. Ambient Life v2 — это area-centric + event-driven система симуляции жизни NPC в NWN2.
+2. Вместо per-NPC heartbeat используется area tick + bounded dispatch.
+3. Реализованы базовые контуры до Stage I.2: lifecycle, registry/dispatch, route/transition, sleep/activity, blocked/disturbed, local crime/alarm, population respawn.
+4. Основной следующий этап — Stage I.3: reinforcement policy + legal pipeline (surrender/arrest/trial) + расширение последствий преступлений + отдельный QA smoke.
+5. Главные принципы: bounded processing, отсутствие world-wide full scan, разделение контента и runtime, обязательная наблюдаемость через метрики.
+
+---
+
+## 2) Источники, которые были объединены
+
+Этот master plan синтезирует и нормализует информацию из:
 - `docs/01_PROJECT_OVERVIEW.md`
 - `docs/02_MECHANICS.md`
 - `docs/03_OPERATIONS.md`
@@ -27,115 +44,181 @@
 - `docs/10_NPC_RESPAWN_MECHANICS.md`
 - `docs/11_GENERAL_DESIGN_DOCUMENT.md`
 
+Примечание: в ряде исходных документов есть устаревшие ссылки/несинхронизированные места; здесь они сведены в согласованную картину.
+
 ---
 
-## 1. Продуктовая идея и замысел автора
+## 3) Продуктовая идея и замысел автора
 
-### 1.1 Что это за система
-Ambient Life v2 — это runtime-слой для NWN2, который симулирует «живую» повседневную жизнь NPC:
-- рутины по времени суток;
-- маршруты и переходы между area;
+### 3.1 Что симулируется
+Система симулирует «фоновую жизнь» NPC:
+- суточные рутины;
+- перемещение по маршрутам;
+- переходы между area;
 - сон и активность;
-- локальные реакции на инциденты;
-- городскую тревогу/преступность;
-- восстановление населения города.
+- реакции на помехи/инциденты;
+- реакцию города на преступность;
+- восстановление безымянного населения.
 
-### 1.2 Какую проблему решает
-Классический подход с per-NPC heartbeat плохо масштабируется. Здесь применён другой замысел:
-- координация сверху вниз (area-centric),
-- события вместо постоянного polling,
-- bounded-обработка вместо «бесконечных» контуров,
-- чёткое разделение контента и runtime-состояния.
+### 3.2 Почему архитектура именно такая
+Ключевая проблема: per-NPC heartbeat плохо масштабируется и тяжело контролируется при росте числа NPC.
 
-### 1.3 Основные ценности дизайна
-1. **Предсказуемость:** поведение объяснимо через контракты и state-машины.
-2. **Масштабируемость:** нет world-wide full-scan как основы механики.
-3. **Диагностируемость:** ключевые контуры имеют метрики, overflow и health counters.
-4. **Управляемая эволюция:** новые функции встраиваются через существующий event/runtime каркас.
+Выбранный ответ:
+- area-centric orchestration (управление сверху, а не «каждый NPC сам по себе»);
+- event-driven переходы между шагами поведения;
+- bounded budgets/caps для всех «дорогих» операций;
+- explicit diagnostics, чтобы поведение наблюдалось, а не угадывалось.
 
----
-
-## 2. Архитектура системы (верхний уровень)
-
-## 2.1 Core-парадигма
-- **Area-centric execution:** «сердце» симуляции — area tick.
-- **Event-driven orchestration:** NPC переходят между шагами через события и hooks.
-- **Bounded processing:** каждый тяжёлый контур ограничен бюджетами/лимитами.
-- **Content-configured behavior:** контент задаёт intent; runtime реализует логику.
-
-## 2.2 Карта подсистем
-1. **Core + Area lifecycle**
-   - `al_core_inc.nss`, `al_area_inc.nss`, `al_area_tick.nss`, `al_area_onenter.nss`, `al_area_onexit.nss`, `al_mod_onleave.nss`
-2. **Registry + Dispatch + Lookup/Cache**
-   - `al_registry_inc.nss`, `al_dispatch_inc.nss`, `al_events_inc.nss`, `al_lookup_cache_inc.nss`
-3. **Route/Transition/Sleep/Activity**
-   - `al_route_inc.nss`, `al_route_cache_inc.nss`, `al_route_runtime_api_inc.nss`, `al_transition_inc.nss`, `al_transition_post_area.nss`, `al_sleep_inc.nss`, `al_activity_inc.nss`, `al_acts_inc.nss`
-4. **Reactive + City layer**
-   - `al_blocked_inc.nss`, `al_react_inc.nss`, `al_react_apply_step.nss`, `al_react_resume_reset.nss`, `al_city_registry_inc.nss`, `al_city_crime_inc.nss`, `al_city_alarm_inc.nss`, `al_city_population_inc.nss`, `al_health_inc.nss`
-5. **Action wrappers + NPC hooks**
-   - `al_action_signal_ud.nss`, `al_action_set_mode.nss`, `al_npc_onspawn.nss`, `al_npc_onud.nss`, `al_npc_onblocked.nss`, `al_npc_ondisturbed.nss`, `al_npc_ondamaged.nss`, `al_npc_onphysicalattacked.nss`, `al_npc_onspellcastat.nss`, `al_npc_ondeath.nss`
-
-## 2.3 Границы ответственности
-- **Контент** задаёт: маршруты, связи area, sleep markup, роли/теги.
-- **Runtime** хранит: очереди, курсоры, state flags, счётчики, diagnostics.
-- **Запрет:** ручное редактирование runtime locals как «лечения» проблем.
+### 3.3 Что считается успехом
+- живой, но предсказуемый мир;
+- отсутствие бесконечных эскалаций;
+- управляемая производительность;
+- прозрачная эволюция механик по стадиям roadmap.
 
 ---
 
-## 3. Ключевые инварианты (нельзя нарушать)
+## 4) Архитектура системы (карта подсистем)
 
-## 3.1 Архитектурные инварианты
-1. Никаких per-NPC heartbeat-loop как основы системы.
-2. Никаких global full-scan как базовой стратегии.
-3. Любой тяжёлый контур имеет budget/cap и путь завершения.
-4. Любое расширение обязано быть наблюдаемым через состояния и метрики.
+## 4.1 Слои
+1. **Core lifecycle слой** — area tick, tiers, жизненный цикл.
+2. **Registry/dispatch слой** — регистрация NPC, очередь событий, маршрутизация runtime-сигналов.
+3. **Route/sleep/activity слой** — повседневное поведение NPC.
+4. **Reactive/city слой** — disturbed/blocked, crime/alarm FSM, role assignments.
+5. **Population слой** — восстановление unnamed-дефицита (respawn policy).
 
-## 3.2 Lifecycle / Registry / Dispatch
-- NPC добавляется/удаляется из registry строго при валидных lifecycle событиях.
-- Tier-модель (`FREEZE/WARM/HOT`) определяет глубину обслуживания.
-- Dispatch queue обрабатывается пакетно с контролем overflow и latency.
+## 4.2 Файловая карта runtime
+### Core + area lifecycle
+- `scripts/ambient_life/al_core_inc.nss`
+- `scripts/ambient_life/al_area_inc.nss`
+- `scripts/ambient_life/al_area_tick.nss`
+- `scripts/ambient_life/al_area_onenter.nss`
+- `scripts/ambient_life/al_area_onexit.nss`
+- `scripts/ambient_life/al_mod_onleave.nss`
 
-## 3.3 Route / Transition / Sleep
-- Route выполняется bounded-шагами.
-- Transition требует валидных endpoint и target area.
-- Sleep выделен в отдельный контур и обязан возвращать NPC в routine pipeline.
+### Registry + dispatch + cache
+- `scripts/ambient_life/al_registry_inc.nss`
+- `scripts/ambient_life/al_lookup_cache_inc.nss`
+- `scripts/ambient_life/al_dispatch_inc.nss`
+- `scripts/ambient_life/al_events_inc.nss`
 
-## 3.4 Reactive / City
-- Blocked/disturbed локальны и не разрушают базовые route/schedule инварианты.
-- City alarm работает как FSM (а не хаотичная глобальная агрессия).
-- Есть явная деэскалация (active -> recovery -> normal).
+### Route + transition + sleep + activity
+- `scripts/ambient_life/al_route_inc.nss`
+- `scripts/ambient_life/al_route_cache_inc.nss`
+- `scripts/ambient_life/al_route_runtime_api_inc.nss`
+- `scripts/ambient_life/al_transition_inc.nss`
+- `scripts/ambient_life/al_transition_post_area.nss`
+- `scripts/ambient_life/al_sleep_inc.nss`
+- `scripts/ambient_life/al_activity_inc.nss`
+- `scripts/ambient_life/al_acts_inc.nss`
 
-## 3.5 Content-инварианты
-- `al_link_count` соответствует `al_link_*`.
-- Route шаги индексируются без пропусков.
-- `al_bed_id` допустим только при наличии корректной sleep-пары waypoint.
+### Reactive + city
+- `scripts/ambient_life/al_blocked_inc.nss`
+- `scripts/ambient_life/al_react_inc.nss`
+- `scripts/ambient_life/al_react_apply_step.nss`
+- `scripts/ambient_life/al_react_resume_reset.nss`
+- `scripts/ambient_life/al_city_registry_inc.nss`
+- `scripts/ambient_life/al_city_crime_inc.nss`
+- `scripts/ambient_life/al_city_alarm_inc.nss`
+- `scripts/ambient_life/al_city_population_inc.nss`
+- `scripts/ambient_life/al_health_inc.nss`
+
+### Wrapper/actions + NPC hooks
+- `scripts/ambient_life/al_action_signal_ud.nss`
+- `scripts/ambient_life/al_action_set_mode.nss`
+- `scripts/ambient_life/al_npc_onspawn.nss`
+- `scripts/ambient_life/al_npc_onud.nss`
+- `scripts/ambient_life/al_npc_onblocked.nss`
+- `scripts/ambient_life/al_npc_ondisturbed.nss`
+- `scripts/ambient_life/al_npc_ondamaged.nss`
+- `scripts/ambient_life/al_npc_onphysicalattacked.nss`
+- `scripts/ambient_life/al_npc_onspellcastat.nss`
+- `scripts/ambient_life/al_npc_ondeath.nss`
+
+## 4.3 Поток управления (упрощённо)
+1. Area tick инициирует обработку.
+2. Dispatch доставляет события в bounded режиме.
+3. NPC проходят route/sleep/activity шаги.
+4. Внешние инциденты через hooks запускают reactive/city контуры.
+5. City FSM регулирует эскалацию и деэскалацию.
+6. Population layer закрывает дефицит населения в рамках policy.
 
 ---
 
-## 4. Контракты контента (для создания мира)
+## 5) Ответственности и границы (очень важно)
 
-## 4.1 NPC locals
+## 5.1 Контент отвечает за
+- маршрутные теги и слоты (`alwp0..alwp5`);
+- связность area (`al_link_count`, `al_link_*`);
+- sleep markup (`al_bed_id`, sleep пары waypoint);
+- city принадлежность (`al_city_id`, district type, city точки);
+- respawn nodes и конфиг area-level.
+
+## 5.2 Runtime отвечает за
+- очереди, курсоры, индексы;
+- state flags и состояние FSM;
+- служебные счётчики/диагностику/health;
+- bounded бюджеты и cooldown-логики.
+
+## 5.3 Жёсткий запрет
+Runtime locals нельзя редактировать вручную как способ «починки» сценариев. Исправление должно быть через код/контент/контракты.
+
+---
+
+## 6) Канонические инварианты системы
+
+## 6.1 Архитектура
+1. Нет per-NPC heartbeat как базового механизма.
+2. Нет world-wide full-scan как базовой стратегии.
+3. Любая тяжёлая логика обязана быть bounded.
+4. Любой новый механизм обязан иметь наблюдаемое состояние и критерии завершения.
+
+## 6.2 Lifecycle / registry / dispatch
+- NPC регистрируется и удаляется только в валидных lifecycle-точках.
+- Tier модель (`FREEZE/WARM/HOT`) влияет на интенсивность обработки.
+- Dispatch обрабатывается пакетно с backpressure и overflow-контролем.
+
+## 6.3 Route / transition / sleep
+- Route исполняется bounded шагами.
+- Transition всегда валидирует endpoint и destination area.
+- Sleep — отдельная ветка исполнения, с возвратом в routine pipeline.
+
+## 6.4 Reactive / city
+- Blocked/disturbed — локальные реакции, не ломающие route/schedule канон.
+- Alarm — FSM, а не «мгновенная агрессия всего мира».
+- Обязателен путь деэскалации (`active -> recovery -> normal`).
+
+## 6.5 Контент
+- `al_link_count` == фактическое число `al_link_*`.
+- Индексация route-шагов без пропусков.
+- `al_bed_id` допустим только при корректной sleep-разметке area.
+
+---
+
+## 7) Контракты данных и событий
+
+## 7.1 NPC locals
 ### Обязательные
-- `alwp0..alwp5` — route tags по слотам суток.
-- `al_default_activity` — fallback/дефолтная активность.
+- `alwp0..alwp5`
+- `al_default_activity`
 
-### Опциональные/fallback
-- `AL_WP_S0..AL_WP_S5` — legacy fallback route tags.
-- `al_npc_role` — роль (`0` civilian, `1` militia, `2` guard/enforcer).
-- `al_safe_wp_tag` — точка fallback-отхода при тревоге.
+### Опциональные / fallback / role hints
+- `AL_WP_S0..AL_WP_S5`
+- `al_npc_role` (`0` civilian, `1` militia, `2` guard/enforcer)
+- `al_safe_wp_tag`
 
-## 4.2 Area locals
-- `al_link_count`, `al_link_0..N` — граф переходов.
-- `al_city_id`, `al_city_district_type` — принадлежность к city layer.
-- city points: `al_city_bell_tag`, `al_city_arsenal_tag`, `al_city_shelter_tag`, `al_city_war_post_tag_<idx>`.
+## 7.2 Area locals
+- `al_link_count`, `al_link_0..N`
+- `al_city_id`, `al_city_district_type`
+- city tags: `al_city_bell_tag`, `al_city_arsenal_tag`, `al_city_shelter_tag`, `al_city_war_post_tag_<idx>`
 
-## 4.3 Sleep и route contracts
-- Sleep-step: `al_step`, `al_bed_id`, опционально `al_dur_sec`.
-- Все reference-теги должны существовать в своей area.
+## 7.3 Sleep/route
+- `al_step`
+- `al_bed_id`
+- `al_dur_sec` (опционально)
 
-## 4.4 Respawn population contracts
-### Area/local
-- `al_city_respawn_tag` или `al_city_respawn_tag_<idx>` + `al_city_respawn_node_count`
+## 7.4 Population/respawn
+### Area конфиг
+- `al_city_respawn_tag` ИЛИ `al_city_respawn_tag_<idx>` + `al_city_respawn_node_count`
 - `al_city_respawn_resref` (опционально)
 - `al_city_respawn_cooldown_ticks` (опционально)
 - `al_city_respawn_budget_regen_ticks` (опционально)
@@ -149,140 +232,128 @@ Ambient Life v2 — это runtime-слой для NWN2, который симу
 - `population_last_respawn_tick`, `population_budget_last_regen_tick`
 - `population_respawn_resref`
 
----
-
-## 5. Runtime-сценарии (как система реально работает)
-
-## 5.1 Базовый lifecycle
-1. NPC входит в area -> регистрируется.
-2. Получает сигналы/события через dispatch.
-3. При выходе/смерти корректно удаляется из runtime-структур.
-
-## 5.2 Routine по слотам суток
-1. Слот-событие выбирает маршрут (`AL_EVENT_SLOT_0..5`).
-2. Route исполняется bounded-проходом.
-3. При проблемах — fallback/resync без развала общего tick-budget.
-
-## 5.3 Transition между area
-1. Route-step требует перехода.
-2. Проверяются source/destination endpoint + целевая area.
-3. После перехода выполняется post-area синхронизация registry.
-
-## 5.4 Sleep lifecycle
-1. Route-step с `al_bed_id` переводит в sleep-контур.
-2. Sleep исполняется как специальный pipeline.
-3. Wake-up возвращает в routine.
-
-## 5.5 Blocked recovery
-1. `OnBlocked`.
-2. Локальные unblock-попытки.
-3. При неуспехе — bounded resync/resume.
-
-## 5.6 Disturbed/crime/alarm
-1. Producer hooks (`OnDisturbed`, `OnDamaged`, `OnPhysicalAttacked`, `OnSpellCastAt`, `OnDeath`) формируют инциденты.
-2. Crime типизируется (theft/assault/murder/spell-related).
-3. City alarm FSM изменяет desired/live состояния.
-4. Выполняются role assignments и controlled materialization.
-
-## 5.7 Alarm recovery
-- После peak-тревоги система уходит в controlled recovery и возвращает роли к норме пакетно.
-
-## 5.8 Population respawn
-- На `OnSpawn/OnDeath` поддерживаются alive/target/deficit счётчики.
-- Респаун — только для unnamed-дефицита, при budget+cooldown+safety.
-- Materialization и respawn разделены концептуально и алгоритмически.
+## 7.5 Внутренние события (bus)
+- `AL_EVENT_SLOT_0..AL_EVENT_SLOT_5`
+- `AL_EVENT_RESYNC`
+- `AL_EVENT_ROUTE_REPEAT`
+- `AL_EVENT_BLOCKED_RESUME`
+- city assignment events:
+  - `AL_EVENT_CITY_ASSIGN_GO_SHELTER`
+  - `AL_EVENT_CITY_ASSIGN_GO_ARSENAL`
+  - `AL_EVENT_CITY_ASSIGN_HOLD_WAR_POST`
+  - `AL_EVENT_CITY_ASSIGN_ALARM_RECOVERY`
 
 ---
 
-## 6. Алгоритмы и техники реализации
+## 8) Сценарии выполнения (операционная картина)
 
-1. **Bounded dispatch queue** с backpressure и overflow метриками.
-2. **Dense registry** с индексами, maintenance и miss-rate диагностикой.
-3. **Route cache** с rebuild/invalidation стратегией.
-4. **Transition endpoint resolution** с валидацией неоднозначностей.
-5. **Sleep special-case execution** как отдельная ветка исполнения.
-6. **City alarm FSM** (`idle/pending/active/clearing/recovery`).
-7. **Population deficit recovery** через ограниченный create-path.
+## 8.1 Базовый lifecycle
+- `OnSpawn` -> регистрация -> участие в tick/dispatched логике.
+- `OnExit/OnDeath` -> очистка runtime-состояний.
+
+## 8.2 Суточный цикл
+- slot event выбирает route.
+- route исполняется по шагам в bounded режиме.
+- fallback/resync не ломает общий бюджет area.
+
+## 8.3 Переходы между area
+- transition-step -> валидация endpoint.
+- переход -> post-area transfer/sync registry.
+
+## 8.4 Sleep lifecycle
+- шаг с `al_bed_id` переключает в sleep pipeline.
+- wake-up возвращает в routine.
+
+## 8.5 Blocked/disturbed
+- `OnBlocked` -> door-first + bounded resume.
+- `OnDisturbed`/producer hooks -> реакция + city/crime pipeline.
+
+## 8.6 Crime/alarm
+- инциденты типизируются.
+- desired/live alarm state разделены.
+- role assignments управляются через события.
+- есть controlled recovery.
+
+## 8.7 Population respawn
+- `OnSpawn/OnDeath` поддерживают alive/target/deficit.
+- при выполнении pre-checks запускается create-path.
+- только unnamed дефицит закрывается респауном.
 
 ---
 
-## 7. Deep dive: механизм респауна населения
+## 9) Deep dive: Population Respawn (важная часть)
 
-## 7.1 Назначение
-Восстанавливать **дефицит безымянного населения** города без:
-- воскрешения конкретных NPC,
-- спайков массового спавна,
-- нарушения bounded-характера runtime.
+## 9.1 Цель
+Поддерживать демографическую устойчивость города без:
+- респауна named NPC,
+- burst-спавнов,
+- смешения с materialization.
 
-## 7.2 Канон
-- Named NPC не респаунятся.
-- Respawn != Materialization.
-- Решение принимает city layer в area tick, а не отдельный NPC.
+## 9.2 Термины
+- **Respawn**: создание нового NPC через `CreateObject`.
+- **Materialization**: возврат уже существующего логического NPC.
 
-## 7.3 Lifecycle hooks
+## 9.3 Hooks
 - `AL_OnNpcSpawn -> AL_CityPopulationOnNpcSpawn`
 - `AL_OnNpcDeath -> AL_CityPopulationOnNpcDeath`
 - `AL_AreaTick -> AL_CityPopulationTryRespawnTick`
 
-## 7.4 Алгоритм OnSpawn
-1. Проверить валидность и анти-дубль регистрации.
-2. Определить city-id.
-3. Классифицировать named/unnamed.
-4. Обновить `population_alive_*`.
-5. Обновить `population_target_*` (peak-aware).
-6. Если spawn unnamed и есть deficit — уменьшить deficit.
-7. Нормализовать бюджет.
+## 9.4 Алгоритм OnSpawn
+1. validate + no-double-register;
+2. определить city;
+3. классифицировать named/unnamed;
+4. обновить alive counters;
+5. поднять target при необходимости;
+6. для unnamed уменьшить deficit (если > 0);
+7. ensure/normalize budget.
 
-## 7.5 Алгоритм OnDeath
-- Named: `alive_named--`.
-- Unnamed: `alive_unnamed--`, `deficit_unnamed++`.
-- Всё с clamping от ухода в отрицательные значения.
+## 9.5 Алгоритм OnDeath
+- named: `alive_named--`;
+- unnamed: `alive_unnamed--`, `deficit_unnamed++`;
+- все операции с clamping.
 
-## 7.6 Алгоритм RespawnTick pre-checks
-Порядок проверок:
-1. area валидна и HOT;
-2. город в peace (desired/live);
+## 9.6 RespawnTick pre-checks
+1. area HOT;
+2. alarm desired/live == peace;
 3. `deficit_unnamed > 0`;
-4. cooldown выдержан;
-5. бюджет положительный;
-6. при необходимости регенерировать бюджет;
-7. есть валидная respawn node;
-8. node безопасна (нет врагов, игрок не рядом);
-9. есть resref (area-level либо city fallback).
+4. cooldown OK;
+5. budget > 0;
+6. regen budget при необходимости;
+7. валидный respawn node;
+8. безопасная node (нет врагов, игрок не слишком близко);
+9. валидный resref (area/local fallback на city).
 
-## 7.7 Create-path
-При успехе `CreateObject`:
-- `budget--`,
-- `deficit--`,
-- `population_last_respawn_tick = now`,
-- новый NPC маркируется unnamed,
-- дальнейшая регистрация идёт штатным `OnSpawn`.
+## 9.7 Create-path
+На успешном создании:
+- budget--;
+- deficit--;
+- last_respawn_tick обновляется;
+- новый NPC маркируется unnamed;
+- дальше стандартный `OnSpawn` lifecycle.
 
-## 7.8 Anti-patterns
-Нельзя:
-- респаунить named NPC,
-- запускать респаун из трупа/heartbeat,
-- спавнить «перед игроком»,
-- отключать budget/cooldown/safety,
-- смешивать respawn с materialization.
+## 9.8 Что запрещено
+- респаун named NPC;
+- решение о респауне в heartbeat конкретного NPC;
+- спавн перед игроком;
+- отключение cooldown/budget/safety;
+- объединение materialization и respawn в один «серый» контур.
 
 ---
 
-## 8. Operations, perf и QA
+## 10) Operations / perf / QA
 
-## 8.1 Perf gate для изменений в `scripts/ambient_life/al_*`
-Обязательные прогоны:
+## 10.1 Perf-gate
+Для изменений в `scripts/ambient_life/al_*` обязательно:
 - S80
 - S100
 - S120
 
-Рекомендованный режим:
-- warm-up: 2 area-tick
-- измерение: 20 tick
-- одинаковые условия для baseline/after
+Режим:
+- warm-up: 2 area tick
+- measurement: 20 tick
+- baseline и after в одинаковых условиях
 
-## 8.2 Обязательные метрики
-Минимальный набор:
+## 10.2 Обязательные метрики
 - `al_dispatch_q_len`, `al_dispatch_q_overflow`
 - `al_reg_overflow_count`, `al_route_overflow_count`
 - `route_cache_hits`, `route_cache_rebuilds`, `route_cache_invalidations`
@@ -292,96 +363,164 @@ Ambient Life v2 — это runtime-слой для NWN2, который симу
 - `al_dispatch_ticks_to_drain`, `al_dispatch_budget_current`
 - `al_dispatch_processed_tick`, `al_dispatch_backlog_before`, `al_dispatch_backlog_after`
 
-## 8.3 Operator checklist
+## 10.3 Operator checklist
 Перед PR:
-1. baseline-vs-after для обязательных метрик;
-2. операторские таблицы + machine-readable отчёт;
-3. perf не пропущен для core-файлов;
-4. baseline обновлён только с обоснованием;
+1. baseline-vs-after по обязательным метрикам;
+2. operator-readable + machine-readable отчёт;
+3. perf-проверка не пропущена для core-файлов;
+4. обновление baseline имеет обоснование;
 5. preflight summary приложен.
 
-## 8.4 Linked graph preflight
-Перед релизом проверять:
-- связность `al_link_*`,
-- корректность route/locals,
-- WARN/ERROR до поставки.
+## 10.4 Preflight для контента
+Проверять до релиза:
+- linked graph (`al_link_*`);
+- route/step/sleep markup;
+- отсутствие битых тегов/дубликатов/невалидных ссылок.
 
 ---
 
-## 9. Статус реализации и roadmap
+## 11) Статус проекта и roadmap
 
-## 9.1 Что уже сделано (до Stage I.2 включительно)
-- architecture/lifecycle/registry/dispatch;
-- route/cache/transition;
-- sleep/activity;
-- blocked/disturbed;
-- local city crime/alarm;
-- population respawn;
-- diagnostics/health/perf базовый контур.
+## 11.1 Реализовано (подтверждённый baseline)
+- Stage A–H;
+- Stage I.0–I.2;
+- зрелый базовый контур: lifecycle + routine + city crime/alarm + population recovery.
 
-## 9.2 Что запланировано (Stage I.3)
-1. **Reinforcement / guard spawn policy**
-   - bounded policy без world-wide scan.
-2. **Legal pipeline: surrender -> arrest -> trial**
-   - end-to-end правовая развязка инцидентов.
-3. **Consequences expansion**
-   - более градуированные исходы преступлений.
-4. **QA smoke для legal/reinforcement**
-   - отдельный runbook и pass/fail критерии.
+## 11.2 Planned (Stage I.3)
+1. Reinforcement / guard spawn policy.
+2. Surrender -> arrest -> trial pipeline.
+3. Consequences expansion for crime incidents.
+4. Специализированный smoke-runbook и QA критерии для legal/reinforcement.
 
-## 9.3 Критерии Done для Stage I.3
-- policy подкреплений реализована и документирована;
-- legal pipeline работает end-to-end;
-- есть воспроизводимый smoke-набор;
-- синхронно обновлены mechanics/operations/contracts/status docs.
+## 11.3 Definition of Done для Stage I.3
+- реализована bounded policy подкреплений;
+- legal pipeline проходит end-to-end;
+- smoke сценарии воспроизводимы;
+- docs синхронно обновлены (`02`, `03`, `04`, `05`, `08`, master-plan).
 
 ---
 
-## 10. План восстановления системы «с нуля» (для нового агента)
+## 12) План восстановления системы с нуля (практический)
 
-## 10.1 Последовательность внедрения
-1. Реализовать core area tick + event bus + dispatch с bounded-лимитами.
-2. Реализовать registry и lookup/cache с диагностикой miss/overflow.
-3. Подключить routine-слоты и route pipeline.
-4. Добавить transition между area + post-transfer синхронизацию.
-5. Добавить sleep отдельным pipeline.
-6. Добавить activity слой.
-7. Добавить blocked/disturbed реактивный слой.
-8. Добавить city registry + crime + alarm FSM.
-9. Добавить population layer + respawn policy.
-10. Ввести perf/операционный контур и только затем расширять legal/reinforcement.
+## 12.1 Порядок реализации
+1. Area tick + event bus + bounded dispatch.
+2. Registry + lookup/cache + diagnostics.
+3. Slot routines + route runtime.
+4. Transition subsystem + post-transfer sync.
+5. Sleep pipeline.
+6. Activity pipeline.
+7. Blocked/disturbed.
+8. City registry + crime + alarm FSM.
+9. Population layer + respawn policy.
+10. Perf + operations gates.
+11. Только после этого Stage I.3 legal/reinforcement.
 
-## 10.2 Проверка корректности на каждом шаге
-- Шаг проходит только если:
-  - соблюдены инварианты;
-  - есть метрики и наблюдаемость;
-  - сценарии воспроизводимы;
-  - отсутствуют unbounded-контуры.
-
-## 10.3 Дизайн-границы, которые запрещено размывать
-- Не превращать систему в giant diplomacy simulator.
-- Не смешивать personal routine FSM и city FSM в одну неявную машину.
-- Не решать архитектурные проблемы ручным редактированием runtime locals.
+## 12.2 Критерии приёмки каждого шага
+Шаг не считается завершённым без:
+- явных инвариантов;
+- наблюдаемого runtime-состояния;
+- smoke-сценариев;
+- bounded гарантии (нет бесконечных контуров);
+- базового perf контроля.
 
 ---
 
-## 11. Известные проблемы документации и нормализация
+## 13) Анти-паттерны (чего делать нельзя)
 
-1. В части документации встречаются ссылки на ещё не существующие документы (напр. `docs/09_*`).
-2. Файл `docs/10_NPC_RESPAWN_MECHANICS.md` содержит следы merge-конфликта и дублирования текста.
-3. Этот мастер-план является нормализованной «чистой» версией знаний и должен использоваться как основной onboarding-источник.
-
-Рекомендация: в последующих PR либо очистить `docs/10_NPC_RESPAWN_MECHANICS.md`, либо заменить его на версию, синхронизированную с разделом 7 этого мастер-плана.
+1. World-wide scan как «универсальное решение».
+2. Бесконечные циклы без budget/cap.
+3. Смешение city FSM и per-NPC routine FSM в неявную общую машину.
+4. Ручное правление runtime locals вместо исправления первопричины.
+5. «Магические» спавны/эскалации без диагностируемых причин.
+6. Смешение respawn и materialization.
 
 ---
 
-## 12. Короткая памятка для агента, который стартует с нуля
+## 14) Диагностика и отладка: где смотреть в первую очередь
 
-Если у тебя только этот файл, то ориентируйся так:
-1. Система событийная и area-centric.
-2. Всё тяжёлое — bounded.
-3. Контент задаёт intent, runtime хранит динамику.
-4. База (до I.2) считается зрелой.
-5. Главная зона разработки: Stage I.3 (reinforcement + legal pipeline + последствия + QA smoke).
-6. Любое изменение доказывается не словами, а сценариями, метриками и стабильным perf.
+Если «NPC не живут нормальной жизнью»:
+1. Проверить route tags (`alwp*`) и existence waypoint.
+2. Проверить registry overflow/lookup miss метрики.
+3. Проверить dispatch backlog/overflow.
+4. Проверить linked graph (`al_link_count`, `al_link_*`).
+
+Если «не работают переходы между area»:
+1. Проверить endpoint tags и target area.
+2. Проверить post-transition transfer hooks.
+3. Проверить дубли/битые links в контенте.
+
+Если «город не реагирует/не успокаивается»:
+1. Проверить producer hooks (damage/attack/spell/death/disturbed).
+2. Проверить desired/live alarm state.
+3. Проверить assignment event flow.
+4. Проверить, что recovery-path выполняется.
+
+Если «не работает respawn населения»:
+1. Проверить `deficit_unnamed` > 0.
+2. Проверить cooldown/budget.
+3. Проверить peace-state города.
+4. Проверить respawn node и safe distance.
+5. Проверить resref (area/local или city fallback).
+
+---
+
+## 15) FAQ — ответы на типовые вопросы нового агента
+
+### Q1. Почему нет heartbeat на каждого NPC?
+Потому что это ухудшает масштабируемость и контроль. Здесь orchestration area-centric и bounded.
+
+### Q2. Где «истина»: в контенте или runtime?
+Intent в контенте, динамика и служебное состояние в runtime. Нельзя подменять одно другим.
+
+### Q3. Что самое критичное в стабильности?
+Dispatch/registry bounded-инварианты + валидный контент route/links + корректная деэскалация city FSM.
+
+### Q4. Что уже готово и что нет?
+Готова база до Stage I.2. Основной незакрытый пакет — Stage I.3 (legal/reinforcement).
+
+### Q5. Можно ли быстро «подкрутить локал» в рантайме и закрыть баг?
+Нет. Это нарушает воспроизводимость и скрывает причину.
+
+### Q6. Какая минимальная проверка перед слиянием?
+Perf S80/S100/S120 + обязательные метрики + smoke/контент preflight.
+
+### Q7. Как понять, что система не ушла в unbounded-поведение?
+Смотреть queue/backlog/overflow, ticks-to-drain, cache rebuild/invalidations, и подтверждать bounded сценариями.
+
+---
+
+## 16) Глоссарий
+
+- **Area-centric execution** — управление симуляцией на уровне area tick.
+- **Event-driven orchestration** — переходы между состояниями через события.
+- **Bounded processing** — ограниченные бюджеты/ёмкости/время выполнения.
+- **Routine pipeline** — повседневный цикл маршрутов/активностей NPC.
+- **City FSM** — state-машина тревоги и реакции города.
+- **Respawn** — создание нового NPC для закрытия дефицита.
+- **Materialization** — возврат уже существующего NPC в активную зону.
+- **Preflight** — предварительная валидация контента и связей до релиза.
+
+---
+
+## 17) Документационные долги и план поддержания master-документа
+
+1. В репозитории встречаются ссылки на документы, которых может не быть в текущем tree (например некоторые `docs/09_*`).
+2. Документ `docs/10_NPC_RESPAWN_MECHANICS.md` содержит следы несинхрона/merge-остатков и требует отдельной очистки.
+3. При изменениях в архитектуре сначала обновлять этот master-plan, затем профильные документы.
+
+Рекомендуемый процесс поддержки:
+- изменили механику -> обновили профильный doc -> обновили этот master-plan (разделы 8/10/11/15).
+- закрыли этап -> обновили status/roadmap/FAQ.
+
+---
+
+## 18) Короткая памятка «что делать прямо сейчас новому агенту»
+
+1. Прочитать разделы 1, 4, 6, 8, 10, 11, 12, 15.
+2. Зафиксировать: система уже зрелая до I.2; I.3 — главный фронт.
+3. Любое изменение проектировать через bounded и observability.
+4. Не ломать границу content/runtime.
+5. Перед PR пройти perf-gate и smoke-валидацию.
+
+Если ты понимаешь этот документ — ты понимаешь архитектурный замысел проекта и можешь продолжать разработку осмысленно.
 
