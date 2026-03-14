@@ -1,49 +1,153 @@
 # NPC Ambient Life v2
 
-Система скриптов `ambient_life` для управления жизненным циклом NPC: рутины, маршруты, переходы между area, реакции на события, сон и городские crime/alarm механики.
+`ambient_life` — это event-driven система симуляции «живого» поведения NPC в NWN2.
+Проект строится вокруг **area-centric runtime** (без heartbeat-цикла на каждого NPC), разделения обязанностей между контентом и рантаймом, а также bounded-подхода ко всем тяжёлым контурам (dispatch, route, reactions, city alarm/crime).
 
-## Текущий этап разработки
+Этот README — подробный, но читаемый вход в проект: что уже реализовано, как устроены подсистемы, где границы архитектуры и с чего начинать работу.
 
-Согласно дорожной карте, завершены стадии **A–I.2** (архитектурная основа, registry/dispatch, lifecycle, route cache, routines, transitions, sleep, activity, blocked/disturbed и базовый local Crime/Alarm).
+---
 
-**Текущий следующий этап:** **Stage I.3 — Reinforcement/Legal extensions**.
+## 1) Назначение и целевая модель
 
-План на этап I.3:
-1. Политика guard spawn / reinforcement (без world-wide scan).
-2. Surrender / arrest / trial pipeline поверх legal hooks Stage I.2.
-3. Расширение последствий crime incidents без усложнения до «giant diplomacy simulator».
-4. QA smoke для legal/reinforcement цепочки.
+Ambient Life v2 решает две задачи одновременно:
 
-Источник: `docs/01_PROJECT_OVERVIEW.md`, `docs/08_STAGE_I3_TRACKER.md`.
+1. Даёт правдоподобный поведенческий цикл NPC (маршруты, активности, сон, переходы между area, реакции на события).
+2. Поддерживает расширяемую модель городских инцидентов (crime/alarm) и правовых механизмов следующего этапа (I.3), не превращая систему в unbounded world simulator.
 
-## Лист активностей
+Ключевая проектная идея: **движок отвечает за мгновенную реакцию, проектный runtime — за оркестрацию и долгую согласованность поведения**.
 
-- Поддержка и развитие подсистемы рутин и расписаний NPC.
-- Поддержка маршрутизации и переходов между area.
-- Поддержка реактивного слоя (blocked/disturbed, восстановление поведения).
-- Поддержка sleep lifecycle.
-- Поддержка city crime/alarm и подготовка к legal/reinforcement расширениям.
-- Эксплуатационные smoke-сценарии для QA.
-- Диагностика runtime-отказов (регистрация, маршрут, реактивные события).
-- Контент-валидация перед релизом.
+---
 
-## Ключевая документация (актуально в репозитории)
+## 2) Канон архитектуры (кратко)
+
+На уровне master-плана (`docs/12_MASTER_PLAN.md`) проект фиксирует приоритетную модель, где:
+
+- движковые механики NWN2 (perception/disturbed/listen/faction reaction) используются как сигналы и тактическая реакция;
+- долговременная «правда мира» (законы, принадлежность, права, документы, статусы) относится к персистентному слою;
+- сценарная и правовая логика строится в проектном слое и должна быть bounded.
+
+Практический смысл для разработки: нельзя подменять правовые и политические сущности только фракциями движка; фракции остаются локальным ИИ-инструментом, а не моделью государства/права.
+
+---
+
+## 3) Главные принципы runtime
+
+- **Area-centric execution**: периодическая работа инициируется area-уровнем.
+- **Event-driven orchestration**: шаги рутины и реакции идут через события (`OnUserDefined` и профильные hooks).
+- **Bounded processing**: у тяжёлых контуров есть лимиты/бюджеты; unbounded-поведение запрещено.
+- **Content/runtime separation**: контент описывает intent, runtime хранит эфемерные state/queue/metrics.
+
+Эти принципы являются инвариантами и обязательны для любых изменений в `scripts/ambient_life/al_*`.
+
+---
+
+## 4) Карта подсистем и текущая реализация
+
+Ниже — сводка по системам с текущим состоянием (baseline A–I.2) и ролью в архитектуре.
+
+| Подсистема | Что реализовано | Где смотреть |
+|---|---|---|
+| Core lifecycle | Базовый жизненный цикл и orchestration-контур area/NPC | `scripts/ambient_life/al_core_inc.nss`, `scripts/ambient_life/al_area_tick.nss` |
+| Registry + dispatch | Реестры area/NPC и bounded dispatch queue с batched-обработкой | `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_dispatch_inc.nss` |
+| Cache/lookup | Кэш маршрутов и lookup-оптимизации для runtime-поиска | `scripts/ambient_life/al_route_cache_inc.nss`, `scripts/ambient_life/al_lookup_cache_inc.nss` |
+| Route + transition | Маршрутизация NPC и переходы между linked area | `scripts/ambient_life/al_route_inc.nss`, `scripts/ambient_life/al_transition_inc.nss` |
+| Sleep + activity + schedule | Суточные активности, sleep lifecycle, планирование routine-шагов | `scripts/ambient_life/al_sleep_inc.nss`, `scripts/ambient_life/al_activity_inc.nss`, `scripts/ambient_life/al_schedule_inc.nss` |
+| Reactive layer | Реакции на blocked/disturbed и восстановление штатного поведения | `scripts/ambient_life/al_react_inc.nss`, `scripts/ambient_life/al_blocked_inc.nss` |
+| City layer | Локальный crime/alarm контур (FSM-эскалация и деэскалация) | `scripts/ambient_life/al_city_crime_inc.nss`, `scripts/ambient_life/al_city_alarm_inc.nss` |
+| Population respawn | Population lifecycle и respawn-пайплайн с pre-checks | `scripts/ambient_life/al_city_population_inc.nss`, `docs/10_NPC_RESPAWN_MECHANICS.md` |
+| NPC hooks / wrappers | Точки входа событий сущностей и action-сигналы | `scripts/ambient_life/al_npc_on*.nss`, `scripts/ambient_life/al_action_*.nss` |
+| Diagnostics/support | Диагностика и вспомогательные runtime-утилиты | `scripts/ambient_life/al_debug_inc.nss`, `scripts/ambient_life/al_events_inc.nss` |
+
+---
+
+## 5) Статус проекта и roadmap
+
+### Реализовано (подтверждённый baseline)
+
+- Стадии **A–H**: архитектурный каркас, registry/dispatch, lifecycle, route/transition, sleep/activity.
+- Стадии **I.0–I.2**: blocked/disturbed pipeline и базовый local crime/alarm слой.
+
+### Текущий следующий этап: **Stage I.3 — Reinforcement / Legal extensions**
+
+План этапа:
+1. Ограниченная policy для reinforcement/guard spawn (без world-wide scan).
+2. Цепочка surrender → arrest → trial/legal followup поверх legal hooks.
+3. Расширение последствий crime incidents без роста в «giant diplomacy simulator».
+4. Отдельные smoke/QA сценарии для legal/reinforcement.
+
+Критерий качества этапа I.3: end-to-end юридическая цепочка и операционно предсказуемое поведение под bounded-ограничениями.
+
+---
+
+## 6) Границы ответственности (критично)
+
+### Контент отвечает за
+
+- корректную разметку маршрутов, transitions и связей area;
+- валидные локалы/теги для activity/sleep/population;
+- соблюдение контрактов данных (без произвольных runtime-полей).
+
+### Runtime отвечает за
+
+- безопасный lifecycle и dispatch/queue orchestration;
+- устойчивую обработку реактивных сценариев;
+- bounded latency/нагрузку и диагностируемость;
+- согласованность crime/alarm/legal pipeline по инвариантам.
+
+### Жёсткий запрет
+
+Runtime locals (очереди, курсоры, state-machine flags, служебные счётчики) не лечатся ручными правками «на лету» в контенте.
+
+---
+
+## 7) Инварианты, которые нельзя нарушать
+
+1. Нет перехода к per-NPC heartbeat как базовой модели.
+2. Нет unbounded full-scan подходов в legal/reinforcement/crime/population.
+3. Route/transition/sleep/react не должны ломать друг другу канонический pipeline.
+4. City alarm FSM и персональная routine-машина NPC должны оставаться логически разделёнными.
+5. Любое расширение dispatch/route/react обязано сохранять bounded-поведение и проверяемую деградацию.
+
+Если изменение конфликтует хотя бы с одним инвариантом, решение считается архитектурно неверным даже при локально «рабочем» результате.
+
+---
+
+## 8) Практический onboarding (для нового участника)
+
+Рекомендуемый порядок входа в проект:
+
+1. Прочитать обзор: `docs/01_PROJECT_OVERVIEW.md`.
+2. Прочитать инварианты: `docs/06_SYSTEM_INVARIANTS.md`.
+3. Свериться со статусом и roadmap: `docs/05_STATUS_AUDIT.md`, `docs/08_STAGE_I3_TRACKER.md`.
+4. Изучить полный master-документ: `docs/12_MASTER_PLAN.md`.
+5. Перед правками runtime проверить контракты: `docs/04_CONTENT_CONTRACTS.md`.
+
+Минимум перед merge:
+- пройти smoke-сценарии из операционного контура;
+- убедиться, что изменение bounded и не вводит full-scan;
+- обновить документацию, если изменена механика/контракт/операционный процесс.
+
+---
+
+## 9) Ключевая документация
 
 - Обзор проекта: `docs/01_PROJECT_OVERVIEW.md`
 - Механики: `docs/02_MECHANICS.md`
 - Эксплуатация и валидация: `docs/03_OPERATIONS.md`
-- Контракт контента: `docs/04_CONTENT_CONTRACTS.md`
-- Статус-аудит (что реализовано/что планируется): `docs/05_STATUS_AUDIT.md`
-- Инварианты и принципы системы: `docs/06_SYSTEM_INVARIANTS.md`
-- Каталог сценариев/алгоритмов/механик: `docs/07_SCENARIOS_AND_ALGORITHMS.md`
-- Трекер Stage I.3 (legal/reinforcement): `docs/08_STAGE_I3_TRACKER.md`
-- Восстановленные планируемые механизмы: `docs/09_PLANNED_MECHANISMS_RESTORED.md`
-- Механика респауна населения (city population layer): `docs/10_NPC_RESPAWN_MECHANICS.md`
-- Мастер-план (единый документ для полного онбординга): `docs/12_MASTER_PLAN.md`
-- Perf baselines и шаблоны отчётов: `docs/perf/baselines/*`
+- Контракты контента: `docs/04_CONTENT_CONTRACTS.md`
+- Статус-аудит: `docs/05_STATUS_AUDIT.md`
+- Инварианты системы: `docs/06_SYSTEM_INVARIANTS.md`
+- Сценарии и алгоритмы: `docs/07_SCENARIOS_AND_ALGORITHMS.md`
+- Трекер Stage I.3: `docs/08_STAGE_I3_TRACKER.md`
+- Механика респауна населения: `docs/10_NPC_RESPAWN_MECHANICS.md`
+- Общий design-документ: `docs/11_GENERAL_DESIGN_DOCUMENT.md`
+- Полный master-plan: `docs/12_MASTER_PLAN.md`
 
-## Ограничение для аудитов и инспекций
+---
 
-При аудитах, инспекциях и аналогичных процедурах:
+## 10) Ограничение для аудитов и инспекций
+
+При аудитах и инспекциях:
+
 - **не анализируем и не изменяем** директорию `third party`;
-- **не анализируем и не изменяем** находящийся внутри неё компилятор.
+- **не анализируем и не изменяем** компилятор внутри неё.
