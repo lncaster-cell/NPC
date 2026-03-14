@@ -75,7 +75,7 @@
 ## 5) Рекомендованный порядок восстановления документации
 
 1. Перевести минимум один подпункт `docs/08_STAGE_I3_TRACKER.md` в `In Progress` с owner/date.
-2. Добавить `docs/09_LEGAL_REINFORCEMENT_SMOKE.md` (операционный smoke-runbook для I.3).
+2. Поддерживать `docs/09_LEGAL_REINFORCEMENT_SMOKE.md` как операционный smoke-runbook для I.3.
 3. После старта I.3 синхронно обновлять `docs/02_MECHANICS.md`, `docs/03_OPERATIONS.md`, `docs/04_CONTENT_CONTRACTS.md` по каждому завершённому подпункту.
 4. Поддерживать каталог runtime-файлов в `docs/07_SCENARIOS_AND_ALGORITHMS.md` как актуальную карту подсистем.
 
