@@ -41,22 +41,35 @@ Ambient Life v2 решает две задачи одновременно:
 
 ---
 
-## 4) Карта подсистем и текущая реализация
+## 4) Таблица спроектированных систем и уже придуманных решений
 
-Ниже — сводка по системам с текущим состоянием (baseline A–I.2) и ролью в архитектуре.
+Ниже — рабочая «карта системы»: что уже спроектировано, что именно придумано/зафиксировано в реализации, и где лежит канонический код или документация.
 
-| Подсистема | Что реализовано | Где смотреть |
+| Подсистема | Что уже придумали и зафиксировали | Статус | Где смотреть |
+|---|---|---|---|
+| Core lifecycle | Area-centric orchestration вместо heartbeat на каждого NPC; единый lifecycle-контур area/NPC | ✅ Реализовано | `scripts/ambient_life/al_core_inc.nss`, `scripts/ambient_life/al_area_tick.nss` |
+| Registry + dispatch | Реестры area/NPC, bounded dispatch queue, batched-обработка и управляемая деградация под нагрузкой | ✅ Реализовано | `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_dispatch_inc.nss` |
+| Cache/lookup | Route/cache и lookup-оптимизации, чтобы не сканировать мир unbounded-логикой | ✅ Реализовано | `scripts/ambient_life/al_route_cache_inc.nss`, `scripts/ambient_life/al_lookup_cache_inc.nss` |
+| Route + transition | Канонический маршрутный pipeline + переходы между linked area без разрыва routine-состояний | ✅ Реализовано | `scripts/ambient_life/al_route_inc.nss`, `scripts/ambient_life/al_transition_inc.nss` |
+| Sleep + activity + schedule | Суточный цикл NPC (активности, сон, расписание) как часть общей routine-машины | ✅ Реализовано | `scripts/ambient_life/al_sleep_inc.nss`, `scripts/ambient_life/al_activity_inc.nss`, `scripts/ambient_life/al_schedule_inc.nss` |
+| Reactive layer | Реакции на blocked/disturbed и безопасный возврат в штатный режим | ✅ Реализовано | `scripts/ambient_life/al_react_inc.nss`, `scripts/ambient_life/al_blocked_inc.nss` |
+| City layer (crime/alarm) | Локальный городской контур с FSM-эскалацией/деэскалацией, отделённый от персонального routine-NPC | ✅ Реализовано (I.0–I.2) | `scripts/ambient_life/al_city_crime_inc.nss`, `scripts/ambient_life/al_city_alarm_inc.nss` |
+| Population respawn | Управляемый population lifecycle + respawn с pre-check и bounded-ограничениями | ✅ Реализовано | `scripts/ambient_life/al_city_population_inc.nss`, `docs/10_NPC_RESPAWN_MECHANICS.md` |
+| NPC hooks / wrappers | Слой входных событий (onspawn/ondamaged/ondeath и др.) и action-сигналы | ✅ Реализовано | `scripts/ambient_life/al_npc_on*.nss`, `scripts/ambient_life/al_action_*.nss` |
+| Diagnostics/support | Диагностический и сервисный слой для эксплуатации/дебага | ✅ Реализовано | `scripts/ambient_life/al_debug_inc.nss`, `scripts/ambient_life/al_events_inc.nss` |
+| Reinforcement + legal chain | Policy-ограниченный reinforcement + цепочка surrender → arrest → trial/legal followup | 🟡 В проектировании (Stage I.3) | `docs/08_STAGE_I3_TRACKER.md`, `docs/12_MASTER_PLAN.md` |
+
+### Блок конфликтов идей: где чаще всего ломается архитектура
+
+Ниже перечислены конфликтные места, на которые нужно смотреть в первую очередь при дизайне и код-ревью:
+
+| Конфликт идей | Почему конфликтует | На что обратить внимание |
 |---|---|---|
-| Core lifecycle | Базовый жизненный цикл и orchestration-контур area/NPC | `scripts/ambient_life/al_core_inc.nss`, `scripts/ambient_life/al_area_tick.nss` |
-| Registry + dispatch | Реестры area/NPC и bounded dispatch queue с batched-обработкой | `scripts/ambient_life/al_registry_inc.nss`, `scripts/ambient_life/al_dispatch_inc.nss` |
-| Cache/lookup | Кэш маршрутов и lookup-оптимизации для runtime-поиска | `scripts/ambient_life/al_route_cache_inc.nss`, `scripts/ambient_life/al_lookup_cache_inc.nss` |
-| Route + transition | Маршрутизация NPC и переходы между linked area | `scripts/ambient_life/al_route_inc.nss`, `scripts/ambient_life/al_transition_inc.nss` |
-| Sleep + activity + schedule | Суточные активности, sleep lifecycle, планирование routine-шагов | `scripts/ambient_life/al_sleep_inc.nss`, `scripts/ambient_life/al_activity_inc.nss`, `scripts/ambient_life/al_schedule_inc.nss` |
-| Reactive layer | Реакции на blocked/disturbed и восстановление штатного поведения | `scripts/ambient_life/al_react_inc.nss`, `scripts/ambient_life/al_blocked_inc.nss` |
-| City layer | Локальный crime/alarm контур (FSM-эскалация и деэскалация) | `scripts/ambient_life/al_city_crime_inc.nss`, `scripts/ambient_life/al_city_alarm_inc.nss` |
-| Population respawn | Population lifecycle и respawn-пайплайн с pre-checks | `scripts/ambient_life/al_city_population_inc.nss`, `docs/10_NPC_RESPAWN_MECHANICS.md` |
-| NPC hooks / wrappers | Точки входа событий сущностей и action-сигналы | `scripts/ambient_life/al_npc_on*.nss`, `scripts/ambient_life/al_action_*.nss` |
-| Diagnostics/support | Диагностика и вспомогательные runtime-утилиты | `scripts/ambient_life/al_debug_inc.nss`, `scripts/ambient_life/al_events_inc.nss` |
+| «Сделаем всё на engine-faction» vs «Сохраним правовую модель проекта» | Фракции движка хорошо решают локальную тактику, но не заменяют юридическую/социальную «правду мира» | Право, статусы, документы и политические сущности держать в проектном/персистентном слое |
+| «Быстрый full-scan мира» vs bounded runtime | Full-scan ломает предсказуемость latency и масштабируемость на живом модуле | Для legal/reinforcement/crime/population использовать только ограниченные выборки, очереди и бюджеты |
+| «Смешаем city alarm FSM и personal routine NPC» vs разделение контуров | Смешение машин состояний даёт неявные баги эскалации и трудно дебажится | Держать городскую тревогу и персональный routine-пайплайн логически и кодово разделёнными |
+| «Подправим runtime locals руками» vs контрактность данных | Ручные правки локалов маскируют системные ошибки и создают рассинхрон state-машин | Лечить причину в runtime-коде/контрактах, а не «горячими» правками локалов |
+| «Добавим фичу любой ценой» vs инварианты A–I.2/I.3 | Локально рабочая фича может сломать канон архитектуры | Перед merge проверять соответствие инвариантам и наличие bounded-деградации |
 
 ---
 
