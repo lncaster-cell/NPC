@@ -88,4 +88,4 @@
 
 1. Runtime поведение: `scripts/ambient_life/*`.
 2. Канон механик и операционных требований: `docs/02_MECHANICS.md`, `docs/03_OPERATIONS.md`, `docs/04_CONTENT_CONTRACTS.md`.
-3. Статус «сделано/планируется/пробелы»: `docs/05_STATUS_AUDIT.md`, `docs/08_STAGE_I3_TRACKER.md`.
+3. Статус «сделано/планируется/пробелы»: `docs/18_REBUILD_RESET_CONTEXT.md`.

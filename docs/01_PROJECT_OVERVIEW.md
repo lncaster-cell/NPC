@@ -1,46 +1,29 @@
 # Ambient Life v2 — Project Overview
 
-## 1. Назначение
-Ambient Life v2 симулирует «живую» жизнь NPC в NWN2 через area-centric runtime и event-driven orchestration без per-NPC heartbeat-циклов.
+## 1) Текущий статус проекта
+Проект находится на этапе **проектирования и планирования**.
 
-## 2. Архитектурные принципы
-- **Area-centric execution**: обработка координируется area tick scheduler.
-- **Event-driven orchestration**: NPC получают сигналы через `OnUserDefined` и профильные event hooks.
-- **Bounded processing**: маршруты, реакции и dispatch выполняются в ограниченных бюджетах.
-- **Content-configured behavior**: поведение задаётся локалами на NPC/waypoint/area.
+- runtime-код прошлой итерации удалён;
+- репозиторий используется как архитектурная и каноническая база;
+- любые изменения вносятся только в документацию.
 
-## 3. Ключевые подсистемы
-- Lifecycle tiers (`FREEZE/WARM/HOT`).
-- Area/NPC registry + bounded dispatch queue.
-- Route + transition subsystem для linked areas.
-- Sleep/activity/react pipelines.
-- City crime/alarm слой с конечными состояниями и ограниченной эскалацией.
+## 2) Что является source of truth
+Основные документы этапа:
 
-## 4. Карта runtime-файлов
-Основная реализация находится в `scripts/ambient_life/al_*` и разделена на:
-- ядро и диспетчеризацию (`al_core_inc`, `al_dispatch_inc`, `al_events_inc`),
-- реестры и кэши (`al_registry_inc`, `al_lookup_cache_inc`, `al_route_cache_inc`),
-- механики (`al_route_inc`, `al_transition_inc`, `al_sleep_inc`, `al_activity_inc`, `al_react_inc`),
-- city layer (`al_city_registry_inc`, `al_city_alarm_inc`, `al_city_crime_inc`).
+1. `docs/12A_WORLD_MODEL_CANON.md` — правовой и политический канон мира.
+2. `docs/12B_RUNTIME_MASTER_PLAN.md` — принципы runtime-архитектуры для новой реализации.
+3. `docs/12C_PLAYER_PROPERTY_SYSTEM.md` — система имущества и прав.
+4. `docs/12D_WORLD_TRAVEL_CANON.md` — перемещения по миру.
+5. `docs/12E_TRADE_AND_CITY_STATE_CANON.md` — торговля и состояние городов.
+6. `docs/18_REBUILD_RESET_CONTEXT.md` — правила reset/rebuild-фазы.
 
-## 5. Дорожная карта
-### Завершено
-- Stages A–H (архитектура, registry, lifecycle, route/transition, sleep/activity).
-- Stage I.0–I.2 (blocked/disturbed и локальный crime/alarm слой).
+## 3) Приоритеты текущего этапа
+1. Убрать устаревшие ссылки на несуществующий runtime.
+2. Удерживать единый канон без дублирования.
+3. Фиксировать архитектурные решения в `docs/10_DECISIONS_LOG.md`.
+4. Поддерживать карту идей в `docs/16_IDEA_INVENTORY_AND_SYNC_MAP.md`.
 
-### Следующий этап
-**Stage I.3 — Reinforcement/Legal extensions**:
-1. Ограниченные policy для reinforcement/guard spawn.
-2. Surrender/arrest/trial pipeline поверх legal hooks.
-3. Расширение последствий crime incidents без world-wide scan.
-4. Smoke/QA сценарии для legal/reinforcement цепочки.
-
-## 6. Что редактирует контент vs runtime
-- Контент задаёт route-теги, activity hints, city/area linkage, sleep markup.
-- Runtime локалы (очереди, курсоры, счётчики, state-machine flags) вручную не редактируются.
-
-## 7. Синхронизированная карта документации
-- Статус реализации и пробелы: `docs/05_STATUS_AUDIT.md`.
-- Системные инварианты и принципы: `docs/06_SYSTEM_INVARIANTS.md`.
-- Каталог сценариев/алгоритмов/механик: `docs/07_SCENARIOS_AND_ALGORITHMS.md`.
-- План/прогресс следующего этапа: `docs/08_STAGE_I3_TRACKER.md`.
+## 4) Ограничения до старта новой реализации
+- Не добавлять новый runtime-код.
+- Не трактовать исторические «реализовано» как текущее состояние.
+- Любые новые механики сначала оформлять в канонических документах, затем синхронизировать в индексах.
