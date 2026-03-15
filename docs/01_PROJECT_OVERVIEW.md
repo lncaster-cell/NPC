@@ -1,46 +1,17 @@
-# Ambient Life v2 — Project Overview
+# Ambient Life v2 — Project Overview (служебный статус)
 
-## 1. Назначение
-Ambient Life v2 симулирует «живую» жизнь NPC в NWN2 через area-centric runtime и event-driven orchestration без per-NPC heartbeat-циклов.
+Статус: **deprecated overview / redirect-only**.
 
-## 2. Архитектурные принципы
-- **Area-centric execution**: обработка координируется area tick scheduler.
-- **Event-driven orchestration**: NPC получают сигналы через `OnUserDefined` и профильные event hooks.
-- **Bounded processing**: маршруты, реакции и dispatch выполняются в ограниченных бюджетах.
-- **Content-configured behavior**: поведение задаётся локалами на NPC/waypoint/area.
+Этот файл сохранён только как техническая точка совместимости для старых ссылок.
+Он **не является** главным обзором, каноном или входом в проект.
 
-## 3. Ключевые подсистемы
-- Lifecycle tiers (`FREEZE/WARM/HOT`).
-- Area/NPC registry + bounded dispatch queue.
-- Route + transition subsystem для linked areas.
-- Sleep/activity/react pipelines.
-- City crime/alarm слой с конечными состояниями и ограниченной эскалацией.
+## Куда читать вместо него
 
-## 4. Карта runtime-файлов
-Основная реализация находится в `scripts/ambient_life/al_*` и разделена на:
-- ядро и диспетчеризацию (`al_core_inc`, `al_dispatch_inc`, `al_events_inc`),
-- реестры и кэши (`al_registry_inc`, `al_lookup_cache_inc`, `al_route_cache_inc`),
-- механики (`al_route_inc`, `al_transition_inc`, `al_sleep_inc`, `al_activity_inc`, `al_react_inc`),
-- city layer (`al_city_registry_inc`, `al_city_alarm_inc`, `al_city_crime_inc`).
+1. `README.md` — короткий вход в репозиторий.
+2. `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md` — единственный главный дизайн-документ.
+3. `docs/12_MASTER_PLAN.md` — краткая сводка и навигационный индекс.
+4. `docs/12A–12E`, `docs/13_AGING_AND_CLAN_SUCCESSION.md`, `docs/14_CLAN_SYSTEM_DESIGN.md` — доменная детализация.
 
-## 5. Дорожная карта
-### Завершено
-- Stages A–H (архитектура, registry, lifecycle, route/transition, sleep/activity).
-- Stage I.0–I.2 (blocked/disturbed и локальный crime/alarm слой).
+## Примечание
 
-### Следующий этап
-**Stage I.3 — Reinforcement/Legal extensions**:
-1. Ограниченные policy для reinforcement/guard spawn.
-2. Surrender/arrest/trial pipeline поверх legal hooks.
-3. Расширение последствий crime incidents без world-wide scan.
-4. Smoke/QA сценарии для legal/reinforcement цепочки.
-
-## 6. Что редактирует контент vs runtime
-- Контент задаёт route-теги, activity hints, city/area linkage, sleep markup.
-- Runtime локалы (очереди, курсоры, счётчики, state-machine flags) вручную не редактируются.
-
-## 7. Синхронизированная карта документации
-- Статус реализации и пробелы: `docs/05_STATUS_AUDIT.md`.
-- Системные инварианты и принципы: `docs/06_SYSTEM_INVARIANTS.md`.
-- Каталог сценариев/алгоритмов/механик: `docs/07_SCENARIOS_AND_ALGORITHMS.md`.
-- План/прогресс следующего этапа: `docs/08_STAGE_I3_TRACKER.md`.
+Если в документации найдено место, где `01_PROJECT_OVERVIEW.md` подаётся как актуальный обзорный SoT, это считается ошибкой синхронизации и должно быть исправлено в пользу иерархии выше.

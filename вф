@@ -1,0 +1,473 @@
+# Проектирование библиотеки скриптов для NWN2 на основе репозитория lncaster-cell/NPC
+
+**Executive summary.**  
+Репозиторий `lncaster-cell/NPC` — это **documentation-first дизайн‑библиотека** для проекта *Ambient Life v2*; в нём прямо зафиксировано, что **runtime‑код прошлой итерации удалён**, а текущая цель — восстановить/перепроектировать архитектуру через канонические документы и контракты. fileciteturn6file0L1-L1 fileciteturn24file0L1-L1  
+Цель пользователя в запросе **не уточнена**, поэтому ниже я делаю явные допущения: вы хотите разработать **библиотеку скриптов/плагинов для игрового движка**, и по контексту репозитория этот движок — **Neverwinter Nights 2 (NWN2) + NWScript + NWNX4**, с опорой на внешнее хранилище (SQLite) и жёсткими требованиями к **модульности, производительности (bounded runtime), синхронизации контента** и **совместимости с текущими контрактами/каноном из репозитория**. fileciteturn25file0L1-L1 fileciteturn24file0L1-L1 fileciteturn36file0L1-L1  
+
+Ключевой архитектурный вывод из вашей дизайн‑базы: **перейти от per‑NPC heartbeat/постоянных сканов к area‑centric, event‑driven оркестрации** с “бюджетами”, очередями, backpressure и деградацией качества при перегрузке. fileciteturn24file0L1-L1 fileciteturn27file0L1-L1  
+Оптимальная целевая форма библиотеки — **слоистая модульная “платформа” NWScript**, где домены (Daily Life, City Response, Legal, Property, Travel, Trade/City State, Clan, Aging) изолированы, общаются через **явные контракты событий/данных**, а долговременная “истина” живёт в БД (SQLite через NWNX4), что согласуется с тем, что **Campaign DB в NWN2 исторически помечена как “not currently supported”**. fileciteturn36file0L1-L1 citeturn1search0  
+
+Ниже — полный разбор репозитория, затем ограничения NWN2/NWScript/NWNX4, варианты архитектуры (3+), оптимизация, синхронизация контента, и практическая схема реализации (API, миграция контента, тестирование, CI/CD).
+
+## Контекст, цель и допущения
+
+### Что можно утверждать по репозиторию
+Проект — *Ambient Life v2* для **NWN2**, причём репозиторий служит **единым “каноническим пакетом” документации**, где центральный SoT — `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`, а `docs/12_MASTER_PLAN.md` — лишь навигационный индекс. fileciteturn25file0L1-L1 fileciteturn30file0L1-L1  
+Текущее состояние — **reset/rebuild**: “код удалён, работа только с документацией”; многие runtime‑ссылки описывают историческую реализацию. fileciteturn24file0L1-L1 fileciteturn34file0L1-L1  
+
+### Что не уточнено пользователем и как я это интерпретирую
+Не указаны: **целевые платформы** (Windows/Linux), **целевой формат поставки** (PW‑сервер, одиночный модуль, пакет с NWNX4), **языки скриптов и tooling** (кроме очевидного NWScript), **требования обратной совместимости** (кроме “совместимо с текущими контрактами и именованием”), **целевые метрики производительности**. Поэтому в проектировании я считаю “не указано” и предлагаю варианты.
+
+Моё рабочее допущение (как вы просили): библиотека должна обеспечивать  
+(а) **модульность** (домены и подсистемы),  
+(б) **производительность** (bounded runtime и отказ от per‑NPC heartbeat),  
+(в) **синхронизацию контента** (данные/ресурсы/модули, сетевые сценарии),  
+(г) **совместимость** с формализованными контрактами/инвариантами/терминами и историческими именами (например `al_*`, доменные SoT). fileciteturn24file0L1-L1 fileciteturn32file0L1-L1  
+
+## Репозиторий lncaster-cell/NPC: структура, ключевые модули, контракты и точки расширения
+
+### Общая структура и “карта источников истины”
+Репозиторий фактически состоит из `README.md` и `docs/**` и организован как библиотека доменных томов: `12A–12E` (канон доменов), плюс `13/14` (aging/clans), плюс служебные документы `00/10/16/18` и `architecture/*`. fileciteturn32file0L1-L1 fileciteturn42file0L1-L1 fileciteturn45file0L1-L1  
+
+Критически важно: в документах многократно упоминается ожидаемая структура runtime‑скриптов (`scripts/ambient_life/al_*.nss`, `scripts/legal/lg_*.nss`), но **эти файлы отсутствуют в репозитории** как код; их надо воспринимать как **контракт целевой архитектуры** и “имена модулей” для будущей реализации. fileciteturn6file0L1-L1 fileciteturn27file0L1-L1 fileciteturn44file0L1-L1  
+
+### Таблица файлов/модулей репозитория: назначение, зависимости, критичность
+Уровни критичности в таблице — **для задачи проектирования библиотеки скриптов**:  
+**H** = без этого нельзя спроектировать runtime‑библиотеку; **M** = важно для доменных интерфейсов/интеграции; **L** = governance/шаблоны/справочно.
+
+| Путь | Роль / содержание | Ключевые зависимости (логические) | Критичность |
+|---|---|---|---|
+| `README.md` | Вход: позиционирование, статус reset/rebuild | Указывает на `17`, `12`, `18` | H |
+| `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md` | Главный канон проекта (SoT) | Доменные тома `12A–12E, 13, 14` | H |
+| `docs/12_MASTER_PLAN.md` | Индекс‑навигатор по документации | Ссылается на `17`, `12A–12E`, `13`, `14` | M |
+| `docs/12B_RUNTIME_MASTER_PLAN.md` | Нормативка runtime‑архитектуры (area‑centric, bounded, события, подсистемы) | `02/03/04/06/07/18` | H |
+| `docs/18_REBUILD_RESET_CONTEXT.md` | Ключевой reset‑контекст, именно “как мыслить” новую реализацию | `12B`, `16`, `03` | H |
+| `docs/04_CONTENT_CONTRACTS.md` | Контракты контента: локальные переменные/разметка/ключи, форматы | Используется всеми runtime‑подсистемами | H |
+| `docs/06_SYSTEM_INVARIANTS.md` | Инварианты системы (bounded, разделение контуров, запреты) | `12B`, `02` | H |
+| `docs/02_MECHANICS.md` | Канон базовых механик runtime (routine/route/sleep/react/respawn/alarm) | `12B`, `10_NPC_RESPAWN...` | H |
+| `docs/07_SCENARIOS_AND_ALGORITHMS.md` | Каталог подсистем/алгоритмов и список предполагаемых runtime‑файлов `al_*` | Прямо отражает целевую модульность | H |
+| `docs/10_NPC_RESPAWN_MECHANICS.md` | Техдок по city population respawn (CreateObject, budget/cooldown) | Связь `core -> city_population` | H |
+| `docs/12A_WORLD_MODEL_CANON.md` | Канон world/legal: 3‑слоя (движок/мир/логика), события `OnPerception/OnDisturbed`, SQLite через NWNX4 | Влияет на data/persistence/interfaces | H |
+| `docs/legal_system_design.md` | Детальный техдизайн ареста/суда (state machine, SQLite schema, entry points) | Расширяет legal‑домены; даёт структуру `scripts/legal/*` | H |
+| `docs/12C_PLAYER_PROPERTY_SYSTEM.md` | Канон собственности: классы, лимиты, доступ, хранение, масштабирование | Требует DB + runtime проекции | M |
+| `docs/12D_WORLD_TRAVEL_CANON.md` | Канон путешествий: world map, `ShowWorldMap`, запреты (Campaign DB, MountObject) | Travel‑контур, UI/trigger‑интеграция | M |
+| `docs/12E_TRADE_AND_CITY_STATE_CANON.md` | Канон торговли/состояния города: агрегаты, не per‑NPC экономика | City state -> runtime projection | M |
+| `docs/14_CLAN_SYSTEM_DESIGN.md` | Канон кланов: player‑клан детально, NPC‑кланы фасадно; event‑driven | Требует DB и доменные пороги | M |
+| `docs/13_AGING_AND_CLAN_SUCCESSION.md` | Канон старения: GetAge есть, SetAge нет; календарь; проверка на входе | Требует DB, входные хуки | M |
+| `docs/16_IDEA_INVENTORY_AND_SYNC_MAP.md` | Инвентарь идей/связей; предупреждает про историчность runtime‑привязок | Governance + следы модулей | M |
+| `docs/10_DECISIONS_LOG.md` | Журнал решений (DEC) | Governance | L |
+| `docs/03_OPERATIONS.md` | Операции doc‑phase, чек‑листы синхронизации | Governance | L |
+| `docs/00_PROJECT_LIBRARY.md` | “Routing‑слой” библиотеки документов | Governance | L |
+| `docs/01_PROJECT_OVERVIEW.md` | Deprecated redirect | — | L |
+| `docs/architecture/01_PROJECT_PASSPORT.md` | Границы доменов (anti‑confusion) | Ссылается на SoT доменов | M |
+| `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md` | Реестр открытых design‑вопросов | Питает будущие DEC | M |
+| `docs/library/DOMAIN_INDEX.md` | Карта “домен -> primary SoT” | Governance | L |
+| `docs/library/IDEA_CARD_TEMPLATE.md` | Шаблон карточки идеи | Governance | L |
+
+Таблица составлена по фактическим файлам репозитория и их роли, зафиксированной в самих документах. fileciteturn6file0L1-L1 fileciteturn30file0L1-L1 fileciteturn42file0L1-L1  
+
+### Ключевые “runtime‑модули”, описанные как целевая структура
+Хотя кода нет, `docs/07_SCENARIOS_AND_ALGORITHMS.md` перечисляет ожидаемые подсистемы `scripts/ambient_life/*` (core/area/registry/dispatch/route/transition/sleep/activity/react/city alarm/population) и набор hook‑скриптов NPC (OnSpawn/OnBlocked/OnDisturbed/OnDamaged/OnSpellCastAt/OnDeath и т.д.). fileciteturn27file0L1-L1  
+`docs/legal_system_design.md` аналогично предлагает структуру `scripts/legal/*` (db‑слой, services, reconcile, conversation scripts, cutscene scripts, guard scripts, module hooks). fileciteturn44file0L1-L1  
+
+Это и есть “скелет” будущей библиотеки: **набор библиотечных include‑модулей + тонкие entrypoints**, которые цепляются к событиям NWN2.
+
+### Контракты данных и примеры использования
+Репозиторий задаёт принцип: **SQLite — источник истины**, а локальные переменные в NWN2 — только кэш/маркер состояния. fileciteturn44file0L1-L1 fileciteturn36file0L1-L1  
+Среди практических контрактов (как минимум для “Ambient Life” и связанных доменов) зафиксированы:
+- наличие **event bus** с сервисными событиями (slot events, resync, blocked resume, city assignment events); fileciteturn27file0L1-L1  
+- разделение контуров `routine / transition / sleep / react / city alarm` как независимых bounded‑контуров, связанных только явными событиями; fileciteturn28file0L1-L1  
+- respawn для unnamed NPC как city‑layer policy со счётчиками, бюджетами и cooldown; fileciteturn35file0L1-L1  
+- legal‑домен: разделение “слоя движка” (perception/disturbed/listening/factions) и “слоя правды мира” (SQLite + профили закона/владение/гражданство/полномочия), при этом **PC нельзя переводить фракциями** и фракции не должны моделировать государство/право. fileciteturn36file0L1-L1 citeturn0search0  
+
+## Ограничения движка NWN2, скриптового API и рантайма: выявленное и “не указано”
+
+Ниже я разделяю: (а) то, что прямо следует из репозитория, (б) подтверждённые внешними источниками свойства NWN2/NWScript/NWNX4, (в) параметры, которые **не указаны** (и их нужно закрыть прототипом/замером).
+
+### Ограничения, на которые явно опирается дизайн‑база репозитория
+1) **Запрещена архитектура “per‑NPC heartbeat как основа”**: целевая модель — area‑centric orchestration + bounded event‑driven runtime, с дисциплиной очередей/бюджетов/backpressure/деградации. fileciteturn24file0L1-L1 fileciteturn28file0L1-L1  
+
+2) **Campaign DB не считается опорной** для постоянных данных (travel‑state и т.п.) — в репозитории это выделено как ограничение. fileciteturn38file0L1-L1  
+
+3) **SQLite через NWNX4 (`xp_sqlite`)** рассматривается как штатный путь persistent storage; отдельно фиксируется предупреждение “не использовать SQLite как общий сетевой файл с одновременной записью многими машинами”. fileciteturn36file0L1-L1  
+
+4) Для отдельного сложного домена (суд/арест) фиксируется: не строить длительные процессы на `DelayCommand()`, нужен reconcile и state machine, а heartbeat допустим только как **ограниченный** reconciliation‑контур по “грязным/просроченным” записям. fileciteturn44file0L1-L1  
+
+### Ограничения NWN2/NWScript, которые подтверждаются внешними источниками
+**Периодичность и стоимость heartbeat.**  
+- В NWN‑семействе `OnHeartbeat` обычно срабатывает раз в ~6 секунд; предупреждается, что множество heartbeat‑скриптов процессорно дорого, и лучше использовать событийные скрипты, где возможно. citeturn19search0  
+- Для NWN2 это подтверждается и обучающими материалами: NPC “говорит каждые 6 секунд” через Heartbeat, а разные обработчики реально маршрутизируются через `OnUserDefined` с event number 1001 (heartbeat) и 1002 (perception). citeturn12search0 citeturn12search5  
+
+**Событийная модель как основной способ модульности.**  
+- NWN2 имеет константы `EVENT_*`, включая `EVENT_HEARTBEAT=1001`, `EVENT_PERCEIVE=1002`, `EVENT_DISTURBED=1008`, `EVENT_SPELL_CAST_AT=1011` и др., что естественно поддерживает “внутренний event bus” поверх `OnUserDefined` и `GetUserDefinedEventNumber()`. citeturn19search4  
+- Есть `SetEventHandler(oObject, iEventID, sScriptName)`, позволяющий **динамически привязывать скрипты к событиям** объекта, что можно использовать как технологическую основу “плагинной” архитектуры внутри NWScript (регистрация обработчиков). citeturn19search5 citeturn19search1  
+
+**Ограничения campaign DB в NWN2.**  
+Раздел функций `SetCampaign*`/`GetCampaign*` в NWN2‑доках содержит ремарку “Campaign DB functions are not currently supported” (AFW‑OEI 2006), что согласуется с отказом репозитория от campaign DB как базового persistence. citeturn1search0 citeturn1search4  
+
+**Фракции и PCs.**  
+Функция `ChangeFaction` имеет замечание, что **PCs cannot change factions** (и ряд других ограничений), что поддерживает дизайн‑решение отделять legal/world истину от движковых фракций. citeturn0search0 fileciteturn36file0L1-L1  
+
+**Путешествия / перемещение “корабля”.**  
+`ShowWorldMap(string, object, string)` — штатная функция NWN2 для вызова карты мира. citeturn6search2  
+`MountObject` в NWN2 описывается как функция “без эффекта” (в community‑документации), что репозиторий использует для запрета архитектуры “посадим игрока на корабль‑носитель и повезём”. citeturn2search3 fileciteturn38file0L1-L1  
+
+**Cutscene safety.**  
+`OnCutsceneAbort` и `GetLastPCToCancelCutscene()` существуют и должны учитываться для аварийного выхода из cutscene‑потоков. citeturn7search0 citeturn7search42  
+
+**NWNX4 как расширитель сервера и плагины.**  
+- NWNX4 запускает `nwn2server`, инжектит DLL и загружает плагины; конфигурация `plugin_list` позволяет явно выбирать плагины (например `xp_sqlite`, `xp_profiler`, `xp_rpc`) и снижать конфликты. citeturn4search0  
+- `xp_rpc` описан как канал высокопроизводительного RPC между NWN2‑сервером и микросервисами через gRPC/Protocol Buffers. citeturn16search0 citeturn16search1  
+
+**SQLite и сеть.**  
+Официальная документация SQLite прямо говорит, что лучшая защита — **не использовать SQLite на network filesystem**, и отдельно описывает риски блокировок/коррупции. citeturn13search0 citeturn13search3  
+
+**Синхронизация контента в NWN2 (MP).**  
+Patch 1.23 вводит “Content Autodownloader” и серверные флаги `-home`, `-cs`, `-du`, `-do`; это важная платформа для “синхронизации контента” у клиентов в мультиплеере. citeturn15search0  
+В практическом (сервер‑админ) описании подчёркивается, что autodownloader сравнивает клиентский контент с серверным, скачивает новое и может удалять отличающееся; также рекомендуется отключать override/custom GUI клиентов для контроля консистентности. citeturn15search4  
+
+### Что в репозитории не указано и должно быть закрыто прототипом
+- **Жёсткие лимиты памяти**, лимиты на число объектов/путей/локальных переменных — **не указано**.  
+- **Максимальный budget на “area tick”** (в миллисекундах/кол-ве операций) — **не указано**.  
+- **Целевой масштаб**: NPC/area на “hot‑tier” и число активных городов — **не указано**.  
+- **Целевая платформа сервера** (Windows vs Linux + Wine) — **не указано**.  
+- **Целевой способ поставки контента** (autodownloader vs внешний лаунчер/патчер) — **не указано**.  
+
+Рекомендация: зафиксировать эти параметры отдельным DEC (как требует governance) и закрыть быстрыми профилировочными прототипами, иначе bounded‑дизайн останется только декларацией. fileciteturn33file0L1-L1 fileciteturn43file0L1-L1  
+
+## Варианты архитектуры библиотеки скриптов: минимум три паттерна и сравнение
+
+Ниже — три архитектурные опции, которые соответствуют вашим обязательным направлениям (микромодули/плагины, ECS‑подход, “скриптовый менеджер с VM”) и **переведены на язык NWN2/NWScript‑реалий**.
+
+### Паттерн микромодулей и “плагинов” на NWScript
+**Суть.**  
+Библиотека строится как набор независимых include‑модулей (`al_*_inc.nss`, `lg_*_service.nss`), каждый предоставляет небольшой API (функции) и **регистрирует** обработчики в общий диспетчер через:
+- `SetEventHandler` (где доступно) для привязки обработчиков к объектам; citeturn19search5  
+- единый модульный `OnUserDefined` (event bus) с маршрутизацией по `GetUserDefinedEventNumber()` и спискам подписчиков/очередям. citeturn12search0 citeturn19search4  
+
+**Почему это “нативно” для NWN2.**  
+У NWN2 есть универсальная схема “многие события -> один `OnUserDefined` с числовыми кодами 1001/1002/…”, что исторически используется в дефолтной скриптовой экосистеме. citeturn12search0 citeturn19search4  
+
+**Как ложится на репозиторий.**  
+Имена `al_core_inc`, `al_dispatch_inc`, `al_city_alarm_inc` и т.п. уже зафиксированы как целевые подсистемы. fileciteturn27file0L1-L1  
+
+### Паттерн ECS‑подобной модели поверх NWScript/SQLite
+**Суть.**  
+Вы описываете сущности (NPC/город/поселение/объект собственности/дело суда) как **Entity**, а признаки/состояния — как **Components** (в SQLite и/или локальных vars как кэш). Системы (Systems) выполняют обработку **батчами** в area‑tick/городском тике/входных событиях.
+
+**Почему это может дать выигрыш.**  
+ECS обычно выбирают ради масштабируемой обработки больших множеств однородных сущностей и “data‑oriented” доступа к данным; официально Unity позиционирует ECS как data‑oriented подход для масштабируемой производительности. citeturn14search1  
+В NWN2 у вас нет встроенной DOTS/Jobs‑параллелизации, но вы можете получить половину выгоды: **батч‑обработку и предсказуемость**, особенно если основную “истину” держите в БД и не заставляете движок симулировать всё per‑NPC. Это совпадает с каноном репозитория: город симулируется агрегировано, NPC — проекция состояния города. fileciteturn39file0L1-L1  
+
+### Паттерн “скриптовый менеджер” как мини‑VM и интерпретация поведения
+**Суть.**  
+Не писать огромные “ветвистые” скрипты поведения, а сделать **интерпретатор компактного DSL/behavior graph**, который выполняет шаги “route/transition/sleep/activity” как данные (таблицы/2DA/SQLite/локальные структуры) и исполняет их в bounded‑цикле через диспетчер.
+
+**Зачем.**  
+Это повышает модульность и совместимость с контентом: изменения поведения чаще уходят в данные, а не в код (важно при большом количестве NPC и контентной разметки). В репозитории уже заложен такой стиль: route tags, fingerprint/content‑version, route‑cache, bounded dispatch, отдельные pipeline‑контуры. fileciteturn27file0L1-L1  
+
+### Сравнительная таблица паттернов
+Оценки производительности — качественные (потому что целевые метрики/лимиты не указаны).
+
+| Критерий | Микромодули/плагины | ECS‑подход | Скриптовый менеджер/мини‑VM |
+|---|---|---|---|
+| Совместимость с репозиторием | Максимальная: почти один‑в‑один с `al_*` и доменными границами fileciteturn27file0L1-L1 | Высокая, если компоненты = доменные поля/кэши | Высокая для routine/route/transition; требует дисциплины DSL |
+| Интеграция с NWN2 событиями | Нативно: `OnUserDefined`, `SetEventHandler` citeturn12search0 citeturn19search5 | Требует “систем” вокруг тех же событий | Нативно, но нужен слой интерпретации + таблицы данных |
+| Риск перегрузки CPU | Низкий при правильном bounded‑диспетчере; высокий при хаотичных подписках | Средний: батчи помогают, но легко сделать “толстые” проходы | Низкий‑средний: интерпретатор должен быть очень лёгким |
+| Сложность разработки | Низкая‑средняя (классический NWScript‑стиль) | Средняя (нужно продумать схемы компонентов/батчи) | Средняя‑высокая (DSL, версии, миграции данных) |
+| Тестируемость | Хорошая при разделении “ядро/адаптеры” и контрактных тестах | Хорошая, если data‑schema стабилен | Хорошая, но нужен набор golden‑тестов для интерпретатора |
+| Где особенно сильна | Базовый runtime‑каркас, bounded event bus, registry/cache | Макросимуляции (городское состояние, population projection) | Контент‑driven рутины/маршруты, снижение “скриптового спагетти” |
+| Где рискована | Если нет строгих budget/очередей, плагины раздуют событийн. фан‑аут | Можно переусложнить без выигрыша (нет многопоточности) | Можно получить “второй язык” без инструментов/валидации |
+
+**Рекомендация по выбору.**  
+Оптимальный практический план для NWN2: взять **микромодульную архитектуру** как базовый каркас (最совместимо с вашим repo‑каноном) и **точечно** использовать ECS‑идеи (батчи и компонентные записи в БД) для city‑state/population/legal‑агрегатов, а мини‑VM применить только там, где он действительно снижает стоимость контента (routine/route/transition). fileciteturn27file0L1-L1 fileciteturn39file0L1-L1  
+
+### Архитектурная схема целевой библиотеки
+```mermaid
+flowchart TB
+  subgraph Engine["NWN2 Engine (events, AI, replication)"]
+    E1["OnPerception / OnDisturbed / OnSpellCastAt / OnDamaged"]
+    E2["Module/Area OnHeartbeat (6s)"]
+    E3["OnClientEnter/Leave, OnCutsceneAbort"]
+  end
+
+  subgraph ScriptPlatform["NWScript Script Platform (Ambient Life v2 Library)"]
+    BUS["Event Bus + Dispatch Queue\n(GetUserDefinedEventNumber routes)"]
+    BUDGET["Budget + Backpressure\n(drop/degrade/deferrals)"]
+    REG["Area Registry + Lookup Cache"]
+    ROUTE["Routine/Route Engine\n(route-cache + fingerprint)"]
+    REACT["Reactive Layer\n(blocked/disturbed)"]
+    CITY["City Layer\n(alarm FSM + population)"]
+    LEGAL["Legal Layer\n(case/custody state machine)"]
+  end
+
+  subgraph Persistence["Persistence & External Services"]
+    DB["SQLite (NWNX4 xp_sqlite)\nsource of truth"]
+    RPC["Optional microservices (NWNX4 xp_rpc)\n(gRPC/Protobuf)"]
+  end
+
+  Engine --> BUS
+  BUS --> BUDGET
+  BUDGET --> REG
+  BUDGET --> ROUTE
+  BUDGET --> REACT
+  BUDGET --> CITY
+  BUDGET --> LEGAL
+
+  REG <--> DB
+  CITY <--> DB
+  LEGAL <--> DB
+  LEGAL <--> RPC
+```
+
+## Оптимизация: кэширование, ленивая загрузка, пулы, аллокации, профилирование
+
+Этот раздел — практическая “тактика” для реализации bounded‑runtime на NWN2, с учётом того, что:
+- heartbeat потенциально дорог и его много быть не должно; citeturn19search0  
+- тяжёлые модули должны жить в одном централизованном контуре; fileciteturn24file0L1-L1  
+- в PW‑гайдлайнах прямо советуют держать lean module scripts (особенно `OnAcquire` и heartbeat) и избегать тяжёлых циклов по инвентарям. citeturn8search5  
+
+### Кэширование и “двухслойная истина”
+1) **DB‑истина + local‑кэш.**  
+Вы уже формализовали это для legal‑системы: SQLite хранит каноническое состояние, locals — кэш (например `LG_*` на PC), а переходы стадий — идемпотентны и догоняются reconcile‑ом. fileciteturn44file0L1-L1  
+
+2) **Кэш маршрутов/шагов / fingerprint.**  
+В документах явно фигурирует `route-area cache` и “fingerprint/content-version” для контролируемого rebuild’а. fileciteturn27file0L1-L1  
+Практическая реализация: хранить `route_cache[tag] -> packed steps`, плюс `route_cache_ver` (int) и `route_cache_fp` (string/hash) на area/module.
+
+3) **Кэш вычисленной “юрисдикции” и “вооружённости” на PC** вместо глобальных сканов NPC (пример в legal‑каноне). fileciteturn36file0L1-L1  
+
+### Ленивая загрузка и tier‑модель
+Из вашего reset‑контекста следует модель “hot/warm/frozen tiers” (или аналогичная): система должна уметь **не делать работу**, если область не активна, и деградировать качество в перегрузке. fileciteturn24file0L1-L1  
+Практика:
+- **Frozen**: нет активных игроков → не исполнять routine, не делать respawn, не триггерить expensive checks (только редкие housekeeping события).
+- **Warm**: игрок рядом/недавно был → поддерживать лишь лёгкие кэши.
+- **Hot**: активная игра → исполнять bounded‑батчи (например N “items” из очереди за тик).
+
+### “Пулы объектов” в NWN2‑реальности
+Классический object pooling на уровне языка в NWScript ограничен, но идею можно реализовать **на уровне игрового мира**:
+- вместо массового `CreateObject`/`DestroyObject` держать “склады” заранее созданных placeable/NPC и “материализовывать” их, что совпадает с различением respawn vs materialization в вашем дизайне. fileciteturn35file0L1-L1  
+- respawn должен быть бюджетирован и отделён от routine loop (у вас это канон). fileciteturn28file0L1-L1  
+
+### Минимизация “аллокаций” и тяжёлых операций
+В NWScript нет malloc как в C++, но есть эквиваленты “дорогих операций”:
+- тяжёлые циклы (по инвентарю, по всем NPC/объектам area) — избегать; citeturn8search5  
+- частые обращения к `Get2DAString` и системным таблицам без кэша — избегать (PW‑гайдлайны). citeturn8search5  
+- не плодить десятки отдельных conversation scripts на каждую реплику — использовать параметризованные scripts через `GetScriptParam()` (предложено в legal‑дизайне). fileciteturn44file0L1-L1  
+
+### Профилирование и диагностика
+1) **Встроенные счётчики/дренаж очереди.**  
+Из `07_SCENARIOS...` следует, что важны overflow/miss‑rate диагностики и метрики дренажа очередей. fileciteturn27file0L1-L1  
+
+2) **NWNX4 профилирование.**  
+В списке плагинов NWNX4 упоминается `xp_profiler`, что логично использовать для измерения “какие скрипты сколько стоят”. citeturn4search0  
+
+## Синхронизация контента и состояния: локальные/удалённые ресурсы, межмодульная синхронизация, сеть
+
+Важно разделить 3 разные “синхронизации”:
+1) **Синхронизация “контента” (assets/scripts/haks)** между сервером и клиентами/разработчиками.  
+2) **Синхронизация данных между подсистемами** (daily life ↔ city response ↔ legal ↔ trade и т.д.).  
+3) **Сетевая синхронизация состояния игры** (авторитет сервера vs клиенты).
+
+### Синхронизация контента NWN2 для мультиплеера
+Patch 1.23 добавляет **Content Autodownloader** для dedicated server и параметры `-home`, `-cs`, `-du`, `-do` (контроль downloader, custom UI, override folders). citeturn15search0  
+Практические рекомендации для админов: отключать override/custom GUI клиентов и аккуратно настраивать autodownloader; он сравнивает контент, скачивает новое и может удалять несовпадающее. citeturn15search4  
+
+**Вывод для архитектуры библиотеки:**  
+- Библиотека должна иметь **версионирование контента** (например `AL_CONTENT_VERSION`), чтобы сервер мог проверять совместимость клиента, а не “молчаливо ломаться”.  
+- Скриптовые контракты должны быть максимально **backward-friendly** внутри одной мажорной версии (например через “capabilities flags” и мягкие fallback‑ветки).
+
+### Синхронизация данных между модулями/доминами внутри сервера
+Репозиторий уже задаёт правильный стиль: домены разделены, границы фиксируются в “пасспорте” и OQ‑реестре; конфликт/стык должен превращаться в явный контракт и DEC. fileciteturn42file0L1-L1 fileciteturn43file0L1-L1  
+
+Практические техники:
+- **Event sourcing внутри сервера**: хранить ключевые изменения доменных агрегатов как последовательность событий (минимально — для legal/city/trade). Это даёт воспроизводимость (“как мы сюда пришли”) и упрощает reconcile. citeturn10search5  
+- **Append‑only журнал** для тяжёлых доменов (crime events, custody transitions) + отдельные агрегаты‐сводки (`legal_status_*`), что прямо предлагается в legal‑дизайне. fileciteturn44file0L1-L1  
+
+### Сетевые сценарии и выбор протоколов синхронизации
+Здесь я оцениваю обязательные вами протоколы не “вообще”, а применительно к NWN2‑контексту (обычно: один сервер‑хост; клиенты не пишут в DB напрямую).
+
+**Rsync‑like / delta sync (для файлов/контента).**  
+Rsync‑алгоритм предназначен для обновления файла через медленный канал, передавая только несовпадающие блоки, используя rolling checksum + strong checksum. citeturn11search2  
+Применимость: хорош для **внешнего патчера/лаунчера** (если вы не полагаетесь только на NWN2 autodownloader), но встраивать rsync внутрь NWN2 обычно нецелесообразно.
+
+**Merkle‑деревья / content addressing (для сравнения наборов чанков/версий).**  
+Git описывается как content-addressable filesystem; это полезная ментальная модель для “контентных пакетов”, где каждый пакет имеет хэш‑идентификатор. citeturn18search2  
+Применимость:  
+- для CI/CD вы можете публиковать “пакет контента” (hak/mod/scripts) как immutable bundle с manifest + hash;  
+- сервер может проверять manifest/hash и отказать клиенту при несовместимости (или принудить через autodownloader).
+
+**CRDT (для совместного изменения состояния без координации).**  
+CRDT обеспечивает convergence реплик при eventual consistency и был формализован Shapiro et al. (2011). citeturn10search48  
+Применимость в NWN2:  
+- если у вас **один авторитетный сервер**, CRDT обычно избыточен;  
+- CRDT становится актуален, если вы хотите **несколько серверов/шардов** или offline‑редактирование state с последующим merge (редкий кейс для NWN2 PW). Тогда CRDT может применяться для некоторых типов данных (счётчики, множества), но это сильно усложняет систему.
+
+**Event sourcing (для доменных данных и аудита).**  
+Event sourcing — хранение изменений как последовательности событий. citeturn10search5  
+Применимость:  
+- очень хорош для legal‑домена (crime/case/custody/sentence) и для trade/city state (daily ticks), потому что упрощает восстановление после crash/relog (что для NWN2 критично). fileciteturn44file0L1-L1  
+
+### Mermaid‑схема потоков синхронизации (контент vs состояние)
+```mermaid
+sequenceDiagram
+  participant Dev as Dev/CI
+  participant Repo as Git Repo
+  participant Build as Build Pipeline
+  participant Server as NWN2 Server (+NWNX4)
+  participant Client as NWN2 Client
+
+  Dev->>Repo: Commit scripts/data/assets
+  Repo->>Build: Trigger build
+  Build->>Build: Compile NWScript + package HAK/MOD + manifest(version, hash)
+  Build->>Server: Deploy new bundle (immutable)
+  Client->>Server: Connect (reports version/hash or none)
+  alt Autodownloader enabled (1.23+)
+    Server-->>Client: Compare content, download updates, disable override/UI if configured
+  else External launcher/patcher
+    Client->>Dev: Fetch delta updates (rsync-like) before launch
+  end
+  Server->>Server: Runtime state changes (events)
+  Server->>Server: Persist to SQLite (source of truth)
+```
+
+## Практическая реализация: пример API, схема модулей, миграция контента, тестирование и CI/CD
+
+### Предлагаемая структура будущего кода (совместимая с “историческими именами”)
+С учётом того, что документы уже называют модули `al_*` и `lg_*`, практично принять эту структуру как “public surface”:
+
+```text
+scripts/
+  ambient_life/
+    al_core_inc.nss
+    al_events_inc.nss
+    al_dispatch_inc.nss
+    al_registry_inc.nss
+    al_lookup_cache_inc.nss
+    al_area_tick.nss
+    al_route_inc.nss
+    al_route_cache_inc.nss
+    al_transition_inc.nss
+    al_sleep_inc.nss
+    al_activity_inc.nss
+    al_react_inc.nss
+    al_city_alarm_inc.nss
+    al_city_population_inc.nss
+    ...
+  legal/
+    lg_db.nss
+    lg_service_case.nss
+    lg_service_custody.nss
+    lg_service_reconcile.nss
+    lg_mod_client_enter.nss
+    lg_mod_client_leave.nss
+    lg_mod_heartbeat.nss
+    lg_conv_*  (parametrized)
+    lg_cutscene_* 
+```
+
+Эта структура прямо соответствует вашим design‑перечням подсистем и legal‑документу. fileciteturn27file0L1-L1 fileciteturn44file0L1-L1  
+
+### Минимальный “Event Bus + Budget” API (псевдо‑NWScript)
+Цель: единая точка, где вы контролируете throughput и избегаете unbounded fan-out.
+
+```c
+// al_events_inc.nss (pseudo)
+const int ALQ_MAX = 256;          // hard cap (tunable)
+const int ALQ_BUDGET_STEPS = 32;  // per tick cap (tunable)
+
+// Event envelope stored as packed ints/strings in module locals by ring-buffer index
+void ALQ_Push(int evType, object actor, object target, string payload);
+int  ALQ_PopNext(int* evType, object* actor, object* target, string* payload);
+
+// al_dispatch_inc.nss (pseudo)
+void AL_DispatchTick()
+{
+    int steps = 0;
+    while (steps < ALQ_BUDGET_STEPS && ALQ_HasItems())
+    {
+        int evType; object a; object t; string p;
+        ALQ_PopNext(&evType, &a, &t, &p);
+
+        // Route by evType (slot events, resync, blocked, city assign...)
+        // Each handler must be O(1) or bounded internally.
+        AL_HandleEvent(evType, a, t, p);
+
+        steps++;
+    }
+
+    if (ALQ_HasItems())
+    {
+        // Backpressure signal: set a diagnostic var, degrade, defer, etc.
+        ALQ_SetOverflowFlag();
+    }
+}
+```
+
+Это напрямую реализует “bounded dispatch queue” и “overflow diagnostics”, которые описаны в каталоге алгоритмов и reset‑контексте. fileciteturn27file0L1-L1 fileciteturn24file0L1-L1  
+
+### Пример “плагинной” регистрации обработчиков через SetEventHandler
+Смысл: доменный модуль сам “подписывает” нужных акторов на события (например ключевые свидетели на perception) без переписывания глобального кода.
+
+```c
+// pseudo: attach witness behavior to a guard
+#include "al_constants"
+void AL_AttachWitness(object oNPC)
+{
+    // Event IDs for SetEventHandler are CREATURE_SCRIPT_* constants
+    // e.g. CREATURE_SCRIPT_ON_NOTICE = 1, ON_DISTURBED=5, etc.
+    // You bind scripts by name.
+    SetEventHandler(oNPC, CREATURE_SCRIPT_ON_NOTICE, "al_witness_onperception");
+    SetEventHandler(oNPC, CREATURE_SCRIPT_ON_DISTURBED, "al_witness_ondisturbed");
+}
+```
+
+Сам факт существования `SetEventHandler` и event id констант подтверждён NWN2‑справкой. citeturn19search5 citeturn19search1  
+
+### Стратегия миграции “существующего контента” (разметки)
+Поскольку runtime‑код отсутствует, “наследие” в первую очередь — это **контентная разметка и контракты**:
+1) **Заморозить контракт имён переменных/тегов** из `04_CONTENT_CONTRACTS.md` как v1 public API. fileciteturn25file0L1-L1  
+2) Написать валидатор контента (внешний скрипт/утилита на Python) который:
+   - проверяет наличие обязательных `al_*` локалов на route steps/waypoints;  
+   - проверяет симметрию/валидность link‑графа (`al_link_count`, `al_link_i` и т.п.); fileciteturn28file0L1-L1  
+   - проверяет что respawn‑ноды соответствуют требованиям (safe distance, cooldown, бюджет). fileciteturn35file0L1-L1  
+
+3) Ввести версионирование: `AL_CONTRACT_VERSION` на module + миграционные скрипты “v0 -> v1” (например ремап ключей, дефолты).
+
+### Тестирование и CI/CD
+**Сборка/компиляция NWScript.**  
+Даже если вы остаетесь “toolset‑ориентированными”, для CI нужна внешняя компиляция. Как пример tooling экосистемы: существует утилита “NWScriptBuilder” для NWN2, которая компилирует скрипты, отслеживает изменения include и выполняет ограниченную параллелизацию. citeturn5search5  
+
+**Тест‑стратегия по слоям:**
+- **Contract tests** для контентных контрактов (валидатор разметки).  
+- **Deterministic tests** для интерпретатора routine/route (golden‑кейсы).  
+- **Soak/perf tests**: симуляция N NPC в hot‑area, измерение времени `AL_DispatchTick` и количества обработанных событий, проверка деградации (очередь не взрывается).  
+- **Resilience tests** для legal‑домена: арест → relog/crash → reconcile возвращает в корректную стадию (это прямо перечислено в QA‑сценариях legal‑документа). fileciteturn44file0L1-L1  
+
+**CI/CD pipeline (практический минимум):**
+1) Линт/стат‑проверки (grep‑правила на запреты: sustained loops в heartbeat‑entrypoints, прямые world‑сканы, отсутствие budget guards).  
+2) Компиляция NWScript + сборка пакета (MOD/HAK) + генерация `manifest.json` (версия, hash, список файлов).  
+3) Публикация артефактов.  
+4) Деплой на staging‑сервер NWN2 с NWNX4; включение `xp_profiler` для автоматических перф‑срезов. citeturn4search0  
+
+### Рекомендации по следующему шагу разработки
+С учётом того, что цель пользователя не уточнена и ключевые “не указано” параметры мешают точной оптимизации, следующий шаг лучше сделать в формате **короткого архитектурного DEC + прототипа**:
+
+1) **DEC: “AL Runtime Platform v1: event bus + budgets + tiers”**  
+   - фиксируете budget‑константы (первичные),  
+   - фиксируете список entrypoints (Module/Area/NPC hooks),  
+   - фиксируете public contracts (ключи локалов, имена событий).  
+   Это соответствует governance‑правилам в `10_DECISIONS_LOG`. fileciteturn33file0L1-L1  
+
+2) **Прототип P0 (1–2 недели):**  
+   - реализовать `al_dispatch_inc` + ring‑buffer очередь + метрики overflow;  
+   - реализовать `al_area_tick` как единую точку исполнения;  
+   - поднять простейший routine pipeline на 1–2 маршрута;  
+   - замерить нагрузку и подтвердить bounded‑поведение.
+
+3) **Прототип P1 (следующий):**  
+   - подключить SQLite через NWNX4 `xp_sqlite` для одного домена (например population или legal summary), соблюдая ограничения SQLite (не сеть, короткие транзакции). fileciteturn36file0L1-L1 citeturn13search0  
+
+4) **Контентная валидация как “щит” проекта**: до расширения функционала создать валидатор разметки (routes/links/respawn), иначе стоимость поддержки мира будет экспоненциально расти.
+
+Если вы уточните (а) целевой режим поставки (PW‑сервер, SP‑модуль, пакет с NWNX4), (б) целевые масштабы NPC/areas, (в) требования к обратной совместимости по ключам/именам — архитектуру можно “доточить” до более конкретных budget‑таблиц и интерфейсов миграции.
