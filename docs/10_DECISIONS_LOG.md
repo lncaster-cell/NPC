@@ -56,3 +56,13 @@
 - **Обоснование:** Это сохраняет уже принятые решения, снижает риск повторного проектирования и устраняет дубли за счёт routing-правил.
 - **Последствия:** Любая новая идея описывается через карточку/реестр и обязана ссылаться на единственный главный источник, runtime-связи и DEC-привязки.
 - **Ссылки:** `docs/00_PROJECT_LIBRARY.md`, `docs/16_IDEA_INVENTORY_AND_SYNC_MAP.md`, `docs/library/DOMAIN_INDEX.md`, `docs/library/IDEA_CARD_TEMPLATE.md`
+
+
+### DEC-2026-03-15-004: Расширение legal pipeline до судебного lifecycle
+- **Дата:** 2026-03-15
+- **Статус:** accepted
+- **Контекст:** В Stage I.3 legal-контур был описан как `surrender/arrest/trial`, но без явной фазы case intake, модели доказательств и жизненного цикла санкции. Это создавало риск упрощения до «арест = мгновенный приговор».
+- **Решение:** Зафиксировать судебный lifecycle как обязательную планируемую механику: `surrender -> arrest -> case intake -> hearing/trial -> verdict -> sentence execution`, с поддержкой режимов рассмотрения и post-verdict состояний.
+- **Обоснование:** Это сохраняет разделение tactical response и legal truth, делает последствия преступлений воспроизводимыми и совместимыми с разными law-профилями поселений.
+- **Последствия:** Обновлены канон legal-домена (`12A`), roadmap runtime (`12B`) и sync-map (`16`); при реализации потребуется отдельный контракт доказательств/санкций и QA smoke для судебных сценариев.
+- **Ссылки:** `docs/12A_WORLD_MODEL_CANON.md`, `docs/12B_RUNTIME_MASTER_PLAN.md`, `docs/16_IDEA_INVENTORY_AND_SYNC_MAP.md`, `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`

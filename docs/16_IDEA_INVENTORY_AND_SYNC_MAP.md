@@ -34,8 +34,9 @@
 | LawProfile + law modes + enforcement semantics | Канон | World/Legal | `docs/12A_WORLD_MODEL_CANON.md` | `docs/18_REBUILD_RESET_CONTEXT.md`, `docs/03_OPERATIONS.md` | `—` | — | Простая reputation/faction реакция |
 | Citizenship / titles / authority grants / document validation | Канон | World/Legal | `docs/12A_WORLD_MODEL_CANON.md` | `docs/12C_PLAYER_PROPERTY_SYSTEM.md` | `—` | — | Только inventory ownership без правовых прав |
 | Crime/witness/alarm legal chain | Канон + Planned runtime delivery | World/Legal + Runtime | `docs/12A_WORLD_MODEL_CANON.md` | `docs/18_REBUILD_RESET_CONTEXT.md`, `docs/03_OPERATIONS.md` | partial hooks: `al_react_inc.nss` (`al_legal_followup_pending`) | — | Уже полностью реализованный trial pipeline |
+| Court mechanics (evidence/hearing/verdict/sanctions) | Канон (дизайн) + Planned runtime delivery | World/Legal + Runtime | `docs/12A_WORLD_MODEL_CANON.md` | `docs/12B_RUNTIME_MASTER_PLAN.md`, `docs/03_OPERATIONS.md` | `—` | DEC-2026-03-15-004 | Только арест без процессуального продолжения |
 | Stage I.3 reinforcement policy | Planned | Runtime/Operations | `docs/18_REBUILD_RESET_CONTEXT.md` | `docs/03_OPERATIONS.md`, `docs/03_OPERATIONS.md` | (target subsystem) city/react/legal hooks | — | Текущий Stage I.2 alarm FSM |
-| Stage I.3 surrender→arrest→legal followup/trial | Planned | Runtime + Legal | `docs/18_REBUILD_RESET_CONTEXT.md` | `docs/03_OPERATIONS.md`, `docs/12A_WORLD_MODEL_CANON.md` | future from `al_react_inc.nss` legal hook | — | Crime/alarm detection без legal handoff |
+| Stage I.3 surrender→arrest→case intake→trial→sentence | Planned | Runtime + Legal | `docs/12B_RUNTIME_MASTER_PLAN.md` | `docs/03_OPERATIONS.md`, `docs/12A_WORLD_MODEL_CANON.md`, `docs/18_REBUILD_RESET_CONTEXT.md` | future from `al_react_inc.nss` legal hook | DEC-2026-03-15-004 | Crime/alarm detection без legal handoff |
 | Stage I.3 QA smoke runbook | Draft (готов к активации) | QA/Operations | `docs/03_OPERATIONS.md` | `docs/18_REBUILD_RESET_CONTEXT.md`, `docs/03_OPERATIONS.md` | `—` | — | Полный регрессионный тест-план |
 | Player property system | Канон (дизайн) | Property | `docs/12C_PLAYER_PROPERTY_SYSTEM.md` | `docs/12A_WORLD_MODEL_CANON.md`, `docs/12_MASTER_PLAN.md` | `—` | — | Trade/city supply экономика |
 | World travel system | Канон (дизайн) | Travel | `docs/12D_WORLD_TRAVEL_CANON.md` | `docs/12_MASTER_PLAN.md`, `docs/03_OPERATIONS.md` | `—` | — | Простые ad-hoc телепорты |
@@ -67,8 +68,9 @@
 ## 4) Зоны без полной формализации
 
 1. Конкретные DEC-записи для новой реализации должны добавляться по мере уточнения архитектуры.
-2. Интеграция clan/aging дизайна в legal/world канон остаётся roadmap-зоной.
-3. Для property/travel/trade пока отсутствуют runtime-реализационные тома уровня Stage I.* (есть канон-дизайн).
+2. Формализация судебной процессуальной модели начата в `12A/12B`, runtime-реализация остаётся roadmap-зоной.
+3. Интеграция clan/aging дизайна в legal/world канон остаётся roadmap-зоной.
+4. Для property/travel/trade пока отсутствуют runtime-реализационные тома уровня Stage I.* (есть канон-дизайн).
 
 ---
 

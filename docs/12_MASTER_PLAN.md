@@ -17,7 +17,7 @@
 
 ## 2) Быстрый маршрут чтения после `17`
 
-1. `docs/12A_WORLD_MODEL_CANON.md` — world/legal/witness/city response.
+1. `docs/12A_WORLD_MODEL_CANON.md` — world/legal/witness/city response + планируемый судебный lifecycle.
 2. `docs/12B_RUNTIME_MASTER_PLAN.md` — runtime-архитектура, операционный контур и ограничения.
 3. `docs/12C_PLAYER_PROPERTY_SYSTEM.md` — имущество игрока, ownership и доступ.
 4. `docs/12D_WORLD_TRAVEL_CANON.md` — наземные и морские перемещения.
