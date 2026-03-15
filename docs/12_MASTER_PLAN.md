@@ -7,22 +7,22 @@
 
 ## 1) Роль файла
 
-`12_MASTER_PLAN.md` — это **короткий навигатор** по документации проекта.
+`12_MASTER_PLAN.md` — это **супер-краткий навигатор** по документации проекта.
 
 - Главный канонический дизайн-документ: `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`.
 - Этот файл не дублирует механики и не конкурирует с доменными томами.
+- Нормальный порядок: `README` → `17` → `12_MASTER_PLAN` → профильные тома.
 
 ---
 
-## 2) Быстрый маршрут чтения
+## 2) Быстрый маршрут чтения после `17`
 
-1. `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md` — единая карта проекта и канон высокого уровня.
-2. `docs/12A_WORLD_MODEL_CANON.md` — world/legal/witness/city response.
-3. `docs/12B_RUNTIME_MASTER_PLAN.md` — runtime-архитектура, операционный контур и ограничения.
-4. `docs/12C_PLAYER_PROPERTY_SYSTEM.md` — имущество игрока и права доступа.
-5. `docs/12D_WORLD_TRAVEL_CANON.md` — наземные и морские перемещения.
-6. `docs/12E_TRADE_AND_CITY_STATE_CANON.md` — торговля и состояние города.
-7. `docs/14_CLAN_SYSTEM_DESIGN.md` + `docs/13_AGING_AND_CLAN_SUCCESSION.md` — кланы, старение, наследование.
+1. `docs/12A_WORLD_MODEL_CANON.md` — world/legal/witness/city response.
+2. `docs/12B_RUNTIME_MASTER_PLAN.md` — runtime-архитектура, операционный контур и ограничения.
+3. `docs/12C_PLAYER_PROPERTY_SYSTEM.md` — имущество игрока, ownership и доступ.
+4. `docs/12D_WORLD_TRAVEL_CANON.md` — наземные и морские перемещения.
+5. `docs/12E_TRADE_AND_CITY_STATE_CANON.md` — торговля и состояние города.
+6. `docs/14_CLAN_SYSTEM_DESIGN.md` + `docs/13_AGING_AND_CLAN_SUCCESSION.md` — кланы, старение, наследование.
 
 ---
 
