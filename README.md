@@ -108,15 +108,16 @@
 
 Если цель — понять замысел, а не ловить детали по кускам, читай в таком порядке:
 
-1. `docs/12_MASTER_PLAN.md` — индекс по пакету `12*` и политика синхронизации.
-2. `docs/12B_RUNTIME_MASTER_PLAN.md` — сводка runtime-архитектуры, операций и roadmap.
+1. `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md` — единый главный дизайн-документ проекта.
+2. `docs/12_MASTER_PLAN.md` — краткая сводка и навигационный индекс по доменным томам.
 3. `docs/12A_WORLD_MODEL_CANON.md` — правовой и политический канон мира.
-4. `docs/12C_PLAYER_PROPERTY_SYSTEM.md` — имущество и права.
-5. `docs/12D_WORLD_TRAVEL_CANON.md` — перемещения по миру.
-6. `docs/12E_TRADE_AND_CITY_STATE_CANON.md` — торговля и состояние города.
-7. `docs/14_CLAN_SYSTEM_DESIGN.md` + `docs/13_AGING_AND_CLAN_SUCCESSION.md` — кланы, старение, наследование.
+4. `docs/12B_RUNTIME_MASTER_PLAN.md` — runtime-архитектура и операционный контур.
+5. `docs/12C_PLAYER_PROPERTY_SYSTEM.md` — имущество и права.
+6. `docs/12D_WORLD_TRAVEL_CANON.md` — перемещения по миру (сухопутные и морские).
+7. `docs/12E_TRADE_AND_CITY_STATE_CANON.md` — торговля и состояние города.
+8. `docs/14_CLAN_SYSTEM_DESIGN.md` + `docs/13_AGING_AND_CLAN_SUCCESSION.md` — кланы, старение, наследование.
 
-Для быстрых проверок «идея уже зафиксирована или нет»: `docs/16_IDEA_INVENTORY_AND_SYNC_MAP.md`.
+Для быстрых проверок синхронизации идей: `docs/16_IDEA_INVENTORY_AND_SYNC_MAP.md` (служебный индекс, не source of truth).
 
 Для понимания текущего режима работ (документация-first, без кодинга): `docs/18_REBUILD_RESET_CONTEXT.md`.
 
