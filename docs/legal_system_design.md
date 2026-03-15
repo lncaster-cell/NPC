@@ -1,5 +1,10 @@
 # Суд, арест и плен — технический дизайн-документ
 
+> ⚠️ **Статус документа: ARCHIVED / DEPRECATED (неактивный draft).**
+> Этот файл сохранён как исторический дизайн-черновик и **не является активным SoT** legal-домена.
+> Актуальный source of truth по legal/world-модели: `docs/12A_WORLD_MODEL_CANON.md`.
+> При расхождениях приоритет всегда у `docs/12A_WORLD_MODEL_CANON.md`.
+
 **Статус:** Draft v1.0  
 **Целевая платформа:** Neverwinter Nights 2 Persistent World  
 **Движок/рантайм:** NWN2 + NWScript + NWNX4  

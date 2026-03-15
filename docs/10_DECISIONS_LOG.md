@@ -66,3 +66,13 @@
 - **Обоснование:** Это сохраняет разделение tactical response и legal truth, делает последствия преступлений воспроизводимыми и совместимыми с разными law-профилями поселений.
 - **Последствия:** Обновлены канон legal-домена (`12A`), roadmap runtime (`12B`) и sync-map (`16`); при реализации потребуется отдельный контракт доказательств/санкций и QA smoke для судебных сценариев.
 - **Ссылки:** `docs/12A_WORLD_MODEL_CANON.md`, `docs/12B_RUNTIME_MASTER_PLAN.md`, `docs/16_IDEA_INVENTORY_AND_SYNC_MAP.md`, `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`
+
+### DEC-2026-03-15-005: Классификация `legal_system_design.md` как архивного design draft
+- **Дата:** 2026-03-15
+- **Статус:** accepted
+- **Контекст:** Требовалось определить статус `docs/legal_system_design.md` относительно legal SoT и устранить неоднозначность маршрутизации ссылок в legal-домене.
+- **Решение:** Зафиксировать `docs/legal_system_design.md` как архивный/устаревший design draft (не SoT) и добавить в его шапку явный redirect на `docs/12A_WORLD_MODEL_CANON.md` как актуальный источник истины.
+- **Обоснование:** Каноническая роль legal/world уже закреплена за `12A`; сохранение `legal_system_design.md` в архивном статусе позволяет не терять исторический дизайн-контекст без конкуренции источников истины.
+- **Последствия:** Новые правки legal-домена вносятся в `12A`; `legal_system_design.md` используется только как историческая справка.
+- **Ссылки:** `docs/legal_system_design.md`, `docs/12A_WORLD_MODEL_CANON.md`, `docs/10_DECISIONS_LOG.md`
+
