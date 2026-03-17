@@ -23,6 +23,7 @@
 4. `docs/12D_WORLD_TRAVEL_CANON.md` — наземные и морские перемещения.
 5. `docs/12E_TRADE_AND_CITY_STATE_CANON.md` — торговля и состояние города.
 6. `docs/14_CLAN_SYSTEM_DESIGN.md` + `docs/13_AGING_AND_CLAN_SUCCESSION.md` — кланы, старение, наследование.
+7. `docs/20_NPC_BEHAVIOR_SYSTEM_DESIGN_RU.md` — полная дизайн-спецификация системы поведения NPC (state model, события, bounded-политики).
 
 ---
 
