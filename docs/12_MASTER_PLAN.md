@@ -19,6 +19,7 @@
 
 1. `docs/12A_WORLD_MODEL_CANON.md` — world/legal/witness/city response + планируемый судебный lifecycle.
 2. `docs/12B_RUNTIME_MASTER_PLAN.md` — runtime-архитектура, операционный контур и ограничения.
+   - Детализация redesign Daily Life: `docs/12B_DAILY_LIFE_VNEXT_CANON.md`.
 3. `docs/19_MECHANICS_SYSTEM_DEPENDENCY_MAP_RU.md` — поперечная карта механик, таблица зависимостей и граница World Memory vs Runtime.
 4. `docs/12C_PLAYER_PROPERTY_SYSTEM.md` — имущество игрока, ownership и доступ.
 5. `docs/12D_WORLD_TRAVEL_CANON.md` — наземные и морские перемещения.
