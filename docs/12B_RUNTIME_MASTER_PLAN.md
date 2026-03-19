@@ -60,6 +60,7 @@
 - сон и активность;
 - реакции на помехи/инциденты;
 - реакцию города на преступность;
+- временные внешние городские состояния через единый incident context;
 - восстановление безымянного населения.
 
 ### 3.2 Почему архитектура именно такая
@@ -86,7 +87,7 @@
 1. **Core lifecycle слой** — area tick, tiers, жизненный цикл.
 2. **Registry/dispatch слой** — регистрация NPC, очередь событий, маршрутизация runtime-сигналов.
 3. **Route/sleep/activity слой** — повседневное поведение NPC.
-4. **Reactive/city слой** — disturbed/blocked, crime/alarm FSM, role assignments.
+4. **Reactive/incident/city слой** — disturbed/blocked, crime/alarm как первый incident-type, единый incident context, role assignments.
 5. **Population слой** — восстановление unnamed-дефицита (respawn policy).
 
 ## 4.2 Файловая карта runtime
@@ -115,7 +116,7 @@
 - `scripts/ambient_life/al_acts_inc.nss`
 - `scripts/ambient_life/al_schedule_inc.nss`
 
-### Reactive + city
+### Reactive + incident + city
 - `scripts/ambient_life/al_blocked_inc.nss`
 - `scripts/ambient_life/al_react_inc.nss`
 - `scripts/ambient_life/al_react_apply_step.nss`
@@ -146,11 +147,24 @@
 1. Area tick инициирует обработку.
 2. Dispatch доставляет события в bounded режиме.
 3. NPC проходят route/sleep/activity шаги.
-4. Внешние инциденты через hooks запускают reactive/city контуры.
-5. City FSM регулирует эскалацию и деэскалацию.
+4. Внешние инциденты через hooks и incident events запускают reactive/incident/city контуры.
+5. Incident pipeline регулирует эскалацию, смену стадии, деэскалацию и resume/resync.
 6. Population layer закрывает дефицит населения в рамках policy.
 
 ---
+
+## 4.4 Архитектурный принцип внешних инцидентов
+
+Daily Life не должен получать отдельный subsystem под пожар, отдельный subsystem под карантин и ещё один subsystem под комендантский час.
+
+Канон runtime-слоя:
+- существует единый `incident context` на уровне города/района/набора area;
+- `crime/alarm` считается первым реализованным типом инцидента, а не единственным допустимым сценарием;
+- роль NPC определяет, какой temporary override применяется при активном инциденте;
+- переключение идёт через event-driven pipeline: `incident_start -> interrupt -> temporary behavior -> incident_end -> resync/resume`;
+- area/building слой должен поддерживать incident-метаданные: `restricted_area`, `danger_area`, `blocked_routes`, `safe_point`, `panic_point`, `incident_anchor`.
+
+Это позволяет добавлять пожар, карантин, бунт и комендантский час без переписывания ядра Daily Life.
 
 ## 5) Ответственности и границы (очень важно)
 
