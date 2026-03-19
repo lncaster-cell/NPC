@@ -85,3 +85,13 @@
 - **Обоснование:** Такой подход сохраняет управляемость CPU, устраняет хрупкость `DelayCommand()` (контекст `OBJECT_SELF`, зависимость от жизненного цикла объекта, неудобства множественных задержек) и даёт единый механизм для resync/retry/recovery/delayed resume.
 - **Последствия:** Обновлены системные инварианты и runtime-канон; heartbeat должен явно отключаться в неактивных областях через `SetEventHandler(..., "")`; новые отложенные контуры обязаны входить в timer queue и подчиняться бюджетам worker-а.
 - **Ссылки:** `docs/06_SYSTEM_INVARIANTS.md`, `docs/12B_RUNTIME_MASTER_PLAN.md`, `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`, `README.md`
+
+
+### DEC-2026-03-19-007: Единый внешний incident-layer для модификации Daily Life
+- **Дата:** 2026-03-19
+- **Статус:** accepted
+- **Контекст:** Для будущих сценариев пожара, карантина, бунта и комендантского часа возник риск разрастания множества частных subsystems, каждый из которых по-своему вмешивается в повседневную жизнь NPC. Такой путь грозит переписыванием core-логики Daily Life под каждый новый тип кризиса.
+- **Решение:** Зафиксировать единый внешний incident-layer как обязательный архитектурный слой над Daily Life. Контракт слоя включает `incident_type`, `incident_stage`, `incident_severity`, `incident_scope`, role-based temporary overrides, pipeline `interrupt -> temporary behavior -> resync/resume`, event-driven lifecycle (`start / stage change / end / resync`) и area-level incident metadata (`restricted_area`, `danger_area`, `blocked_routes`, `safe_point`, `panic_point`, `incident_anchor`).
+- **Обоснование:** Это сохраняет ядро Daily Life intent-driven и time-driven, позволяет использовать crime/alarm как первый частный случай общего инцидентного контура и делает будущие типы кризисов расширением данных и policy, а не переписыванием runtime-ядра.
+- **Последствия:** Документы Daily Life и runtime master должны явно ссылаться на unified incident context; реализация fire/quarantine не является обязательной на текущем этапе, но новые городские состояния обязаны подключаться через общий контракт override/event/resync.
+- **Ссылки:** `docs/12B_DAILY_LIFE_VNEXT_CANON.md`, `docs/20_NPC_BEHAVIOR_SYSTEM_DESIGN_RU.md`, `docs/12B_RUNTIME_MASTER_PLAN.md`
