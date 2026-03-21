@@ -39,10 +39,10 @@ Milestone A считается достигнутым только если од
 Цель: создать единую базу констант и helper API.
 
 Нужно сделать:
-- `scripts/ambient_life/al_v1_const_inc.nss`
-- `scripts/ambient_life/al_v1_log_inc.nss`
-- `scripts/ambient_life/al_v1_util_inc.nss`
-- `scripts/ambient_life/al_v1_types_inc.nss`
+- `scripts/daily_life/dl_const_inc.nss`
+- `scripts/daily_life/dl_log_inc.nss`
+- `scripts/daily_life/dl_util_inc.nss`
+- `scripts/daily_life/dl_types_inc.nss`
 
 Минимальный результат:
 - enum-like constants заведены;
@@ -55,9 +55,9 @@ Milestone A считается достигнутым только если од
 Цель: получить чистую rule-driven функцию, которая по входам выдаёт directive/anchor/dialogue/service result.
 
 Нужно сделать:
-- `scripts/ambient_life/al_v1_schedule_inc.nss`
-- `scripts/ambient_life/al_v1_override_inc.nss`
-- `scripts/ambient_life/al_v1_resolver_inc.nss`
+- `scripts/daily_life/dl_schedule_inc.nss`
+- `scripts/daily_life/dl_override_inc.nss`
+- `scripts/daily_life/dl_resolver_inc.nss`
 
 Минимальный результат:
 - resolver не имеет side effects;
@@ -72,10 +72,10 @@ Milestone A считается достигнутым только если од
 Цель: по результату resolver уметь поставить NPC в правильное состояние.
 
 Нужно сделать:
-- `scripts/ambient_life/al_v1_anchor_inc.nss`
-- `scripts/ambient_life/al_v1_activity_inc.nss`
-- `scripts/ambient_life/al_v1_materialize_inc.nss`
-- `scripts/ambient_life/al_v1_interact_inc.nss`
+- `scripts/daily_life/dl_anchor_inc.nss`
+- `scripts/daily_life/dl_activity_inc.nss`
+- `scripts/daily_life/dl_materialize_inc.nss`
+- `scripts/daily_life/dl_interact_inc.nss`
 
 Минимальный результат:
 - выбирается валидный anchor point;
@@ -89,9 +89,9 @@ Milestone A считается достигнутым только если од
 Цель: привязать Daily Life к area-tier и bounded worker.
 
 Нужно сделать:
-- `scripts/ambient_life/al_v1_area_inc.nss`
-- `scripts/ambient_life/al_v1_worker_inc.nss`
-- `scripts/ambient_life/al_v1_resync_inc.nss`
+- `scripts/daily_life/dl_area_inc.nss`
+- `scripts/daily_life/dl_worker_inc.nss`
+- `scripts/daily_life/dl_resync_inc.nss`
 - entrypoint hooks
 
 Минимальный результат:
@@ -106,7 +106,7 @@ Milestone A считается достигнутым только если од
 Цель: подготовить внешний handoff, но не строить сразу всю population system.
 
 Нужно сделать:
-- `scripts/ambient_life/al_v1_slot_handoff_inc.nss`
+- `scripts/daily_life/dl_slot_handoff_inc.nss`
 
 Минимальный результат:
 - есть функция request review пустого slot;
