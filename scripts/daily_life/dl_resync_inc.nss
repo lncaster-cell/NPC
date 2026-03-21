@@ -29,6 +29,31 @@ void DL_RequestResync(object oNPC, int nReason)
     SetLocalInt(oNPC, DL_L_RESYNC_REASON, nReason);
 }
 
+void DL_RequestAreaResync(object oArea, int nReason)
+{
+    object oObject = GetFirstObjectInArea(oArea);
+
+    while (GetIsObjectValid(oObject))
+    {
+        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
+        {
+            DL_RequestResync(oObject, nReason);
+        }
+        oObject = GetNextObjectInArea(oArea);
+    }
+}
+
+void DL_RequestModuleResync(int nReason)
+{
+    object oArea = GetFirstArea();
+
+    while (GetIsObjectValid(oArea))
+    {
+        DL_RequestAreaResync(oArea, nReason);
+        oArea = GetNextArea();
+    }
+}
+
 void DL_RunResync(object oNPC, object oArea, int nReason)
 {
     if (!DL_ShouldResync(oNPC, nReason))
