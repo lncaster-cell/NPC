@@ -22,6 +22,7 @@ const string DL_L_DAY_TYPE_OVERRIDE = "dl_day_type_override";
 const string DL_L_LAST_SLOT_REVIEW = "dl_last_slot_review";
 const string DL_L_LAST_SLOT_ASSIGNED = "dl_last_slot_assigned";
 const string DL_L_SLOT_ASSIGNED_NPC = "dl_slot_assigned_npc";
+const string DL_L_FUNCTION_SLOT_ID = "dl_function_slot_id";
 
 const int DL_DEBUG_NONE = 0;
 const int DL_DEBUG_BASIC = 1;

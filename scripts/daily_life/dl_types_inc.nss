@@ -76,6 +76,11 @@ object DL_GetNpcBase(object oNPC)
     return GetLocalObject(oNPC, DL_L_NPC_BASE);
 }
 
+string DL_GetFunctionSlotId(object oNPC)
+{
+    return GetLocalString(oNPC, DL_L_FUNCTION_SLOT_ID);
+}
+
 int DL_GetDefaultAllowedDirectivesMask(object oNPC)
 {
     int nFamily = DL_GetNpcFamily(oNPC);

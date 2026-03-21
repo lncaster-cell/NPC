@@ -190,6 +190,10 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
     {
         return DL_DLG_HIDE;
     }
+    if (nDirective == DL_DIR_UNASSIGNED)
+    {
+        return DL_DLG_UNAVAILABLE;
+    }
     if (nDirective == DL_DIR_ABSENT)
     {
         return DL_DLG_UNAVAILABLE;
@@ -204,6 +208,10 @@ int DL_ResolveServiceMode(object oNPC, int nDirective, int nOverrideKind)
     if (DL_ShouldDisableService(oNPC, nOverrideKind))
     {
         return DL_SERVICE_DISABLED;
+    }
+    if (nDirective == DL_DIR_UNASSIGNED)
+    {
+        return DL_SERVICE_NONE;
     }
     if (nDirective == DL_DIR_ABSENT)
     {

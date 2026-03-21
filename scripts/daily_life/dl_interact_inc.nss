@@ -26,4 +26,12 @@ void DL_RefreshInteractionState(object oNPC, object oArea)
     SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_ResolveAnchorGroup(oNPC, nDirective));
 }
 
+void DL_SetInteractionStateExplicit(object oNPC, int nDirective, int nDialogueMode, int nServiceMode)
+{
+    DL_SetDialogueMode(oNPC, nDialogueMode);
+    DL_SetServiceMode(oNPC, nServiceMode);
+    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
+    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_ResolveAnchorGroup(oNPC, nDirective));
+}
+
 #endif

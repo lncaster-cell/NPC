@@ -9,6 +9,7 @@
 #include "dl_anchor_inc"
 #include "dl_activity_inc"
 #include "dl_interact_inc"
+#include "dl_slot_handoff_inc"
 
 int DL_ShouldInstantPlace(object oNPC, object oArea, object oPoint)
 {
@@ -53,12 +54,59 @@ void DL_HideOrMarkAbsent(object oNPC, int nDirective)
     }
 }
 
+void DL_HandleUnassignedNpc(object oNPC)
+{
+    string sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
+
+    AssignCommand(oNPC, ClearAllActions());
+    SetLocalInt(oNPC, DL_L_ACTIVITY_KIND, DL_ACT_NONE);
+    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_AG_NONE);
+    DL_SetInteractionStateExplicit(oNPC, DL_DIR_UNASSIGNED, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+
+    if (sFunctionSlotId != "")
+    {
+        DL_RequestFunctionSlotReview(sFunctionSlotId, DL_RESYNC_WORKER);
+    }
+    else
+    {
+        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base lost without function slot id");
+    }
+}
+
+int DL_HandleBaseLostStub(object oNPC)
+{
+    if (DL_HasBase(oNPC))
+    {
+        return FALSE;
+    }
+
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base lost, applying milestone A stub");
+    if (DL_IsNamed(oNPC) || DL_IsPersistent(oNPC))
+    {
+        DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
+        DL_SetInteractionStateExplicit(oNPC, DL_DIR_ABSENT, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+        return TRUE;
+    }
+
+    DL_HandleUnassignedNpc(oNPC);
+    return TRUE;
+}
+
 void DL_MaterializeNpc(object oNPC, object oArea)
 {
-    int nDirective = DL_ResolveDirective(oNPC, oArea);
-    int nOverride = DL_GetTopOverride(oNPC, oArea);
-    int nAnchorGroup = DL_ResolveAnchorGroup(oNPC, nDirective);
+    int nDirective;
+    int nOverride;
+    int nAnchorGroup;
     object oPoint;
+
+    if (DL_HandleBaseLostStub(oNPC))
+    {
+        return;
+    }
+
+    nDirective = DL_ResolveDirective(oNPC, oArea);
+    nOverride = DL_GetTopOverride(oNPC, oArea);
+    nAnchorGroup = DL_ResolveAnchorGroup(oNPC, nDirective);
 
     SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
     SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);

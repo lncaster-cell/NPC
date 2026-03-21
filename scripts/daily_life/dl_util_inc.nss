@@ -25,7 +25,9 @@ int DL_IsAreaFrozen(object oArea)
 
 int DL_IsDirectiveVisible(int nDirective)
 {
-    return nDirective != DL_DIR_ABSENT && nDirective != DL_DIR_HIDE_SAFE;
+    return nDirective != DL_DIR_ABSENT
+        && nDirective != DL_DIR_HIDE_SAFE
+        && nDirective != DL_DIR_UNASSIGNED;
 }
 
 int DL_HasAnyPlayers(object oArea)
