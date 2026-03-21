@@ -8,15 +8,23 @@
 
 int DL_ShouldResync(object oNPC, int nReason)
 {
-    if (!DL_IsPersistent(oNPC) && !DL_IsNamed(oNPC))
+    if (!DL_IsDailyLifeNpc(oNPC))
     {
         return FALSE;
+    }
+    if (!DL_IsPersistent(oNPC) && !DL_IsNamed(oNPC))
+    {
+        return GetLocalInt(oNPC, DL_L_RESYNC_PENDING) == TRUE;
     }
     return nReason != DL_RESYNC_NONE;
 }
 
 void DL_RequestResync(object oNPC, int nReason)
 {
+    if (!DL_IsDailyLifeNpc(oNPC))
+    {
+        return;
+    }
     SetLocalInt(oNPC, DL_L_RESYNC_PENDING, TRUE);
     SetLocalInt(oNPC, DL_L_RESYNC_REASON, nReason);
 }
@@ -29,7 +37,6 @@ void DL_RunResync(object oNPC, object oArea, int nReason)
     }
 
     DL_MaterializeNpc(oNPC, oArea);
-    DL_RefreshInteractionState(oNPC, oArea);
     DeleteLocalInt(oNPC, DL_L_RESYNC_PENDING);
     SetLocalInt(oNPC, DL_L_RESYNC_REASON, DL_RESYNC_NONE);
 }

@@ -92,11 +92,118 @@ string DL_GetAnchorGroupToken(int nAnchorGroup)
     return "none";
 }
 
+string DL_GetSubtypeAnchorToken(object oNPC, int nAnchorGroup)
+{
+    int nSubtype = GetLocalInt(oNPC, DL_L_NPC_SUBTYPE);
+
+    if (nSubtype == DL_SUBTYPE_BLACKSMITH)
+    {
+        if (nAnchorGroup == DL_AG_WORK)
+        {
+            return "forge";
+        }
+        if (nAnchorGroup == DL_AG_SLEEP)
+        {
+            return "bed";
+        }
+        if (nAnchorGroup == DL_AG_SOCIAL)
+        {
+            return "tavern";
+        }
+    }
+    if (nSubtype == DL_SUBTYPE_ARTISAN || nSubtype == DL_SUBTYPE_LABORER)
+    {
+        if (nAnchorGroup == DL_AG_WORK)
+        {
+            return "workbench";
+        }
+    }
+    if (nSubtype == DL_SUBTYPE_SHOPKEEPER)
+    {
+        if (nAnchorGroup == DL_AG_SERVICE)
+        {
+            return "counter";
+        }
+    }
+    if (nSubtype == DL_SUBTYPE_INNKEEPER)
+    {
+        if (nAnchorGroup == DL_AG_SERVICE)
+        {
+            return "bar";
+        }
+        if (nAnchorGroup == DL_AG_SOCIAL)
+        {
+            return "tavern";
+        }
+    }
+    if (nSubtype == DL_SUBTYPE_GATE_POST)
+    {
+        if (nAnchorGroup == DL_AG_DUTY || nAnchorGroup == DL_AG_GATE)
+        {
+            return "gate_post";
+        }
+        if (nAnchorGroup == DL_AG_SLEEP)
+        {
+            return "barracks_bed";
+        }
+    }
+    if (nSubtype == DL_SUBTYPE_PATROL)
+    {
+        if (nAnchorGroup == DL_AG_DUTY || nAnchorGroup == DL_AG_PATROL_POINT)
+        {
+            return "patrol_point";
+        }
+    }
+    if (nAnchorGroup == DL_AG_STREET_NEAR_BASE)
+    {
+        return "street";
+    }
+    if (nAnchorGroup == DL_AG_HIDE)
+    {
+        return "inside";
+    }
+    return DL_GetAnchorGroupToken(nAnchorGroup);
+}
+
 string DL_GetAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
 {
     string sNpcTag = GetTag(oNPC);
     string sGroup = DL_GetAnchorGroupToken(nAnchorGroup);
     return sNpcTag + "_" + sGroup + "_" + IntToString(nIndex);
+}
+
+string DL_GetBaseAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
+{
+    object oBase = GetLocalObject(oNPC, DL_L_NPC_BASE);
+    if (!GetIsObjectValid(oBase))
+    {
+        return "";
+    }
+    return GetTag(oBase) + "_" + DL_GetAnchorGroupToken(nAnchorGroup) + "_" + IntToString(nIndex);
+}
+
+string DL_GetSpecializedAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
+{
+    object oBase = GetLocalObject(oNPC, DL_L_NPC_BASE);
+    string sToken = DL_GetSubtypeAnchorToken(oNPC, nAnchorGroup);
+    if (sToken == "")
+    {
+        return "";
+    }
+    if (GetIsObjectValid(oBase))
+    {
+        return GetTag(oBase) + "_" + sToken + "_" + IntToString(nIndex);
+    }
+    return sToken + "_" + IntToString(nIndex);
+}
+
+string DL_GetAreaAnchorTagCandidate(object oNPC, object oArea, int nAnchorGroup, int nIndex)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return "";
+    }
+    return GetTag(oArea) + "_" + DL_GetSubtypeAnchorToken(oNPC, nAnchorGroup) + "_" + IntToString(nIndex);
 }
 
 #endif

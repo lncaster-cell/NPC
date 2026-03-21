@@ -24,9 +24,51 @@ int DL_GetNpcSubtype(object oNPC)
     return GetLocalInt(oNPC, DL_L_NPC_SUBTYPE);
 }
 
+int DL_IsDailyLifeNpc(object oNPC)
+{
+    return DL_GetNpcFamily(oNPC) != DL_FAMILY_NONE;
+}
+
+int DL_GetDefaultScheduleTemplate(object oNPC)
+{
+    int nFamily = DL_GetNpcFamily(oNPC);
+    int nSubtype = DL_GetNpcSubtype(oNPC);
+
+    if (nFamily == DL_FAMILY_LAW)
+    {
+        if (nSubtype == DL_SUBTYPE_GATE_POST)
+        {
+            return DL_SCH_DUTY_ROTATION_DAY;
+        }
+        return DL_SCH_DUTY_ROTATION_NIGHT;
+    }
+    if (nFamily == DL_FAMILY_CRAFT)
+    {
+        return DL_SCH_EARLY_WORKER;
+    }
+    if (nFamily == DL_FAMILY_TRADE_SERVICE)
+    {
+        if (nSubtype == DL_SUBTYPE_INNKEEPER)
+        {
+            return DL_SCH_TAVERN_LATE;
+        }
+        if (nSubtype == DL_SUBTYPE_WANDERING_VENDOR)
+        {
+            return DL_SCH_WANDERING_VENDOR_WINDOW;
+        }
+        return DL_SCH_SHOP_DAY;
+    }
+    return DL_SCH_CIVILIAN_HOME;
+}
+
 int DL_GetScheduleTemplate(object oNPC)
 {
-    return GetLocalInt(oNPC, DL_L_SCHEDULE_TEMPLATE);
+    int nTemplate = GetLocalInt(oNPC, DL_L_SCHEDULE_TEMPLATE);
+    if (nTemplate != DL_SCH_NONE)
+    {
+        return nTemplate;
+    }
+    return DL_GetDefaultScheduleTemplate(oNPC);
 }
 
 object DL_GetNpcBase(object oNPC)
@@ -34,9 +76,56 @@ object DL_GetNpcBase(object oNPC)
     return GetLocalObject(oNPC, DL_L_NPC_BASE);
 }
 
+int DL_GetDefaultAllowedDirectivesMask(object oNPC)
+{
+    int nFamily = DL_GetNpcFamily(oNPC);
+
+    if (nFamily == DL_FAMILY_LAW)
+    {
+        return (1 << DL_DIR_SLEEP)
+            | (1 << DL_DIR_DUTY)
+            | (1 << DL_DIR_HOLD_POST)
+            | (1 << DL_DIR_PUBLIC_PRESENCE)
+            | (1 << DL_DIR_HIDE_SAFE)
+            | (1 << DL_DIR_LOCKDOWN_BASE)
+            | (1 << DL_DIR_ABSENT);
+    }
+    if (nFamily == DL_FAMILY_CRAFT)
+    {
+        return (1 << DL_DIR_SLEEP)
+            | (1 << DL_DIR_WORK)
+            | (1 << DL_DIR_SOCIAL)
+            | (1 << DL_DIR_PUBLIC_PRESENCE)
+            | (1 << DL_DIR_HIDE_SAFE)
+            | (1 << DL_DIR_LOCKDOWN_BASE)
+            | (1 << DL_DIR_ABSENT);
+    }
+    if (nFamily == DL_FAMILY_TRADE_SERVICE)
+    {
+        return (1 << DL_DIR_SLEEP)
+            | (1 << DL_DIR_SERVICE)
+            | (1 << DL_DIR_SOCIAL)
+            | (1 << DL_DIR_PUBLIC_PRESENCE)
+            | (1 << DL_DIR_HIDE_SAFE)
+            | (1 << DL_DIR_LOCKDOWN_BASE)
+            | (1 << DL_DIR_ABSENT);
+    }
+
+    return (1 << DL_DIR_SLEEP)
+        | (1 << DL_DIR_SOCIAL)
+        | (1 << DL_DIR_PUBLIC_PRESENCE)
+        | (1 << DL_DIR_HIDE_SAFE)
+        | (1 << DL_DIR_ABSENT);
+}
+
 int DL_GetAllowedDirectivesMask(object oNPC)
 {
-    return GetLocalInt(oNPC, DL_L_ALLOWED_DIRECTIVES_MASK);
+    int nMask = GetLocalInt(oNPC, DL_L_ALLOWED_DIRECTIVES_MASK);
+    if (nMask != 0)
+    {
+        return nMask;
+    }
+    return DL_GetDefaultAllowedDirectivesMask(oNPC);
 }
 
 int DL_HasBase(object oNPC)

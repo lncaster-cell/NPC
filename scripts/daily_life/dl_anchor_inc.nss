@@ -18,17 +18,40 @@ int DL_IsAnchorContextAllowed(object oNPC, object oPoint)
     return GetDistanceBetween(oNPC, oPoint) <= 100.0 || GetArea(oNPC) == GetArea(oPoint);
 }
 
+object DL_FindAnchorByTag(object oArea, string sTag)
+{
+    object oPoint;
+    if (sTag == "")
+    {
+        return OBJECT_INVALID;
+    }
+
+    oPoint = GetObjectByTag(sTag);
+    if (DL_IsAreaAnchor(oPoint, oArea))
+    {
+        return oPoint;
+    }
+    return OBJECT_INVALID;
+}
+
 object DL_FindFallbackAnchorPoint(object oNPC, object oArea, int nAnchorGroup)
 {
     object oBase = DL_GetNpcBase(oNPC);
+    object oPoint;
+
     if (DL_IsAreaAnchor(oBase, oArea))
     {
         return oBase;
     }
 
-    string sFallbackTag = DL_GetAnchorTagCandidate(oNPC, DL_AG_WAIT, 1);
-    object oPoint = GetObjectByTag(sFallbackTag);
-    if (DL_IsAreaAnchor(oPoint, oArea))
+    oPoint = DL_FindAnchorByTag(oArea, DL_GetSpecializedAnchorTagCandidate(oNPC, DL_AG_WAIT, 1));
+    if (GetIsObjectValid(oPoint))
+    {
+        return oPoint;
+    }
+
+    oPoint = DL_FindAnchorByTag(oArea, DL_GetAreaAnchorTagCandidate(oNPC, oArea, nAnchorGroup, 1));
+    if (GetIsObjectValid(oPoint))
     {
         return oPoint;
     }
@@ -39,10 +62,30 @@ object DL_FindFallbackAnchorPoint(object oNPC, object oArea, int nAnchorGroup)
 object DL_FindAnchorPoint(object oNPC, object oArea, int nAnchorGroup)
 {
     int i = 1;
+    object oPoint;
+
     while (i <= 4)
     {
-        object oPoint = GetObjectByTag(DL_GetAnchorTagCandidate(oNPC, nAnchorGroup, i));
-        if (DL_IsAreaAnchor(oPoint, oArea) && DL_IsAnchorContextAllowed(oNPC, oPoint))
+        oPoint = DL_FindAnchorByTag(oArea, DL_GetAnchorTagCandidate(oNPC, nAnchorGroup, i));
+        if (GetIsObjectValid(oPoint) && DL_IsAnchorContextAllowed(oNPC, oPoint))
+        {
+            return oPoint;
+        }
+
+        oPoint = DL_FindAnchorByTag(oArea, DL_GetBaseAnchorTagCandidate(oNPC, nAnchorGroup, i));
+        if (GetIsObjectValid(oPoint) && DL_IsAnchorContextAllowed(oNPC, oPoint))
+        {
+            return oPoint;
+        }
+
+        oPoint = DL_FindAnchorByTag(oArea, DL_GetSpecializedAnchorTagCandidate(oNPC, nAnchorGroup, i));
+        if (GetIsObjectValid(oPoint) && DL_IsAnchorContextAllowed(oNPC, oPoint))
+        {
+            return oPoint;
+        }
+
+        oPoint = DL_FindAnchorByTag(oArea, DL_GetAreaAnchorTagCandidate(oNPC, oArea, nAnchorGroup, i));
+        if (GetIsObjectValid(oPoint) && DL_IsAnchorContextAllowed(oNPC, oPoint))
         {
             return oPoint;
         }

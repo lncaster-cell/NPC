@@ -10,6 +10,19 @@ int DL_GetWorkerBudget(object oArea)
     return DL_GetDefaultAreaTierBudget(DL_GetAreaTier(oArea));
 }
 
+int DL_ShouldProcessNpcInWorker(object oNPC)
+{
+    if (!DL_IsDailyLifeNpc(oNPC))
+    {
+        return FALSE;
+    }
+    if (GetLocalInt(oNPC, DL_L_RESYNC_PENDING) == TRUE)
+    {
+        return TRUE;
+    }
+    return DL_IsPersistent(oNPC) || DL_IsNamed(oNPC);
+}
+
 void DL_ProcessNpcBudgeted(object oArea, object oNPC)
 {
     int nReason = GetLocalInt(oNPC, DL_L_RESYNC_REASON);
@@ -27,7 +40,7 @@ void DL_DispatchDueJobs(object oArea, int nBudget)
 
     while (GetIsObjectValid(oObject) && nProcessed < nBudget)
     {
-        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
+        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject) && DL_ShouldProcessNpcInWorker(oObject))
         {
             DL_ProcessNpcBudgeted(oArea, oObject);
             nProcessed += 1;

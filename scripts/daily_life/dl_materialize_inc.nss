@@ -8,6 +8,7 @@
 #include "dl_resolver_inc"
 #include "dl_anchor_inc"
 #include "dl_activity_inc"
+#include "dl_interact_inc"
 
 int DL_ShouldInstantPlace(object oNPC, object oArea, object oPoint)
 {
@@ -57,6 +58,7 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     int nDirective = DL_ResolveDirective(oNPC, oArea);
     int nOverride = DL_GetTopOverride(oNPC, oArea);
     int nAnchorGroup = DL_ResolveAnchorGroup(oNPC, nDirective);
+    object oPoint;
 
     SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
     SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
@@ -64,14 +66,16 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     if (!DL_IsDirectiveVisible(nDirective) || DL_ShouldSuppressMaterialization(oNPC, nOverride))
     {
         DL_HideOrMarkAbsent(oNPC, nDirective);
+        DL_RefreshInteractionState(oNPC, oArea);
         return;
     }
 
-    object oPoint = DL_FindAnchorPoint(oNPC, oArea, nAnchorGroup);
+    oPoint = DL_FindAnchorPoint(oNPC, oArea, nAnchorGroup);
     if (!GetIsObjectValid(oPoint))
     {
         DL_LogNpc(oNPC, DL_DEBUG_BASIC, "anchor not found, marking absent");
         DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
+        DL_RefreshInteractionState(oNPC, oArea);
         return;
     }
 
@@ -85,6 +89,7 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     }
 
     DL_ApplyActivity(oNPC, DL_ResolveActivityKind(oNPC, nDirective, nAnchorGroup), oPoint);
+    DL_RefreshInteractionState(oNPC, oArea);
 }
 
 #endif
