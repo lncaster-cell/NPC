@@ -59,11 +59,11 @@
 
 ## 3) Предлагаемая карта файлов
 
-Ниже даётся рекомендуемая карта `scripts/ambient_life/` для первой итерации.
+Ниже даётся рекомендуемая карта `scripts/daily_life/` для первой итерации.
 
 ### 3.1 Базовые include-файлы
 
-#### `scripts/ambient_life/al_v1_const_inc.nss`
+#### `scripts/daily_life/dl_const_inc.nss`
 Назначение:
 - enum-константы;
 - имена локальных переменных;
@@ -71,20 +71,20 @@
 - значения `HOT/WARM/FROZEN`;
 - значения directive/dialogue/service enums.
 
-#### `scripts/ambient_life/al_v1_types_inc.nss`
+#### `scripts/daily_life/dl_types_inc.nss`
 Назначение:
 - helper-контракты и packing/unpacking данных;
 - единые соглашения по representation runtime state;
 - lightweight helper API для profile / schedule / directive / anchor.
 
-#### `scripts/ambient_life/al_v1_log_inc.nss`
+#### `scripts/daily_life/dl_log_inc.nss`
 Назначение:
 - логирование;
 - log levels;
 - debug flags;
 - единый формат логов для Daily Life v1.
 
-#### `scripts/ambient_life/al_v1_util_inc.nss`
+#### `scripts/daily_life/dl_util_inc.nss`
 Назначение:
 - безопасные utility-функции;
 - проверки валидности объектов;
@@ -95,7 +95,7 @@
 
 ### 3.2 Resolver / ruleset
 
-#### `scripts/ambient_life/al_v1_resolver_inc.nss`
+#### `scripts/daily_life/dl_resolver_inc.nss`
 Назначение:
 - чистый resolver;
 - вычисление day type;
@@ -104,14 +104,14 @@
 - вычисление anchor group;
 - вычисление dialogue/service mode.
 
-#### `scripts/ambient_life/al_v1_schedule_inc.nss`
+#### `scripts/daily_life/dl_schedule_inc.nss`
 Назначение:
 - helper-функции расписаний;
 - выбор окна по времени;
 - применение personal offset;
 - day type modifiers.
 
-#### `scripts/ambient_life/al_v1_override_inc.nss`
+#### `scripts/daily_life/dl_override_inc.nss`
 Назначение:
 - чтение read-only override-флагов;
 - приоритет override;
@@ -121,27 +121,27 @@
 
 ### 3.3 Materialization / execution
 
-#### `scripts/ambient_life/al_v1_anchor_inc.nss`
+#### `scripts/daily_life/dl_anchor_inc.nss`
 Назначение:
 - выбор `anchor_group`;
 - выбор конкретной точки внутри группы;
 - fallback-цепочка;
 - проверка допустимости anchor-контекста.
 
-#### `scripts/ambient_life/al_v1_materialize_inc.nss`
+#### `scripts/daily_life/dl_materialize_inc.nss`
 Назначение:
 - build materialization plan;
 - instant-place vs local-walk decision;
 - apply materialization plan;
 - hide/absent path.
 
-#### `scripts/ambient_life/al_v1_activity_inc.nss`
+#### `scripts/daily_life/dl_activity_inc.nss`
 Назначение:
 - выбор `activity_kind`;
 - запуск нужной анимации;
 - визуальное применение directive на точке.
 
-#### `scripts/ambient_life/al_v1_interact_inc.nss`
+#### `scripts/daily_life/dl_interact_inc.nss`
 Назначение:
 - refresh interaction state;
 - установка `dialogue_mode`;
@@ -152,21 +152,21 @@
 
 ### 3.4 Area / worker / resync
 
-#### `scripts/ambient_life/al_v1_area_inc.nss`
+#### `scripts/daily_life/dl_area_inc.nss`
 Назначение:
 - area tier helper API;
 - определение `HOT/WARM/FROZEN`;
 - area lifecycle hooks;
 - registry iteration helper без полного хаотичного скана.
 
-#### `scripts/ambient_life/al_v1_worker_inc.nss`
+#### `scripts/daily_life/dl_worker_inc.nss`
 Назначение:
 - bounded area worker;
 - due jobs dispatch;
 - job budget enforcement;
 - обработка ограниченного числа NPC за проход.
 
-#### `scripts/ambient_life/al_v1_resync_inc.nss`
+#### `scripts/daily_life/dl_resync_inc.nss`
 Назначение:
 - bounded resync;
 - сравнение старого и нового runtime state;
@@ -177,7 +177,7 @@
 
 ### 3.5 Внешний handoff
 
-#### `scripts/ambient_life/al_v1_slot_handoff_inc.nss`
+#### `scripts/daily_life/dl_slot_handoff_inc.nss`
 Назначение:
 - сигнализация о пустом function slot;
 - request review во внешний population/respawn слой;
@@ -190,21 +190,21 @@
 
 ### 3.6 Точки входа
 
-#### `scripts/ambient_life/al_v1_area_enter.nss`
+#### `scripts/daily_life/dl_area_enter.nss`
 Назначение:
 - входной area hook для `HOT`-активации.
 
-#### `scripts/ambient_life/al_v1_area_exit.nss`
+#### `scripts/daily_life/dl_area_exit.nss`
 Назначение:
 - обработка ухода последнего игрока;
 - downgrade area tier.
 
-#### `scripts/ambient_life/al_v1_area_tick.nss`
+#### `scripts/daily_life/dl_area_tick.nss`
 Назначение:
 - area worker gate;
 - запуск bounded worker.
 
-#### `scripts/ambient_life/al_v1_on_load.nss`
+#### `scripts/daily_life/dl_on_load.nss`
 Назначение:
 - startup / load recovery hooks;
 - initial resync requests.
@@ -216,7 +216,7 @@
 
 ## 4) Минимальный набор функций по файлам
 
-## 4.1 `al_v1_const_inc.nss`
+## 4.1 `dl_const_inc.nss`
 
 Должно содержать:
 - enum constants;
@@ -225,142 +225,142 @@
 - debug toggles.
 
 Минимальные функции:
-- `int DLV1_GetDefaultWorkerBudget();`
-- `int DLV1_GetDefaultAreaTierBudget(int nTier);`
+- `int DL_GetDefaultWorkerBudget();`
+- `int DL_GetDefaultAreaTierBudget(int nTier);`
 
 ---
 
-## 4.2 `al_v1_types_inc.nss`
+## 4.2 `dl_types_inc.nss`
 
 Минимальные функции:
-- `int DLV1_IsNamed(object oNPC);`
-- `int DLV1_IsPersistent(object oNPC);`
-- `int DLV1_GetNpcFamily(object oNPC);`
-- `int DLV1_GetNpcSubtype(object oNPC);`
-- `int DLV1_GetScheduleTemplate(object oNPC);`
-- `object DLV1_GetNpcBase(object oNPC);`
+- `int DL_IsNamed(object oNPC);`
+- `int DL_IsPersistent(object oNPC);`
+- `int DL_GetNpcFamily(object oNPC);`
+- `int DL_GetNpcSubtype(object oNPC);`
+- `int DL_GetScheduleTemplate(object oNPC);`
+- `object DL_GetNpcBase(object oNPC);`
 
 Нормативное правило:
 - если часть контрактов временно сидит в locals, access к ним всё равно должен идти через helper-функции, а не напрямую из всех файлов.
 
 ---
 
-## 4.3 `al_v1_schedule_inc.nss`
+## 4.3 `dl_schedule_inc.nss`
 
 Минимальные функции:
-- `int DLV1_DetermineDayType(object oArea);`
-- `int DLV1_GetPersonalTimeOffset(object oNPC);`
-- `int DLV1_GetCurrentMinuteOfDay();`
-- `int DLV1_DetermineScheduleWindow(int nTemplate, int nDayType, int nMinuteOfDay, int nOffset);`
+- `int DL_DetermineDayType(object oArea);`
+- `int DL_GetPersonalTimeOffset(object oNPC);`
+- `int DL_GetCurrentMinuteOfDay();`
+- `int DL_DetermineScheduleWindow(int nTemplate, int nDayType, int nMinuteOfDay, int nOffset);`
 
 ---
 
-## 4.4 `al_v1_override_inc.nss`
+## 4.4 `dl_override_inc.nss`
 
 Минимальные функции:
-- `int DLV1_HasCriticalOverride(object oNPC, object oArea);`
-- `int DLV1_GetTopOverride(object oNPC, object oArea);`
-- `int DLV1_ShouldSuppressMaterialization(object oNPC, int nOverrideKind);`
-- `int DLV1_ShouldDisableService(object oNPC, int nOverrideKind);`
+- `int DL_HasCriticalOverride(object oNPC, object oArea);`
+- `int DL_GetTopOverride(object oNPC, object oArea);`
+- `int DL_ShouldSuppressMaterialization(object oNPC, int nOverrideKind);`
+- `int DL_ShouldDisableService(object oNPC, int nOverrideKind);`
 
 ---
 
-## 4.5 `al_v1_resolver_inc.nss`
+## 4.5 `dl_resolver_inc.nss`
 
 Главная функция:
-- `int DLV1_ResolveDirective(object oNPC, object oArea);`
+- `int DL_ResolveDirective(object oNPC, object oArea);`
 
 Вспомогательные функции:
-- `int DLV1_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayType);`
-- `int DLV1_ApplyOverrideToDirective(object oNPC, int nDirective, int nOverrideKind);`
-- `int DLV1_ResolveAnchorGroup(object oNPC, int nDirective);`
-- `int DLV1_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind);`
-- `int DLV1_ResolveServiceMode(object oNPC, int nDirective, int nOverrideKind);`
+- `int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayType);`
+- `int DL_ApplyOverrideToDirective(object oNPC, int nDirective, int nOverrideKind);`
+- `int DL_ResolveAnchorGroup(object oNPC, int nDirective);`
+- `int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind);`
+- `int DL_ResolveServiceMode(object oNPC, int nDirective, int nOverrideKind);`
 
 Нормативное правило:
 - resolver не должен иметь скрытых side effects.
 
 ---
 
-## 4.6 `al_v1_anchor_inc.nss`
+## 4.6 `dl_anchor_inc.nss`
 
 Минимальные функции:
-- `object DLV1_FindAnchorPoint(object oNPC, object oArea, int nAnchorGroup);`
-- `object DLV1_FindFallbackAnchorPoint(object oNPC, object oArea, int nAnchorGroup);`
-- `int DLV1_IsAnchorContextAllowed(object oNPC, object oPoint);`
+- `object DL_FindAnchorPoint(object oNPC, object oArea, int nAnchorGroup);`
+- `object DL_FindFallbackAnchorPoint(object oNPC, object oArea, int nAnchorGroup);`
+- `int DL_IsAnchorContextAllowed(object oNPC, object oPoint);`
 
 ---
 
-## 4.7 `al_v1_activity_inc.nss`
+## 4.7 `dl_activity_inc.nss`
 
 Минимальные функции:
-- `int DLV1_ResolveActivityKind(object oNPC, int nDirective, int nAnchorGroup);`
-- `void DLV1_ApplyActivity(object oNPC, int nActivityKind, object oPoint);`
+- `int DL_ResolveActivityKind(object oNPC, int nDirective, int nAnchorGroup);`
+- `void DL_ApplyActivity(object oNPC, int nActivityKind, object oPoint);`
 
 ---
 
-## 4.8 `al_v1_materialize_inc.nss`
+## 4.8 `dl_materialize_inc.nss`
 
 Минимальные функции:
-- `int DLV1_ShouldInstantPlace(object oNPC, object oArea, object oPoint);`
-- `void DLV1_ApplyInstantPlacement(object oNPC, object oPoint);`
-- `void DLV1_ApplyLocalWalk(object oNPC, object oPoint);`
-- `void DLV1_MaterializeNpc(object oNPC, object oArea);`
-- `void DLV1_HideOrMarkAbsent(object oNPC, int nDirective);`
+- `int DL_ShouldInstantPlace(object oNPC, object oArea, object oPoint);`
+- `void DL_ApplyInstantPlacement(object oNPC, object oPoint);`
+- `void DL_ApplyLocalWalk(object oNPC, object oPoint);`
+- `void DL_MaterializeNpc(object oNPC, object oArea);`
+- `void DL_HideOrMarkAbsent(object oNPC, int nDirective);`
 
 Нормативное правило:
-- `DLV1_MaterializeNpc()` должна использовать resolver и anchor helpers, а не принимать решения сама “из головы”.
+- `DL_MaterializeNpc()` должна использовать resolver и anchor helpers, а не принимать решения сама “из головы”.
 
 ---
 
-## 4.9 `al_v1_interact_inc.nss`
+## 4.9 `dl_interact_inc.nss`
 
 Минимальные функции:
-- `void DLV1_SetDialogueMode(object oNPC, int nDialogueMode);`
-- `void DLV1_SetServiceMode(object oNPC, int nServiceMode);`
-- `void DLV1_RefreshInteractionState(object oNPC, object oArea);`
+- `void DL_SetDialogueMode(object oNPC, int nDialogueMode);`
+- `void DL_SetServiceMode(object oNPC, int nServiceMode);`
+- `void DL_RefreshInteractionState(object oNPC, object oArea);`
 
 ---
 
-## 4.10 `al_v1_area_inc.nss`
+## 4.10 `dl_area_inc.nss`
 
 Минимальные функции:
-- `int DLV1_GetAreaTier(object oArea);`
-- `void DLV1_SetAreaTier(object oArea, int nTier);`
-- `int DLV1_ShouldRunDailyLife(object oArea);`
-- `void DLV1_OnAreaBecameHot(object oArea);`
-- `void DLV1_OnAreaBecameWarm(object oArea);`
-- `void DLV1_OnAreaBecameFrozen(object oArea);`
+- `int DL_GetAreaTier(object oArea);`
+- `void DL_SetAreaTier(object oArea, int nTier);`
+- `int DL_ShouldRunDailyLife(object oArea);`
+- `void DL_OnAreaBecameHot(object oArea);`
+- `void DL_OnAreaBecameWarm(object oArea);`
+- `void DL_OnAreaBecameFrozen(object oArea);`
 
 ---
 
-## 4.11 `al_v1_worker_inc.nss`
+## 4.11 `dl_worker_inc.nss`
 
 Минимальные функции:
-- `void DLV1_AreaWorkerTick(object oArea);`
-- `int DLV1_GetWorkerBudget(object oArea);`
-- `void DLV1_DispatchDueJobs(object oArea, int nBudget);`
-- `void DLV1_ProcessNpcBudgeted(object oArea, object oNPC);`
+- `void DL_AreaWorkerTick(object oArea);`
+- `int DL_GetWorkerBudget(object oArea);`
+- `void DL_DispatchDueJobs(object oArea, int nBudget);`
+- `void DL_ProcessNpcBudgeted(object oArea, object oNPC);`
 
 Нормативное правило:
 - worker должен ограничивать число обрабатываемых NPC за проход.
 
 ---
 
-## 4.12 `al_v1_resync_inc.nss`
+## 4.12 `dl_resync_inc.nss`
 
 Минимальные функции:
-- `void DLV1_RequestResync(object oNPC, int nReason);`
-- `void DLV1_RunResync(object oNPC, object oArea, int nReason);`
-- `int DLV1_ShouldResync(object oNPC, int nReason);`
+- `void DL_RequestResync(object oNPC, int nReason);`
+- `void DL_RunResync(object oNPC, object oArea, int nReason);`
+- `int DL_ShouldResync(object oNPC, int nReason);`
 
 ---
 
-## 4.13 `al_v1_slot_handoff_inc.nss`
+## 4.13 `dl_slot_handoff_inc.nss`
 
 Минимальные функции:
-- `void DLV1_RequestFunctionSlotReview(string sFunctionSlotId, int nReason);`
-- `void DLV1_OnFunctionSlotAssigned(string sFunctionSlotId, object oNPC);`
+- `void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason);`
+- `void DL_OnFunctionSlotAssigned(string sFunctionSlotId, object oNPC);`
 
 Нормативное правило:
 - в первой итерации допустим каркас без полного population-layer исполнения.
@@ -371,38 +371,38 @@
 
 ## Step 1
 Сделать только:
-- `al_v1_const_inc.nss`
-- `al_v1_log_inc.nss`
-- `al_v1_util_inc.nss`
-- `al_v1_types_inc.nss`
+- `dl_const_inc.nss`
+- `dl_log_inc.nss`
+- `dl_util_inc.nss`
+- `dl_types_inc.nss`
 
 Цель:
 - единая база enum’ов, ключей, helper-access API.
 
 ## Step 2
 Сделать:
-- `al_v1_schedule_inc.nss`
-- `al_v1_override_inc.nss`
-- `al_v1_resolver_inc.nss`
+- `dl_schedule_inc.nss`
+- `dl_override_inc.nss`
+- `dl_resolver_inc.nss`
 
 Цель:
 - получить чистый resolver.
 
 ## Step 3
 Сделать:
-- `al_v1_anchor_inc.nss`
-- `al_v1_activity_inc.nss`
-- `al_v1_materialize_inc.nss`
-- `al_v1_interact_inc.nss`
+- `dl_anchor_inc.nss`
+- `dl_activity_inc.nss`
+- `dl_materialize_inc.nss`
+- `dl_interact_inc.nss`
 
 Цель:
 - получить materialization + interaction refresh.
 
 ## Step 4
 Сделать:
-- `al_v1_area_inc.nss`
-- `al_v1_worker_inc.nss`
-- `al_v1_resync_inc.nss`
+- `dl_area_inc.nss`
+- `dl_worker_inc.nss`
+- `dl_resync_inc.nss`
 - hook entrypoints
 
 Цель:
@@ -410,7 +410,7 @@
 
 ## Step 5
 Добавить:
-- `al_v1_slot_handoff_inc.nss`
+- `dl_slot_handoff_inc.nss`
 
 Цель:
 - подготовить интеграцию с population/respawn без полной реализации всех внешних систем.
