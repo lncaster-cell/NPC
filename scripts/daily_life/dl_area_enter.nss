@@ -1,5 +1,5 @@
-#include "al_v1_area_inc"
-#include "al_v1_resync_inc"
+#include "dl_area_inc"
+#include "dl_resync_inc"
 
 void main()
 {
@@ -10,14 +10,14 @@ void main()
         return;
     }
 
-    DLV1_OnAreaBecameHot(oArea);
+    DL_OnAreaBecameHot(oArea);
 
     object oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
         if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
         {
-            DLV1_RequestResync(oObject, DLV1_RESYNC_AREA_ENTER);
+            DL_RequestResync(oObject, DL_RESYNC_AREA_ENTER);
         }
         oObject = GetNextObjectInArea(oArea);
     }

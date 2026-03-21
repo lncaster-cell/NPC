@@ -1,5 +1,5 @@
-#include "al_v1_area_inc"
-#include "al_v1_util_inc"
+#include "dl_area_inc"
+#include "dl_util_inc"
 
 void main()
 {
@@ -10,11 +10,11 @@ void main()
         return;
     }
 
-    if (DLV1_HasAnyPlayers(oArea))
+    if (DL_HasAnyPlayers(oArea))
     {
-        DLV1_OnAreaBecameWarm(oArea);
+        DL_OnAreaBecameWarm(oArea);
         return;
     }
 
-    DLV1_OnAreaBecameFrozen(oArea);
+    DL_OnAreaBecameFrozen(oArea);
 }
