@@ -20,7 +20,9 @@ const string DL_L_RESYNC_PENDING = "dl_resync_pending";
 const string DL_L_RESYNC_REASON = "dl_resync_reason";
 const string DL_L_DAY_TYPE_OVERRIDE = "dl_day_type_override";
 const string DL_L_LAST_SLOT_REVIEW = "dl_last_slot_review";
+const string DL_L_LAST_SLOT_REVIEW_REASON = "dl_last_slot_review_reason";
 const string DL_L_LAST_SLOT_ASSIGNED = "dl_last_slot_assigned";
+const string DL_L_LAST_SLOT_ASSIGNED_REASON = "dl_last_slot_assigned_reason";
 const string DL_L_SLOT_ASSIGNED_NPC = "dl_slot_assigned_npc";
 const string DL_L_FUNCTION_SLOT_ID = "dl_function_slot_id";
 
@@ -149,6 +151,7 @@ const int DL_RESYNC_SAVE_LOAD = 3;
 const int DL_RESYNC_TIME_JUMP = 4;
 const int DL_RESYNC_OVERRIDE_END = 5;
 const int DL_RESYNC_WORKER = 6;
+const int DL_RESYNC_SLOT_ASSIGNED = 7;
 
 const int DL_BUDGET_HOT = 6;
 const int DL_BUDGET_WARM = 2;
