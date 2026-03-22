@@ -459,8 +459,9 @@ Daily Life не должен сам респаунить нового испол
 
 Дальше Daily Life:
 1. обновляет profile/binding нового NPC;
-2. планирует resync;
-3. materialize-ит NPC по обычным правилам.
+2. записывает `function_slot_id` в локальный binding NPC;
+3. помечает `resync_pending` с причиной `DL_RESYNC_SLOT_ASSIGNED`;
+4. materialize-ит NPC по обычным правилам.
 
 ---
 
