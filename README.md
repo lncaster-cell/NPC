@@ -11,6 +11,21 @@
 3. **`docs/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`** — рабочая точка входа для текущей фазы активной реализации.
 4. **Доменные тома `12A–12E`, `13`, `14`** — правила и детализация по подсистемам.
 
+## Решения владельца (нужно утвердить)
+
+Перед следующим implementation-pass нужно явно утвердить 4 решения (подробности и формулировки — в `docs/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`, разделы `8` и `12`):
+
+1. **O-01: Первый playable slice Milestone A**
+   Подтвердить, что первый срез остаётся в границах: `LAW/CRAFT/TRADE_SERVICE` + `SLEEP/WORK/SERVICE/DUTY`.
+2. **O-02: Базовый override для smoke-проверок**
+   Подтвердить `QUARANTINE` как primary override (а `FIRE` как secondary).
+3. **O-03: Граница Daily Life vs City Response**
+   Подтвердить правило: мягкие локальные отклонения остаются в Daily Life, серьёзный инцидент передаётся в City Response.
+4. **O-04: Формат подтверждения готовности Milestone A**
+   Подтвердить формат: scripted smoke runs + expected-state журнал.
+
+После утверждения этих пунктов их статус в таблице решений (`docs/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`) нужно перевести из `pending` в `accepted`.
+
 ## 1) Формула проекта
 
 **Ambient Life v2 = повседневная жизнь NPC + правовой порядок мира + городская оперативная реакция + длинные социально-экономические последствия в единой модели.**
