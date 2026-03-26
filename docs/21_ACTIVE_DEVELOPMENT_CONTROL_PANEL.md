@@ -80,6 +80,7 @@
 
 ### 4.2 Активные implementation-документы для текущего спринта
 - `docs/12B_DAILY_LIFE_V1_MILESTONE_A_CHECKLIST.md`
+- `docs/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
 - `docs/12B_DAILY_LIFE_V1_IMPLEMENTATION_SLICE.md`
 - `docs/12B_DAILY_LIFE_V1_RUNTIME_PIPELINE.md`
 - `docs/12B_DAILY_LIFE_V1_RULESET_REV1.md`
@@ -150,7 +151,7 @@
 - один PR/коммит с маленьким объёмом;
 - короткий `до/после` в описании;
 - проверку (даже если это manual smoke);
-- запись результата в журнал.
+- запись результата в `docs/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`.
 
 Правило: **лучше 5 маленьких закрытых задач, чем 1 большой незакрытый кусок**.
 
