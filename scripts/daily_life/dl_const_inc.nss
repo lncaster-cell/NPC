@@ -152,6 +152,7 @@ const int DL_RESYNC_TIME_JUMP = 4;
 const int DL_RESYNC_OVERRIDE_END = 5;
 const int DL_RESYNC_WORKER = 6;
 const int DL_RESYNC_SLOT_ASSIGNED = 7;
+const int DL_RESYNC_BASE_LOST = 8;
 
 const int DL_BUDGET_HOT = 6;
 const int DL_BUDGET_WARM = 2;
