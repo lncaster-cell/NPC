@@ -451,6 +451,10 @@ Daily Life не должен сам респаунить нового испол
 - функция сейчас недоукомплектована;
 - нужен внешний population/respawn review.
 
+Опционально внешний слой может заранее подготовить профиль для назначения:
+
+`DL_StageFunctionSlotProfile(function_slot_id, family, subtype, schedule, base)`
+
 ## 12.3 Обратный handoff
 
 Когда внешний слой назначил нового NPC в slot:
@@ -462,6 +466,10 @@ Daily Life не должен сам респаунить нового испол
 2. записывает `function_slot_id` в локальный binding NPC;
 3. помечает `resync_pending` с причиной `DL_RESYNC_SLOT_ASSIGNED`;
 4. materialize-ит NPC по обычным правилам.
+
+После применения staged slot-profile профиль очищается:
+
+`DL_ClearFunctionSlotProfile(function_slot_id)`
 
 ---
 

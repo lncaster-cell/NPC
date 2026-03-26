@@ -9,6 +9,37 @@ string DL_MakeSlotProfileKey(string sFunctionSlotId, string sField)
     return "dl_slot_profile_" + sFunctionSlotId + "_" + sField;
 }
 
+void DL_StageFunctionSlotProfile(string sFunctionSlotId, int nFamily, int nSubtype, int nSchedule, int nBase)
+{
+    object oModule = GetModule();
+
+    if (sFunctionSlotId == "")
+    {
+        DL_Log(DL_DEBUG_BASIC, "Slot profile stage ignored: empty function slot id");
+        return;
+    }
+
+    SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family"), nFamily);
+    SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype"), nSubtype);
+    SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule"), nSchedule);
+    SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"), nBase);
+}
+
+void DL_ClearFunctionSlotProfile(string sFunctionSlotId)
+{
+    object oModule = GetModule();
+
+    if (sFunctionSlotId == "")
+    {
+        return;
+    }
+
+    DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family"));
+    DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype"));
+    DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule"));
+    DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"));
+}
+
 int DL_NormalizeSlotReviewReason(int nReason)
 {
     if (nReason == DL_RESYNC_BASE_LOST || nReason == DL_RESYNC_SLOT_ASSIGNED)
@@ -81,18 +112,27 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
 
 void DL_OnFunctionSlotAssigned(string sFunctionSlotId, object oNPC)
 {
+    object oModule = GetModule();
+
     if (sFunctionSlotId == "")
     {
         DL_Log(DL_DEBUG_BASIC, "Slot assigned callback ignored: empty function slot id");
         return;
     }
 
-    SetLocalString(GetModule(), DL_L_LAST_SLOT_ASSIGNED, sFunctionSlotId);
-    SetLocalInt(GetModule(), DL_L_LAST_SLOT_ASSIGNED_REASON, DL_RESYNC_SLOT_ASSIGNED);
-    SetLocalObject(GetModule(), DL_L_SLOT_ASSIGNED_NPC, oNPC);
+    SetLocalString(oModule, DL_L_LAST_SLOT_ASSIGNED, sFunctionSlotId);
+    SetLocalInt(oModule, DL_L_LAST_SLOT_ASSIGNED_REASON, DL_RESYNC_SLOT_ASSIGNED);
+    SetLocalObject(oModule, DL_L_SLOT_ASSIGNED_NPC, oNPC);
+    if (GetLocalString(oModule, DL_L_LAST_SLOT_REVIEW) == sFunctionSlotId)
+    {
+        DeleteLocalString(oModule, DL_L_LAST_SLOT_REVIEW);
+        DeleteLocalInt(oModule, DL_L_LAST_SLOT_REVIEW_REASON);
+    }
+
     if (GetIsObjectValid(oNPC))
     {
         DL_ApplyAssignedSlotProfile(oNPC, sFunctionSlotId);
+        DL_ClearFunctionSlotProfile(sFunctionSlotId);
         SetLocalString(oNPC, DL_L_FUNCTION_SLOT_ID, sFunctionSlotId);
         DL_RequestAssignedNpcResync(oNPC);
     }
