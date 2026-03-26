@@ -32,6 +32,7 @@
 | Дата | Run ID | Тип | Среда | A (Blacksmith WORK) | B (Blacksmith SOCIAL) | C (Gate duty) | D (Innkeeper late) | E (Quarantine) | F (Area enter resync) | G (WARM/FROZEN) | Итог |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-03-26 | baseline-template-001 | template init | repo docs | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | журнал создан, ожидаются первые прогоны |
+| 2026-03-26 | runbook-bootstrap-001 | process prep | repo docs | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | добавлен scripted smoke runbook; ожидается первый фактический прогон |
 
 ## 2.2 Детализация расхождений (заполнять только при PARTIAL/FAIL)
 
@@ -47,11 +48,11 @@
 
 | Шаг | Статус | Чем подтверждено | Комментарий |
 |---|---|---|---|
-| Step A — Contracts foundation | PARTIAL | code inspection | Требуется зафиксировать scripted/manual прогон с логом smoke snapshot. |
-| Step B — Pure resolver | PARTIAL | code inspection | Нужен отдельный run с проверкой детерминизма на одинаковых входах. |
-| Step C — Materialization and interaction | PARTIAL | code inspection | Нужны сценарные подтверждения изменения dialogue/service в A/B/D. |
-| Step D — Area worker and lifecycle | PARTIAL | code inspection | Нужен run с явным подтверждением F/G (HOT/WARM/FROZEN и bounded worker). |
-| Step E — Stub handoff | PARTIAL | code inspection | API присутствует; нужен smoke-run с `BASE_LOST -> UNASSIGNED/ABSENT` + handoff log. |
+| Step A — Contracts foundation | PARTIAL | code inspection | Runbook готов; требуется первый фактический scripted/manual прогон с логом smoke snapshot. |
+| Step B — Pure resolver | PARTIAL | code inspection | Runbook готов; нужен отдельный run с проверкой детерминизма на одинаковых входах. |
+| Step C — Materialization and interaction | PARTIAL | code inspection | Runbook готов; нужны сценарные подтверждения изменения dialogue/service в A/B/D. |
+| Step D — Area worker and lifecycle | PARTIAL | code inspection | Runbook готов; нужен run с явным подтверждением F/G (HOT/WARM/FROZEN и bounded worker). |
+| Step E — Stub handoff | PARTIAL | code inspection | API присутствует; runbook готов, нужен smoke-run с `BASE_LOST -> UNASSIGNED/ABSENT` + handoff log. |
 
 ---
 

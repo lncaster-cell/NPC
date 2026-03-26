@@ -81,6 +81,7 @@
 ### 4.2 Активные implementation-документы для текущего спринта
 - `docs/12B_DAILY_LIFE_V1_MILESTONE_A_CHECKLIST.md`
 - `docs/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
+- `docs/12B_DAILY_LIFE_V1_SMOKE_RUNBOOK.md`
 - `docs/12B_DAILY_LIFE_V1_IMPLEMENTATION_SLICE.md`
 - `docs/12B_DAILY_LIFE_V1_RUNTIME_PIPELINE.md`
 - `docs/12B_DAILY_LIFE_V1_RULESET_REV1.md`
@@ -109,6 +110,7 @@
 - правки в `scripts/daily_life/`, если они прямо работают на Milestone A;
 - правки в implementation docs, если они устраняют неоднозначность текущего спринта;
 - создание smoke/acceptance проверок под Milestone A сценарии.
+- поддержание актуального runbook для scripted smoke цикла (`docs/12B_DAILY_LIFE_V1_SMOKE_RUNBOOK.md`).
 
 ### Сейчас запрещено расползаться вширь
 - не начинать параллельно полную legal/court реализацию;
