@@ -65,7 +65,7 @@ void DL_HandleUnassignedNpc(object oNPC)
 
     if (sFunctionSlotId != "")
     {
-        DL_RequestFunctionSlotReview(sFunctionSlotId, DL_RESYNC_WORKER);
+        DL_RequestFunctionSlotReview(sFunctionSlotId, DL_RESYNC_BASE_LOST);
     }
     else
     {
@@ -75,14 +75,21 @@ void DL_HandleUnassignedNpc(object oNPC)
 
 int DL_HandleBaseLostStub(object oNPC)
 {
+    string sFunctionSlotId;
+
     if (DL_HasBase(oNPC))
     {
         return FALSE;
     }
 
+    sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base lost, applying milestone A stub");
     if (DL_IsNamed(oNPC) || DL_IsPersistent(oNPC))
     {
+        if (sFunctionSlotId != "")
+        {
+            DL_RequestFunctionSlotReview(sFunctionSlotId, DL_RESYNC_BASE_LOST);
+        }
         DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
         DL_SetInteractionStateExplicit(oNPC, DL_DIR_ABSENT, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
         return TRUE;

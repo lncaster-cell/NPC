@@ -296,8 +296,22 @@ Step E считается готовым, если:
 - dialogue/service refresh;
 - resync reason;
 - worker budget reached.
+- smoke snapshot по ключевым NPC-сценариям (`LAW/CRAFT/TRADE_SERVICE`) при включённом флаге `dl_smoke_trace`.
 
 Это нужно, чтобы отладка шла по фактам, а не наугад.
+
+### 6.1 Runtime smoke trace (минимальный verification path)
+
+- Для точечной проверки сценариев A–E можно включить module-local флаг `dl_smoke_trace = TRUE`.
+- При включённом флаге worker после `DL_RunResync` пишет строку `smoke snapshot` с полями:
+  - `reason`
+  - `family`
+  - `subtype`
+  - `directive`
+  - `dialogue`
+  - `service`
+  - `override`
+- Это даёт быстрый журнал, по которому видно, что `dialogue_mode` и `service_mode` реально меняются по сценариям, а не только «ожидаются по коду».
 
 ---
 
