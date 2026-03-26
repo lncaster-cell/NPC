@@ -458,7 +458,7 @@ Daily Life не должен сам респаунить нового испол
 `DL_OnFunctionSlotAssigned(function_slot_id, npc_id)`
 
 Дальше Daily Life:
-1. обновляет profile/binding нового NPC;
+1. обновляет profile/binding нового NPC (если внешний слой заранее положил slot-profile в module locals);
 2. записывает `function_slot_id` в локальный binding NPC;
 3. помечает `resync_pending` с причиной `DL_RESYNC_SLOT_ASSIGNED`;
 4. materialize-ит NPC по обычным правилам.
