@@ -25,6 +25,7 @@ const string DL_L_LAST_SLOT_ASSIGNED = "dl_last_slot_assigned";
 const string DL_L_LAST_SLOT_ASSIGNED_REASON = "dl_last_slot_assigned_reason";
 const string DL_L_SLOT_ASSIGNED_NPC = "dl_slot_assigned_npc";
 const string DL_L_FUNCTION_SLOT_ID = "dl_function_slot_id";
+const string DL_L_SMOKE_TRACE = "dl_smoke_trace";
 
 const int DL_DEBUG_NONE = 0;
 const int DL_DEBUG_BASIC = 1;

@@ -4,6 +4,25 @@
 #include "dl_const_inc"
 #include "dl_area_inc"
 #include "dl_resync_inc"
+#include "dl_override_inc"
+#include "dl_types_inc"
+
+void DL_LogSmokeSnapshot(object oNPC, object oArea, int nReason)
+{
+    string sMessage;
+
+    sMessage =
+        "smoke snapshot"
+        + " reason=" + IntToString(nReason)
+        + " family=" + IntToString(DL_GetNpcFamily(oNPC))
+        + " subtype=" + IntToString(DL_GetNpcSubtype(oNPC))
+        + " directive=" + IntToString(GetLocalInt(oNPC, DL_L_DIRECTIVE))
+        + " dialogue=" + IntToString(GetLocalInt(oNPC, DL_L_DIALOGUE_MODE))
+        + " service=" + IntToString(GetLocalInt(oNPC, DL_L_SERVICE_MODE))
+        + " override=" + IntToString(DL_GetTopOverride(oNPC, oArea));
+
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, sMessage);
+}
 
 int DL_GetWorkerBudget(object oArea)
 {
@@ -31,6 +50,10 @@ void DL_ProcessNpcBudgeted(object oArea, object oNPC)
         nReason = DL_RESYNC_WORKER;
     }
     DL_RunResync(oNPC, oArea, nReason);
+    if (GetLocalInt(GetModule(), DL_L_SMOKE_TRACE) == TRUE)
+    {
+        DL_LogSmokeSnapshot(oNPC, oArea, nReason);
+    }
 }
 
 void DL_DispatchDueJobs(object oArea, int nBudget)
