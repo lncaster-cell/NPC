@@ -99,7 +99,77 @@ int DL_TryRecoverBaseFromFunctionSlot(object oNPC)
     return TRUE;
 }
 
-int DL_HandleBaseLostStub(object oNPC)
+int DL_GetPrimaryBaseAnchorGroup(object oNPC)
+{
+    int nFamily = DL_GetNpcFamily(oNPC);
+
+    if (nFamily == DL_FAMILY_CRAFT)
+    {
+        return DL_AG_WORK;
+    }
+    if (nFamily == DL_FAMILY_TRADE_SERVICE)
+    {
+        return DL_AG_SERVICE;
+    }
+    if (nFamily == DL_FAMILY_LAW)
+    {
+        return DL_AG_DUTY;
+    }
+    return DL_AG_SLEEP;
+}
+
+object DL_FindProvisionalBaseAnchor(object oNPC, object oArea)
+{
+    int i = 1;
+    int nPrimaryGroup = DL_GetPrimaryBaseAnchorGroup(oNPC);
+    object oPoint;
+
+    while (i <= 4)
+    {
+        oPoint = DL_FindAnchorByTag(oArea, DL_GetAreaAnchorTagCandidate(oNPC, oArea, nPrimaryGroup, i));
+        if (GetIsObjectValid(oPoint))
+        {
+            return oPoint;
+        }
+
+        oPoint = DL_FindAnchorByTag(oArea, DL_GetAreaAnchorTagCandidate(oNPC, oArea, DL_AG_SLEEP, i));
+        if (GetIsObjectValid(oPoint))
+        {
+            return oPoint;
+        }
+
+        oPoint = DL_FindAnchorByTag(oArea, DL_GetAreaAnchorTagCandidate(oNPC, oArea, DL_AG_WAIT, i));
+        if (GetIsObjectValid(oPoint))
+        {
+            return oPoint;
+        }
+        i += 1;
+    }
+
+    return OBJECT_INVALID;
+}
+
+int DL_TryAssignProvisionalBase(object oNPC, object oArea)
+{
+    object oBase;
+
+    if (!GetIsObjectValid(oArea))
+    {
+        return FALSE;
+    }
+
+    oBase = DL_FindProvisionalBaseAnchor(oNPC, oArea);
+    if (!GetIsObjectValid(oBase))
+    {
+        return FALSE;
+    }
+
+    SetLocalObject(oNPC, DL_L_NPC_BASE, oBase);
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "provisional base assigned from area anchors: " + GetTag(oBase));
+    return TRUE;
+}
+
+int DL_HandleBaseLost(object oNPC, object oArea)
 {
     string sFunctionSlotId;
 
@@ -114,6 +184,10 @@ int DL_HandleBaseLostStub(object oNPC)
         DeleteLocalString(GetModule(), DL_L_LAST_BASE_LOST_SLOT);
         DeleteLocalObject(GetModule(), DL_L_LAST_BASE_LOST_NPC);
         DeleteLocalInt(GetModule(), DL_L_LAST_BASE_LOST_KIND);
+        return FALSE;
+    }
+    if (DL_TryAssignProvisionalBase(oNPC, oArea))
+    {
         return FALSE;
     }
 
@@ -143,7 +217,7 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     int nAnchorGroup;
     object oPoint;
 
-    if (DL_HandleBaseLostStub(oNPC))
+    if (DL_HandleBaseLost(oNPC, oArea))
     {
         return;
     }
