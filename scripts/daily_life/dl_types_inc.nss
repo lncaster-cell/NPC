@@ -4,6 +4,41 @@
 #include "dl_const_inc"
 #include "dl_util_inc"
 
+int DL_IsFamilyInFirstPlayableSlice(int nFamily)
+{
+    return nFamily == DL_FAMILY_LAW
+        || nFamily == DL_FAMILY_CRAFT
+        || nFamily == DL_FAMILY_TRADE_SERVICE;
+}
+
+int DL_IsSubtypeAllowedForFamily(int nFamily, int nSubtype)
+{
+    if (nSubtype == DL_SUBTYPE_NONE)
+    {
+        return TRUE;
+    }
+
+    if (nFamily == DL_FAMILY_LAW)
+    {
+        return nSubtype == DL_SUBTYPE_PATROL
+            || nSubtype == DL_SUBTYPE_GATE_POST
+            || nSubtype == DL_SUBTYPE_INSPECTION;
+    }
+    if (nFamily == DL_FAMILY_CRAFT)
+    {
+        return nSubtype == DL_SUBTYPE_BLACKSMITH
+            || nSubtype == DL_SUBTYPE_ARTISAN
+            || nSubtype == DL_SUBTYPE_LABORER;
+    }
+    if (nFamily == DL_FAMILY_TRADE_SERVICE)
+    {
+        return nSubtype == DL_SUBTYPE_SHOPKEEPER
+            || nSubtype == DL_SUBTYPE_INNKEEPER
+            || nSubtype == DL_SUBTYPE_WANDERING_VENDOR;
+    }
+    return FALSE;
+}
+
 int DL_IsNamed(object oNPC)
 {
     return GetLocalInt(oNPC, DL_L_NAMED) == TRUE;
@@ -16,12 +51,24 @@ int DL_IsPersistent(object oNPC)
 
 int DL_GetNpcFamily(object oNPC)
 {
-    return GetLocalInt(oNPC, DL_L_NPC_FAMILY);
+    int nFamily = GetLocalInt(oNPC, DL_L_NPC_FAMILY);
+    if (DL_IsFamilyInFirstPlayableSlice(nFamily))
+    {
+        return nFamily;
+    }
+    return DL_FAMILY_NONE;
 }
 
 int DL_GetNpcSubtype(object oNPC)
 {
-    return GetLocalInt(oNPC, DL_L_NPC_SUBTYPE);
+    int nFamily = DL_GetNpcFamily(oNPC);
+    int nSubtype = GetLocalInt(oNPC, DL_L_NPC_SUBTYPE);
+
+    if (DL_IsSubtypeAllowedForFamily(nFamily, nSubtype))
+    {
+        return nSubtype;
+    }
+    return DL_SUBTYPE_NONE;
 }
 
 int DL_IsDailyLifeNpc(object oNPC)
