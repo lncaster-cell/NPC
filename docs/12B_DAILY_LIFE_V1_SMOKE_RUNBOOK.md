@@ -42,7 +42,7 @@ Runbook не доказывает окончательный production-grade ve
 
 При включённом `dl_smoke_trace` worker пишет сообщение формата:
 
-- `smoke snapshot reason=<...> family=<...> subtype=<...> directive=<...> dialogue=<...> service=<...> override=<...>`
+- `smoke snapshot reason=<id>(<label>) family=<...> subtype=<...> directive=<id>(<label>) dialogue=<id>(<label>) service=<id>(<label>) override=<id>(<label>)`
 
 Минимальный expected набор полей, который нужно сверять в каждом сценарии:
 - `directive`;
