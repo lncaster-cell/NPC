@@ -6,6 +6,37 @@
 
 ---
 
+## 0) Быстрый статус на 2026-03-27 (что уже сделано и что можно проверять)
+
+Ниже — короткая operational-сводка, чтобы не гадать «где мы сейчас».
+
+### 0.1 Что уже реализовано в коде (Milestone A)
+- **Step A — Contracts foundation:** базовые константы/ключи locals/helpers присутствуют.
+- **Step B — Pure resolver:** есть deterministic-путь вычисления `directive/anchor/dialogue/service`.
+- **Step C — Materialization + interaction:** есть materialize-ветка, anchor fallback, обновление `dialogue_mode/service_mode`.
+- **Step D — Area worker/lifecycle:** есть bounded worker + tier-поведение `HOT/WARM/FROZEN`.
+- **Step E — Stub handoff:** есть `request slot review`, `on slot assigned`, и stub-path для `BASE_LOST -> ABSENT/UNASSIGNED`.
+
+Важно: это означает **«каркас и runtime-логика на месте»**, но не «Milestone A закрыт».  
+Milestone A закрывается только после фактических прогонов (см. `Acceptance Journal`).
+
+### 0.2 Что уже можно проверять прямо сейчас
+1. **A/B/D (профильные сценарии):**
+   - различие `directive/dialogue/service` в разных временных окнах.
+2. **C/F/G (pipeline/lifecycle):**
+   - bounded resync, worker budget, разница `HOT/WARM/FROZEN`.
+3. **Step E отдельно (stub handoff):**
+   - запуск `scripts/daily_life/dl_smoke_step_e.nss`;
+   - ожидание в логе: `checked`, `absent`, `unassigned`, `last_kind`, `last_slot`;
+   - для trace-снимков: включить `dl_smoke_trace = TRUE`.
+
+### 0.3 Что сейчас ещё НЕ заявляется как «готово»
+- Нет подтверждённого полного `PASS`-прогона A–G в журнале.
+- Нет owner-run на реальном ПК, который закрывает final gate Milestone A.
+- Нет post-Milestone A логики (полная population/respawn/legal/trade интеграция).
+
+---
+
 ## 1) Зачем нужен этот файл
 
 Репозиторий проекта содержит сильную дизайн-базу и исторически развивался как documentation/design library. Сейчас проект уже в режиме активной реализации, и этот операционный файл отвечает не на вопрос «как устроен весь проект в идеале», а на вопрос:

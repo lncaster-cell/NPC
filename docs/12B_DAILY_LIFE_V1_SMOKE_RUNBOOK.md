@@ -35,6 +35,8 @@ Runbook не доказывает окончательный production-grade ve
    - `HOT` (`dl_area_tier = 2`),
    - `WARM` (`dl_area_tier = 1`),
    - `FROZEN` (`dl_area_tier = 0`).
+5. Для Step E использовать отдельный script-hook:
+   - `scripts/daily_life/dl_smoke_step_e.nss`.
 
 ---
 
@@ -42,7 +44,7 @@ Runbook не доказывает окончательный production-grade ve
 
 При включённом `dl_smoke_trace` worker пишет сообщение формата:
 
-- `smoke snapshot reason=<id>(<label>) family=<...> subtype=<...> directive=<id>(<label>) dialogue=<id>(<label>) service=<id>(<label>) override=<id>(<label>)`
+- `smoke snapshot reason=<id>(<label>) family=<...> subtype=<...> directive=<id>(<label>) dialogue=<id>(<label>) service=<id>(<label>) override=<id>(<label>) base_lost_kind=<id>(<label>) base_lost_slot=<slot_id>`
 
 Минимальный expected набор полей, который нужно сверять в каждом сценарии:
 - `directive`;
@@ -51,6 +53,11 @@ Runbook не доказывает окончательный production-grade ve
 - `override` (для E).
 
 Если `smoke snapshot` отсутствует, сценарий считается `PARTIAL` даже если визуально NPC выглядит корректно.
+
+Для Step E (`Stub handoff`) дополнительно проверять:
+- `base_lost_kind=ABSENT|UNASSIGNED` в зависимости от ветки;
+- `base_lost_slot=<slot_id>` для NPC с `dl_function_slot_id`;
+- при совпадении NPC с последним событием будет маркер `base_lost_npc=SELF`.
 
 ---
 
@@ -76,6 +83,10 @@ Runbook не доказывает окончательный production-grade ve
 ### E — Quarantine override
 - На одном из NPC включить override `QUARANTINE`.
 - Ожидание: suppression/service gating (обычно `LOCKDOWN/HIDE` + ограниченный/выключенный сервис).
+- Для отдельной проверки stub handoff/base-lost запустить `dl_smoke_step_e`:
+  - скрипт принудительно прогоняет `DL_RunForcedResync(..., DL_RESYNC_BASE_LOST)` для Daily Life NPC без валидной базы;
+  - пишет итог в лог: `checked/absent/unassigned/last_kind/last_slot`;
+  - даёт быстрый сигнал, что Milestone A ветки `ABSENT` и `UNASSIGNED` реально срабатывают на текущих данных.
 
 ### F — Area enter resync
 - Игрок входит в area с NPC, требующим resync.

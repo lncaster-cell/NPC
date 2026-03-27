@@ -66,4 +66,16 @@ void DL_RunResync(object oNPC, object oArea, int nReason)
     SetLocalInt(oNPC, DL_L_RESYNC_REASON, DL_RESYNC_NONE);
 }
 
+void DL_RunForcedResync(object oNPC, object oArea, int nReason)
+{
+    if (!DL_IsDailyLifeNpc(oNPC))
+    {
+        return;
+    }
+
+    SetLocalInt(oNPC, DL_L_RESYNC_PENDING, TRUE);
+    SetLocalInt(oNPC, DL_L_RESYNC_REASON, nReason);
+    DL_RunResync(oNPC, oArea, nReason);
+}
+
 #endif
