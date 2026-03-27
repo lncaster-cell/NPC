@@ -7,19 +7,78 @@
 #include "dl_override_inc"
 #include "dl_types_inc"
 
+string DL_DescribeResyncReason(int nReason)
+{
+    if (nReason == DL_RESYNC_AREA_ENTER) return "AREA_ENTER";
+    if (nReason == DL_RESYNC_TIER_UP) return "TIER_UP";
+    if (nReason == DL_RESYNC_SAVE_LOAD) return "SAVE_LOAD";
+    if (nReason == DL_RESYNC_TIME_JUMP) return "TIME_JUMP";
+    if (nReason == DL_RESYNC_OVERRIDE_END) return "OVERRIDE_END";
+    if (nReason == DL_RESYNC_WORKER) return "WORKER";
+    if (nReason == DL_RESYNC_SLOT_ASSIGNED) return "SLOT_ASSIGNED";
+    if (nReason == DL_RESYNC_BASE_LOST) return "BASE_LOST";
+    return "NONE";
+}
+
+string DL_DescribeDirective(int nDirective)
+{
+    if (nDirective == DL_DIR_SLEEP) return "SLEEP";
+    if (nDirective == DL_DIR_WORK) return "WORK";
+    if (nDirective == DL_DIR_SERVICE) return "SERVICE";
+    if (nDirective == DL_DIR_SOCIAL) return "SOCIAL";
+    if (nDirective == DL_DIR_DUTY) return "DUTY";
+    if (nDirective == DL_DIR_PUBLIC_PRESENCE) return "PUBLIC_PRESENCE";
+    if (nDirective == DL_DIR_HOLD_POST) return "HOLD_POST";
+    if (nDirective == DL_DIR_LOCKDOWN_BASE) return "LOCKDOWN_BASE";
+    if (nDirective == DL_DIR_HIDE_SAFE) return "HIDE_SAFE";
+    if (nDirective == DL_DIR_ABSENT) return "ABSENT";
+    if (nDirective == DL_DIR_UNASSIGNED) return "UNASSIGNED";
+    return "NONE";
+}
+
+string DL_DescribeDialogueMode(int nDialogue)
+{
+    if (nDialogue == DL_DLG_WORK) return "WORK";
+    if (nDialogue == DL_DLG_OFF_DUTY) return "OFF_DUTY";
+    if (nDialogue == DL_DLG_INSPECTION) return "INSPECTION";
+    if (nDialogue == DL_DLG_LOCKDOWN) return "LOCKDOWN";
+    if (nDialogue == DL_DLG_HIDE) return "HIDE";
+    if (nDialogue == DL_DLG_UNAVAILABLE) return "UNAVAILABLE";
+    return "NONE";
+}
+
+string DL_DescribeServiceMode(int nService)
+{
+    if (nService == DL_SERVICE_AVAILABLE) return "AVAILABLE";
+    if (nService == DL_SERVICE_LIMITED) return "LIMITED";
+    if (nService == DL_SERVICE_DISABLED) return "DISABLED";
+    return "NONE";
+}
+
+string DL_DescribeOverride(int nOverride)
+{
+    if (nOverride == DL_OVR_FIRE) return "FIRE";
+    if (nOverride == DL_OVR_QUARANTINE) return "QUARANTINE";
+    return "NONE";
+}
+
 void DL_LogSmokeSnapshot(object oNPC, object oArea, int nReason)
 {
     string sMessage;
+    int nDirective = GetLocalInt(oNPC, DL_L_DIRECTIVE);
+    int nDialogue = GetLocalInt(oNPC, DL_L_DIALOGUE_MODE);
+    int nService = GetLocalInt(oNPC, DL_L_SERVICE_MODE);
+    int nOverride = DL_GetTopOverride(oNPC, oArea);
 
     sMessage =
         "smoke snapshot"
-        + " reason=" + IntToString(nReason)
+        + " reason=" + IntToString(nReason) + "(" + DL_DescribeResyncReason(nReason) + ")"
         + " family=" + IntToString(DL_GetNpcFamily(oNPC))
         + " subtype=" + IntToString(DL_GetNpcSubtype(oNPC))
-        + " directive=" + IntToString(GetLocalInt(oNPC, DL_L_DIRECTIVE))
-        + " dialogue=" + IntToString(GetLocalInt(oNPC, DL_L_DIALOGUE_MODE))
-        + " service=" + IntToString(GetLocalInt(oNPC, DL_L_SERVICE_MODE))
-        + " override=" + IntToString(DL_GetTopOverride(oNPC, oArea));
+        + " directive=" + IntToString(nDirective) + "(" + DL_DescribeDirective(nDirective) + ")"
+        + " dialogue=" + IntToString(nDialogue) + "(" + DL_DescribeDialogueMode(nDialogue) + ")"
+        + " service=" + IntToString(nService) + "(" + DL_DescribeServiceMode(nService) + ")"
+        + " override=" + IntToString(nOverride) + "(" + DL_DescribeOverride(nOverride) + ")";
 
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, sMessage);
 }
