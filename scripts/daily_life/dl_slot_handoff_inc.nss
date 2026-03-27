@@ -40,6 +40,34 @@ void DL_ClearFunctionSlotProfile(string sFunctionSlotId)
     DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"));
 }
 
+int DL_HasStagedFunctionSlotProfile(string sFunctionSlotId)
+{
+    object oModule = GetModule();
+
+    if (sFunctionSlotId == "")
+    {
+        return FALSE;
+    }
+
+    if (GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family")) > DL_FAMILY_NONE)
+    {
+        return TRUE;
+    }
+    if (GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype")) > DL_SUBTYPE_NONE)
+    {
+        return TRUE;
+    }
+    if (GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule")) > DL_SCH_NONE)
+    {
+        return TRUE;
+    }
+    if (GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base")) > DL_BASE_NONE)
+    {
+        return TRUE;
+    }
+    return FALSE;
+}
+
 int DL_NormalizeSlotReviewReason(int nReason)
 {
     if (nReason == DL_RESYNC_BASE_LOST || nReason == DL_RESYNC_SLOT_ASSIGNED)

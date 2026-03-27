@@ -74,6 +74,31 @@ void DL_HandleUnassignedNpc(object oNPC)
     }
 }
 
+int DL_TryRecoverBaseFromFunctionSlot(object oNPC)
+{
+    string sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
+
+    if (sFunctionSlotId == "")
+    {
+        return FALSE;
+    }
+    if (!DL_HasStagedFunctionSlotProfile(sFunctionSlotId))
+    {
+        return FALSE;
+    }
+
+    DL_ApplyAssignedSlotProfile(oNPC, sFunctionSlotId);
+    DL_ClearFunctionSlotProfile(sFunctionSlotId);
+
+    if (!DL_HasBase(oNPC))
+    {
+        return FALSE;
+    }
+
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base recovered from staged function slot profile: " + sFunctionSlotId);
+    return TRUE;
+}
+
 int DL_HandleBaseLostStub(object oNPC)
 {
     string sFunctionSlotId;
@@ -84,7 +109,15 @@ int DL_HandleBaseLostStub(object oNPC)
     }
 
     sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
-    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base lost, applying milestone A stub");
+    if (DL_TryRecoverBaseFromFunctionSlot(oNPC))
+    {
+        DeleteLocalString(GetModule(), DL_L_LAST_BASE_LOST_SLOT);
+        DeleteLocalObject(GetModule(), DL_L_LAST_BASE_LOST_NPC);
+        DeleteLocalInt(GetModule(), DL_L_LAST_BASE_LOST_KIND);
+        return FALSE;
+    }
+
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base lost, applying handoff fallback");
     if (DL_IsNamed(oNPC) || DL_IsPersistent(oNPC))
     {
         if (sFunctionSlotId != "")
