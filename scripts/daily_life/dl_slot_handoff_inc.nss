@@ -49,6 +49,15 @@ int DL_NormalizeSlotReviewReason(int nReason)
     return DL_RESYNC_BASE_LOST;
 }
 
+void DL_RecordBaseLostEvent(object oNPC, string sFunctionSlotId, int nDirective)
+{
+    object oModule = GetModule();
+
+    SetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT, sFunctionSlotId);
+    SetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC, oNPC);
+    SetLocalInt(oModule, DL_L_LAST_BASE_LOST_KIND, nDirective);
+}
+
 void DL_ApplyAssignedSlotProfile(object oNPC, string sFunctionSlotId)
 {
     object oModule = GetModule();

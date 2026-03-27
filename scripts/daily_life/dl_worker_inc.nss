@@ -65,6 +65,10 @@ string DL_DescribeOverride(int nOverride)
 void DL_LogSmokeSnapshot(object oNPC, object oArea, int nReason)
 {
     string sMessage;
+    object oModule = GetModule();
+    object oLastBaseLostNpc = GetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC);
+    string sLastBaseLostSlot = GetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT);
+    int nLastBaseLostKind = GetLocalInt(oModule, DL_L_LAST_BASE_LOST_KIND);
     int nDirective = GetLocalInt(oNPC, DL_L_DIRECTIVE);
     int nDialogue = GetLocalInt(oNPC, DL_L_DIALOGUE_MODE);
     int nService = GetLocalInt(oNPC, DL_L_SERVICE_MODE);
@@ -78,7 +82,14 @@ void DL_LogSmokeSnapshot(object oNPC, object oArea, int nReason)
         + " directive=" + IntToString(nDirective) + "(" + DL_DescribeDirective(nDirective) + ")"
         + " dialogue=" + IntToString(nDialogue) + "(" + DL_DescribeDialogueMode(nDialogue) + ")"
         + " service=" + IntToString(nService) + "(" + DL_DescribeServiceMode(nService) + ")"
-        + " override=" + IntToString(nOverride) + "(" + DL_DescribeOverride(nOverride) + ")";
+        + " override=" + IntToString(nOverride) + "(" + DL_DescribeOverride(nOverride) + ")"
+        + " base_lost_kind=" + IntToString(nLastBaseLostKind) + "(" + DL_DescribeDirective(nLastBaseLostKind) + ")"
+        + " base_lost_slot=" + sLastBaseLostSlot;
+
+    if (oLastBaseLostNpc == oNPC)
+    {
+        sMessage = sMessage + " base_lost_npc=SELF";
+    }
 
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, sMessage);
 }

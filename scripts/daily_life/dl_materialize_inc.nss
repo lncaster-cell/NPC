@@ -62,6 +62,7 @@ void DL_HandleUnassignedNpc(object oNPC)
     SetLocalInt(oNPC, DL_L_ACTIVITY_KIND, DL_ACT_NONE);
     SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_AG_NONE);
     DL_SetInteractionStateExplicit(oNPC, DL_DIR_UNASSIGNED, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+    DL_RecordBaseLostEvent(oNPC, sFunctionSlotId, DL_DIR_UNASSIGNED);
 
     if (sFunctionSlotId != "")
     {
@@ -92,10 +93,13 @@ int DL_HandleBaseLostStub(object oNPC)
         }
         DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
         DL_SetInteractionStateExplicit(oNPC, DL_DIR_ABSENT, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+        DL_RecordBaseLostEvent(oNPC, sFunctionSlotId, DL_DIR_ABSENT);
+        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base lost branch=ABSENT");
         return TRUE;
     }
 
     DL_HandleUnassignedNpc(oNPC);
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base lost branch=UNASSIGNED");
     return TRUE;
 }
 
