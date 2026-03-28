@@ -10,14 +10,49 @@ string DL_SmokeDescribeDirective(int nDirective)
     return "OTHER";
 }
 
+string DL_SmokePassLabel(int bPass)
+{
+    if (bPass)
+    {
+        return "PASS";
+    }
+    return "FAIL";
+}
+
+void DL_LogStepEStatus(int nChecked, int nAbsent, int nUnassigned, int bMarkerPresent)
+{
+    int bFound = nChecked > 0;
+    int bPass = bFound && (nAbsent + nUnassigned) == nChecked && bMarkerPresent;
+    string sStatus;
+
+    if (!bFound)
+    {
+        sStatus = "NOT_FOUND";
+    }
+    else
+    {
+        sStatus = DL_SmokePassLabel(bPass);
+    }
+
+    DL_Log(
+        DL_DEBUG_BASIC,
+        "StepE smoke status=" + sStatus
+            + " checked=" + IntToString(nChecked)
+            + " absent=" + IntToString(nAbsent)
+            + " unassigned=" + IntToString(nUnassigned)
+            + " marker=" + IntToString(bMarkerPresent));
+}
+
 void DL_RunStepEBaseLostProbe()
 {
     object oArea = GetFirstArea();
     object oObject;
     object oModule = GetModule();
+    object oLastNpc;
     int nChecked = 0;
     int nAbsent = 0;
     int nUnassigned = 0;
+    int bMarkerPresent = FALSE;
 
     while (GetIsObjectValid(oArea))
     {
@@ -46,6 +81,12 @@ void DL_RunStepEBaseLostProbe()
         oArea = GetNextArea();
     }
 
+    oLastNpc = GetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC);
+    if (nChecked > 0 && GetIsObjectValid(oLastNpc))
+    {
+        bMarkerPresent = TRUE;
+    }
+
     DL_Log(
         DL_DEBUG_BASIC,
         "StepE smoke probe: checked="
@@ -54,6 +95,8 @@ void DL_RunStepEBaseLostProbe()
             + " unassigned=" + IntToString(nUnassigned)
             + " last_kind=" + DL_SmokeDescribeDirective(GetLocalInt(oModule, DL_L_LAST_BASE_LOST_KIND))
             + " last_slot=" + GetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT));
+
+    DL_LogStepEStatus(nChecked, nAbsent, nUnassigned, bMarkerPresent);
 }
 
 void main()
