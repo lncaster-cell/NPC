@@ -37,8 +37,59 @@ Runbook не доказывает окончательный production-grade ve
    - `FROZEN` (`dl_area_tier = 0`).
 5. Для Step E использовать отдельный script-hook:
    - `scripts/daily_life/dl_smoke_step_e.nss`.
+6. Для быстрого scripted среза A–G можно запускать `scripts/daily_life/dl_smoke_milestone_a.nss`.
+   - Скрипт не подменяет полноценный owner-smoke, но даёт единый машинный summary по сценариям `A–G` (`PASS/FAIL/NOT_FOUND`).
+
 
 ---
+
+## 2.1 Отдельный блок: как быстро настроить NPC в Toolset
+
+Ниже минимальный «боевой» набор, чтобы сразу запустить проверку.
+
+### Шаг 1 — Подготовить 3 зоны
+- Зона 1: `dl_area_tier = 2` (`HOT`).
+- Зона 2: `dl_area_tier = 1` (`WARM`).
+- Зона 3: `dl_area_tier = 0` (`FROZEN`).
+- На `OnHeartbeat` зоны поставить `scripts/daily_life/dl_area_tick`.
+
+### Шаг 2 — Поставить минимум 4 тестовых NPC
+
+1. **NPC_A_BLACKSMITH**
+   - `dl_npc_family = 2` (`CRAFT`)
+   - `dl_npc_subtype = 4` (`BLACKSMITH`)
+   - `dl_schedule_template = 1` (`EARLY_WORKER`)
+   - `dl_npc_base = <валидный base object>`
+
+2. **NPC_C_GATE_POST**
+   - `dl_npc_family = 1` (`LAW`)
+   - `dl_npc_subtype = 2` (`GATE_POST`)
+   - `dl_schedule_template = 4` (`DUTY_ROTATION_DAY`) или `5` (`DUTY_ROTATION_NIGHT`)
+   - `dl_npc_base = <валидный base object>`
+
+3. **NPC_D_INNKEEPER**
+   - `dl_npc_family = 3` (`TRADE_SERVICE`)
+   - `dl_npc_subtype = 8` (`INNKEEPER`)
+   - `dl_schedule_template = 3` (`TAVERN_LATE`)
+   - `dl_npc_base = <валидный base object>`
+
+4. **NPC_E_QUARANTINE** (любой из service/craft)
+   - базовые поля как у обычного NPC
+   - `dl_override_kind = 2` (`QUARANTINE`)
+
+Рекомендуется для всех тестовых NPC:
+- `dl_named = TRUE` **или** `dl_persistent = TRUE` (чтобы worker гарантированно их обрабатывал).
+
+### Шаг 3 — Включить trace и прогнать
+- На модуле: `dl_smoke_trace = TRUE`.
+- Запустить `scripts/daily_life/dl_smoke_milestone_a.nss`.
+- Для base-lost smoke отдельно запустить `scripts/daily_life/dl_smoke_step_e.nss`.
+
+### Шаг 4 — Что считать «проверка стартует корректно»
+- В логе есть строки `MilestoneA smoke A..G status=...`.
+- В логе есть `smoke snapshot ...` с `directive/dialogue/service`.
+- Для Step E есть `checked/absent/unassigned/last_kind/last_slot`.
+
 
 ## 3) Единый формат фиксации smoke snapshot
 
