@@ -33,6 +33,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 2026-03-26 | baseline-template-001 | template init | repo docs | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | журнал создан, ожидаются первые прогоны |
 | 2026-03-26 | runbook-bootstrap-001 | process prep | repo docs | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | добавлен scripted smoke runbook; ожидается первый фактический прогон |
+| 2026-03-27 | smoke-script-bootstrap-001 | process prep | repo scripts | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | добавлен scripted helper `dl_smoke_milestone_a.nss` для единого A–G summary; ожидается фактический прогон в toolset/owner PC |
 
 ## 2.2 Детализация расхождений (заполнять только при PARTIAL/FAIL)
 
