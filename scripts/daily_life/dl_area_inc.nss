@@ -17,7 +17,8 @@ void DL_SetAreaTier(object oArea, int nTier)
 
 int DL_ShouldRunDailyLife(object oArea)
 {
-    return DL_GetAreaTier(oArea) == DL_AREA_HOT;
+    int nTier = DL_GetAreaTier(oArea);
+    return nTier == DL_AREA_HOT || nTier == DL_AREA_WARM;
 }
 
 void DL_OnAreaBecameHot(object oArea)
