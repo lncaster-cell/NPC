@@ -1,6 +1,6 @@
 # Ambient Life v2 — Project README
 
-> Последнее обновление: **2026-03-29**.
+> Последнее обновление: **2026-03-30**.
 
 `PycukSystems` — это «живой» репозиторий разработки системы мира для NWN2. Сейчас проект находится в стадии **active development** (Milestone A для Daily Life v1): документация остаётся каноном, но репозиторий уже используется и для runtime-правок в `scripts/daily_life/`.
 
@@ -15,6 +15,35 @@
 3. **`docs/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`** — рабочая точка входа для текущей фазы активной реализации.
    - Для очень короткого статуса «что уже реализовано и что проверять прямо сейчас» см. раздел `0` в этом файле (обновлён на `2026-03-29`).
 4. **Доменные тома `12A–12E`, `13`, `14`** — правила и детализация по подсистемам.
+
+
+## Быстрый старт настройки Daily Life v1 (актуально)
+
+Если цель — быстро поднять рабочий Milestone A контур в Toolset, используй минимальный набор:
+
+1. **Module hooks**
+   - `OnModuleLoad` -> `scripts/daily_life/dl_on_load`
+
+2. **Area hooks**
+   - `OnEnter` -> `scripts/daily_life/dl_area_enter`
+   - `OnExit` -> `scripts/daily_life/dl_area_exit`
+   - `OnHeartbeat` -> `scripts/daily_life/dl_area_tick`
+
+3. **Tier locals на area**
+   - `dl_area_tier = 2` (`HOT`) для активной зоны теста
+
+4. **Минимум 1–4 тестовых NPC**
+   - заполнить `dl_npc_family`, `dl_npc_subtype`, `dl_schedule_template`, `dl_npc_base`;
+   - для гарантированной обработки worker: `dl_named=TRUE` или `dl_persistent=TRUE`.
+
+5. **Smoke trace и проверка**
+   - на модуле: `dl_smoke_trace = TRUE`;
+   - запуск: `scripts/daily_life/dl_smoke_milestone_a.nss`;
+   - для base-lost веток: `scripts/daily_life/dl_smoke_step_e.nss`.
+
+> Полный пошаговый smoke path: `docs/12B_DAILY_LIFE_V1_SMOKE_RUNBOOK.md`.  
+> Фактическое состояние реализации: `docs/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md`.  
+> Централизованный runtime truth + activity journal: `docs/22_RUNTIME_TRUTH_AND_ACTIVITY_JOURNAL.md`.
 
 ## Как поддерживать документацию в актуальном состоянии
 
