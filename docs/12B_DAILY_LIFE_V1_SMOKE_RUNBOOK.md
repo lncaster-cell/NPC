@@ -120,7 +120,7 @@ Runbook не доказывает окончательный production-grade ve
 - Ожидание: `directive=WORK`, `dialogue=WORK`, `service=AVAILABLE|LIMITED`.
 
 ### B — Blacksmith SOCIAL
-- Тот же NPC, но время в social/rest окне.
+- NPC кузнец в non-work окне (допустимо отдельный второй кузнец с другим offset/временем проверки).
 - Ожидание: `directive!=WORK`, сервис не как рабочий (`service!=AVAILABLE` в рабочем смысле).
 
 ### C — Gate duty
@@ -149,6 +149,10 @@ Runbook не доказывает окончательный production-grade ve
   - `HOT`: полноценная bounded обработка;
   - `WARM`: ограниченная обработка;
   - `FROZEN`: отсутствие живого тика.
+- Scripted smoke дополнительно проверяет shape gate:
+  - `DL_ShouldRunDailyLife(HOT)=TRUE`,
+  - `DL_ShouldRunDailyLife(WARM)=TRUE`,
+  - `DL_ShouldRunDailyLife(FROZEN)=FALSE`.
 
 ---
 
