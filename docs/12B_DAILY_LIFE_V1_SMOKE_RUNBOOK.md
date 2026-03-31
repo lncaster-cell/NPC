@@ -150,9 +150,9 @@ Runbook не доказывает окончательный production-grade ve
   - `WARM`: ограниченная обработка;
   - `FROZEN`: отсутствие живого тика.
 - Scripted smoke дополнительно проверяет shape gate:
-  - `DL_ShouldRunDailyLife(HOT)=TRUE`,
-  - `DL_ShouldRunDailyLife(WARM)=TRUE`,
-  - `DL_ShouldRunDailyLife(FROZEN)=FALSE`.
+  - `DL_ShouldRunDailyLifeTier(HOT)=TRUE`,
+  - `DL_ShouldRunDailyLifeTier(WARM)=TRUE`,
+  - `DL_ShouldRunDailyLifeTier(FROZEN)=FALSE`.
 
 ---
 

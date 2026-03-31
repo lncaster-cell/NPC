@@ -240,22 +240,9 @@ void DL_RunScenarioFGChecks()
     }
 
     {
-        object oGateProbe = GetModule();
-        int nOriginalProbeTier = GetLocalInt(oGateProbe, DL_L_AREA_TIER);
-        int bHotRuns;
-        int bWarmRuns;
-        int bFrozenRuns;
-
-        SetLocalInt(oGateProbe, DL_L_AREA_TIER, DL_AREA_HOT);
-        bHotRuns = DL_ShouldRunDailyLife(oGateProbe);
-
-        SetLocalInt(oGateProbe, DL_L_AREA_TIER, DL_AREA_WARM);
-        bWarmRuns = DL_ShouldRunDailyLife(oGateProbe);
-
-        SetLocalInt(oGateProbe, DL_L_AREA_TIER, DL_AREA_FROZEN);
-        bFrozenRuns = DL_ShouldRunDailyLife(oGateProbe);
-
-        SetLocalInt(oGateProbe, DL_L_AREA_TIER, nOriginalProbeTier);
+        int bHotRuns = DL_ShouldRunDailyLifeTier(DL_AREA_HOT);
+        int bWarmRuns = DL_ShouldRunDailyLifeTier(DL_AREA_WARM);
+        int bFrozenRuns = DL_ShouldRunDailyLifeTier(DL_AREA_FROZEN);
         bGateShape = bHotRuns && bWarmRuns && !bFrozenRuns;
     }
 

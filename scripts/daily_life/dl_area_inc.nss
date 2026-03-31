@@ -15,10 +15,14 @@ void DL_SetAreaTier(object oArea, int nTier)
     SetLocalInt(oArea, DL_L_AREA_TIER, nTier);
 }
 
+int DL_ShouldRunDailyLifeTier(int nTier)
+{
+    return nTier == DL_AREA_HOT || nTier == DL_AREA_WARM;
+}
+
 int DL_ShouldRunDailyLife(object oArea)
 {
-    int nTier = DL_GetAreaTier(oArea);
-    return nTier == DL_AREA_HOT || nTier == DL_AREA_WARM;
+    return DL_ShouldRunDailyLifeTier(DL_GetAreaTier(oArea));
 }
 
 void DL_OnAreaBecameHot(object oArea)
