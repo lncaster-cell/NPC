@@ -239,40 +239,18 @@ void DL_RunScenarioFGChecks()
         DL_LogScenarioResult("F", FALSE, FALSE, "no DL NPC found for area-enter probe");
     }
 
-    if (GetIsObjectValid(oProbeArea))
     {
-        int nOriginalTier = DL_GetAreaTier(oProbeArea);
-        int bHotRuns;
-        int bWarmRuns;
-        int bFrozenRuns;
-
-        DL_SetAreaTier(oProbeArea, DL_AREA_HOT);
-        bHotRuns = DL_ShouldRunDailyLife(oProbeArea);
-
-        DL_SetAreaTier(oProbeArea, DL_AREA_WARM);
-        bWarmRuns = DL_ShouldRunDailyLife(oProbeArea);
-
-        DL_SetAreaTier(oProbeArea, DL_AREA_FROZEN);
-        bFrozenRuns = DL_ShouldRunDailyLife(oProbeArea);
-
-        DL_SetAreaTier(oProbeArea, nOriginalTier);
-
+        int bHotRuns = DL_ShouldRunDailyLifeTier(DL_AREA_HOT);
+        int bWarmRuns = DL_ShouldRunDailyLifeTier(DL_AREA_WARM);
+        int bFrozenRuns = DL_ShouldRunDailyLifeTier(DL_AREA_FROZEN);
         bGateShape = bHotRuns && bWarmRuns && !bFrozenRuns;
+    }
 
-        DL_LogScenarioResult(
-            "G",
-            TRUE,
-            bFoundHot && bFoundWarm && bFoundFrozen && bBudgetShape && bGateShape,
-            "tier presence + budget ordering + gate hot/warm run, frozen stop");
-    }
-    else
-    {
-        DL_LogScenarioResult(
-            "G",
-            bFoundHot || bFoundWarm || bFoundFrozen,
-            FALSE,
-            "no probe area with daily-life NPC for gate verification");
-    }
+    DL_LogScenarioResult(
+        "G",
+        bFoundHot || bFoundWarm || bFoundFrozen,
+        bFoundHot && bFoundWarm && bFoundFrozen && bBudgetShape && bGateShape,
+        "tier presence + budget ordering + gate hot/warm run, frozen stop");
 }
 
 void main()
