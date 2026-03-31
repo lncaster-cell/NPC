@@ -17,6 +17,7 @@ string DL_SmokePassLabel(int bPass)
 void DL_LogScenarioResult(string sScenario, int bFound, int bPass, string sDetail)
 {
     string sStatus;
+    object oModule = GetModule();
 
     if (!bFound)
     {
@@ -30,6 +31,44 @@ void DL_LogScenarioResult(string sScenario, int bFound, int bPass, string sDetai
     DL_Log(
         DL_DEBUG_BASIC,
         "MilestoneA smoke " + sScenario + " status=" + sStatus + " detail=" + sDetail);
+
+    SetLocalInt(oModule, "dl_smoke_found_" + sScenario, bFound);
+    SetLocalInt(oModule, "dl_smoke_pass_" + sScenario, bPass);
+}
+
+int DL_GetScenarioStatusCode(int bFound, int bPass)
+{
+    if (!bFound)
+    {
+        return 0; // NOT_FOUND
+    }
+    if (bPass)
+    {
+        return 2; // PASS
+    }
+    return 1; // FAIL
+}
+
+string DL_GetScenarioStatusLabelByCode(int nStatus)
+{
+    if (nStatus == 2)
+    {
+        return "PASS";
+    }
+    if (nStatus == 1)
+    {
+        return "FAIL";
+    }
+    return "NOT_FOUND";
+}
+
+void DL_LogScenarioCounters(string sScenario, int nChecked, int nPassed)
+{
+    DL_Log(
+        DL_DEBUG_BASIC,
+        "MilestoneA smoke " + sScenario
+            + " counters checked=" + IntToString(nChecked)
+            + " passed=" + IntToString(nPassed));
 }
 
 int DL_IsScenarioAExpected(object oNPC)
@@ -106,6 +145,15 @@ void DL_RunScenarioProfileChecks()
     int bPassC = FALSE;
     int bPassD = FALSE;
     int bPassE = FALSE;
+    int nBlacksmithChecked = 0;
+    int nBlacksmithWorkPass = 0;
+    int nBlacksmithNonWorkPass = 0;
+    int nGateChecked = 0;
+    int nGatePass = 0;
+    int nInnChecked = 0;
+    int nInnPass = 0;
+    int nQuarantineChecked = 0;
+    int nQuarantinePass = 0;
 
     while (GetIsObjectValid(oArea))
     {
@@ -119,44 +167,52 @@ void DL_RunScenarioProfileChecks()
                 if (DL_GetNpcFamily(oObject) == DL_FAMILY_CRAFT && DL_GetNpcSubtype(oObject) == DL_SUBTYPE_BLACKSMITH)
                 {
                     bFoundA = TRUE;
+                    bFoundB = TRUE;
+                    nBlacksmithChecked += 1;
+
                     if (DL_IsScenarioAExpected(oObject))
                     {
                         bPassA = TRUE;
+                        nBlacksmithWorkPass += 1;
                     }
-                    else
+
+                    if (DL_IsScenarioBExpected(oObject))
                     {
-                        bFoundB = TRUE;
-                        if (DL_IsScenarioBExpected(oObject))
-                        {
-                            bPassB = TRUE;
-                        }
+                        bPassB = TRUE;
+                        nBlacksmithNonWorkPass += 1;
                     }
                 }
 
                 if (DL_GetNpcFamily(oObject) == DL_FAMILY_LAW && DL_GetNpcSubtype(oObject) == DL_SUBTYPE_GATE_POST)
                 {
                     bFoundC = TRUE;
+                    nGateChecked += 1;
                     if (DL_IsScenarioCExpected(oObject))
                     {
                         bPassC = TRUE;
+                        nGatePass += 1;
                     }
                 }
 
                 if (DL_GetNpcFamily(oObject) == DL_FAMILY_TRADE_SERVICE && DL_GetNpcSubtype(oObject) == DL_SUBTYPE_INNKEEPER)
                 {
                     bFoundD = TRUE;
+                    nInnChecked += 1;
                     if (DL_IsScenarioDExpected(oObject))
                     {
                         bPassD = TRUE;
+                        nInnPass += 1;
                     }
                 }
 
                 if (DL_GetTopOverride(oObject, oArea) == DL_OVR_QUARANTINE)
                 {
                     bFoundE = TRUE;
+                    nQuarantineChecked += 1;
                     if (DL_IsScenarioEExpected(oObject, oArea))
                     {
                         bPassE = TRUE;
+                        nQuarantinePass += 1;
                     }
                 }
             }
@@ -170,6 +226,11 @@ void DL_RunScenarioProfileChecks()
     DL_LogScenarioResult("C", bFoundC, bPassC, "gate duty profile");
     DL_LogScenarioResult("D", bFoundD, bPassD, "innkeeper late profile");
     DL_LogScenarioResult("E", bFoundE, bPassE, "quarantine override profile");
+    DL_LogScenarioCounters("A", nBlacksmithChecked, nBlacksmithWorkPass);
+    DL_LogScenarioCounters("B", nBlacksmithChecked, nBlacksmithNonWorkPass);
+    DL_LogScenarioCounters("C", nGateChecked, nGatePass);
+    DL_LogScenarioCounters("D", nInnChecked, nInnPass);
+    DL_LogScenarioCounters("E", nQuarantineChecked, nQuarantinePass);
 }
 
 void DL_RunScenarioFGChecks()
@@ -255,6 +316,47 @@ void DL_RunScenarioFGChecks()
 
 void main()
 {
+    int nStatusA;
+    int nStatusB;
+    int nStatusC;
+    int nStatusD;
+    int nStatusE;
+    int nStatusF;
+    int nStatusG;
+    int nPassCount = 0;
+    int nFailCount = 0;
+    int nNotFoundCount = 0;
+
     DL_RunScenarioProfileChecks();
     DL_RunScenarioFGChecks();
+
+    nStatusA = DL_GetScenarioStatusCode(GetLocalInt(GetModule(), "dl_smoke_found_A"), GetLocalInt(GetModule(), "dl_smoke_pass_A"));
+    nStatusB = DL_GetScenarioStatusCode(GetLocalInt(GetModule(), "dl_smoke_found_B"), GetLocalInt(GetModule(), "dl_smoke_pass_B"));
+    nStatusC = DL_GetScenarioStatusCode(GetLocalInt(GetModule(), "dl_smoke_found_C"), GetLocalInt(GetModule(), "dl_smoke_pass_C"));
+    nStatusD = DL_GetScenarioStatusCode(GetLocalInt(GetModule(), "dl_smoke_found_D"), GetLocalInt(GetModule(), "dl_smoke_pass_D"));
+    nStatusE = DL_GetScenarioStatusCode(GetLocalInt(GetModule(), "dl_smoke_found_E"), GetLocalInt(GetModule(), "dl_smoke_pass_E"));
+    nStatusF = DL_GetScenarioStatusCode(GetLocalInt(GetModule(), "dl_smoke_found_F"), GetLocalInt(GetModule(), "dl_smoke_pass_F"));
+    nStatusG = DL_GetScenarioStatusCode(GetLocalInt(GetModule(), "dl_smoke_found_G"), GetLocalInt(GetModule(), "dl_smoke_pass_G"));
+
+    if (nStatusA == 2) nPassCount += 1; else if (nStatusA == 1) nFailCount += 1; else nNotFoundCount += 1;
+    if (nStatusB == 2) nPassCount += 1; else if (nStatusB == 1) nFailCount += 1; else nNotFoundCount += 1;
+    if (nStatusC == 2) nPassCount += 1; else if (nStatusC == 1) nFailCount += 1; else nNotFoundCount += 1;
+    if (nStatusD == 2) nPassCount += 1; else if (nStatusD == 1) nFailCount += 1; else nNotFoundCount += 1;
+    if (nStatusE == 2) nPassCount += 1; else if (nStatusE == 1) nFailCount += 1; else nNotFoundCount += 1;
+    if (nStatusF == 2) nPassCount += 1; else if (nStatusF == 1) nFailCount += 1; else nNotFoundCount += 1;
+    if (nStatusG == 2) nPassCount += 1; else if (nStatusG == 1) nFailCount += 1; else nNotFoundCount += 1;
+
+    DL_Log(
+        DL_DEBUG_BASIC,
+        "MilestoneA smoke overall pass=" + IntToString(nPassCount)
+            + " fail=" + IntToString(nFailCount)
+            + " not_found=" + IntToString(nNotFoundCount)
+            + " statuses=[A:" + DL_GetScenarioStatusLabelByCode(nStatusA)
+            + ",B:" + DL_GetScenarioStatusLabelByCode(nStatusB)
+            + ",C:" + DL_GetScenarioStatusLabelByCode(nStatusC)
+            + ",D:" + DL_GetScenarioStatusLabelByCode(nStatusD)
+            + ",E:" + DL_GetScenarioStatusLabelByCode(nStatusE)
+            + ",F:" + DL_GetScenarioStatusLabelByCode(nStatusF)
+            + ",G:" + DL_GetScenarioStatusLabelByCode(nStatusG)
+            + "]");
 }
