@@ -15,14 +15,14 @@
 ### 1.1 Контур исполнения
 - Area `OnHeartbeat` вызывает `dl_area_tick` -> `DL_AreaWorkerTick`.
 - Worker обрабатывает NPC только если зона проходит `DL_ShouldRunDailyLife`.
-- В текущем коде `DL_ShouldRunDailyLife` возвращает `TRUE` только для `HOT`.
+- В текущем коде `DL_ShouldRunDailyLife` возвращает `TRUE` для `HOT` и `WARM`, `FALSE` для `FROZEN` (через `DL_ShouldRunDailyLifeTier`).
 
 ### 1.2 Tier lifecycle
 - `OnEnter` игрока: зона переводится в `HOT`, запускается area resync.
 - `OnExit` игрока:
   - если в зоне ещё есть игроки -> зона переводится в `WARM`;
   - если игроков нет -> зона переводится в `FROZEN`.
-- Практический эффект в текущей реализации: при `WARM/FROZEN` worker не исполняет Daily Life цикл.
+- Практический эффект в текущей реализации: `WARM` даёт ограниченный рабочий цикл, `FROZEN` отключает dispatch.
 
 ### 1.3 Какие NPC реально попадают в обработку
 - NPC должен быть Daily Life NPC (`dl_npc_family` из first playable slice).
@@ -48,6 +48,7 @@
 | 2026-03-30 | Проверка README на актуальную инструкцию настройки | Если нет явной runtime-инструкции — добавить минимальный быстрый старт | В README добавлен раздел «Быстрый старт настройки Daily Life v1 (актуально)» | done |
 | 2026-03-30 | Централизованный рабочий журнал | Вести единый файл «факт кода + активность» | Создан этот документ | done |
 | 2026-03-30 | Audit Phase 2 (edge-cases) | Углубить аудит после первичного отчёта и выделить дополнительные риски | Дополнен `docs/23_DAILY_LIFE_V1_CODE_AUDIT_2026-03-30.md` секциями A-04..A-06 и новым приоритетом | done |
+| 2026-03-31 | Синхронизация Runtime Truth с кодом после warm-tier/gate обновлений | Убрать расхождения между журналом и текущим поведением worker gate | Обновлены разделы `1.1` и `1.2`: зафиксировано `HOT/WARM=run`, `FROZEN=stop`; отмечен tier helper `DL_ShouldRunDailyLifeTier` | done |
 
 ---
 
