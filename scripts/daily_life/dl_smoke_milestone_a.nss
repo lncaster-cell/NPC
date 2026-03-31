@@ -178,6 +178,7 @@ void DL_RunScenarioFGChecks()
     int bFoundWarm = FALSE;
     int bFoundFrozen = FALSE;
     int bBudgetShape = FALSE;
+    int bGateShape = FALSE;
 
     if (DL_GetDefaultAreaTierBudget(DL_AREA_HOT) > DL_GetDefaultAreaTierBudget(DL_AREA_WARM)
         && DL_GetDefaultAreaTierBudget(DL_AREA_WARM) > DL_GetDefaultAreaTierBudget(DL_AREA_FROZEN))
@@ -235,11 +236,18 @@ void DL_RunScenarioFGChecks()
         DL_LogScenarioResult("F", FALSE, FALSE, "no DL NPC found for area-enter probe");
     }
 
+    {
+        int bHotRuns = DL_ShouldRunDailyLifeTier(DL_AREA_HOT);
+        int bWarmRuns = DL_ShouldRunDailyLifeTier(DL_AREA_WARM);
+        int bFrozenRuns = DL_ShouldRunDailyLifeTier(DL_AREA_FROZEN);
+        bGateShape = bHotRuns && bWarmRuns && !bFrozenRuns;
+    }
+
     DL_LogScenarioResult(
         "G",
         bFoundHot || bFoundWarm || bFoundFrozen,
-        bFoundHot && bFoundWarm && bFoundFrozen && bBudgetShape,
-        "tier presence hot/warm/frozen and budget ordering");
+        bFoundHot && bFoundWarm && bFoundFrozen && bBudgetShape && bGateShape,
+        "tier presence + budget ordering + gate hot/warm run, frozen stop");
 }
 
 void main()
