@@ -122,6 +122,7 @@ Runbook не доказывает окончательный production-grade ve
 ### B — Blacksmith SOCIAL
 - NPC кузнец в non-work окне (допустимо отдельный второй кузнец с другим offset/временем проверки).
 - Ожидание: `directive!=WORK`, сервис не как рабочий (`service!=AVAILABLE` в рабочем смысле).
+- Если кузнец найден, но non-work состояние не подтверждено, scripted smoke должен давать `FAIL` (а не `NOT_FOUND`).
 
 ### C — Gate duty
 - Профиль: `LAW + GATE_POST + DUTY_ROTATION_DAY|NIGHT`.
