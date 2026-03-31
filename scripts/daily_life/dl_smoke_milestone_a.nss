@@ -119,14 +119,17 @@ void DL_RunScenarioProfileChecks()
                 if (DL_GetNpcFamily(oObject) == DL_FAMILY_CRAFT && DL_GetNpcSubtype(oObject) == DL_SUBTYPE_BLACKSMITH)
                 {
                     bFoundA = TRUE;
-                    bFoundB = TRUE;
                     if (DL_IsScenarioAExpected(oObject))
                     {
                         bPassA = TRUE;
                     }
-                    if (DL_IsScenarioBExpected(oObject))
+                    else
                     {
-                        bPassB = TRUE;
+                        bFoundB = TRUE;
+                        if (DL_IsScenarioBExpected(oObject))
+                        {
+                            bPassB = TRUE;
+                        }
                     }
                 }
 
