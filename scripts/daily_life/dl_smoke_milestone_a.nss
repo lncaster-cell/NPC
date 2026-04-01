@@ -71,6 +71,26 @@ void DL_LogScenarioCounters(string sScenario, int nChecked, int nPassed)
             + " passed=" + IntToString(nPassed));
 }
 
+void DL_ClearScenarioMarkers()
+{
+    object oModule = GetModule();
+
+    DeleteLocalInt(oModule, "dl_smoke_found_A");
+    DeleteLocalInt(oModule, "dl_smoke_pass_A");
+    DeleteLocalInt(oModule, "dl_smoke_found_B");
+    DeleteLocalInt(oModule, "dl_smoke_pass_B");
+    DeleteLocalInt(oModule, "dl_smoke_found_C");
+    DeleteLocalInt(oModule, "dl_smoke_pass_C");
+    DeleteLocalInt(oModule, "dl_smoke_found_D");
+    DeleteLocalInt(oModule, "dl_smoke_pass_D");
+    DeleteLocalInt(oModule, "dl_smoke_found_E");
+    DeleteLocalInt(oModule, "dl_smoke_pass_E");
+    DeleteLocalInt(oModule, "dl_smoke_found_F");
+    DeleteLocalInt(oModule, "dl_smoke_pass_F");
+    DeleteLocalInt(oModule, "dl_smoke_found_G");
+    DeleteLocalInt(oModule, "dl_smoke_pass_G");
+}
+
 int DL_IsScenarioAExpected(object oNPC)
 {
     int nDirective = GetLocalInt(oNPC, DL_L_DIRECTIVE);
@@ -327,6 +347,7 @@ void main()
     int nFailCount = 0;
     int nNotFoundCount = 0;
 
+    DL_ClearScenarioMarkers();
     DL_RunScenarioProfileChecks();
     DL_RunScenarioFGChecks();
 
@@ -359,4 +380,6 @@ void main()
             + ",F:" + DL_GetScenarioStatusLabelByCode(nStatusF)
             + ",G:" + DL_GetScenarioStatusLabelByCode(nStatusG)
             + "]");
+
+    DL_ClearScenarioMarkers();
 }
