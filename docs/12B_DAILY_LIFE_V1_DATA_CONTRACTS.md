@@ -4,6 +4,9 @@
 Статус: implementation contract draft  
 Назначение: инженерная спецификация структур данных, enum-ов и минимальных runtime-контрактов для первой реализации Daily Life v1.
 
+> Обновление статуса (2026-04-01): часть enum-набора в этом документе описывает расширенный целевой дизайн (vNext) и может не совпадать 1:1 с текущими идентификаторами Milestone A runtime в `scripts/daily_life/dl_const_inc.nss`.
+> Для фактической проверки текущего runtime-контракта используйте код как source-of-truth и `docs/22_RUNTIME_TRUTH_AND_ACTIVITY_JOURNAL.md`.
+
 ---
 
 > Этот документ дополняет:
