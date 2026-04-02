@@ -188,7 +188,6 @@ void DL_RunScenarioProfileChecks()
                 {
                     bFoundA = TRUE;
                     bFoundB = TRUE;
-                    nBlacksmithChecked += 1;
 
                     if (DL_IsScenarioAExpected(oObject))
                     {
@@ -199,7 +198,6 @@ void DL_RunScenarioProfileChecks()
                     if (DL_IsScenarioBExpected(oObject))
                     {
                         bPassB = TRUE;
-                        nBlacksmithNonWorkPass += 1;
                     }
                 }
 
