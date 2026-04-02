@@ -1,7 +1,7 @@
 # Conflict Audit — 2026-04-02
 
-Статус: completed (manual doc consistency audit)
-Область: README + active control panel + master index + open questions + sync map
+Статус: completed (phase 1 + phase 2)
+Область: README + active control panel + master index + open questions + sync map + runtime truth
 
 ## 1) Что считалось «конфликтом»
 
@@ -9,12 +9,14 @@
 2. Конкурирующие приоритеты источников истины.
 3. Рассинхрон статусов (документ заявляет «готово», другой — «не готово»).
 4. Дубли с разными формулировками, которые могут привести к неверным правкам.
+5. Устаревшие режимные пометки (doc-mode vs active development).
 
 ## 2) Результат
 
 - **Git merge-конфликты:** не обнаружены.
 - **Жёстких канонических противоречий:** не обнаружено.
 - **Найдены зоны потенциальной конфликтности формулировок (process/doc-level):** да.
+- **Найдены режимные рассинхроны между документами:** да (см. C-04, C-05).
 
 ## 3) Зоны потенциальной конфликтности
 
@@ -45,6 +47,24 @@
 
 Решение: добавить в README явный маркер «источник фактической готовности = 12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md + owner-run decision».
 
+### C-04 — `docs/16` содержит устаревший reset/doc-mode дисклеймер
+
+- `docs/16_IDEA_INVENTORY_AND_SYNC_MAP.md` предупреждает, что для текущего режима нужно ориентироваться на reset-контекст «код удалён, работа только с документацией».
+- При этом `README.md`, `docs/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` и `docs/22_RUNTIME_TRUTH_AND_ACTIVITY_JOURNAL.md` фиксируют активный implementation/runtime режим.
+
+Риск: `docs/16` вводит в заблуждение и конфликтует с текущей фазой активной разработки.
+
+Решение: обновить дисклеймер в `docs/16` на «историческая пометка», а текущий режим явно связать с `21` и `22`.
+
+### C-05 — `docs/architecture/02` помечен как documentation/design mode
+
+- В шапке `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md` стоит статус `active (documentation/design mode)`.
+- Текущий проектный режим зафиксирован как active development execution (Milestone A) в `21` и подтверждён runtime-журналом `22`.
+
+Риск: часть команды будет трактовать реестр открытых вопросов как главный operational документ вместо design-register.
+
+Решение: сменить статусную строку в `docs/architecture/02` на формулировку, совместимую с active development (например: `active (design register during active implementation)`).
+
 ## 4) Что НЕ найдено
 
 1. Прямых противоречий приоритета источников (`17` и профильные SoT везде выше overview).
@@ -56,7 +76,9 @@
 1. В `README.md` переформулировать DoD-пункт про конфликты (C-02).
 2. В `docs/12_MASTER_PLAN.md` в разделе роли добавить однострочное правило: при active development первым открывать `21` (C-01).
 3. В `README.md` рядом с owner-decisions добавить ссылку на acceptance journal как единственный runtime-ready индикатор (C-03).
+4. В `docs/16_IDEA_INVENTORY_AND_SYNC_MAP.md` заменить reset-дисклеймер на актуальную режимную оговорку (C-04).
+5. В `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md` обновить статусную строку под active development (C-05).
 
 ## 6) Вердикт
 
-На 2026-04-02: **критических канонических конфликтов не выявлено**, но есть **операционные риски рассинхронизации формулировок** в обзорном слое. Рекомендована точечная правка overview-документов по пунктам C-01..C-03.
+На 2026-04-02: **критических канонических конфликтов не выявлено**, но есть **операционные риски рассинхронизации формулировок и режимных статусов** в обзорном слое. Рекомендована точечная правка overview-документов по пунктам C-01..C-05.
