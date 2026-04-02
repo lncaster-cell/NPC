@@ -259,7 +259,7 @@ void DL_MaterializeNpc(object oNPC, object oArea)
         DL_ApplyLocalWalk(oNPC, oPoint);
     }
 
-    DL_ApplyActivity(oNPC, DL_ResolveActivityKind(oNPC, nDirective, nAnchorGroup), oPoint);
+    DL_ApplyActivity(oNPC, DL_ResolveActivityKind(oNPC, nDirective, nAnchorGroup));
     DL_RefreshInteractionState(oNPC, oArea);
 }
 
