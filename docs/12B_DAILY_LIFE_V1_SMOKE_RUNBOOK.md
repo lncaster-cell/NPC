@@ -39,6 +39,7 @@ Runbook не доказывает окончательный production-grade ve
    - `scripts/daily_life/dl_smoke_step_e.nss`.
 6. Для быстрого scripted среза A–G можно запускать `scripts/daily_life/dl_smoke_milestone_a.nss`.
    - Скрипт не подменяет полноценный owner-smoke, но даёт единый машинный summary по сценариям `A–G` (`PASS/FAIL/NOT_FOUND`).
+   - После завершения пишет агрегированную строку `MilestoneA smoke overall ...` и per-scenario counters `checked/passed`, чтобы сразу видеть полноту runtime-контура в одном прогоне.
 
 
 ---

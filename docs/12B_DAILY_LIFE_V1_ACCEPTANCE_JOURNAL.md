@@ -53,7 +53,7 @@
 | Step A — Contracts foundation | PARTIAL | code inspection | Runbook готов; требуется первый фактический scripted/manual прогон с логом smoke snapshot. |
 | Step B — Pure resolver | PARTIAL | code inspection | Runbook готов; scripted smoke поправлен, чтобы B-сценарий не терялся из-за ветвления `else`; нужен отдельный run с проверкой детерминизма на одинаковых входах. |
 | Step C — Materialization and interaction | PARTIAL | code inspection | Runbook готов; нужны сценарные подтверждения изменения dialogue/service в A/B/D. |
-| Step D — Area worker and lifecycle | PARTIAL | code inspection | Runbook готов; нужен run с явным подтверждением F/G (HOT/WARM/FROZEN и bounded worker). |
+| Step D — Area worker and lifecycle | PARTIAL | code inspection | Runbook готов; scripted smoke теперь пишет финальный `overall` summary и counters по A–G, но всё ещё нужен фактический run с подтверждением F/G (HOT/WARM/FROZEN и bounded worker). |
 | Step E — Stub handoff | PARTIAL | code inspection | Добавлен scripted hook `dl_smoke_step_e` + marker-поля `base_lost_kind/base_lost_slot`; нужен фактический прогон в toolset/owner PC. |
 
 ---
