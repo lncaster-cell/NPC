@@ -44,6 +44,20 @@ int DL_HasAnyPlayers(object oArea)
     return FALSE;
 }
 
+int DL_HasAnyPlayersExcept(object oArea, object oIgnored)
+{
+    object oObject = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oObject))
+    {
+        if (oObject != oIgnored && GetIsPC(oObject) && !GetIsDM(oObject))
+        {
+            return TRUE;
+        }
+        oObject = GetNextObjectInArea(oArea);
+    }
+    return FALSE;
+}
+
 int DL_IsAreaAnchor(object oPoint, object oArea)
 {
     return GetIsObjectValid(oPoint) && GetArea(oPoint) == oArea;
