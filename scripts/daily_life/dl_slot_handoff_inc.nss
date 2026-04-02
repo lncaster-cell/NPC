@@ -9,7 +9,7 @@ string DL_MakeSlotProfileKey(string sFunctionSlotId, string sField)
     return "dl_slot_profile_" + sFunctionSlotId + "_" + sField;
 }
 
-void DL_StageFunctionSlotProfile(string sFunctionSlotId, int nFamily, int nSubtype, int nSchedule, int nBase)
+void DL_StageFunctionSlotProfile(string sFunctionSlotId, int nFamily, int nSubtype, int nSchedule, object oBase)
 {
     object oModule = GetModule();
 
@@ -22,7 +22,7 @@ void DL_StageFunctionSlotProfile(string sFunctionSlotId, int nFamily, int nSubty
     SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family"), nFamily);
     SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype"), nSubtype);
     SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule"), nSchedule);
-    SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"), nBase);
+    SetLocalObject(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"), oBase);
 }
 
 void DL_ClearFunctionSlotProfile(string sFunctionSlotId)
@@ -37,7 +37,7 @@ void DL_ClearFunctionSlotProfile(string sFunctionSlotId)
     DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family"));
     DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype"));
     DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule"));
-    DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"));
+    DeleteLocalObject(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"));
 }
 
 int DL_HasStagedFunctionSlotProfile(string sFunctionSlotId)
@@ -61,7 +61,7 @@ int DL_HasStagedFunctionSlotProfile(string sFunctionSlotId)
     {
         return TRUE;
     }
-    if (GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base")) > DL_BASE_NONE)
+    if (GetIsObjectValid(GetLocalObject(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"))))
     {
         return TRUE;
     }
@@ -92,7 +92,7 @@ void DL_ApplyAssignedSlotProfile(object oNPC, string sFunctionSlotId)
     int nFamily = GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family"));
     int nSubtype = GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype"));
     int nSchedule = GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule"));
-    int nBase = GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"));
+    object oBase = GetLocalObject(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"));
 
     if (nFamily > DL_FAMILY_NONE)
     {
@@ -106,9 +106,13 @@ void DL_ApplyAssignedSlotProfile(object oNPC, string sFunctionSlotId)
     {
         SetLocalInt(oNPC, DL_L_SCHEDULE_TEMPLATE, nSchedule);
     }
-    if (nBase > DL_BASE_NONE)
+    if (GetIsObjectValid(oBase))
     {
-        SetLocalInt(oNPC, DL_L_NPC_BASE, nBase);
+        SetLocalObject(oNPC, DL_L_NPC_BASE, oBase);
+    }
+    else
+    {
+        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "Slot profile base ignored: invalid base object for slot " + sFunctionSlotId);
     }
 }
 
