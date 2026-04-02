@@ -35,8 +35,6 @@
 | 2026-03-26 | runbook-bootstrap-001 | process prep | repo docs | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | добавлен scripted smoke runbook; ожидается первый фактический прогон |
 | 2026-03-27 | smoke-script-bootstrap-001 | process prep | repo scripts | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | добавлен scripted helper `dl_smoke_milestone_a.nss` для единого A–G summary; ожидается фактический прогон в toolset/owner PC |
 | 2026-03-31 | smoke-script-fix-b-001 | process prep | repo scripts | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | в `dl_smoke_milestone_a.nss` исправлен учёт сценария B: non-work кузнец теперь ищется независимо от PASS сценария A, без ложного `NOT_FOUND` при наличии mixed blacksmith набора |
-| 2026-03-31 | smoke-runtime-contour-001 | process prep | repo scripts | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | `dl_smoke_milestone_a.nss` дописан до сквозного runtime-контура: добавлены per-scenario counters (`checked/passed`) и финальный агрегированный summary `overall pass/fail/not_found` по A–G для одного прохода |
-| 2026-04-01 | smoke-marker-hygiene-001 | process prep | repo scripts | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | в `dl_smoke_milestone_a.nss` добавлена очистка временных module-local smoke-маркеров (`dl_smoke_found_*`, `dl_smoke_pass_*`) в начале и конце запуска, чтобы scripted smoke не оставлял диагностический state в runtime |
 
 ## 2.2 Детализация расхождений (заполнять только при PARTIAL/FAIL)
 
