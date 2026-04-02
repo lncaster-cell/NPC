@@ -8,8 +8,8 @@
 
 > Этот документ дополняет:
 > - `docs/12B_DAILY_LIFE_VNEXT_CANON.md`
-> - `docs/12B_DAILY_LIFE_V1_RULESET.md`
 > - `docs/12B_DAILY_LIFE_V1_RULESET_REV1.md`
+> - `docs/12B_DAILY_LIFE_V1_RULESET.md` *(только как исторический черновик; не source-of-truth для реализации)*
 > - `docs/12B_DAILY_LIFE_V1_DATA_CONTRACTS.md`
 >
 > Его задача — описать, как именно Daily Life v1 должен исполняться в runtime: что вызывает area-контур, что делает resolver, что делает materialization, где происходит resync, где начинается handoff во внешние системы.
