@@ -10,7 +10,7 @@ void main()
         return;
     }
 
-    if (DL_HasAnyPlayers(oArea))
+    if (DL_HasAnyPlayersExcept(oArea, oExiting))
     {
         DL_OnAreaBecameWarm(oArea);
         return;
