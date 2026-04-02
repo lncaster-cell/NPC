@@ -17,6 +17,9 @@ void DL_SetServiceMode(object oNPC, int nServiceMode)
 
 void DL_RefreshInteractionState(object oNPC, object oArea)
 {
+    // Recomputes directive/anchor/dialogue/service from current resolver state.
+    // Do not call after forced/manual states (for example, explicit ABSENT/UNASSIGNED),
+    // because it can overwrite the manually fixed directive.
     int nDirective = DL_ResolveDirective(oNPC, oArea);
     int nOverride = DL_GetTopOverride(oNPC, oArea);
 

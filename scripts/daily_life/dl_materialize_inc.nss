@@ -232,6 +232,11 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     if (!DL_IsDirectiveVisible(nDirective) || DL_ShouldSuppressMaterialization(oNPC, nOverride))
     {
         DL_HideOrMarkAbsent(oNPC, nDirective);
+        if (nDirective == DL_DIR_ABSENT || nDirective == DL_DIR_UNASSIGNED)
+        {
+            DL_SetInteractionStateExplicit(oNPC, nDirective, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+            return;
+        }
         DL_RefreshInteractionState(oNPC, oArea);
         return;
     }
@@ -241,7 +246,7 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     {
         DL_LogNpc(oNPC, DL_DEBUG_BASIC, "anchor not found, marking absent");
         DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
-        DL_RefreshInteractionState(oNPC, oArea);
+        DL_SetInteractionStateExplicit(oNPC, DL_DIR_ABSENT, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
         return;
     }
 
