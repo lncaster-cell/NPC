@@ -32,14 +32,14 @@ int DL_ResolveActivityKind(object oNPC, int nDirective, int nAnchorGroup)
     return DL_ACT_NONE;
 }
 
-void DL_ApplyActivity(object oNPC, int nActivityKind, object oPoint)
+void DL_ApplyActivity(object oNPC, int nActivityKind)
 {
     SetLocalInt(oNPC, DL_L_ACTIVITY_KIND, nActivityKind);
-    if (!GetIsObjectValid(oNPC))
-    {
-        return;
-    }
+}
 
+void DL_ApplyActivityAndMove(object oNPC, int nActivityKind, object oPoint)
+{
+    DL_ApplyActivity(oNPC, nActivityKind);
     AssignCommand(oNPC, ClearAllActions());
     if (GetIsObjectValid(oPoint))
     {
