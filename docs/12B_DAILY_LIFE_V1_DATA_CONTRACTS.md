@@ -7,6 +7,38 @@
 > Обновление статуса (2026-04-01): часть enum-набора в этом документе описывает расширенный целевой дизайн (vNext) и может не совпадать 1:1 с текущими идентификаторами Milestone A runtime в `scripts/daily_life/dl_const_inc.nss`.
 > Для фактической проверки текущего runtime-контракта используйте код как source-of-truth и `docs/22_RUNTIME_TRUTH_AND_ACTIVITY_JOURNAL.md`.
 
+### Быстрая сверка с Milestone A runtime (2026-04-02)
+
+Ниже — короткая таблица соответствия наиболее часто используемых идентификаторов этого документа к фактическим runtime-именам в `scripts/daily_life/dl_const_inc.nss`.
+
+| Doc name (vNext/spec) | Runtime name (Milestone A) | Статус |
+|---|---|---|
+| `DL_SUB_LAW_PATROL` | `DL_SUBTYPE_PATROL` | renamed in runtime |
+| `DL_SUB_LAW_GATE_POST` | `DL_SUBTYPE_GATE_POST` | renamed in runtime |
+| `DL_SUB_LAW_INSPECTION` | `DL_SUBTYPE_INSPECTION` | renamed in runtime |
+| `DL_SUB_CRAFT_BLACKSMITH` | `DL_SUBTYPE_BLACKSMITH` | renamed in runtime |
+| `DL_SUB_CRAFT_ARTISAN` | `DL_SUBTYPE_ARTISAN` | renamed in runtime |
+| `DL_SUB_TRADE_SHOPKEEPER` | `DL_SUBTYPE_SHOPKEEPER` | renamed in runtime |
+| `DL_SUB_TRADE_INNKEEPER` | `DL_SUBTYPE_INNKEEPER` | renamed in runtime |
+| `DL_SUB_CIV_RESIDENT` | `DL_SUBTYPE_RESIDENT` | renamed in runtime |
+| `DL_SUB_ELITE_OFFICIAL` | `DL_SUBTYPE_OFFICIAL` | renamed in runtime |
+| `DL_DAY_NORMAL` | `DL_DAY_WEEKDAY` | semantic rename |
+| `DL_WIN_MIDDAY_EAT` | — | not present in Milestone A |
+| `DL_WIN_RETURN` | — | not present in Milestone A |
+| `DL_WIN_PUBLIC` | `DL_WIN_PUBLIC_IDLE` | narrowed/renamed |
+| `DL_DIR_RETURN_BASE` | — | not present in Milestone A |
+| `DL_DIR_EAT` | — | not present in Milestone A |
+| `DL_DIR_WORSHIP` | — | not present in Milestone A |
+| `DL_DLG_NORMAL` | `DL_DLG_NONE` (functional baseline) | runtime uses NONE baseline |
+| `DL_ACT_EAT` | — | not present in Milestone A |
+| `DL_ACT_WORSHIP` | — | not present in Milestone A |
+| `DL_OVR_CITY_ALARM` | — | not present in Milestone A |
+| `DL_OVR_FIRE` | `DL_OVR_FIRE` | matches |
+| `DL_OVR_QUARANTINE` | `DL_OVR_QUARANTINE` | matches |
+| `DL_AREA_FROZEN` | `DL_AREA_FROZEN` | matches |
+| `DL_AREA_WARM` | `DL_AREA_WARM` | matches |
+| `DL_AREA_HOT` | `DL_AREA_HOT` | matches |
+
 ---
 
 > Этот документ дополняет:
