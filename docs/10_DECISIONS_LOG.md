@@ -17,6 +17,8 @@
 
 ## Шаблон записи
 
+> Template-only блок (не активное решение): пример `DEC-XXXX` используется как формат записи и не участвует в runtime/roadmap статусах.
+
 ### DEC-XXXX: <краткое название>
 - **Дата:** YYYY-MM-DD
 - **Статус:** proposed / accepted / superseded

@@ -36,11 +36,11 @@
 
 ### 3.1 Файлы
 
-- `scripts/ambient_life/al_city_population_inc.nss` — population-layer (счётчики, дефицит, бюджет, cooldown, валидация spawn-node, respawn create-path).
-- `scripts/ambient_life/al_core_inc.nss` — lifecycle hooks:
+- `scripts/daily_life/dl_area_inc.nss` — population-layer (счётчики, дефицит, бюджет, cooldown, валидация spawn-node, respawn create-path).
+- `scripts/daily_life/dl_worker_inc.nss` — lifecycle hooks:
   - `AL_OnNpcSpawn` -> `AL_CityPopulationOnNpcSpawn`;
   - `AL_OnNpcDeath` -> `AL_CityPopulationOnNpcDeath`.
-- `scripts/ambient_life/al_area_inc.nss` — hot-area tick:
+- `scripts/daily_life/dl_area_inc.nss` — hot-area tick:
   - `AL_AreaTick` -> `AL_CityPopulationTryRespawnTick`.
 
 ### 3.2 Почему именно так
@@ -182,4 +182,4 @@
 - `docs/02_MECHANICS.md`
 - `docs/03_OPERATIONS.md`
 - `docs/04_CONTENT_CONTRACTS.md`
-- `scripts/ambient_life/al_city_population_inc.nss`
+- `scripts/daily_life/dl_area_inc.nss`
