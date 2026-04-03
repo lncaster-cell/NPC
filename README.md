@@ -1,6 +1,6 @@
 # Ambient Life v2 — Project README
 
-> Последнее обновление: **2026-04-02**.
+> Последнее обновление: **2026-04-03**.
 
 `PycukSystems` — это «живой» репозиторий разработки системы мира для NWN2. Сейчас проект находится в стадии **active development** (Milestone A для Daily Life v1): документация остаётся каноном, но репозиторий уже используется и для runtime-правок в `scripts/daily_life/`.
 
@@ -9,6 +9,8 @@
 Этот README синхронизирован с `docs/architecture/01_PROJECT_PASSPORT.md` и даёт короткую карту: **какие домены есть, где их границы и куда идти за source-of-truth**.
 
 > ⚠️ Контекст reset/rebuild: см. `docs/18_REBUILD_RESET_CONTEXT.md`.
+
+> ⚠️ Legacy-названия `scripts/ambient_life/al_*` в части старых документов считаются историческими. Для актуальной привязки используйте `docs/12B_DAILY_LIFE_V1_LEGACY_TO_RUNTIME_MAPPING.md`.
 
 1. **`docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`** — единственный главный дизайн-документ проекта (общая картина и инварианты).
 2. **`docs/12_MASTER_PLAN.md`** — супер-краткая сводка и навигационный индекс.
