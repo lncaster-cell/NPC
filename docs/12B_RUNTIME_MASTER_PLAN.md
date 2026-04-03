@@ -91,56 +91,34 @@
 5. **Population слой** — восстановление unnamed-дефицита (respawn policy).
 
 ## 4.2 Файловая карта runtime
-### Core + area lifecycle
-- `scripts/daily_life/dl_worker_inc.nss`
-- `scripts/daily_life/dl_area_inc.nss`
-- `scripts/daily_life/dl_area_tick.nss`
+### Entry points / hooks
+- `scripts/daily_life/dl_on_load.nss`
 - `scripts/daily_life/dl_area_enter.nss`
 - `scripts/daily_life/dl_area_exit.nss`
-- `scripts/daily_life/dl_on_load.nss`
+- `scripts/daily_life/dl_area_tick.nss`
 
-### Registry + dispatch + cache
-- `scripts/daily_life/dl_worker_inc.nss`
-- `scripts/daily_life/dl_worker_inc.nss`
+### Core runtime includes
+- `scripts/daily_life/dl_area_inc.nss`
 - `scripts/daily_life/dl_worker_inc.nss`
 - `scripts/daily_life/dl_types_inc.nss`
-
-### Route + transition + sleep + activity + schedule
-- `scripts/daily_life/dl_schedule_inc.nss`
-- `scripts/daily_life/dl_schedule_inc.nss`
-- `scripts/daily_life/dl_schedule_inc.nss`
-- `scripts/daily_life/dl_resolver_inc.nss`
-- `scripts/daily_life/dl_resync_inc.nss`
-- `scripts/daily_life/dl_activity_inc.nss`
-- `scripts/daily_life/dl_activity_inc.nss`
-- `scripts/daily_life/dl_activity_inc.nss`
-- `scripts/daily_life/dl_schedule_inc.nss`
-
-### Reactive + incident + city
-- `scripts/daily_life/dl_resolver_inc.nss`
-- `scripts/daily_life/dl_resolver_inc.nss`
-- `scripts/daily_life/dl_resync_inc.nss`
-- `scripts/daily_life/dl_slot_handoff_inc.nss`
-- `scripts/daily_life/dl_area_inc.nss`
-- `scripts/daily_life/dl_resolver_inc.nss`
-- `scripts/daily_life/dl_override_inc.nss`
-- `scripts/daily_life/dl_area_inc.nss`
+- `scripts/daily_life/dl_const_inc.nss`
+- `scripts/daily_life/dl_util_inc.nss`
 - `scripts/daily_life/dl_log_inc.nss`
 
-### Wrapper/actions + NPC hooks
-- `scripts/daily_life/dl_interact_inc.nss`
-- `scripts/daily_life/dl_override_inc.nss`
-- `scripts/daily_life/dl_on_load.nss`
-- `scripts/daily_life/dl_interact_inc.nss`
+### Behavior / schedule / resolver
+- `scripts/daily_life/dl_schedule_inc.nss`
+- `scripts/daily_life/dl_activity_inc.nss`
 - `scripts/daily_life/dl_resolver_inc.nss`
+- `scripts/daily_life/dl_resync_inc.nss`
+- `scripts/daily_life/dl_override_inc.nss`
+- `scripts/daily_life/dl_slot_handoff_inc.nss`
+- `scripts/daily_life/dl_anchor_inc.nss`
 - `scripts/daily_life/dl_interact_inc.nss`
-- `scripts/daily_life/dl_interact_inc.nss`
-- `scripts/daily_life/dl_interact_inc.nss`
-- `scripts/daily_life/dl_interact_inc.nss`
-- `scripts/daily_life/dl_worker_inc.nss`
+- `scripts/daily_life/dl_materialize_inc.nss`
 
-### Diagnostic/support
-- `scripts/daily_life/dl_log_inc.nss` — debug/logging вспомогательный слой для анализа поведения в рантайме.
+### Smoke / verification scripts
+- `scripts/daily_life/dl_smoke_milestone_a.nss`
+- `scripts/daily_life/dl_smoke_step_e.nss`
 
 
 ## 4.3 Поток управления (упрощённо)
