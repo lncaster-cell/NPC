@@ -198,6 +198,7 @@ void DL_RunScenarioProfileChecks()
                     if (DL_IsScenarioBExpected(oObject))
                     {
                         bPassB = TRUE;
+                        nBlacksmithNonWorkPass += 1;
                     }
                 }
 
