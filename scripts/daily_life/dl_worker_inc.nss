@@ -5,6 +5,7 @@
 #include "dl_area_inc"
 #include "dl_resync_inc"
 #include "dl_override_inc"
+#include "dl_slot_handoff_inc"
 #include "dl_types_inc"
 
 string DL_DescribeResyncReason(int nReason)
@@ -66,13 +67,43 @@ void DL_LogSmokeSnapshot(object oNPC, object oArea, int nReason)
 {
     string sMessage;
     object oModule = GetModule();
-    object oLastBaseLostNpc = GetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC);
-    string sLastBaseLostSlot = GetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT);
-    int nLastBaseLostKind = GetLocalInt(oModule, DL_L_LAST_BASE_LOST_KIND);
+    string sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
+    string sLastBaseLostSlot = DL_GetBaseLostSlotForNpc(oNPC);
+    int nLastBaseLostKind = DL_GetBaseLostKindForNpc(oNPC);
+    object oLastBaseLostNpc = oNPC;
     int nDirective = GetLocalInt(oNPC, DL_L_DIRECTIVE);
     int nDialogue = GetLocalInt(oNPC, DL_L_DIALOGUE_MODE);
     int nService = GetLocalInt(oNPC, DL_L_SERVICE_MODE);
     int nOverride = DL_GetTopOverride(oNPC, oArea);
+
+    if (sLastBaseLostSlot == "" && sFunctionSlotId != "")
+    {
+        sLastBaseLostSlot = sFunctionSlotId;
+    }
+    if (nLastBaseLostKind == DL_DIR_NONE && sLastBaseLostSlot != "")
+    {
+        nLastBaseLostKind = DL_GetBaseLostKindForSlot(sLastBaseLostSlot);
+    }
+    if (sLastBaseLostSlot != "")
+    {
+        object oSlotNpc = DL_GetBaseLostNpcForSlot(sLastBaseLostSlot);
+        if (GetIsObjectValid(oSlotNpc))
+        {
+            oLastBaseLostNpc = oSlotNpc;
+        }
+    }
+    if (nLastBaseLostKind == DL_DIR_NONE)
+    {
+        nLastBaseLostKind = GetLocalInt(oModule, DL_L_LAST_BASE_LOST_KIND);
+        if (sLastBaseLostSlot == "")
+        {
+            sLastBaseLostSlot = GetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT);
+        }
+        if (!GetIsObjectValid(oLastBaseLostNpc))
+        {
+            oLastBaseLostNpc = GetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC);
+        }
+    }
 
     sMessage =
         "smoke snapshot"
