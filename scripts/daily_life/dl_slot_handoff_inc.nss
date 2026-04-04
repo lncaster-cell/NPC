@@ -9,6 +9,16 @@ string DL_MakeSlotProfileKey(string sFunctionSlotId, string sField)
     return "dl_slot_profile_" + sFunctionSlotId + "_" + sField;
 }
 
+string DL_MakeBaseLostNpcKey(object oNPC, string sField)
+{
+    return "dl_base_lost_npc_" + ObjectToString(oNPC) + "_" + sField;
+}
+
+string DL_MakeBaseLostSlotKey(string sFunctionSlotId, string sField)
+{
+    return "dl_base_lost_slot_" + sFunctionSlotId + "_" + sField;
+}
+
 void DL_StageFunctionSlotProfile(string sFunctionSlotId, int nFamily, int nSubtype, int nSchedule, object oBase)
 {
     object oModule = GetModule();
@@ -81,9 +91,60 @@ void DL_RecordBaseLostEvent(object oNPC, string sFunctionSlotId, int nDirective)
 {
     object oModule = GetModule();
 
+    SetLocalString(oModule, DL_MakeBaseLostNpcKey(oNPC, "slot"), sFunctionSlotId);
+    SetLocalInt(oModule, DL_MakeBaseLostNpcKey(oNPC, "kind"), nDirective);
+
+    if (sFunctionSlotId != "")
+    {
+        SetLocalObject(oModule, DL_MakeBaseLostSlotKey(sFunctionSlotId, "npc"), oNPC);
+        SetLocalInt(oModule, DL_MakeBaseLostSlotKey(sFunctionSlotId, "kind"), nDirective);
+    }
+
     SetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT, sFunctionSlotId);
     SetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC, oNPC);
     SetLocalInt(oModule, DL_L_LAST_BASE_LOST_KIND, nDirective);
+}
+
+void DL_ClearBaseLostEventForNpcOrSlot(object oNPC, string sFunctionSlotId)
+{
+    object oModule = GetModule();
+
+    DeleteLocalString(oModule, DL_MakeBaseLostNpcKey(oNPC, "slot"));
+    DeleteLocalInt(oModule, DL_MakeBaseLostNpcKey(oNPC, "kind"));
+
+    if (sFunctionSlotId != "")
+    {
+        DeleteLocalObject(oModule, DL_MakeBaseLostSlotKey(sFunctionSlotId, "npc"));
+        DeleteLocalInt(oModule, DL_MakeBaseLostSlotKey(sFunctionSlotId, "kind"));
+    }
+}
+
+string DL_GetBaseLostSlotForNpc(object oNPC)
+{
+    return GetLocalString(GetModule(), DL_MakeBaseLostNpcKey(oNPC, "slot"));
+}
+
+int DL_GetBaseLostKindForNpc(object oNPC)
+{
+    return GetLocalInt(GetModule(), DL_MakeBaseLostNpcKey(oNPC, "kind"));
+}
+
+object DL_GetBaseLostNpcForSlot(string sFunctionSlotId)
+{
+    if (sFunctionSlotId == "")
+    {
+        return OBJECT_INVALID;
+    }
+    return GetLocalObject(GetModule(), DL_MakeBaseLostSlotKey(sFunctionSlotId, "npc"));
+}
+
+int DL_GetBaseLostKindForSlot(string sFunctionSlotId)
+{
+    if (sFunctionSlotId == "")
+    {
+        return DL_DIR_NONE;
+    }
+    return GetLocalInt(GetModule(), DL_MakeBaseLostSlotKey(sFunctionSlotId, "kind"));
 }
 
 void DL_ApplyAssignedSlotProfile(object oNPC, string sFunctionSlotId)
