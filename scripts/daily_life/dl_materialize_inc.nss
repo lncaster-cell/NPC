@@ -48,14 +48,35 @@ void DL_ApplyLocalWalk(object oNPC, object oPoint)
     AssignCommand(oNPC, ActionMoveToObject(oPoint, TRUE));
 }
 
+void DL_ApplyPlotModeByDirective(object oNPC, int nDirective)
+{
+    int bShouldBePlot;
+    int bWasPlot;
+
+    bShouldBePlot = (nDirective != DL_DIR_ABSENT);
+    bWasPlot = GetPlotFlag(oNPC);
+
+    if (bWasPlot == bShouldBePlot)
+    {
+        return;
+    }
+
+    SetPlotFlag(oNPC, bShouldBePlot);
+    if (bShouldBePlot)
+    {
+        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "plot mode restored");
+    }
+    else
+    {
+        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "plot mode disabled for ABSENT");
+    }
+}
+
 void DL_HideOrMarkAbsent(object oNPC, int nDirective)
 {
     SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
     SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_AG_NONE);
-    if (nDirective == DL_DIR_ABSENT)
-    {
-        SetPlotFlag(oNPC, FALSE);
-    }
+    DL_ApplyPlotModeByDirective(oNPC, nDirective);
 }
 
 void DL_HandleUnassignedNpc(object oNPC)
@@ -232,6 +253,7 @@ void DL_MaterializeNpc(object oNPC, object oArea)
 
     SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
     SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
+    DL_ApplyPlotModeByDirective(oNPC, nDirective);
 
     if (!DL_IsDirectiveVisible(nDirective) || DL_ShouldSuppressMaterialization(oNPC, nOverride))
     {
