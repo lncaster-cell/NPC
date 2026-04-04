@@ -17,6 +17,10 @@ int DL_ShouldInstantPlace(object oNPC, object oArea, object oPoint)
     {
         return FALSE;
     }
+    if (GetArea(oNPC) != GetArea(oPoint))
+    {
+        return TRUE;
+    }
     if (DL_IsAreaHot(oArea))
     {
         return GetDistanceBetween(oNPC, oPoint) > 20.0;
@@ -248,6 +252,11 @@ void DL_MaterializeNpc(object oNPC, object oArea)
         DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
         DL_SetInteractionStateExplicit(oNPC, DL_DIR_ABSENT, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
         return;
+    }
+
+    if (GetArea(oNPC) != GetArea(oPoint))
+    {
+        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "cross-area jump to anchor: " + GetTag(oPoint));
     }
 
     if (DL_ShouldInstantPlace(oNPC, oArea, oPoint))
