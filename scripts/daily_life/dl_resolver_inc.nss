@@ -106,6 +106,27 @@ int DL_ApplyOverrideToDirective(object oNPC, int nDirective, int nOverrideKind)
     return nDirective;
 }
 
+int DL_GetSupportedFallbackDirective(object oNPC)
+{
+    if (DL_SupportsDirective(oNPC, DL_DIR_SLEEP))
+    {
+        return DL_DIR_SLEEP;
+    }
+    if (DL_SupportsDirective(oNPC, DL_DIR_SOCIAL))
+    {
+        return DL_DIR_SOCIAL;
+    }
+    if (DL_SupportsDirective(oNPC, DL_DIR_PUBLIC_PRESENCE))
+    {
+        return DL_DIR_PUBLIC_PRESENCE;
+    }
+    if (DL_SupportsDirective(oNPC, DL_DIR_ABSENT))
+    {
+        return DL_DIR_ABSENT;
+    }
+    return DL_DIR_ABSENT;
+}
+
 int DL_ResolveDirective(object oNPC, object oArea)
 {
     int nDayType = DL_DetermineDayType(oArea);
@@ -117,7 +138,7 @@ int DL_ResolveDirective(object oNPC, object oArea)
 
     if (!DL_SupportsDirective(oNPC, nDirective))
     {
-        return DL_DIR_PUBLIC_PRESENCE;
+        return DL_GetSupportedFallbackDirective(oNPC);
     }
 
     return nDirective;
