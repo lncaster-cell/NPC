@@ -30,17 +30,28 @@ int DL_IsAnchorContextAllowed(object oNPC, object oPoint)
 
 object DL_FindAnchorByTag(object oArea, string sTag)
 {
-    object oPoint;
+    object oObj;
+    int nObjType;
+
     if (sTag == "")
     {
         return OBJECT_INVALID;
     }
 
-    oPoint = GetObjectByTag(sTag);
-    if (DL_IsAreaAnchor(oPoint, oArea))
+    oObj = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oObj))
     {
-        return oPoint;
+        // Anchors are expected to be world markers.
+        nObjType = GetObjectType(oObj);
+        if ((nObjType == OBJECT_TYPE_WAYPOINT || nObjType == OBJECT_TYPE_PLACEABLE)
+            && GetTag(oObj) == sTag)
+        {
+            return oObj;
+        }
+
+        oObj = GetNextObjectInArea(oArea);
     }
+
     return OBJECT_INVALID;
 }
 
