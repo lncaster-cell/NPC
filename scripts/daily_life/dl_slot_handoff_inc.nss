@@ -4,9 +4,21 @@
 #include "dl_const_inc"
 #include "dl_log_inc"
 
+const int DL_SLOT_REVIEW_TTL_SECONDS = 60;
+
 string DL_MakeSlotProfileKey(string sFunctionSlotId, string sField)
 {
     return "dl_slot_profile_" + sFunctionSlotId + "_" + sField;
+}
+
+string DL_MakeSlotReviewKey(string sFunctionSlotId, string sField)
+{
+    return "dl_slot_review_" + sFunctionSlotId + "_" + sField;
+}
+
+int DL_GetCurrentSlotReviewTick()
+{
+    return (GetCalendarDay() * 86400) + (GetTimeHour() * 3600) + (GetTimeMinute() * 60) + GetTimeSecond();
 }
 
 void DL_StageFunctionSlotProfile(string sFunctionSlotId, int nFamily, int nSubtype, int nSchedule, object oBase)
@@ -130,6 +142,11 @@ void DL_RequestAssignedNpcResync(object oNPC)
 void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
 {
     object oModule = GetModule();
+    int nNowTick;
+    int nLastTick;
+    int nElapsed;
+    int nLastReason;
+    int nAttemptCount;
 
     if (sFunctionSlotId == "")
     {
@@ -138,17 +155,43 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
     }
 
     nReason = DL_NormalizeSlotReviewReason(nReason);
+    nNowTick = DL_GetCurrentSlotReviewTick();
+    nLastTick = GetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick"));
+    nLastReason = GetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason"));
+    nAttemptCount = GetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "attempts")) + 1;
+    nElapsed = nNowTick - nLastTick;
 
-    if (GetLocalString(oModule, DL_L_LAST_SLOT_REVIEW) == sFunctionSlotId
-        && GetLocalInt(oModule, DL_L_LAST_SLOT_REVIEW_REASON) == nReason)
+    SetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "attempts"), nAttemptCount);
+
+    if (nLastTick > 0 && nLastReason == nReason && nElapsed >= 0 && nElapsed < DL_SLOT_REVIEW_TTL_SECONDS)
     {
-        DL_Log(DL_DEBUG_VERBOSE, "Slot review deduplicated: " + sFunctionSlotId + ", reason=" + IntToString(nReason));
+        DL_Log(DL_DEBUG_VERBOSE,
+            "Slot review deduplicated: " + sFunctionSlotId
+            + ", reason=" + IntToString(nReason)
+            + ", attempts=" + IntToString(nAttemptCount)
+            + ", elapsed=" + IntToString(nElapsed)
+            + ", ttl=" + IntToString(DL_SLOT_REVIEW_TTL_SECONDS));
         return;
+    }
+
+    if (nLastTick > 0 && nLastReason == nReason && nElapsed >= DL_SLOT_REVIEW_TTL_SECONDS)
+    {
+        DL_Log(DL_DEBUG_BASIC,
+            "Slot review re-requested after ttl: " + sFunctionSlotId
+            + ", reason=" + IntToString(nReason)
+            + ", attempts=" + IntToString(nAttemptCount)
+            + ", elapsed=" + IntToString(nElapsed)
+            + ", ttl=" + IntToString(DL_SLOT_REVIEW_TTL_SECONDS));
     }
 
     SetLocalString(oModule, DL_L_LAST_SLOT_REVIEW, sFunctionSlotId);
     SetLocalInt(oModule, DL_L_LAST_SLOT_REVIEW_REASON, nReason);
-    DL_Log(DL_DEBUG_BASIC, "Slot review requested: " + sFunctionSlotId + ", reason=" + IntToString(nReason));
+    SetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick"), nNowTick);
+    SetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason"), nReason);
+    DL_Log(DL_DEBUG_BASIC,
+        "Slot review requested: " + sFunctionSlotId
+        + ", reason=" + IntToString(nReason)
+        + ", attempts=" + IntToString(nAttemptCount));
 }
 
 void DL_OnFunctionSlotAssigned(string sFunctionSlotId, object oNPC)
@@ -169,6 +212,9 @@ void DL_OnFunctionSlotAssigned(string sFunctionSlotId, object oNPC)
         DeleteLocalString(oModule, DL_L_LAST_SLOT_REVIEW);
         DeleteLocalInt(oModule, DL_L_LAST_SLOT_REVIEW_REASON);
     }
+    DeleteLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick"));
+    DeleteLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason"));
+    DeleteLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "attempts"));
 
     if (GetIsObjectValid(oNPC))
     {
