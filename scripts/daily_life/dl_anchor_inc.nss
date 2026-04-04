@@ -7,6 +7,14 @@
 
 int DL_IsAnchorContextAllowed(object oNPC, object oPoint)
 {
+    // Anchor context is local-only:
+    // 1) Anchor must be in the same area as NPC.
+    // 2) Distance must be within hard cap.
+    //
+    // Cross-area anchors are never allowed here (even if "close" by world coords).
+    // Any explicit long-range relocation must be handled by dedicated jump/teleport flow.
+    float fMaxAnchorDistance = 100.0;
+
     if (!GetIsObjectValid(oPoint))
     {
         return FALSE;
@@ -15,7 +23,9 @@ int DL_IsAnchorContextAllowed(object oNPC, object oPoint)
     {
         return FALSE;
     }
-    return GetDistanceBetween(oNPC, oPoint) <= 100.0 || GetArea(oNPC) == GetArea(oPoint);
+
+    return GetArea(oNPC) == GetArea(oPoint)
+        && GetDistanceBetween(oNPC, oPoint) <= fMaxAnchorDistance;
 }
 
 object DL_FindAnchorByTag(object oArea, string sTag)
