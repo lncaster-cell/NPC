@@ -4,14 +4,39 @@
 #include "dl_const_inc"
 #include "dl_types_inc"
 
+int DL_GetDaysInMonth(int nYear, int nMonth)
+{
+    // NWN2 calendar in this project uses fixed 28-day months (no leap-year variation).
+    if (nYear < 0 || nMonth < 1 || nMonth > 12)
+    {
+        return 28;
+    }
+    return 28;
+}
+
 int DL_GetAbsoluteDayNumber()
 {
     int nYear = GetCalendarYear();
     int nMonth = GetCalendarMonth();
     int nDay = GetCalendarDay();
 
-    // Deterministic linear day index that stays continuous across month/year boundaries.
-    return ((nYear * 12) + nMonth) * 31 + nDay;
+    // Continuous absolute day index based on actual game calendar month length (fixed 28 days).
+    int nAbsoluteDay = 0;
+    int nPrevYear = 0;
+    int nPrevMonth = 0;
+
+    for (nPrevYear = 0; nPrevYear < nYear; nPrevYear++)
+    {
+        nAbsoluteDay += 12 * DL_GetDaysInMonth(nPrevYear, 1);
+    }
+
+    for (nPrevMonth = 1; nPrevMonth < nMonth; nPrevMonth++)
+    {
+        nAbsoluteDay += DL_GetDaysInMonth(nYear, nPrevMonth);
+    }
+
+    nAbsoluteDay += nDay;
+    return nAbsoluteDay;
 }
 
 int DL_DetermineDayType(object oArea)
