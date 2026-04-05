@@ -11,6 +11,23 @@ string DL_MakeSlotProfileKey(string sFunctionSlotId, string sField)
     return "dl_slot_profile_" + sFunctionSlotId + "_" + sField;
 }
 
+string DL_MakeSlotReviewKey(string sFunctionSlotId, string sField)
+{
+    return "dl_slot_review_" + sFunctionSlotId + "_" + sField;
+}
+
+int DL_GetCurrentSlotReviewTick()
+{
+    int nYear = GetCalendarYear();
+    int nMonth = GetCalendarMonth();
+    int nDay = GetCalendarDay();
+    int nHour = GetTimeHour();
+    int nMinute = GetTimeMinute();
+    int nSecond = GetTimeSecond();
+
+    return (((((nYear * 12) + nMonth) * 31 + nDay) * 24 + nHour) * 60 + nMinute) * 60 + nSecond;
+}
+
 string DL_MakeBaseLostNpcKey(object oNPC, string sField)
 {
     return "dl_base_lost_npc_" + ObjectToString(oNPC) + "_" + sField;
