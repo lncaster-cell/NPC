@@ -84,8 +84,10 @@ void DL_HandleUnassignedNpc(object oNPC)
     string sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
 
     AssignCommand(oNPC, ClearAllActions());
+    SetLocalInt(oNPC, DL_L_DIRECTIVE, DL_DIR_UNASSIGNED);
     SetLocalInt(oNPC, DL_L_ACTIVITY_KIND, DL_ACT_NONE);
     SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_AG_NONE);
+    DL_ApplyPlotModeByDirective(oNPC, DL_DIR_UNASSIGNED);
     DL_SetInteractionStateExplicit(oNPC, DL_DIR_UNASSIGNED, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
     DL_RecordBaseLostEvent(oNPC, sFunctionSlotId, DL_DIR_UNASSIGNED);
 
