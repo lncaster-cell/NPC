@@ -113,13 +113,13 @@ int DL_TryRecoverBaseFromFunctionSlot(object oNPC)
     }
 
     DL_ApplyAssignedSlotProfile(oNPC, sFunctionSlotId);
-    DL_ClearFunctionSlotProfile(sFunctionSlotId);
 
     if (!DL_HasBase(oNPC))
     {
         return FALSE;
     }
 
+    DL_ClearFunctionSlotProfile(sFunctionSlotId);
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base recovered from staged function slot profile: " + sFunctionSlotId);
     return TRUE;
 }
