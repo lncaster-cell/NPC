@@ -31,7 +31,7 @@ int DL_ShouldSuppressMaterialization(object oNPC, int nOverrideKind)
 {
     if (nOverrideKind == DL_OVR_FIRE)
     {
-        return TRUE;
+        return DL_GetNpcFamily(oNPC) != DL_FAMILY_LAW;
     }
 
     if (nOverrideKind == DL_OVR_QUARANTINE)

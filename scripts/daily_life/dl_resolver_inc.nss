@@ -189,6 +189,11 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
 {
     if (nOverrideKind == DL_OVR_FIRE)
     {
+        if (DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW
+            && (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST))
+        {
+            return DL_DLG_INSPECTION;
+        }
         return DL_DLG_HIDE;
     }
     if (nDirective == DL_DIR_WORK || nDirective == DL_DIR_SERVICE)
@@ -199,8 +204,6 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
     {
         if (DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW)
         {
-            // LAW on duty/post must stay in service dialogue mode.
-            // Subtype exceptions are kept for readability and future extension.
             if (DL_GetNpcSubtype(oNPC) == DL_SUBTYPE_INSPECTION || DL_GetNpcSubtype(oNPC) == DL_SUBTYPE_GATE_POST)
             {
                 return DL_DLG_INSPECTION;
