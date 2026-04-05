@@ -12,7 +12,7 @@ void main()
 
     if (DL_HasAnyPlayersExcept(oArea, oExiting))
     {
-        DL_OnAreaBecameWarm(oArea);
+        DL_OnAreaBecameHot(oArea);
         return;
     }
 
