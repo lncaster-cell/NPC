@@ -252,6 +252,7 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     int nOverride;
     int nAnchorGroup;
     object oPoint;
+    object oPolicyFilteredAnchor;
 
     if (DL_HandleBaseLost(oNPC, oArea))
     {
@@ -281,7 +282,19 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     oPoint = DL_FindAnchorPoint(oNPC, oArea, nAnchorGroup);
     if (!GetIsObjectValid(oPoint))
     {
-        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "anchor not found, marking absent");
+        oPolicyFilteredAnchor = DL_FindAnchorPointIgnoringPolicy(oNPC, oArea, nAnchorGroup);
+        if (GetIsObjectValid(oPolicyFilteredAnchor))
+        {
+            DL_LogNpc(
+                oNPC,
+                DL_DEBUG_BASIC,
+                "anchor filtered by policy, marking absent: " + GetTag(oPolicyFilteredAnchor)
+            );
+        }
+        else
+        {
+            DL_LogNpc(oNPC, DL_DEBUG_BASIC, "anchor not found, marking absent");
+        }
         DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
         DL_SetInteractionStateExplicit(oNPC, DL_DIR_ABSENT, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
         return;
