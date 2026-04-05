@@ -6,31 +6,12 @@
 
 int DL_GetDaysInMonth(int nYear, int nMonth)
 {
-    if (nMonth == 2)
+    // NWN2 calendar in this project uses fixed 28-day months (no leap-year variation).
+    if (nYear < 0 || nMonth < 1 || nMonth > 12)
     {
-        int bLeapYear = 0;
-        if ((nYear % 4) == 0)
-        {
-            bLeapYear = 1;
-            if ((nYear % 100) == 0 && (nYear % 400) != 0)
-            {
-                bLeapYear = 0;
-            }
-        }
-
-        if (bLeapYear)
-        {
-            return 29;
-        }
         return 28;
     }
-
-    if (nMonth == 4 || nMonth == 6 || nMonth == 9 || nMonth == 11)
-    {
-        return 30;
-    }
-
-    return 31;
+    return 28;
 }
 
 int DL_GetAbsoluteDayNumber()
@@ -39,18 +20,14 @@ int DL_GetAbsoluteDayNumber()
     int nMonth = GetCalendarMonth();
     int nDay = GetCalendarDay();
 
-    // Continuous absolute day index based on real month lengths (including leap years).
+    // Continuous absolute day index based on actual game calendar month length (fixed 28 days).
     int nAbsoluteDay = 0;
     int nPrevYear = 0;
     int nPrevMonth = 0;
 
     for (nPrevYear = 0; nPrevYear < nYear; nPrevYear++)
     {
-        nAbsoluteDay += 365;
-        if (DL_GetDaysInMonth(nPrevYear, 2) == 29)
-        {
-            nAbsoluteDay += 1;
-        }
+        nAbsoluteDay += 12 * DL_GetDaysInMonth(nPrevYear, 1);
     }
 
     for (nPrevMonth = 1; nPrevMonth < nMonth; nPrevMonth++)
