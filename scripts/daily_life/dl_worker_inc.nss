@@ -10,6 +10,7 @@
 
 const string DL_L_WORKER_CURSOR = "dl_worker_cursor";
 const string DL_L_WORKER_CANDIDATE_IDX = "dl_worker_candidate_idx";
+const string DL_L_WORKER_IS_CANDIDATE = "dl_worker_is_candidate";
 
 string DL_DescribeResyncReason(int nReason)
 {
@@ -179,11 +180,13 @@ void DL_DispatchDueJobs(object oArea, int nBudget)
             if (DL_ShouldProcessNpcInWorker(oObject))
             {
                 SetLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX, nCandidateCount);
+                SetLocalInt(oObject, DL_L_WORKER_IS_CANDIDATE, TRUE);
                 nCandidateCount += 1;
             }
             else
             {
                 DeleteLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
+                DeleteLocalInt(oObject, DL_L_WORKER_IS_CANDIDATE);
             }
         }
         oObject = GetNextObjectInArea(oArea);
@@ -191,6 +194,16 @@ void DL_DispatchDueJobs(object oArea, int nBudget)
 
     if (nCandidateCount <= 0 || nBudget <= 0)
     {
+        oObject = GetFirstObjectInArea(oArea);
+        while (GetIsObjectValid(oObject))
+        {
+            if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
+            {
+                DeleteLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
+                DeleteLocalInt(oObject, DL_L_WORKER_IS_CANDIDATE);
+            }
+            oObject = GetNextObjectInArea(oArea);
+        }
         SetLocalInt(oArea, DL_L_WORKER_CURSOR, 0);
         return;
     }
@@ -216,25 +229,29 @@ void DL_DispatchDueJobs(object oArea, int nBudget)
         + " budget=" + IntToString(nBudget));
 
     oObject = GetFirstObjectInArea(oArea);
-    while (GetIsObjectValid(oObject) && nProcessed < nPlanned)
+    while (GetIsObjectValid(oObject))
     {
         if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
         {
-            int nCandidateIndex = GetLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
-            if (nCandidateIndex >= 0)
+            if (GetLocalInt(oObject, DL_L_WORKER_IS_CANDIDATE) == TRUE)
             {
-                int nDistance = (nCandidateIndex - nCursor) % nCandidateCount;
-                if (nDistance < 0)
+                int nCandidateIndex = GetLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
+                if (nProcessed < nPlanned)
                 {
-                    nDistance += nCandidateCount;
+                    int nDistance = (nCandidateIndex - nCursor) % nCandidateCount;
+                    if (nDistance < 0)
+                    {
+                        nDistance += nCandidateCount;
+                    }
+                    if (nDistance < nPlanned)
+                    {
+                        DL_ProcessNpcBudgeted(oArea, oObject);
+                        nProcessed += 1;
+                    }
                 }
-                if (nDistance < nPlanned)
-                {
-                    DL_ProcessNpcBudgeted(oArea, oObject);
-                    nProcessed += 1;
-                }
-                DeleteLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
             }
+            DeleteLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
+            DeleteLocalInt(oObject, DL_L_WORKER_IS_CANDIDATE);
         }
         oObject = GetNextObjectInArea(oArea);
     }
