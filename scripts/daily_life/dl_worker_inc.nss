@@ -8,6 +8,9 @@
 #include "dl_slot_handoff_inc"
 #include "dl_types_inc"
 
+const string DL_L_WORKER_CURSOR = "dl_worker_cursor";
+const string DL_L_WORKER_CANDIDATE_IDX = "dl_worker_candidate_idx";
+
 string DL_DescribeResyncReason(int nReason)
 {
     if (nReason == DL_RESYNC_AREA_ENTER) return "AREA_ENTER";
@@ -164,17 +167,79 @@ void DL_ProcessNpcBudgeted(object oArea, object oNPC)
 void DL_DispatchDueJobs(object oArea, int nBudget)
 {
     object oObject = GetFirstObjectInArea(oArea);
+    int nCandidateCount = 0;
+    int nCursor = 0;
+    int nPlanned = 0;
     int nProcessed = 0;
 
-    while (GetIsObjectValid(oObject) && nProcessed < nBudget)
+    while (GetIsObjectValid(oObject))
     {
-        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject) && DL_ShouldProcessNpcInWorker(oObject))
+        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
         {
-            DL_ProcessNpcBudgeted(oArea, oObject);
-            nProcessed += 1;
+            if (DL_ShouldProcessNpcInWorker(oObject))
+            {
+                SetLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX, nCandidateCount);
+                nCandidateCount += 1;
+            }
+            else
+            {
+                DeleteLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
+            }
         }
         oObject = GetNextObjectInArea(oArea);
     }
+
+    if (nCandidateCount <= 0 || nBudget <= 0)
+    {
+        SetLocalInt(oArea, DL_L_WORKER_CURSOR, 0);
+        return;
+    }
+
+    nCursor = GetLocalInt(oArea, DL_L_WORKER_CURSOR);
+    nCursor = nCursor % nCandidateCount;
+    if (nCursor < 0)
+    {
+        nCursor += nCandidateCount;
+    }
+
+    nPlanned = nBudget;
+    if (nPlanned > nCandidateCount)
+    {
+        nPlanned = nCandidateCount;
+    }
+
+    DL_Log(
+        DL_DEBUG_VERBOSE,
+        "worker fairness area=" + GetTag(oArea)
+        + " cursor=" + IntToString(nCursor)
+        + " candidates=" + IntToString(nCandidateCount)
+        + " budget=" + IntToString(nBudget));
+
+    oObject = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oObject) && nProcessed < nPlanned)
+    {
+        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
+        {
+            int nCandidateIndex = GetLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
+            if (nCandidateIndex >= 0)
+            {
+                int nDistance = (nCandidateIndex - nCursor) % nCandidateCount;
+                if (nDistance < 0)
+                {
+                    nDistance += nCandidateCount;
+                }
+                if (nDistance < nPlanned)
+                {
+                    DL_ProcessNpcBudgeted(oArea, oObject);
+                    nProcessed += 1;
+                }
+                DeleteLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
+            }
+        }
+        oObject = GetNextObjectInArea(oArea);
+    }
+
+    SetLocalInt(oArea, DL_L_WORKER_CURSOR, (nCursor + nProcessed) % nCandidateCount);
 }
 
 void DL_AreaWorkerTick(object oArea)
