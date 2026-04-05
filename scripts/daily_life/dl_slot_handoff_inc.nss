@@ -18,14 +18,11 @@ string DL_MakeSlotReviewKey(string sFunctionSlotId, string sField)
 
 int DL_GetCurrentSlotReviewTick()
 {
-    int nYear = GetCalendarYear();
-    int nMonth = GetCalendarMonth();
-    int nDay = GetCalendarDay();
     int nHour = GetTimeHour();
     int nMinute = GetTimeMinute();
     int nSecond = GetTimeSecond();
 
-    return (((((nYear * 12) + nMonth) * 31 + nDay) * 24 + nHour) * 60 + nMinute) * 60 + nSecond;
+    return (nHour * 3600) + (nMinute * 60) + nSecond;
 }
 
 string DL_MakeBaseLostNpcKey(object oNPC, string sField)
@@ -228,6 +225,10 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
     nLastReason = GetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason"));
     nAttemptCount = GetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "attempts")) + 1;
     nElapsed = nNowTick - nLastTick;
+    if (nElapsed < 0)
+    {
+        nElapsed = nElapsed + 86400;
+    }
 
     SetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "attempts"), nAttemptCount);
 
