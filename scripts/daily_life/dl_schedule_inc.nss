@@ -4,6 +4,16 @@
 #include "dl_const_inc"
 #include "dl_types_inc"
 
+int DL_GetAbsoluteDayNumber()
+{
+    int nYear = GetCalendarYear();
+    int nMonth = GetCalendarMonth();
+    int nDay = GetCalendarDay();
+
+    // Deterministic linear day index that stays continuous across month/year boundaries.
+    return ((nYear * 12) + nMonth) * 31 + nDay;
+}
+
 int DL_DetermineDayType(object oArea)
 {
     int nOverride = GetLocalInt(oArea, DL_L_DAY_TYPE_OVERRIDE);
@@ -12,8 +22,9 @@ int DL_DetermineDayType(object oArea)
         return nOverride;
     }
 
-    int nDay = GetCalendarDay();
-    if ((nDay % 7) == 0)
+    // Rest day is computed from a continuous absolute day cycle to avoid month/day reset regressions.
+    int nAbsoluteDay = DL_GetAbsoluteDayNumber();
+    if ((nAbsoluteDay % 7) == 0)
     {
         return DL_DAY_REST;
     }
