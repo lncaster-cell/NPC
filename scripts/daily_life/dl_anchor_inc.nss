@@ -60,19 +60,19 @@ object DL_FindFallbackAnchorPoint(object oNPC, object oArea, int nAnchorGroup)
     object oBase = DL_GetNpcBase(oNPC);
     object oPoint;
 
-    if (DL_IsAreaAnchor(oBase, oArea))
+    if (DL_IsAreaAnchor(oBase, oArea) && DL_IsAnchorContextAllowed(oNPC, oBase))
     {
         return oBase;
     }
 
     oPoint = DL_FindAnchorByTag(oArea, DL_GetSpecializedAnchorTagCandidate(oNPC, DL_AG_WAIT, 1));
-    if (GetIsObjectValid(oPoint))
+    if (GetIsObjectValid(oPoint) && DL_IsAnchorContextAllowed(oNPC, oPoint))
     {
         return oPoint;
     }
 
     oPoint = DL_FindAnchorByTag(oArea, DL_GetAreaAnchorTagCandidate(oNPC, oArea, nAnchorGroup, 1));
-    if (GetIsObjectValid(oPoint))
+    if (GetIsObjectValid(oPoint) && DL_IsAnchorContextAllowed(oNPC, oPoint))
     {
         return oPoint;
     }
