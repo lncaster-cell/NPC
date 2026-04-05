@@ -50,6 +50,7 @@
 | 2026-03-30 | Audit Phase 2 (edge-cases) | Углубить аудит после первичного отчёта и выделить дополнительные риски | Дополнен `docs/23_DAILY_LIFE_V1_CODE_AUDIT_2026-03-30.md` секциями A-04..A-06 и новым приоритетом | done |
 | 2026-03-31 | Синхронизация Runtime Truth с кодом после warm-tier/gate обновлений | Убрать расхождения между журналом и текущим поведением worker gate | Обновлены разделы `1.1` и `1.2`: зафиксировано `HOT/WARM=run`, `FROZEN=stop`; отмечен tier helper `DL_ShouldRunDailyLifeTier` | done |
 | 2026-04-02 | Фикс edge-case `OnExit` для последнего игрока | Убрать ложный переход в `WARM`, если в area не остаётся игроков | В `dl_area_exit` проверка заменена на `DL_HasAnyPlayersExcept(oArea, oExiting)`; в `dl_util_inc` добавлен helper `DL_HasAnyPlayersExcept` | done |
+| 2026-04-05 | Синхронизация `OnExit` tier-перехода с runtime lifecycle | Убрать рассинхрон: при remaining players зона должна уходить в `WARM`, при пустой зоне — в `FROZEN` | В `dl_area_exit` ветка `DL_HasAnyPlayersExcept(oArea, oExiting)` переводит зону в `DL_OnAreaBecameWarm`; fallback без игроков оставлен на `DL_OnAreaBecameFrozen` | done |
 
 ---
 
