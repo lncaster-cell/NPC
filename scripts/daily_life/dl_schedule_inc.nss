@@ -4,14 +4,62 @@
 #include "dl_const_inc"
 #include "dl_types_inc"
 
+int DL_GetDaysInMonth(int nYear, int nMonth)
+{
+    if (nMonth == 2)
+    {
+        int bLeapYear = 0;
+        if ((nYear % 4) == 0)
+        {
+            bLeapYear = 1;
+            if ((nYear % 100) == 0 && (nYear % 400) != 0)
+            {
+                bLeapYear = 0;
+            }
+        }
+
+        if (bLeapYear)
+        {
+            return 29;
+        }
+        return 28;
+    }
+
+    if (nMonth == 4 || nMonth == 6 || nMonth == 9 || nMonth == 11)
+    {
+        return 30;
+    }
+
+    return 31;
+}
+
 int DL_GetAbsoluteDayNumber()
 {
     int nYear = GetCalendarYear();
     int nMonth = GetCalendarMonth();
     int nDay = GetCalendarDay();
 
-    // Deterministic linear day index that stays continuous across month/year boundaries.
-    return ((nYear * 12) + nMonth) * 31 + nDay;
+    // Continuous absolute day index based on real month lengths (including leap years).
+    int nAbsoluteDay = 0;
+    int nPrevYear = 0;
+    int nPrevMonth = 0;
+
+    for (nPrevYear = 0; nPrevYear < nYear; nPrevYear++)
+    {
+        nAbsoluteDay += 365;
+        if (DL_GetDaysInMonth(nPrevYear, 2) == 29)
+        {
+            nAbsoluteDay += 1;
+        }
+    }
+
+    for (nPrevMonth = 1; nPrevMonth < nMonth; nPrevMonth++)
+    {
+        nAbsoluteDay += DL_GetDaysInMonth(nYear, nPrevMonth);
+    }
+
+    nAbsoluteDay += nDay;
+    return nAbsoluteDay;
 }
 
 int DL_DetermineDayType(object oArea)
