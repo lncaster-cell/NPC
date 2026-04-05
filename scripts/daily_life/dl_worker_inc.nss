@@ -70,7 +70,7 @@ void DL_LogSmokeSnapshot(object oNPC, object oArea, int nReason)
     string sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
     string sLastBaseLostSlot = DL_GetBaseLostSlotForNpc(oNPC);
     int nLastBaseLostKind = DL_GetBaseLostKindForNpc(oNPC);
-    object oLastBaseLostNpc = oNPC;
+    object oLastBaseLostNpc = OBJECT_INVALID;
     int nDirective = GetLocalInt(oNPC, DL_L_DIRECTIVE);
     int nDialogue = GetLocalInt(oNPC, DL_L_DIALOGUE_MODE);
     int nService = GetLocalInt(oNPC, DL_L_SERVICE_MODE);
@@ -117,9 +117,13 @@ void DL_LogSmokeSnapshot(object oNPC, object oArea, int nReason)
         + " base_lost_kind=" + IntToString(nLastBaseLostKind) + "(" + DL_DescribeDirective(nLastBaseLostKind) + ")"
         + " base_lost_slot=" + sLastBaseLostSlot;
 
-    if (oLastBaseLostNpc == oNPC)
+    if (GetIsObjectValid(oLastBaseLostNpc) && oLastBaseLostNpc == oNPC)
     {
         sMessage = sMessage + " base_lost_npc=SELF";
+    }
+    else if (!GetIsObjectValid(oLastBaseLostNpc))
+    {
+        sMessage = sMessage + " base_lost_npc=UNKNOWN";
     }
 
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, sMessage);
