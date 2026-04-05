@@ -9,6 +9,7 @@
 
 const string DL_L_CONV_STORE_OBJECT = "dl_conv_store_object";
 const string DL_L_CONV_STORE_TAG = "dl_conv_store_tag";
+const string DL_L_CONV_STORE_AREA_TAGS = "dl_conv_store_area_tags";
 const string DL_L_CONV_STORE_MARKUP = "dl_conv_store_markup";
 const string DL_L_CONV_STORE_MARKDOWN = "dl_conv_store_markdown";
 
@@ -105,12 +106,82 @@ int DL_CanOpenConversationStore(object oNPC)
     return nServiceMode == DL_SERVICE_AVAILABLE || nServiceMode == DL_SERVICE_LIMITED;
 }
 
+int DL_IsConversationStoreCandidate(object oStore, string sStoreTag)
+{
+    if (!GetIsObjectValid(oStore))
+    {
+        return FALSE;
+    }
+    if (GetObjectType(oStore) != OBJECT_TYPE_STORE)
+    {
+        return FALSE;
+    }
+    return GetTag(oStore) == sStoreTag;
+}
+
+int DL_CountConversationStoresInArea(object oArea, string sStoreTag)
+{
+    object oObject;
+    int nMatchCount = 0;
+
+    if (!GetIsObjectValid(oArea))
+    {
+        return 0;
+    }
+
+    oObject = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oObject))
+    {
+        if (DL_IsConversationStoreCandidate(oObject, sStoreTag))
+        {
+            nMatchCount += 1;
+        }
+
+        oObject = GetNextObjectInArea(oArea);
+    }
+
+    return nMatchCount;
+}
+
+object DL_FindConversationStoreInArea(object oArea, string sStoreTag)
+{
+    object oObject;
+
+    if (!GetIsObjectValid(oArea))
+    {
+        return OBJECT_INVALID;
+    }
+
+    oObject = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oObject))
+    {
+        if (DL_IsConversationStoreCandidate(oObject, sStoreTag))
+        {
+            return oObject;
+        }
+        oObject = GetNextObjectInArea(oArea);
+    }
+
+    return OBJECT_INVALID;
+}
+
 object DL_GetConversationStore(object oNPC)
 {
     object oStore = GetLocalObject(oNPC, DL_L_CONV_STORE_OBJECT);
+    object oArea;
+    object oNpcArea;
+    object oCandidate;
+    string sAreaTags;
     string sStoreTag;
+    string sAreaTag;
+    int nOffset = 0;
+    int nSepPos;
+    int nListLen;
+    int nAreaIndex;
+    int nAreaMatches;
+    int nTotalMatches = 0;
 
-    if (GetIsObjectValid(oStore))
+    if (DL_IsConversationStoreCandidate(oStore, GetTag(oStore)))
     {
         return oStore;
     }
@@ -121,7 +192,95 @@ object DL_GetConversationStore(object oNPC)
         return OBJECT_INVALID;
     }
 
-    return GetObjectByTag(sStoreTag);
+    oNpcArea = GetArea(oNPC);
+    nAreaMatches = DL_CountConversationStoresInArea(oNpcArea, sStoreTag);
+    if (nAreaMatches > 1)
+    {
+        DL_LogNpc(
+            oNPC,
+            DL_DEBUG_BASIC,
+            "conversation store tag conflict in area: area_tag=" + GetTag(oNpcArea) + ", store_tag=" + sStoreTag
+        );
+        return OBJECT_INVALID;
+    }
+    if (nAreaMatches == 1)
+    {
+        oCandidate = DL_FindConversationStoreInArea(oNpcArea, sStoreTag);
+        nTotalMatches += 1;
+    }
+
+    sAreaTags = GetLocalString(oNPC, DL_L_CONV_STORE_AREA_TAGS);
+    nListLen = GetStringLength(sAreaTags);
+    while (nOffset < nListLen)
+    {
+        nSepPos = FindSubString(sAreaTags, ";", nOffset);
+        if (nSepPos < 0)
+        {
+            sAreaTag = GetSubString(sAreaTags, nOffset, nListLen - nOffset);
+            nOffset = nListLen;
+        }
+        else
+        {
+            sAreaTag = GetSubString(sAreaTags, nOffset, nSepPos - nOffset);
+            nOffset = nSepPos + 1;
+        }
+
+        if (sAreaTag == "")
+        {
+            continue;
+        }
+
+        nAreaIndex = 0;
+        oArea = GetObjectByTag(sAreaTag, nAreaIndex);
+        while (GetIsObjectValid(oArea))
+        {
+            if (oArea == oNpcArea)
+            {
+                nAreaIndex += 1;
+                oArea = GetObjectByTag(sAreaTag, nAreaIndex);
+                continue;
+            }
+
+            if (GetObjectType(oArea) == OBJECT_TYPE_AREA)
+            {
+                nAreaMatches = DL_CountConversationStoresInArea(oArea, sStoreTag);
+                if (nAreaMatches > 1)
+                {
+                    DL_LogNpc(
+                        oNPC,
+                        DL_DEBUG_BASIC,
+                        "conversation store tag conflict in area: area_tag=" + GetTag(oArea) + ", store_tag=" + sStoreTag
+                    );
+                    return OBJECT_INVALID;
+                }
+                if (nAreaMatches == 1)
+                {
+                    oCandidate = DL_FindConversationStoreInArea(oArea, sStoreTag);
+                    nTotalMatches += 1;
+                }
+            }
+
+            nAreaIndex += 1;
+            oArea = GetObjectByTag(sAreaTag, nAreaIndex);
+        }
+    }
+
+    if (nTotalMatches > 1)
+    {
+        DL_LogNpc(
+            oNPC,
+            DL_DEBUG_BASIC,
+            "conversation store tag conflict across search context: store_tag=" + sStoreTag
+        );
+        return OBJECT_INVALID;
+    }
+
+    if (nTotalMatches == 1 && GetIsObjectValid(oCandidate))
+    {
+        return oCandidate;
+    }
+
+    return OBJECT_INVALID;
 }
 
 int DL_OpenConversationStore(object oNPC, object oPC)
@@ -129,6 +288,8 @@ int DL_OpenConversationStore(object oNPC, object oPC)
     object oStore;
     int nMarkup;
     int nMarkdown;
+    string sStoreTag;
+    string sResolvedStoreTag;
 
     if (!GetIsObjectValid(oPC) || !DL_CanOpenConversationStore(oNPC))
     {
@@ -136,6 +297,13 @@ int DL_OpenConversationStore(object oNPC, object oPC)
     }
 
     oStore = DL_GetConversationStore(oNPC);
+    sStoreTag = GetLocalString(oNPC, DL_L_CONV_STORE_TAG);
+    sResolvedStoreTag = GetTag(oStore);
+    DL_LogNpc(
+        oNPC,
+        DL_DEBUG_BASIC,
+        "open conversation store: npc_tag=" + GetTag(oNPC) + ", store_tag=" + sStoreTag + ", resolved_store_tag=" + sResolvedStoreTag
+    );
     if (!GetIsObjectValid(oStore))
     {
         DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store missing or invalid");
