@@ -37,7 +37,7 @@
 - Rule-driven resolver: `schedule/day/override` -> `directive`.
 - Затем вычисляются `anchor_group`, `dialogue_mode`, `service_mode`.
 - Materialization применяет это состояние (перемещение/скрытие/absent + interaction state).
-- Внутренняя санитарная чистка идёт по runtime-first принципу: сначала оптимизируются hot-path schedule/resolver/worker/resync helper-функции, потом менее частый legacy include-layer.
+- Внутренняя санитарная чистка идёт по runtime-first принципу: сначала оптимизируются hot-path schedule/resolver/worker/resync/materialize helper-функции, потом менее частый legacy include-layer.
 
 ### 1.5 Граница текущей реализации
 - Реализован каркас Milestone A (A–E).
@@ -62,6 +62,7 @@
 | 2026-04-06 | Compile-safe runtime entry path | Убрать зависимость ключевых hook/smoke scripts от guarded include-графа | Добавлен `dl_all_inc`; на него переведены area hooks, dialogue/store hooks, NPC lifecycle hooks и smoke scripts | done |
 | 2026-04-06 | Внутренняя санитарная чистка include-layer | Начать поэтапную оптимизацию legacy guarded includes без смены runtime-контракта | Оптимизированы hot-path schedule helpers до constant-time math; упрощён `dl_resolver_inc` (меньше повторных family/subtype lookups и мёртвых веток) | done |
 | 2026-04-06 | Worker/resync perf cleanup | Снять лишние full-pass/duplicate gate затраты в area worker и resync dispatch | В `dl_worker_inc` убран лишний cleanup-pass для `candidateCount=0`, budget-zero path вынесен в ранний cleanup; в `dl_resync_inc` добавлен `DL_RequestResyncKnownNpc` для area/module dispatch без двойного daily-life gate | done |
+| 2026-04-06 | Materialize single-pass cleanup | Убрать повторный resolver/interaction проход в materialization path | В `dl_materialize_inc` interaction-state теперь вычисляется один раз за проход materialize; compile-safe path синхронизирован через `dl_all_inc` | done |
 
 ---
 

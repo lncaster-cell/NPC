@@ -11,6 +11,9 @@
 #include "dl_interact_inc"
 #include "dl_slot_handoff_inc"
 
+// Legacy compatibility include.
+// New runtime entry scripts should prefer the compile-safe aggregation path via dl_all_inc.
+
 int DL_ShouldInstantPlace(object oNPC, object oArea, object oPoint)
 {
     if (!GetIsObjectValid(oPoint))
@@ -46,6 +49,14 @@ void DL_ApplyLocalWalk(object oNPC, object oPoint)
     }
     AssignCommand(oNPC, ClearAllActions());
     AssignCommand(oNPC, ActionMoveToObject(oPoint, TRUE));
+}
+
+void DL_ApplyResolvedInteractionState(object oNPC, int nDirective, int nAnchorGroup, int nDialogueMode, int nServiceMode)
+{
+    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
+    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
+    DL_SetDialogueMode(oNPC, nDialogueMode);
+    DL_SetServiceMode(oNPC, nServiceMode);
 }
 
 void DL_ApplyPlotModeByDirective(object oNPC, int nDirective)
@@ -251,6 +262,8 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     int nDirective;
     int nOverride;
     int nAnchorGroup;
+    int nDialogueMode;
+    int nServiceMode;
     object oPoint;
     object oPolicyFilteredAnchor;
 
@@ -262,20 +275,14 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     nDirective = DL_ResolveDirective(oNPC, oArea);
     nOverride = DL_GetTopOverride(oNPC, oArea);
     nAnchorGroup = DL_ResolveAnchorGroup(oNPC, nDirective);
+    nDialogueMode = DL_ResolveDialogueMode(oNPC, nDirective, nOverride);
+    nServiceMode = DL_ResolveServiceMode(oNPC, nDirective, nOverride);
 
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
+    DL_ApplyResolvedInteractionState(oNPC, nDirective, nAnchorGroup, nDialogueMode, nServiceMode);
     DL_ApplyPlotModeByDirective(oNPC, nDirective);
 
     if (!DL_IsDirectiveVisible(nDirective) || DL_ShouldSuppressMaterialization(oNPC, nOverride))
     {
-        DL_HideOrMarkAbsent(oNPC, nDirective);
-        if (nDirective == DL_DIR_ABSENT || nDirective == DL_DIR_UNASSIGNED)
-        {
-            DL_SetInteractionStateExplicit(oNPC, nDirective, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
-            return;
-        }
-        DL_RefreshInteractionState(oNPC, oArea);
         return;
     }
 
@@ -295,8 +302,8 @@ void DL_MaterializeNpc(object oNPC, object oArea)
         {
             DL_LogNpc(oNPC, DL_DEBUG_BASIC, "anchor not found, marking absent");
         }
-        DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
-        DL_SetInteractionStateExplicit(oNPC, DL_DIR_ABSENT, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+        DL_ApplyResolvedInteractionState(oNPC, DL_DIR_ABSENT, DL_AG_NONE, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+        DL_ApplyPlotModeByDirective(oNPC, DL_DIR_ABSENT);
         return;
     }
 
@@ -315,7 +322,6 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     }
 
     DL_ApplyActivity(oNPC, DL_ResolveActivityKind(oNPC, nDirective, nAnchorGroup));
-    DL_RefreshInteractionState(oNPC, oArea);
 }
 
 #endif
