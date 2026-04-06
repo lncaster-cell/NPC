@@ -5,6 +5,16 @@
 #include "dl_util_inc"
 #include "dl_types_inc"
 
+// Legacy compatibility include.
+// New runtime entry scripts should prefer the compile-safe aggregation path via dl_all_inc.
+
+const int DL_ANCHOR_SEARCH_MAX_INDEX = 4;
+
+int DL_IsAnchorMarkerType(int nObjType)
+{
+    return nObjType == OBJECT_TYPE_WAYPOINT || nObjType == OBJECT_TYPE_PLACEABLE;
+}
+
 int DL_IsAnchorContextAllowed(object oNPC, object oPoint)
 {
     // Anchor context is local-only:
@@ -30,7 +40,7 @@ object DL_FindAnchorByTag(object oArea, string sTag)
     object oObj;
     int nObjType;
 
-    if (sTag == "")
+    if (!GetIsObjectValid(oArea) || sTag == "")
     {
         return OBJECT_INVALID;
     }
@@ -40,8 +50,7 @@ object DL_FindAnchorByTag(object oArea, string sTag)
     {
         // Anchors are expected to be world markers.
         nObjType = GetObjectType(oObj);
-        if ((nObjType == OBJECT_TYPE_WAYPOINT || nObjType == OBJECT_TYPE_PLACEABLE)
-            && GetTag(oObj) == sTag)
+        if (DL_IsAnchorMarkerType(nObjType) && GetTag(oObj) == sTag)
         {
             return oObj;
         }
@@ -107,7 +116,7 @@ object DL_FindAnchorPoint(object oNPC, object oArea, int nAnchorGroup)
     int i = 1;
     object oPoint;
 
-    while (i <= 4)
+    while (i <= DL_ANCHOR_SEARCH_MAX_INDEX)
     {
         oPoint = DL_FindAnchorByTag(oArea, DL_GetAnchorTagCandidate(oNPC, nAnchorGroup, i));
         if (GetIsObjectValid(oPoint) && DL_IsAnchorContextAllowed(oNPC, oPoint))
@@ -143,7 +152,7 @@ object DL_FindAnchorPointIgnoringPolicy(object oNPC, object oArea, int nAnchorGr
     int i = 1;
     object oPoint;
 
-    while (i <= 4)
+    while (i <= DL_ANCHOR_SEARCH_MAX_INDEX)
     {
         oPoint = DL_FindAnchorByTag(oArea, DL_GetAnchorTagCandidate(oNPC, nAnchorGroup, i));
         if (GetIsObjectValid(oPoint))
