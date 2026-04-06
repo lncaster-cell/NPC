@@ -4,13 +4,12 @@
 #include "dl_const_inc"
 #include "dl_types_inc"
 
+// Legacy compatibility include.
+// New runtime entry scripts should prefer the compile-safe aggregation path via dl_all_inc.
+
 int DL_GetDaysInMonth(int nYear, int nMonth)
 {
-    // NWN2 calendar in this project uses fixed 28-day months (no leap-year variation).
-    if (nYear < 0 || nMonth < 1 || nMonth > 12)
-    {
-        return 28;
-    }
+    // Project calendar uses fixed 28-day months.
     return 28;
 }
 
@@ -20,23 +19,29 @@ int DL_GetAbsoluteDayNumber()
     int nMonth = GetCalendarMonth();
     int nDay = GetCalendarDay();
 
-    // Continuous absolute day index based on actual game calendar month length (fixed 28 days).
-    int nAbsoluteDay = 0;
-    int nPrevYear = 0;
-    int nPrevMonth = 0;
-
-    for (nPrevYear = 0; nPrevYear < nYear; nPrevYear++)
+    if (nYear < 0)
     {
-        nAbsoluteDay += 12 * DL_GetDaysInMonth(nPrevYear, 1);
+        nYear = 0;
+    }
+    if (nMonth < 1)
+    {
+        nMonth = 1;
+    }
+    if (nMonth > 12)
+    {
+        nMonth = 12;
+    }
+    if (nDay < 0)
+    {
+        nDay = 0;
+    }
+    if (nDay > 28)
+    {
+        nDay = 28;
     }
 
-    for (nPrevMonth = 1; nPrevMonth < nMonth; nPrevMonth++)
-    {
-        nAbsoluteDay += DL_GetDaysInMonth(nYear, nPrevMonth);
-    }
-
-    nAbsoluteDay += nDay;
-    return nAbsoluteDay;
+    // Constant-time conversion for fixed 28-day months.
+    return (nYear * 336) + ((nMonth - 1) * 28) + nDay;
 }
 
 int DL_DetermineDayType(object oArea)
@@ -47,7 +52,6 @@ int DL_DetermineDayType(object oArea)
         return nOverride;
     }
 
-    // Rest day is computed from a continuous absolute day cycle to avoid month/day reset regressions.
     int nAbsoluteDay = DL_GetAbsoluteDayNumber();
     if ((nAbsoluteDay % 7) == 0)
     {
@@ -68,14 +72,10 @@ int DL_GetCurrentMinuteOfDay()
 
 int DL_DetermineScheduleWindow(int nTemplate, int nDayType, int nMinuteOfDay, int nOffset)
 {
-    int nMinute = nMinuteOfDay + nOffset;
-    while (nMinute < 0)
+    int nMinute = (nMinuteOfDay + nOffset) % 1440;
+    if (nMinute < 0)
     {
         nMinute += 1440;
-    }
-    while (nMinute >= 1440)
-    {
-        nMinute -= 1440;
     }
 
     if (nTemplate == DL_SCH_EARLY_WORKER)
