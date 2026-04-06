@@ -1356,6 +1356,14 @@ void DL_ApplyLocalWalk(object oNPC, object oPoint)
     AssignCommand(oNPC, ActionMoveToObject(oPoint, TRUE));
 }
 
+void DL_ApplyResolvedInteractionState(object oNPC, int nDirective, int nAnchorGroup, int nDialogueMode, int nServiceMode)
+{
+    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
+    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
+    DL_SetDialogueMode(oNPC, nDialogueMode);
+    DL_SetServiceMode(oNPC, nServiceMode);
+}
+
 void DL_ApplyPlotModeByDirective(object oNPC, int nDirective)
 {
     int bShouldBePlot = (nDirective != DL_DIR_ABSENT);
@@ -1477,24 +1485,20 @@ void DL_MaterializeNpc(object oNPC, object oArea)
     int nDirective;
     int nOverride;
     int nAnchorGroup;
+    int nDialogueMode;
+    int nServiceMode;
     object oPoint;
     object oPolicyFilteredAnchor;
     if (DL_HandleBaseLost(oNPC, oArea)) return;
     nDirective = DL_ResolveDirective(oNPC, oArea);
     nOverride = DL_GetTopOverride(oNPC, oArea);
     nAnchorGroup = DL_ResolveAnchorGroup(oNPC, nDirective);
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
+    nDialogueMode = DL_ResolveDialogueMode(oNPC, nDirective, nOverride);
+    nServiceMode = DL_ResolveServiceMode(oNPC, nDirective, nOverride);
+    DL_ApplyResolvedInteractionState(oNPC, nDirective, nAnchorGroup, nDialogueMode, nServiceMode);
     DL_ApplyPlotModeByDirective(oNPC, nDirective);
     if (!DL_IsDirectiveVisible(nDirective) || DL_ShouldSuppressMaterialization(oNPC, nOverride))
     {
-        DL_HideOrMarkAbsent(oNPC, nDirective);
-        if (nDirective == DL_DIR_ABSENT || nDirective == DL_DIR_UNASSIGNED)
-        {
-            DL_SetInteractionStateExplicit(oNPC, nDirective, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
-            return;
-        }
-        DL_RefreshInteractionState(oNPC, oArea);
         return;
     }
     oPoint = DL_FindAnchorPoint(oNPC, oArea, nAnchorGroup);
@@ -1509,15 +1513,14 @@ void DL_MaterializeNpc(object oNPC, object oArea)
         {
             DL_LogNpc(oNPC, DL_DEBUG_BASIC, "anchor not found, marking absent");
         }
-        DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
-        DL_SetInteractionStateExplicit(oNPC, DL_DIR_ABSENT, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+        DL_ApplyResolvedInteractionState(oNPC, DL_DIR_ABSENT, DL_AG_NONE, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+        DL_ApplyPlotModeByDirective(oNPC, DL_DIR_ABSENT);
         return;
     }
     if (GetArea(oNPC) != GetArea(oPoint)) DL_LogNpc(oNPC, DL_DEBUG_BASIC, "cross-area jump to anchor: " + GetTag(oPoint));
     if (DL_ShouldInstantPlace(oNPC, oArea, oPoint)) DL_ApplyInstantPlacement(oNPC, oPoint);
     else DL_ApplyLocalWalk(oNPC, oPoint);
     DL_ApplyActivity(oNPC, DL_ResolveActivityKind(oNPC, nDirective, nAnchorGroup));
-    DL_RefreshInteractionState(oNPC, oArea);
 }
 
 int DL_ShouldResync(object oNPC, int nReason)
@@ -1550,14 +1553,18 @@ int DL_SelectStrongerResyncReason(int nCurrentReason, int nRequestedReason)
     return nCurrentReason;
 }
 
-void DL_RequestResync(object oNPC, int nReason)
+void DL_RequestResyncKnownNpc(object oNPC, int nReason)
 {
-    int nCurrentReason;
-    if (!DL_IsDailyLifeNpc(oNPC)) return;
+    int nCurrentReason = DL_NormalizeResyncReason(GetLocalInt(oNPC, DL_L_RESYNC_REASON));
     nReason = DL_NormalizeResyncReason(nReason);
-    nCurrentReason = DL_NormalizeResyncReason(GetLocalInt(oNPC, DL_L_RESYNC_REASON));
     SetLocalInt(oNPC, DL_L_RESYNC_PENDING, TRUE);
     SetLocalInt(oNPC, DL_L_RESYNC_REASON, DL_SelectStrongerResyncReason(nCurrentReason, nReason));
+}
+
+void DL_RequestResync(object oNPC, int nReason)
+{
+    if (!DL_IsDailyLifeNpc(oNPC)) return;
+    DL_RequestResyncKnownNpc(oNPC, nReason);
 }
 
 void DL_RequestAreaResync(object oArea, int nReason)
@@ -1565,7 +1572,7 @@ void DL_RequestAreaResync(object oArea, int nReason)
     object oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
-        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject)) DL_RequestResync(oObject, nReason);
+        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject) && DL_IsDailyLifeNpc(oObject)) DL_RequestResyncKnownNpc(oObject, nReason);
         oObject = GetNextObjectInArea(oArea);
     }
 }
@@ -1592,13 +1599,37 @@ void DL_RunResync(object oNPC, object oArea, int nReason)
 void DL_RunForcedResync(object oNPC, object oArea, int nReason)
 {
     if (!DL_IsDailyLifeNpc(oNPC)) return;
-    DL_RequestResync(oNPC, nReason);
+    DL_RequestResyncKnownNpc(oNPC, nReason);
     DL_RunResync(oNPC, oArea, nReason);
 }
 
 const string DL_L_WORKER_CURSOR = "dl_worker_cursor";
 const string DL_L_WORKER_CANDIDATE_IDX = "dl_worker_candidate_idx";
 const string DL_L_WORKER_IS_CANDIDATE = "dl_worker_is_candidate";
+
+int DL_IsWorkerCreatureObject(object oObject)
+{
+    return GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject);
+}
+
+void DL_ClearWorkerCandidateMarker(object oNPC)
+{
+    DeleteLocalInt(oNPC, DL_L_WORKER_CANDIDATE_IDX);
+    DeleteLocalInt(oNPC, DL_L_WORKER_IS_CANDIDATE);
+}
+
+void DL_ClearAreaWorkerMarkers(object oArea)
+{
+    object oObject = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oObject))
+    {
+        if (DL_IsWorkerCreatureObject(oObject))
+        {
+            DL_ClearWorkerCandidateMarker(oObject);
+        }
+        oObject = GetNextObjectInArea(oArea);
+    }
+}
 
 string DL_DescribeResyncReason(int nReason)
 {
@@ -1667,31 +1698,58 @@ void DL_LogSmokeSnapshot(object oNPC, object oArea, int nReason)
     int nDialogue = GetLocalInt(oNPC, DL_L_DIALOGUE_MODE);
     int nService = GetLocalInt(oNPC, DL_L_SERVICE_MODE);
     int nOverride = DL_GetTopOverride(oNPC, oArea);
-    if (sLastBaseLostSlot == "" && sFunctionSlotId != "") sLastBaseLostSlot = sFunctionSlotId;
-    if (nLastBaseLostKind == DL_DIR_NONE && sLastBaseLostSlot != "") nLastBaseLostKind = DL_GetBaseLostKindForSlot(sLastBaseLostSlot);
+    int nFamily = DL_GetNpcFamily(oNPC);
+    int nSubtype = DL_GetNpcSubtype(oNPC);
+    if (sLastBaseLostSlot == "" && sFunctionSlotId != "")
+    {
+        sLastBaseLostSlot = sFunctionSlotId;
+    }
+    if (nLastBaseLostKind == DL_DIR_NONE && sLastBaseLostSlot != "")
+    {
+        nLastBaseLostKind = DL_GetBaseLostKindForSlot(sLastBaseLostSlot);
+    }
     if (sLastBaseLostSlot != "")
     {
         object oSlotNpc = DL_GetBaseLostNpcForSlot(sLastBaseLostSlot);
-        if (GetIsObjectValid(oSlotNpc)) oLastBaseLostNpc = oSlotNpc;
+        if (GetIsObjectValid(oSlotNpc))
+        {
+            oLastBaseLostNpc = oSlotNpc;
+        }
     }
     if (nLastBaseLostKind == DL_DIR_NONE)
     {
         nLastBaseLostKind = GetLocalInt(oModule, DL_L_LAST_BASE_LOST_KIND);
-        if (sLastBaseLostSlot == "") sLastBaseLostSlot = GetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT);
-        if (!GetIsObjectValid(oLastBaseLostNpc)) oLastBaseLostNpc = GetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC);
+        if (sLastBaseLostSlot == "")
+        {
+            sLastBaseLostSlot = GetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT);
+        }
+        if (!GetIsObjectValid(oLastBaseLostNpc))
+        {
+            oLastBaseLostNpc = GetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC);
+        }
     }
-    sMessage = "smoke snapshot"
+
+    sMessage =
+        "smoke snapshot"
         + " reason=" + IntToString(nReason) + "(" + DL_DescribeResyncReason(nReason) + ")"
-        + " family=" + IntToString(DL_GetNpcFamily(oNPC))
-        + " subtype=" + IntToString(DL_GetNpcSubtype(oNPC))
+        + " family=" + IntToString(nFamily)
+        + " subtype=" + IntToString(nSubtype)
         + " directive=" + IntToString(nDirective) + "(" + DL_DescribeDirective(nDirective) + ")"
         + " dialogue=" + IntToString(nDialogue) + "(" + DL_DescribeDialogueMode(nDialogue) + ")"
         + " service=" + IntToString(nService) + "(" + DL_DescribeServiceMode(nService) + ")"
         + " override=" + IntToString(nOverride) + "(" + DL_DescribeOverride(nOverride) + ")"
         + " base_lost_kind=" + IntToString(nLastBaseLostKind) + "(" + DL_DescribeDirective(nLastBaseLostKind) + ")"
         + " base_lost_slot=" + sLastBaseLostSlot;
-    if (GetIsObjectValid(oLastBaseLostNpc) && oLastBaseLostNpc == oNPC) sMessage = sMessage + " base_lost_npc=SELF";
-    else if (!GetIsObjectValid(oLastBaseLostNpc)) sMessage = sMessage + " base_lost_npc=UNKNOWN";
+
+    if (GetIsObjectValid(oLastBaseLostNpc) && oLastBaseLostNpc == oNPC)
+    {
+        sMessage = sMessage + " base_lost_npc=SELF";
+    }
+    else if (!GetIsObjectValid(oLastBaseLostNpc))
+    {
+        sMessage = sMessage + " base_lost_npc=UNKNOWN";
+    }
+
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, sMessage);
 }
 
@@ -1702,29 +1760,50 @@ int DL_GetWorkerBudget(object oArea)
 
 int DL_ShouldProcessNpcInWorker(object oNPC)
 {
-    if (!DL_IsDailyLifeNpc(oNPC)) return FALSE;
-    if (GetLocalInt(oNPC, DL_L_RESYNC_PENDING) == TRUE) return TRUE;
+    if (!DL_IsDailyLifeNpc(oNPC))
+    {
+        return FALSE;
+    }
+    if (GetLocalInt(oNPC, DL_L_RESYNC_PENDING) == TRUE)
+    {
+        return TRUE;
+    }
     return DL_IsPersistent(oNPC) || DL_IsNamed(oNPC);
 }
 
 void DL_ProcessNpcBudgeted(object oArea, object oNPC)
 {
     int nReason = GetLocalInt(oNPC, DL_L_RESYNC_REASON);
-    if (nReason == DL_RESYNC_NONE) nReason = DL_RESYNC_WORKER;
+    if (nReason == DL_RESYNC_NONE)
+    {
+        nReason = DL_RESYNC_WORKER;
+    }
     DL_RunResync(oNPC, oArea, nReason);
-    if (GetLocalInt(GetModule(), DL_L_SMOKE_TRACE) == TRUE) DL_LogSmokeSnapshot(oNPC, oArea, nReason);
+    if (GetLocalInt(GetModule(), DL_L_SMOKE_TRACE) == TRUE)
+    {
+        DL_LogSmokeSnapshot(oNPC, oArea, nReason);
+    }
 }
 
 void DL_DispatchDueJobs(object oArea, int nBudget)
 {
-    object oObject = GetFirstObjectInArea(oArea);
+    object oObject;
     int nCandidateCount = 0;
     int nCursor = 0;
     int nPlanned = 0;
     int nProcessed = 0;
+
+    if (nBudget <= 0)
+    {
+        DL_ClearAreaWorkerMarkers(oArea);
+        SetLocalInt(oArea, DL_L_WORKER_CURSOR, 0);
+        return;
+    }
+
+    oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
-        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
+        if (DL_IsWorkerCreatureObject(oObject))
         {
             if (DL_ShouldProcessNpcInWorker(oObject))
             {
@@ -1734,36 +1813,36 @@ void DL_DispatchDueJobs(object oArea, int nBudget)
             }
             else
             {
-                DeleteLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
-                DeleteLocalInt(oObject, DL_L_WORKER_IS_CANDIDATE);
+                DL_ClearWorkerCandidateMarker(oObject);
             }
         }
         oObject = GetNextObjectInArea(oArea);
     }
-    if (nCandidateCount <= 0 || nBudget <= 0)
+
+    if (nCandidateCount <= 0)
     {
-        oObject = GetFirstObjectInArea(oArea);
-        while (GetIsObjectValid(oObject))
-        {
-            if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
-            {
-                DeleteLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
-                DeleteLocalInt(oObject, DL_L_WORKER_IS_CANDIDATE);
-            }
-            oObject = GetNextObjectInArea(oArea);
-        }
         SetLocalInt(oArea, DL_L_WORKER_CURSOR, 0);
         return;
     }
+
     nCursor = GetLocalInt(oArea, DL_L_WORKER_CURSOR) % nCandidateCount;
-    if (nCursor < 0) nCursor += nCandidateCount;
+    if (nCursor < 0)
+    {
+        nCursor += nCandidateCount;
+    }
+
     nPlanned = nBudget;
-    if (nPlanned > nCandidateCount) nPlanned = nCandidateCount;
+    if (nPlanned > nCandidateCount)
+    {
+        nPlanned = nCandidateCount;
+    }
+
     DL_Log(DL_DEBUG_VERBOSE, "worker fairness area=" + GetTag(oArea) + " cursor=" + IntToString(nCursor) + " candidates=" + IntToString(nCandidateCount) + " budget=" + IntToString(nBudget));
+
     oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
-        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
+        if (DL_IsWorkerCreatureObject(oObject))
         {
             if (GetLocalInt(oObject, DL_L_WORKER_IS_CANDIDATE) == TRUE)
             {
@@ -1771,7 +1850,10 @@ void DL_DispatchDueJobs(object oArea, int nBudget)
                 if (nProcessed < nPlanned)
                 {
                     int nDistance = (nCandidateIndex - nCursor) % nCandidateCount;
-                    if (nDistance < 0) nDistance += nCandidateCount;
+                    if (nDistance < 0)
+                    {
+                        nDistance += nCandidateCount;
+                    }
                     if (nDistance < nPlanned)
                     {
                         DL_ProcessNpcBudgeted(oArea, oObject);
@@ -1779,11 +1861,11 @@ void DL_DispatchDueJobs(object oArea, int nBudget)
                     }
                 }
             }
-            DeleteLocalInt(oObject, DL_L_WORKER_CANDIDATE_IDX);
-            DeleteLocalInt(oObject, DL_L_WORKER_IS_CANDIDATE);
+            DL_ClearWorkerCandidateMarker(oObject);
         }
         oObject = GetNextObjectInArea(oArea);
     }
+
     SetLocalInt(oArea, DL_L_WORKER_CURSOR, (nCursor + nProcessed) % nCandidateCount);
 }
 
