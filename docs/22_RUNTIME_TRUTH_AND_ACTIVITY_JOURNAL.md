@@ -13,6 +13,9 @@
 ## 1) Runtime Truth (факт по коду)
 
 ### 1.1 Контур исполнения
+- NPC `OnSpawn` может завести NPC в bounded runtime-контур через `dl_npc_onspawn`.
+- NPC `OnUserDefined` является центральным thin dispatcher для внутренних Daily Life hook-events (`dl_npc_onud`).
+- NPC `OnDeath` выполняет cleanup/deregister path через `dl_npc_ondeath`.
 - Area `OnHeartbeat` вызывает `dl_area_tick` -> `DL_AreaWorkerTick`.
 - Worker обрабатывает NPC только если зона проходит `DL_ShouldRunDailyLife`.
 - В текущем коде `DL_ShouldRunDailyLife` возвращает `TRUE` для `HOT` и `WARM`, `FALSE` для `FROZEN` (через `DL_ShouldRunDailyLifeTier`).
@@ -25,8 +28,9 @@
 - Практический эффект в текущей реализации: `WARM` даёт ограниченный рабочий цикл, `FROZEN` отключает dispatch.
 
 ### 1.3 Какие NPC реально попадают в обработку
-- NPC должен быть Daily Life NPC (`dl_npc_family` из first playable slice).
+- NPC должен быть Daily Life NPC (`dl_npc_family` из first playable slice) **или** пройти bootstrap через NPC hook layer (например, через staged slot profile / `dl_function_slot_id`).
 - Для гарантированной обработки в worker: `dl_named=TRUE` или `dl_persistent=TRUE` (либо pending-resync флаг).
+- Noisy producer hooks (`OnPerception`, `OnPhysicalAttacked`, `OnDamaged`, `OnSpellCastAt`, `OnDisturbed`) не должны выполнять тяжёлую логику напрямую: их текущая роль — поставить lightweight event/dirty signal в `OnUserDefined` path.
 
 ### 1.4 Что считается «мозгами» в v1
 - Rule-driven resolver: `schedule/day/override` -> `directive`.
@@ -37,6 +41,7 @@
 - Реализован каркас Milestone A (A–E).
 - Не закрыт финальный owner verdict Milestone A (нужны подтверждённые smoke run A–G).
 - Post-Milestone A интеграции (полная population/respawn/legal/trade) не заявлены как готовые.
+- Полная compile-safe синхронизация исходного дерева `scripts/daily_life/` ещё продолжается.
 
 ---
 
@@ -51,6 +56,7 @@
 | 2026-03-31 | Синхронизация Runtime Truth с кодом после warm-tier/gate обновлений | Убрать расхождения между журналом и текущим поведением worker gate | Обновлены разделы `1.1` и `1.2`: зафиксировано `HOT/WARM=run`, `FROZEN=stop`; отмечен tier helper `DL_ShouldRunDailyLifeTier` | done |
 | 2026-04-02 | Фикс edge-case `OnExit` для последнего игрока | Убрать ложный переход в `WARM`, если в area не остаётся игроков | В `dl_area_exit` проверка заменена на `DL_HasAnyPlayersExcept(oArea, oExiting)`; в `dl_util_inc` добавлен helper `DL_HasAnyPlayersExcept` | done |
 | 2026-04-05 | Синхронизация `OnExit` tier-перехода с runtime lifecycle | Убрать рассинхрон: при remaining players зона должна уходить в `WARM`, при пустой зоне — в `FROZEN` | В `dl_area_exit` ветка `DL_HasAnyPlayersExcept(oArea, oExiting)` переводит зону в `DL_OnAreaBecameWarm`; fallback без игроков оставлен на `DL_OnAreaBecameFrozen` | done |
+| 2026-04-06 | Восстановление NPC lifecycle/event hook layer | Вернуть явные NPC entrypoints и producer bridges без тяжёлой логики в noisy hooks | Добавлены `dl_npc_onspawn`, `dl_npc_onud`, `dl_npc_ondeath`, producer-bridges (`onperception`, `onphysicalattacked`, `ondamaged`, `onspellcastat`, `ondisturbed`) и bootstrap path через slot handoff | done |
 
 ---
 

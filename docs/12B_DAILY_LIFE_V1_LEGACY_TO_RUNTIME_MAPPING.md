@@ -1,13 +1,13 @@
 # Daily Life v1 — Legacy (`al_*`) to Runtime (`dl_*`) Mapping
 
-Дата: 2026-04-03  
+Дата: 2026-04-06  
 Статус: active  
 Назначение: единая таблица соответствий для чтения старых design/аудит документов, где встречаются `scripts/ambient_life/al_*`.
 
 ## 1) Правило чтения старых документов
 
 - Если в старом документе указан `scripts/ambient_life/al_*.nss`, ориентироваться на таблицу ниже.
-- Простое переименование `al_ -> dl_` **не является универсальным правилом**: часть legacy-файлов объединена или удалена.
+- Простое переименование `al_ -> dl_` **не является универсальным правилом**: часть legacy-файлов объединена, часть возвращена как отдельные thin entrypoints в рамках event-driven NPC hook layer.
 - При споре приоритет у фактического runtime-каталога `scripts/daily_life/*.nss` и актуальных SoT-доков (`12B`, `07`, `22`).
 
 ## 2) Mapping-таблица
@@ -41,14 +41,14 @@
 | `al_health_inc.nss` | `dl_log_inc.nss` | merged | Diagnostics/health унифицированы |
 | `al_action_signal_ud.nss` | `dl_interact_inc.nss` | merged | Сигналы взаимодействия объединены |
 | `al_action_set_mode.nss` | `dl_override_inc.nss` | merged | Set-mode переведён в override |
-| `al_npc_onspawn.nss` | `dl_on_load.nss` | dropped | Отдельный NPC hook снят в пользу централизованной инициализации |
-| `al_npc_onud.nss` | `dl_interact_inc.nss` | merged | UD/hook логика в interact |
+| `al_npc_onspawn.nss` | `dl_npc_onspawn.nss` | implemented | Возвращён как thin lifecycle/bootstrap hook |
+| `al_npc_onud.nss` | `dl_npc_onud.nss` | implemented | Центральный NPC event dispatcher |
 | `al_npc_onblocked.nss` | `dl_resolver_inc.nss` | merged | Blocked hook объединён |
-| `al_npc_ondisturbed.nss` | `dl_interact_inc.nss` | merged | Disturbed hook объединён |
-| `al_npc_ondamaged.nss` | `dl_interact_inc.nss` | merged | Hook объединён |
-| `al_npc_onphysicalattacked.nss` | `dl_interact_inc.nss` | merged | Hook объединён |
-| `al_npc_onspellcastat.nss` | `dl_interact_inc.nss` | merged | Hook объединён |
-| `al_npc_ondeath.nss` | `dl_worker_inc.nss` | merged | Death handling централизован |
+| `al_npc_ondisturbed.nss` | `dl_npc_ondisturbed.nss` | implemented | Lightweight producer bridge |
+| `al_npc_ondamaged.nss` | `dl_npc_ondamaged.nss` | implemented | Lightweight producer bridge |
+| `al_npc_onphysicalattacked.nss` | `dl_npc_onphysicalattacked.nss` | implemented | Lightweight producer bridge |
+| `al_npc_onspellcastat.nss` | `dl_npc_onspellcastat.nss` | implemented | Lightweight producer bridge |
+| `al_npc_ondeath.nss` | `dl_npc_ondeath.nss` | implemented | Thin cleanup/deregister hook |
 | `al_mod_onleave.nss` | `dl_on_load.nss` | dropped | Отдельный модульный hook снят |
 | `al_debug_inc.nss` | `dl_log_inc.nss` | merged | Logging/diag слой объединён |
 | `al_react_apply_step.nss` | `—` | dropped | Отдельный шаг больше не выделяется как файл |
@@ -56,5 +56,6 @@
 
 ## 3) Последняя валидация
 
-- Последняя проверка каталога runtime: **2026-04-03**.
-- Базовый runtime-контур: `scripts/daily_life/` (21 `.nss` файлов).
+- Последняя проверка каталога runtime: **2026-04-06**.
+- Базовый runtime-контур: `scripts/daily_life/`.
+- Обязательный NPC-side lifecycle/event слой для текущего runtime: `dl_npc_onspawn`, `dl_npc_onud`, `dl_npc_ondeath`.

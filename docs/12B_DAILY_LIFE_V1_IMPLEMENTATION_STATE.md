@@ -1,6 +1,6 @@
 # Ambient Life v2 — Daily Life v1: Implementation State (Snapshot)
 
-Дата: 2026-03-28  
+Дата: 2026-04-06  
 Статус: operational implementation snapshot  
 Назначение: единый технический обзор **что уже реализовано в коде**, **что не реализовано**, и **как текущая runtime-система работает** для Milestone A.
 
@@ -8,7 +8,7 @@
 
 ## 1) Короткий итог (для владельца проекта)
 
-- **Сделано:** каркас Milestone A (Steps A–E) реализован в `scripts/daily_life/`: есть контракты, resolver, materialization, area worker/tier lifecycle, base-lost/slot-handoff stub.
+- **Сделано:** каркас Milestone A (Steps A–E) реализован в `scripts/daily_life/`: есть контракты, resolver, materialization, area worker/tier lifecycle, base-lost/slot-handoff stub, NPC lifecycle/event hooks.
 - **Не сделано:** Milestone A acceptance не закрыт фактами прогонов A–G на owner/toolset среде.
 - **Граница текущего состояния:** система уже может вести NPC в `HOT`-зонах по расписанию и override-правилам, но это ещё не финальный production verdict.
 
@@ -60,8 +60,9 @@
 Реализовано:
 - area tier (`HOT/WARM/FROZEN`);
 - bounded worker budget;
-- resync path (`area enter`, `worker`, `override end`, и др.);
-- area tick hook для запуска worker.
+- resync path (`area enter`, `worker`, `override end`, NPC lifecycle/event hooks и др.);
+- area tick hook для запуска worker;
+- thin NPC lifecycle/event layer (`OnSpawn`, `OnUserDefined`, `OnDeath`) и lightweight producer bridges для noisy hooks.
 
 Ключевые файлы:
 - `scripts/daily_life/dl_area_inc.nss`
@@ -70,6 +71,15 @@
 - `scripts/daily_life/dl_area_tick.nss`
 - `scripts/daily_life/dl_area_enter.nss`
 - `scripts/daily_life/dl_on_load.nss`
+- `scripts/daily_life/dl_npc_hooks_inc.nss`
+- `scripts/daily_life/dl_npc_onspawn.nss`
+- `scripts/daily_life/dl_npc_onud.nss`
+- `scripts/daily_life/dl_npc_ondeath.nss`
+- `scripts/daily_life/dl_npc_onperception.nss`
+- `scripts/daily_life/dl_npc_onphysicalattacked.nss`
+- `scripts/daily_life/dl_npc_ondamaged.nss`
+- `scripts/daily_life/dl_npc_onspellcastat.nss`
+- `scripts/daily_life/dl_npc_ondisturbed.nss`
 
 ## 2.5 Step E — Stub handoff
 
@@ -87,6 +97,7 @@
 
 ## 3) Как текущая система работает (runtime-поток)
 
+0. **NPC lifecycle/event hooks** могут ввести NPC в bounded runtime-контур: `OnSpawn` и `OnUserDefined` подают resync-запрос, `OnDeath` делает cleanup, noisy producer hooks только сигналят в `OnUserDefined`.
 1. **Area lifecycle** задаёт tier зоны (`HOT/WARM/FROZEN`).
 2. На `OnHeartbeat` area вызывается `dl_area_tick`, который запускает `DL_AreaWorkerTick`.
 3. Worker в `HOT`-зоне выбирает ограниченное число NPC по budget.
@@ -103,6 +114,7 @@
 - Сквозной путь для first playable slice (`LAW`, `CRAFT`, `TRADE_SERVICE`) в рамках текущего runtime-каркаса.
 - Реакция на `QUARANTINE/FIRE` в resolver/materialization слое.
 - Базовый контроль area-tier и budget-bound обработки.
+- NPC-side lifecycle/event hooks без heavy runtime-логики в noisy producer slots.
 - Stub-safe обработка base-lost без автогенерации полноценной population системы.
 
 ---
@@ -112,6 +124,7 @@
 1. **Нет фактически подтверждённого run, где A–G = PASS** в acceptance journal.
 2. **Нет финального owner-run** на реальном ПК, который закрывает final gate.
 3. Часть зон остаётся специально **stub-level** (handoff/base-lost), и это надо подтверждать фактическими smoke-прогонами, а не только inspection.
+4. Compile-safe выравнивание исходного runtime-дерева ещё не завершено: source tree нужно довести до реальной совместимости с используемым компилятором.
 
 ---
 
@@ -125,7 +138,8 @@
 Риски расхождения, которые нужно проверять owner-run’ом:
 - фактическая постановка NPC по anchor в реальных toolset area-data;
 - ожидаемые различия A/B/D по временным окнам в конкретной тестовой сборке;
-- стабильность F/G сценариев при реальных нагрузках и сердцебиениях area.
+- стабильность F/G сценариев при реальных нагрузках и сердцебиениях area;
+- compile/runtime согласованность source tree после полной миграции NPC hook layer.
 
 ---
 
@@ -134,7 +148,8 @@
 1. Прогнать scripted/manual smoke A–G в toolset по runbook.
 2. Заполнить acceptance journal фактическими статусами (`PASS/PARTIAL/FAIL`) и расхождениями.
 3. Закрыть найденные точечные расхождения в коде (без расширения scope).
-4. Сделать owner-run и зафиксировать окончательный verdict Milestone A.
+4. Завершить compile-safe выравнивание исходного дерева `scripts/daily_life/`.
+5. Сделать owner-run и зафиксировать окончательный verdict Milestone A.
 
 ---
 

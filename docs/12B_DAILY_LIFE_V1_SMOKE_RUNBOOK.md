@@ -1,6 +1,6 @@
 # Ambient Life v2 — Daily Life v1 Milestone A Smoke Runbook
 
-Дата: 2026-03-26  
+Дата: 2026-04-06  
 Статус: active scripted smoke runbook  
 Назначение: минимальный, воспроизводимый scripted/manual путь проверки сценариев `A–G` из Milestone A checklist.
 
@@ -30,17 +30,27 @@ Runbook не доказывает окончательный production-grade ve
    - `dl_npc_subtype`;
    - `dl_schedule_template`;
    - `dl_npc_base` (кроме негативного кейса base-lost).
-3. Для сценариев с handoff назначить `dl_function_slot_id`.
-4. Для area-tier тестов подготовить 3 зоны:
+3. На тестовых NPC назначить обязательные lifecycle/event hooks:
+   - `OnSpawn -> scripts/daily_life/dl_npc_onspawn`;
+   - `OnUserDefined -> scripts/daily_life/dl_npc_onud`;
+   - `OnDeath -> scripts/daily_life/dl_npc_ondeath`.
+4. Для шумных producer hooks использовать только lightweight bridges:
+   - `OnPerception -> scripts/daily_life/dl_npc_onperception`;
+   - `OnPhysicalAttacked -> scripts/daily_life/dl_npc_onphysicalattacked`;
+   - `OnDamaged -> scripts/daily_life/dl_npc_ondamaged`;
+   - `OnSpellCastAt -> scripts/daily_life/dl_npc_onspellcastat`;
+   - `OnDisturbed -> scripts/daily_life/dl_npc_ondisturbed`.
+   Эти слоты не должны содержать тяжёлую логику; они используются как producer bridges в `OnUserDefined`.
+5. Для сценариев с handoff назначить `dl_function_slot_id`.
+6. Для area-tier тестов подготовить 3 зоны:
    - `HOT` (`dl_area_tier = 2`),
    - `WARM` (`dl_area_tier = 1`),
    - `FROZEN` (`dl_area_tier = 0`).
-5. Для Step E использовать отдельный script-hook:
+7. Для Step E использовать отдельный script-hook:
    - `scripts/daily_life/dl_smoke_step_e.nss`.
-6. Для быстрого scripted среза A–G можно запускать `scripts/daily_life/dl_smoke_milestone_a.nss`.
+8. Для быстрого scripted среза A–G можно запускать `scripts/daily_life/dl_smoke_milestone_a.nss`.
    - Скрипт не подменяет полноценный owner-smoke, но даёт единый машинный summary по сценариям `A–G` (`PASS/FAIL/NOT_FOUND`).
    - После завершения пишет агрегированную строку `MilestoneA smoke overall ...` и per-scenario counters `checked/passed`, чтобы сразу видеть полноту runtime-контура в одном прогоне.
-
 
 ---
 
@@ -55,6 +65,18 @@ Runbook не доказывает окончательный production-grade ve
 - На `OnHeartbeat` зоны поставить `scripts/daily_life/dl_area_tick`.
 
 ### Шаг 2 — Поставить минимум 4 тестовых NPC
+
+Для каждого тестового NPC обязательно назначить:
+- `OnSpawn -> scripts/daily_life/dl_npc_onspawn`;
+- `OnUserDefined -> scripts/daily_life/dl_npc_onud`;
+- `OnDeath -> scripts/daily_life/dl_npc_ondeath`.
+
+Опционально, если тестируется реактивная поверхность NPC:
+- `OnPerception -> scripts/daily_life/dl_npc_onperception`;
+- `OnPhysicalAttacked -> scripts/daily_life/dl_npc_onphysicalattacked`;
+- `OnDamaged -> scripts/daily_life/dl_npc_ondamaged`;
+- `OnSpellCastAt -> scripts/daily_life/dl_npc_onspellcastat`;
+- `OnDisturbed -> scripts/daily_life/dl_npc_ondisturbed`.
 
 1. **NPC_A_BLACKSMITH**
    - `dl_npc_family = 2` (`CRAFT`)
@@ -90,7 +112,7 @@ Runbook не доказывает окончательный production-grade ve
 - В логе есть строки `MilestoneA smoke A..G status=...`.
 - В логе есть `smoke snapshot ...` с `directive/dialogue/service`.
 - Для Step E есть `checked/absent/unassigned/last_kind/last_slot`.
-
+- При использовании producer hooks отсутствуют бесконечные повторные вызовы; noisy hooks работают как debounce-bridges, а не как heavy runtime-loop.
 
 ## 3) Единый формат фиксации smoke snapshot
 
