@@ -6,6 +6,9 @@
 #include "dl_schedule_inc"
 #include "dl_override_inc"
 
+// Legacy compatibility include.
+// New runtime entry scripts should prefer the compile-safe aggregation path via dl_all_inc.
+
 int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayType)
 {
     int nFamily = DL_GetNpcFamily(oNPC);
@@ -81,9 +84,12 @@ int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayTy
 
 int DL_ApplyOverrideToDirective(object oNPC, int nDirective, int nOverrideKind)
 {
+    int nFamily = DL_GetNpcFamily(oNPC);
+    int nSubtype = DL_GetNpcSubtype(oNPC);
+
     if (nOverrideKind == DL_OVR_FIRE)
     {
-        if (DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW)
+        if (nFamily == DL_FAMILY_LAW)
         {
             return DL_DIR_HOLD_POST;
         }
@@ -92,9 +98,9 @@ int DL_ApplyOverrideToDirective(object oNPC, int nDirective, int nOverrideKind)
 
     if (nOverrideKind == DL_OVR_QUARANTINE)
     {
-        if (DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW)
+        if (nFamily == DL_FAMILY_LAW)
         {
-            if (DL_GetNpcSubtype(oNPC) == DL_SUBTYPE_GATE_POST)
+            if (nSubtype == DL_SUBTYPE_GATE_POST)
             {
                 return DL_DIR_HOLD_POST;
             }
@@ -132,9 +138,12 @@ int DL_ResolveDirective(object oNPC, object oArea)
     int nDayType = DL_DetermineDayType(oArea);
     int nMinute = DL_GetCurrentMinuteOfDay();
     int nOffset = DL_GetPersonalTimeOffset(oNPC);
-    int nWindow = DL_DetermineScheduleWindow(DL_GetScheduleTemplate(oNPC), nDayType, nMinute, nOffset);
+    int nTemplate = DL_GetScheduleTemplate(oNPC);
+    int nWindow = DL_DetermineScheduleWindow(nTemplate, nDayType, nMinute, nOffset);
     int nDirective = DL_ResolveDirectiveFromSchedule(oNPC, nWindow, nDayType);
-    nDirective = DL_ApplyOverrideToDirective(oNPC, nDirective, DL_GetTopOverride(oNPC, oArea));
+    int nOverrideKind = DL_GetTopOverride(oNPC, oArea);
+
+    nDirective = DL_ApplyOverrideToDirective(oNPC, nDirective, nOverrideKind);
 
     if (!DL_SupportsDirective(oNPC, nDirective))
     {
@@ -187,9 +196,12 @@ int DL_ResolveAnchorGroup(object oNPC, int nDirective)
 
 int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
 {
+    int nFamily = DL_GetNpcFamily(oNPC);
+    int nSubtype = DL_GetNpcSubtype(oNPC);
+
     if (nOverrideKind == DL_OVR_FIRE)
     {
-        if (DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW
+        if (nFamily == DL_FAMILY_LAW
             && (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST))
         {
             return DL_DLG_INSPECTION;
@@ -202,15 +214,9 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
     }
     if (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST)
     {
-        if (DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW)
-        {
-            if (DL_GetNpcSubtype(oNPC) == DL_SUBTYPE_INSPECTION || DL_GetNpcSubtype(oNPC) == DL_SUBTYPE_GATE_POST)
-            {
-                return DL_DLG_INSPECTION;
-            }
-            return DL_DLG_INSPECTION;
-        }
-        if (DL_GetNpcSubtype(oNPC) == DL_SUBTYPE_INSPECTION || DL_GetNpcSubtype(oNPC) == DL_SUBTYPE_GATE_POST)
+        if (nFamily == DL_FAMILY_LAW
+            || nSubtype == DL_SUBTYPE_INSPECTION
+            || nSubtype == DL_SUBTYPE_GATE_POST)
         {
             return DL_DLG_INSPECTION;
         }
@@ -224,11 +230,7 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
     {
         return DL_DLG_HIDE;
     }
-    if (nDirective == DL_DIR_UNASSIGNED)
-    {
-        return DL_DLG_UNAVAILABLE;
-    }
-    if (nDirective == DL_DIR_ABSENT)
+    if (nDirective == DL_DIR_UNASSIGNED || nDirective == DL_DIR_ABSENT)
     {
         return DL_DLG_UNAVAILABLE;
     }
@@ -243,11 +245,7 @@ int DL_ResolveServiceMode(object oNPC, int nDirective, int nOverrideKind)
     {
         return DL_SERVICE_DISABLED;
     }
-    if (nDirective == DL_DIR_UNASSIGNED)
-    {
-        return DL_SERVICE_NONE;
-    }
-    if (nDirective == DL_DIR_ABSENT)
+    if (nDirective == DL_DIR_UNASSIGNED || nDirective == DL_DIR_ABSENT)
     {
         return DL_SERVICE_NONE;
     }

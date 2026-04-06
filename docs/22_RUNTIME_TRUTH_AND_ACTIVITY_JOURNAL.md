@@ -37,6 +37,7 @@
 - Rule-driven resolver: `schedule/day/override` -> `directive`.
 - Затем вычисляются `anchor_group`, `dialogue_mode`, `service_mode`.
 - Materialization применяет это состояние (перемещение/скрытие/absent + interaction state).
+- Внутренняя санитарная чистка идёт по runtime-first принципу: сначала оптимизируются hot-path schedule/resolver helper-функции, потом менее частый legacy include-layer.
 
 ### 1.5 Граница текущей реализации
 - Реализован каркас Milestone A (A–E).
@@ -59,6 +60,7 @@
 | 2026-04-05 | Синхронизация `OnExit` tier-перехода с runtime lifecycle | Убрать рассинхрон: при remaining players зона должна уходить в `WARM`, при пустой зоне — в `FROZEN` | В `dl_area_exit` ветка `DL_HasAnyPlayersExcept(oArea, oExiting)` переводит зону в `DL_OnAreaBecameWarm`; fallback без игроков оставлен на `DL_OnAreaBecameFrozen` | done |
 | 2026-04-06 | Восстановление NPC lifecycle/event hook layer | Вернуть явные NPC entrypoints и producer bridges без тяжёлой логики в noisy hooks | Добавлены `dl_npc_onspawn`, `dl_npc_onud`, `dl_npc_ondeath`, producer-bridges (`onperception`, `onphysicalattacked`, `ondamaged`, `onspellcastat`, `ondisturbed`) и bootstrap path через slot handoff | done |
 | 2026-04-06 | Compile-safe runtime entry path | Убрать зависимость ключевых hook/smoke scripts от guarded include-графа | Добавлен `dl_all_inc`; на него переведены area hooks, dialogue/store hooks, NPC lifecycle hooks и smoke scripts | done |
+| 2026-04-06 | Внутренняя санитарная чистка include-layer | Начать поэтапную оптимизацию legacy guarded includes без смены runtime-контракта | Оптимизированы hot-path schedule helpers до constant-time math; упрощён `dl_resolver_inc` (меньше повторных family/subtype lookups и мёртвых веток) | done |
 
 ---
 
