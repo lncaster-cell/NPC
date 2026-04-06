@@ -6,6 +6,9 @@
 #include "dl_materialize_inc"
 #include "dl_interact_inc"
 
+// Legacy compatibility include.
+// New runtime entry scripts should prefer the compile-safe aggregation path via dl_all_inc.
+
 int DL_ShouldResync(object oNPC, int nReason)
 {
     if (!DL_IsDailyLifeNpc(oNPC))
@@ -66,20 +69,21 @@ int DL_SelectStrongerResyncReason(int nCurrentReason, int nRequestedReason)
     return nCurrentReason;
 }
 
+void DL_RequestResyncKnownNpc(object oNPC, int nReason)
+{
+    int nCurrentReason = DL_NormalizeResyncReason(GetLocalInt(oNPC, DL_L_RESYNC_REASON));
+    nReason = DL_NormalizeResyncReason(nReason);
+    SetLocalInt(oNPC, DL_L_RESYNC_PENDING, TRUE);
+    SetLocalInt(oNPC, DL_L_RESYNC_REASON, DL_SelectStrongerResyncReason(nCurrentReason, nReason));
+}
+
 void DL_RequestResync(object oNPC, int nReason)
 {
-    int nCurrentReason;
-
     if (!DL_IsDailyLifeNpc(oNPC))
     {
         return;
     }
-
-    nReason = DL_NormalizeResyncReason(nReason);
-    nCurrentReason = DL_NormalizeResyncReason(GetLocalInt(oNPC, DL_L_RESYNC_REASON));
-
-    SetLocalInt(oNPC, DL_L_RESYNC_PENDING, TRUE);
-    SetLocalInt(oNPC, DL_L_RESYNC_REASON, DL_SelectStrongerResyncReason(nCurrentReason, nReason));
+    DL_RequestResyncKnownNpc(oNPC, nReason);
 }
 
 void DL_RequestAreaResync(object oArea, int nReason)
@@ -88,9 +92,9 @@ void DL_RequestAreaResync(object oArea, int nReason)
 
     while (GetIsObjectValid(oObject))
     {
-        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject))
+        if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject) && DL_IsDailyLifeNpc(oObject))
         {
-            DL_RequestResync(oObject, nReason);
+            DL_RequestResyncKnownNpc(oObject, nReason);
         }
         oObject = GetNextObjectInArea(oArea);
     }
@@ -128,7 +132,7 @@ void DL_RunForcedResync(object oNPC, object oArea, int nReason)
         return;
     }
 
-    DL_RequestResync(oNPC, nReason);
+    DL_RequestResyncKnownNpc(oNPC, nReason);
     DL_RunResync(oNPC, oArea, nReason);
 }
 
