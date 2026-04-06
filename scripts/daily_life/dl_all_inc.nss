@@ -257,6 +257,13 @@ int DL_IsAreaAnchor(object oPoint, object oArea)
     return GetIsObjectValid(oPoint) && GetArea(oPoint) == oArea;
 }
 
+const int DL_ANCHOR_SEARCH_MAX_INDEX = 4;
+
+int DL_IsAnchorMarkerType(int nObjType)
+{
+    return nObjType == OBJECT_TYPE_WAYPOINT || nObjType == OBJECT_TYPE_PLACEABLE;
+}
+
 string DL_GetAnchorGroupToken(int nAnchorGroup)
 {
     if (nAnchorGroup == DL_AG_SLEEP) return "sleep";
@@ -829,12 +836,12 @@ object DL_FindAnchorByTag(object oArea, string sTag)
 {
     object oObj;
     int nObjType;
-    if (sTag == "") return OBJECT_INVALID;
+    if (!GetIsObjectValid(oArea) || sTag == "") return OBJECT_INVALID;
     oObj = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObj))
     {
         nObjType = GetObjectType(oObj);
-        if ((nObjType == OBJECT_TYPE_WAYPOINT || nObjType == OBJECT_TYPE_PLACEABLE) && GetTag(oObj) == sTag)
+        if (DL_IsAnchorMarkerType(nObjType) && GetTag(oObj) == sTag)
         {
             return oObj;
         }
@@ -871,7 +878,7 @@ object DL_FindAnchorPoint(object oNPC, object oArea, int nAnchorGroup)
 {
     int i = 1;
     object oPoint;
-    while (i <= 4)
+    while (i <= DL_ANCHOR_SEARCH_MAX_INDEX)
     {
         oPoint = DL_FindAnchorByTag(oArea, DL_GetAnchorTagCandidate(oNPC, nAnchorGroup, i));
         if (GetIsObjectValid(oPoint) && DL_IsAnchorContextAllowed(oNPC, oPoint)) return oPoint;
@@ -890,7 +897,7 @@ object DL_FindAnchorPointIgnoringPolicy(object oNPC, object oArea, int nAnchorGr
 {
     int i = 1;
     object oPoint;
-    while (i <= 4)
+    while (i <= DL_ANCHOR_SEARCH_MAX_INDEX)
     {
         oPoint = DL_FindAnchorByTag(oArea, DL_GetAnchorTagCandidate(oNPC, nAnchorGroup, i));
         if (GetIsObjectValid(oPoint)) return oPoint;
@@ -958,35 +965,59 @@ string DL_MakeBaseLostSlotKey(string sFunctionSlotId, string sField)
 void DL_StageFunctionSlotProfile(string sFunctionSlotId, int nFamily, int nSubtype, int nSchedule, object oBase)
 {
     object oModule = GetModule();
+    string sFamilyKey;
+    string sSubtypeKey;
+    string sScheduleKey;
+    string sBaseKey;
     if (sFunctionSlotId == "")
     {
         DL_Log(DL_DEBUG_BASIC, "Slot profile stage ignored: empty function slot id");
         return;
     }
-    SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family"), nFamily);
-    SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype"), nSubtype);
-    SetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule"), nSchedule);
-    SetLocalObject(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"), oBase);
+    sFamilyKey = DL_MakeSlotProfileKey(sFunctionSlotId, "family");
+    sSubtypeKey = DL_MakeSlotProfileKey(sFunctionSlotId, "subtype");
+    sScheduleKey = DL_MakeSlotProfileKey(sFunctionSlotId, "schedule");
+    sBaseKey = DL_MakeSlotProfileKey(sFunctionSlotId, "base");
+    SetLocalInt(oModule, sFamilyKey, nFamily);
+    SetLocalInt(oModule, sSubtypeKey, nSubtype);
+    SetLocalInt(oModule, sScheduleKey, nSchedule);
+    SetLocalObject(oModule, sBaseKey, oBase);
 }
 
 void DL_ClearFunctionSlotProfile(string sFunctionSlotId)
 {
     object oModule = GetModule();
+    string sFamilyKey;
+    string sSubtypeKey;
+    string sScheduleKey;
+    string sBaseKey;
     if (sFunctionSlotId == "") return;
-    DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family"));
-    DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype"));
-    DeleteLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule"));
-    DeleteLocalObject(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"));
+    sFamilyKey = DL_MakeSlotProfileKey(sFunctionSlotId, "family");
+    sSubtypeKey = DL_MakeSlotProfileKey(sFunctionSlotId, "subtype");
+    sScheduleKey = DL_MakeSlotProfileKey(sFunctionSlotId, "schedule");
+    sBaseKey = DL_MakeSlotProfileKey(sFunctionSlotId, "base");
+    DeleteLocalInt(oModule, sFamilyKey);
+    DeleteLocalInt(oModule, sSubtypeKey);
+    DeleteLocalInt(oModule, sScheduleKey);
+    DeleteLocalObject(oModule, sBaseKey);
 }
 
 int DL_HasStagedFunctionSlotProfile(string sFunctionSlotId)
 {
     object oModule = GetModule();
+    string sFamilyKey;
+    string sSubtypeKey;
+    string sScheduleKey;
+    string sBaseKey;
     if (sFunctionSlotId == "") return FALSE;
-    if (GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family")) > DL_FAMILY_NONE) return TRUE;
-    if (GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype")) > DL_SUBTYPE_NONE) return TRUE;
-    if (GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule")) > DL_SCH_NONE) return TRUE;
-    if (GetIsObjectValid(GetLocalObject(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base")))) return TRUE;
+    sFamilyKey = DL_MakeSlotProfileKey(sFunctionSlotId, "family");
+    sSubtypeKey = DL_MakeSlotProfileKey(sFunctionSlotId, "subtype");
+    sScheduleKey = DL_MakeSlotProfileKey(sFunctionSlotId, "schedule");
+    sBaseKey = DL_MakeSlotProfileKey(sFunctionSlotId, "base");
+    if (GetLocalInt(oModule, sFamilyKey) > DL_FAMILY_NONE) return TRUE;
+    if (GetLocalInt(oModule, sSubtypeKey) > DL_SUBTYPE_NONE) return TRUE;
+    if (GetLocalInt(oModule, sScheduleKey) > DL_SCH_NONE) return TRUE;
+    if (GetIsObjectValid(GetLocalObject(oModule, sBaseKey))) return TRUE;
     return FALSE;
 }
 
@@ -999,12 +1030,16 @@ int DL_NormalizeSlotReviewReason(int nReason)
 void DL_RecordBaseLostEvent(object oNPC, string sFunctionSlotId, int nDirective)
 {
     object oModule = GetModule();
-    SetLocalString(oModule, DL_MakeBaseLostNpcKey(oNPC, "slot"), sFunctionSlotId);
-    SetLocalInt(oModule, DL_MakeBaseLostNpcKey(oNPC, "kind"), nDirective);
+    string sNpcSlotKey = DL_MakeBaseLostNpcKey(oNPC, "slot");
+    string sNpcKindKey = DL_MakeBaseLostNpcKey(oNPC, "kind");
+    SetLocalString(oModule, sNpcSlotKey, sFunctionSlotId);
+    SetLocalInt(oModule, sNpcKindKey, nDirective);
     if (sFunctionSlotId != "")
     {
-        SetLocalObject(oModule, DL_MakeBaseLostSlotKey(sFunctionSlotId, "npc"), oNPC);
-        SetLocalInt(oModule, DL_MakeBaseLostSlotKey(sFunctionSlotId, "kind"), nDirective);
+        string sSlotNpcKey = DL_MakeBaseLostSlotKey(sFunctionSlotId, "npc");
+        string sSlotKindKey = DL_MakeBaseLostSlotKey(sFunctionSlotId, "kind");
+        SetLocalObject(oModule, sSlotNpcKey, oNPC);
+        SetLocalInt(oModule, sSlotKindKey, nDirective);
     }
     SetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT, sFunctionSlotId);
     SetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC, oNPC);
@@ -1014,12 +1049,16 @@ void DL_RecordBaseLostEvent(object oNPC, string sFunctionSlotId, int nDirective)
 void DL_ClearBaseLostEventForNpcOrSlot(object oNPC, string sFunctionSlotId)
 {
     object oModule = GetModule();
-    DeleteLocalString(oModule, DL_MakeBaseLostNpcKey(oNPC, "slot"));
-    DeleteLocalInt(oModule, DL_MakeBaseLostNpcKey(oNPC, "kind"));
+    string sNpcSlotKey = DL_MakeBaseLostNpcKey(oNPC, "slot");
+    string sNpcKindKey = DL_MakeBaseLostNpcKey(oNPC, "kind");
+    DeleteLocalString(oModule, sNpcSlotKey);
+    DeleteLocalInt(oModule, sNpcKindKey);
     if (sFunctionSlotId != "")
     {
-        DeleteLocalObject(oModule, DL_MakeBaseLostSlotKey(sFunctionSlotId, "npc"));
-        DeleteLocalInt(oModule, DL_MakeBaseLostSlotKey(sFunctionSlotId, "kind"));
+        string sSlotNpcKey = DL_MakeBaseLostSlotKey(sFunctionSlotId, "npc");
+        string sSlotKindKey = DL_MakeBaseLostSlotKey(sFunctionSlotId, "kind");
+        DeleteLocalObject(oModule, sSlotNpcKey);
+        DeleteLocalInt(oModule, sSlotKindKey);
     }
 }
 
@@ -1048,10 +1087,22 @@ int DL_GetBaseLostKindForSlot(string sFunctionSlotId)
 void DL_ApplyAssignedSlotProfile(object oNPC, string sFunctionSlotId)
 {
     object oModule = GetModule();
-    int nFamily = GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "family"));
-    int nSubtype = GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "subtype"));
-    int nSchedule = GetLocalInt(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "schedule"));
-    object oBase = GetLocalObject(oModule, DL_MakeSlotProfileKey(sFunctionSlotId, "base"));
+    string sFamilyKey;
+    string sSubtypeKey;
+    string sScheduleKey;
+    string sBaseKey;
+    int nFamily;
+    int nSubtype;
+    int nSchedule;
+    object oBase;
+    sFamilyKey = DL_MakeSlotProfileKey(sFunctionSlotId, "family");
+    sSubtypeKey = DL_MakeSlotProfileKey(sFunctionSlotId, "subtype");
+    sScheduleKey = DL_MakeSlotProfileKey(sFunctionSlotId, "schedule");
+    sBaseKey = DL_MakeSlotProfileKey(sFunctionSlotId, "base");
+    nFamily = GetLocalInt(oModule, sFamilyKey);
+    nSubtype = GetLocalInt(oModule, sSubtypeKey);
+    nSchedule = GetLocalInt(oModule, sScheduleKey);
+    oBase = GetLocalObject(oModule, sBaseKey);
     if (nFamily > DL_FAMILY_NONE) SetLocalInt(oNPC, DL_L_NPC_FAMILY, nFamily);
     if (nSubtype > DL_SUBTYPE_NONE) SetLocalInt(oNPC, DL_L_NPC_SUBTYPE, nSubtype);
     if (nSchedule > DL_SCH_NONE) SetLocalInt(oNPC, DL_L_SCHEDULE_TEMPLATE, nSchedule);
@@ -1072,9 +1123,22 @@ void DL_RequestAssignedNpcResync(object oNPC)
     SetLocalInt(oNPC, DL_L_RESYNC_REASON, DL_RESYNC_SLOT_ASSIGNED);
 }
 
+void DL_ClearFunctionSlotReviewState(object oModule, string sFunctionSlotId)
+{
+    string sLastTickKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick");
+    string sLastReasonKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason");
+    string sAttemptsKey = DL_MakeSlotReviewKey(sFunctionSlotId, "attempts");
+    DeleteLocalInt(oModule, sLastTickKey);
+    DeleteLocalInt(oModule, sLastReasonKey);
+    DeleteLocalInt(oModule, sAttemptsKey);
+}
+
 void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
 {
     object oModule = GetModule();
+    string sLastTickKey;
+    string sLastReasonKey;
+    string sAttemptsKey;
     int nNowTick;
     int nLastTick;
     int nElapsed;
@@ -1085,14 +1149,17 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
         DL_Log(DL_DEBUG_BASIC, "Slot review requested with empty function slot id");
         return;
     }
+    sLastTickKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick");
+    sLastReasonKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason");
+    sAttemptsKey = DL_MakeSlotReviewKey(sFunctionSlotId, "attempts");
     nReason = DL_NormalizeSlotReviewReason(nReason);
     nNowTick = DL_GetCurrentSlotReviewTick();
-    nLastTick = GetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick"));
-    nLastReason = GetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason"));
-    nAttemptCount = GetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "attempts")) + 1;
+    nLastTick = GetLocalInt(oModule, sLastTickKey);
+    nLastReason = GetLocalInt(oModule, sLastReasonKey);
+    nAttemptCount = GetLocalInt(oModule, sAttemptsKey) + 1;
     nElapsed = nNowTick - nLastTick;
     if (nElapsed < 0) nElapsed += 86400;
-    SetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "attempts"), nAttemptCount);
+    SetLocalInt(oModule, sAttemptsKey, nAttemptCount);
     if (nLastTick > 0 && nLastReason == nReason && nElapsed >= 0 && nElapsed < DL_SLOT_REVIEW_TTL_SECONDS)
     {
         DL_Log(DL_DEBUG_VERBOSE, "Slot review deduplicated: " + sFunctionSlotId + ", reason=" + IntToString(nReason) + ", attempts=" + IntToString(nAttemptCount) + ", elapsed=" + IntToString(nElapsed) + ", ttl=" + IntToString(DL_SLOT_REVIEW_TTL_SECONDS));
@@ -1104,8 +1171,8 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
     }
     SetLocalString(oModule, DL_L_LAST_SLOT_REVIEW, sFunctionSlotId);
     SetLocalInt(oModule, DL_L_LAST_SLOT_REVIEW_REASON, nReason);
-    SetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick"), nNowTick);
-    SetLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason"), nReason);
+    SetLocalInt(oModule, sLastTickKey, nNowTick);
+    SetLocalInt(oModule, sLastReasonKey, nReason);
     DL_Log(DL_DEBUG_BASIC, "Slot review requested: " + sFunctionSlotId + ", reason=" + IntToString(nReason) + ", attempts=" + IntToString(nAttemptCount));
 }
 
@@ -1125,9 +1192,7 @@ void DL_OnFunctionSlotAssigned(string sFunctionSlotId, object oNPC)
         DeleteLocalString(oModule, DL_L_LAST_SLOT_REVIEW);
         DeleteLocalInt(oModule, DL_L_LAST_SLOT_REVIEW_REASON);
     }
-    DeleteLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick"));
-    DeleteLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason"));
-    DeleteLocalInt(oModule, DL_MakeSlotReviewKey(sFunctionSlotId, "attempts"));
+    DL_ClearFunctionSlotReviewState(oModule, sFunctionSlotId);
     if (GetIsObjectValid(oNPC))
     {
         DL_ApplyAssignedSlotProfile(oNPC, sFunctionSlotId);
