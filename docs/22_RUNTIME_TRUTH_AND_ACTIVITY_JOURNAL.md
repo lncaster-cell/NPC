@@ -19,6 +19,7 @@
 - Area `OnHeartbeat` вызывает `dl_area_tick` -> `DL_AreaWorkerTick`.
 - Worker обрабатывает NPC только если зона проходит `DL_ShouldRunDailyLife`.
 - В текущем коде `DL_ShouldRunDailyLife` возвращает `TRUE` для `HOT` и `WARM`, `FALSE` для `FROZEN` (через `DL_ShouldRunDailyLifeTier`).
+- Основной runtime entry path собран через `dl_all_inc`, чтобы ключевые hooks и smoke scripts были compile-safe внутри самого `NPC`.
 
 ### 1.2 Tier lifecycle
 - `OnEnter` игрока: зона переводится в `HOT`, запускается area resync.
@@ -41,7 +42,7 @@
 - Реализован каркас Milestone A (A–E).
 - Не закрыт финальный owner verdict Milestone A (нужны подтверждённые smoke run A–G).
 - Post-Milestone A интеграции (полная population/respawn/legal/trade) не заявлены как готовые.
-- Полная compile-safe синхронизация исходного дерева `scripts/daily_life/` ещё продолжается.
+- Полная compile-safe синхронизация исходного дерева `scripts/daily_life/` ещё продолжается, но основной runtime entry path уже вынесен на `dl_all_inc`.
 
 ---
 
@@ -57,6 +58,7 @@
 | 2026-04-02 | Фикс edge-case `OnExit` для последнего игрока | Убрать ложный переход в `WARM`, если в area не остаётся игроков | В `dl_area_exit` проверка заменена на `DL_HasAnyPlayersExcept(oArea, oExiting)`; в `dl_util_inc` добавлен helper `DL_HasAnyPlayersExcept` | done |
 | 2026-04-05 | Синхронизация `OnExit` tier-перехода с runtime lifecycle | Убрать рассинхрон: при remaining players зона должна уходить в `WARM`, при пустой зоне — в `FROZEN` | В `dl_area_exit` ветка `DL_HasAnyPlayersExcept(oArea, oExiting)` переводит зону в `DL_OnAreaBecameWarm`; fallback без игроков оставлен на `DL_OnAreaBecameFrozen` | done |
 | 2026-04-06 | Восстановление NPC lifecycle/event hook layer | Вернуть явные NPC entrypoints и producer bridges без тяжёлой логики в noisy hooks | Добавлены `dl_npc_onspawn`, `dl_npc_onud`, `dl_npc_ondeath`, producer-bridges (`onperception`, `onphysicalattacked`, `ondamaged`, `onspellcastat`, `ondisturbed`) и bootstrap path через slot handoff | done |
+| 2026-04-06 | Compile-safe runtime entry path | Убрать зависимость ключевых hook/smoke scripts от guarded include-графа | Добавлен `dl_all_inc`; на него переведены area hooks, dialogue/store hooks, NPC lifecycle hooks и smoke scripts | done |
 
 ---
 

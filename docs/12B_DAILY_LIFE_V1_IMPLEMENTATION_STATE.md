@@ -8,7 +8,7 @@
 
 ## 1) Короткий итог (для владельца проекта)
 
-- **Сделано:** каркас Milestone A (Steps A–E) реализован в `scripts/daily_life/`: есть контракты, resolver, materialization, area worker/tier lifecycle, base-lost/slot-handoff stub, NPC lifecycle/event hooks.
+- **Сделано:** каркас Milestone A (Steps A–E) реализован в `scripts/daily_life/`: есть контракты, resolver, materialization, area worker/tier lifecycle, base-lost/slot-handoff stub, NPC lifecycle/event hooks, compile-safe entry layer.
 - **Не сделано:** Milestone A acceptance не закрыт фактами прогонов A–G на owner/toolset среде.
 - **Граница текущего состояния:** система уже может вести NPC в `HOT`-зонах по расписанию и override-правилам, но это ещё не финальный production verdict.
 
@@ -21,13 +21,15 @@
 Реализовано:
 - единый набор locals/enum-like constants;
 - helper-access к family/subtype/schedule/base;
-- базовые utility и логгер.
+- базовые utility и логгер;
+- compile-safe aggregation file для entry path.
 
 Ключевые файлы:
 - `scripts/daily_life/dl_const_inc.nss`
 - `scripts/daily_life/dl_types_inc.nss`
 - `scripts/daily_life/dl_util_inc.nss`
 - `scripts/daily_life/dl_log_inc.nss`
+- `scripts/daily_life/dl_all_inc.nss`
 
 ## 2.2 Step B — Pure resolver
 
@@ -40,6 +42,7 @@
 - `scripts/daily_life/dl_schedule_inc.nss`
 - `scripts/daily_life/dl_override_inc.nss`
 - `scripts/daily_life/dl_resolver_inc.nss`
+- `scripts/daily_life/dl_all_inc.nss`
 
 ## 2.3 Step C — Materialization and interaction
 
@@ -54,6 +57,8 @@
 - `scripts/daily_life/dl_activity_inc.nss`
 - `scripts/daily_life/dl_materialize_inc.nss`
 - `scripts/daily_life/dl_interact_inc.nss`
+- `scripts/daily_life/dl_dialogue_bridge_inc.nss`
+- `scripts/daily_life/dl_all_inc.nss`
 
 ## 2.4 Step D — Area worker and lifecycle
 
@@ -62,7 +67,8 @@
 - bounded worker budget;
 - resync path (`area enter`, `worker`, `override end`, NPC lifecycle/event hooks и др.);
 - area tick hook для запуска worker;
-- thin NPC lifecycle/event layer (`OnSpawn`, `OnUserDefined`, `OnDeath`) и lightweight producer bridges для noisy hooks.
+- thin NPC lifecycle/event layer (`OnSpawn`, `OnUserDefined`, `OnDeath`) и lightweight producer bridges для noisy hooks;
+- compile-safe entry layer для основных runtime hooks.
 
 Ключевые файлы:
 - `scripts/daily_life/dl_area_inc.nss`
@@ -70,6 +76,7 @@
 - `scripts/daily_life/dl_resync_inc.nss`
 - `scripts/daily_life/dl_area_tick.nss`
 - `scripts/daily_life/dl_area_enter.nss`
+- `scripts/daily_life/dl_area_exit.nss`
 - `scripts/daily_life/dl_on_load.nss`
 - `scripts/daily_life/dl_npc_hooks_inc.nss`
 - `scripts/daily_life/dl_npc_onspawn.nss`
@@ -80,6 +87,7 @@
 - `scripts/daily_life/dl_npc_ondamaged.nss`
 - `scripts/daily_life/dl_npc_onspellcastat.nss`
 - `scripts/daily_life/dl_npc_ondisturbed.nss`
+- `scripts/daily_life/dl_all_inc.nss`
 
 ## 2.5 Step E — Stub handoff
 
@@ -92,6 +100,7 @@
 - `scripts/daily_life/dl_slot_handoff_inc.nss`
 - `scripts/daily_life/dl_materialize_inc.nss`
 - `scripts/daily_life/dl_smoke_step_e.nss`
+- `scripts/daily_life/dl_all_inc.nss`
 
 ---
 
@@ -105,7 +114,8 @@
 5. Resolver вычисляет directive от schedule + override.
 6. Выбирается anchor, применяются перемещение/активность.
 7. Обновляются interaction-поля (`dialogue_mode`, `service_mode`).
-8. Для smoke-диагностики может писаться `smoke snapshot` (если `dl_smoke_trace=TRUE`).
+8. Основной entry path для runtime hooks и smoke scripts идёт через `dl_all_inc`, чтобы рабочий путь был compile-safe внутри самого `NPC`.
+9. Для smoke-диагностики может писаться `smoke snapshot` (если `dl_smoke_trace=TRUE`).
 
 ---
 
@@ -116,6 +126,7 @@
 - Базовый контроль area-tier и budget-bound обработки.
 - NPC-side lifecycle/event hooks без heavy runtime-логики в noisy producer slots.
 - Stub-safe обработка base-lost без автогенерации полноценной population системы.
+- Compile-safe entry layer внутри `NPC` для основного runtime-path.
 
 ---
 
@@ -124,7 +135,7 @@
 1. **Нет фактически подтверждённого run, где A–G = PASS** в acceptance journal.
 2. **Нет финального owner-run** на реальном ПК, который закрывает final gate.
 3. Часть зон остаётся специально **stub-level** (handoff/base-lost), и это надо подтверждать фактическими smoke-прогонами, а не только inspection.
-4. Compile-safe выравнивание исходного runtime-дерева ещё не завершено: source tree нужно довести до реальной совместимости с используемым компилятором.
+4. Compile-safe выравнивание исходного runtime-дерева ещё не завершено полностью: сейчас закрыт основной entry path, но не всё include-дерево переведено в единый bare-safe вид.
 
 ---
 
@@ -133,13 +144,14 @@
 Сильная согласованность:
 - структура шагов A–E соответствует implementation checklist;
 - operational status и ограничения совпадают с control panel;
-- runbook и acceptance journal отражают, что есть инструменты проверки, но нет финального PASS-цикла.
+- runbook и acceptance journal отражают, что есть инструменты проверки, но нет финального PASS-цикла;
+- README/runtime-обзор уже должны прямо фиксировать обязательный NPC hook layer и compile-safe entry path.
 
 Риски расхождения, которые нужно проверять owner-run’ом:
 - фактическая постановка NPC по anchor в реальных toolset area-data;
 - ожидаемые различия A/B/D по временным окнам в конкретной тестовой сборке;
 - стабильность F/G сценариев при реальных нагрузках и сердцебиениях area;
-- compile/runtime согласованность source tree после полной миграции NPC hook layer.
+- полная compile/runtime согласованность исходного дерева после окончательной санации include-слоя.
 
 ---
 
@@ -148,7 +160,7 @@
 1. Прогнать scripted/manual smoke A–G в toolset по runbook.
 2. Заполнить acceptance journal фактическими статусами (`PASS/PARTIAL/FAIL`) и расхождениями.
 3. Закрыть найденные точечные расхождения в коде (без расширения scope).
-4. Завершить compile-safe выравнивание исходного дерева `scripts/daily_life/`.
+4. Довести include-дерево `scripts/daily_life/` до полного compile-safe состояния.
 5. Сделать owner-run и зафиксировать окончательный verdict Milestone A.
 
 ---

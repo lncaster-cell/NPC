@@ -1,6 +1,6 @@
 # Ambient Life v2 — Project README
 
-> Последнее обновление: **2026-04-03**.
+> Последнее обновление: **2026-04-06**.
 
 `PycukSystems` — это «живой» репозиторий разработки системы мира для NWN2. Сейчас проект находится в стадии **active development** (Milestone A для Daily Life v1): документация остаётся каноном, но репозиторий уже используется и для runtime-правок в `scripts/daily_life/`.
 
@@ -19,7 +19,6 @@
 4. **Доменные тома `12A–12E`, `13`, `14`** — правила и детализация по подсистемам.
 5. **`docs/30_AUDIT_AND_INSPECTION_INDEX.md`** — единый индекс всех audit/inspection отчётов (актуальная точка входа вместо датированных файлов).
 
-
 ## Быстрый старт настройки Daily Life v1 (актуально)
 
 Если цель — быстро поднять рабочий Milestone A контур в Toolset, используй минимальный набор:
@@ -37,12 +36,20 @@
 
 4. **Минимум 1–4 тестовых NPC**
    - заполнить `dl_npc_family`, `dl_npc_subtype`, `dl_schedule_template`, `dl_npc_base`;
-   - для гарантированной обработки worker: `dl_named=TRUE` или `dl_persistent=TRUE`.
+   - для гарантированной обработки worker: `dl_named=TRUE` или `dl_persistent=TRUE`;
+   - назначить обязательные NPC lifecycle hooks:
+     - `OnSpawn -> scripts/daily_life/dl_npc_onspawn`
+     - `OnUserDefined -> scripts/daily_life/dl_npc_onud`
+     - `OnDeath -> scripts/daily_life/dl_npc_ondeath`
 
 5. **Smoke trace и проверка**
    - на модуле: `dl_smoke_trace = TRUE`;
    - запуск: `scripts/daily_life/dl_smoke_milestone_a.nss`;
    - для base-lost веток: `scripts/daily_life/dl_smoke_step_e.nss`.
+
+6. **Compile-safe entry layer**
+   - ключевые runtime hooks и smoke scripts переведены на `scripts/daily_life/dl_all_inc`;
+   - это основной compile-safe entry path внутри `NPC`, чтобы сборка не зависела от внешнего обходного слоя в отдельном компиляторном репозитории.
 
 > Полный пошаговый smoke path: `docs/12B_DAILY_LIFE_V1_SMOKE_RUNBOOK.md`.  
 > Фактическое состояние реализации: `docs/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md`.  
