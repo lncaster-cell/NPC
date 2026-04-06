@@ -1,5 +1,4 @@
-#include "dl_area_inc"
-#include "dl_util_inc"
+#include "dl_all_inc"
 
 void main()
 {
@@ -9,12 +8,10 @@ void main()
     {
         return;
     }
-
     if (DL_HasAnyPlayersExcept(oArea, oExiting))
     {
         DL_OnAreaBecameWarm(oArea);
         return;
     }
-
     DL_OnAreaBecameFrozen(oArea);
 }

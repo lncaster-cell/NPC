@@ -1,4 +1,4 @@
-#include "dl_npc_hooks_inc"
+#include "dl_all_inc"
 
 void main()
 {

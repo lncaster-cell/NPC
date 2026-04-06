@@ -1,4 +1,4 @@
-#include "dl_dialogue_bridge_inc"
+#include "dl_all_inc"
 
 void main()
 {
