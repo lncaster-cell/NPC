@@ -505,7 +505,6 @@ void DL_OnAreaBecameFrozen(object oArea)
 
 int DL_GetDaysInMonth(int nYear, int nMonth)
 {
-    if (nYear < 0 || nMonth < 1 || nMonth > 12) return 28;
     return 28;
 }
 
@@ -514,19 +513,29 @@ int DL_GetAbsoluteDayNumber()
     int nYear = GetCalendarYear();
     int nMonth = GetCalendarMonth();
     int nDay = GetCalendarDay();
-    int nAbsoluteDay = 0;
-    int nPrevYear = 0;
-    int nPrevMonth = 0;
-    for (nPrevYear = 0; nPrevYear < nYear; nPrevYear++)
+
+    if (nYear < 0)
     {
-        nAbsoluteDay += 12 * DL_GetDaysInMonth(nPrevYear, 1);
+        nYear = 0;
     }
-    for (nPrevMonth = 1; nPrevMonth < nMonth; nPrevMonth++)
+    if (nMonth < 1)
     {
-        nAbsoluteDay += DL_GetDaysInMonth(nYear, nPrevMonth);
+        nMonth = 1;
     }
-    nAbsoluteDay += nDay;
-    return nAbsoluteDay;
+    if (nMonth > 12)
+    {
+        nMonth = 12;
+    }
+    if (nDay < 0)
+    {
+        nDay = 0;
+    }
+    if (nDay > 28)
+    {
+        nDay = 28;
+    }
+
+    return (nYear * 336) + ((nMonth - 1) * 28) + nDay;
 }
 
 int DL_DetermineDayType(object oArea)
@@ -549,9 +558,11 @@ int DL_GetCurrentMinuteOfDay()
 
 int DL_DetermineScheduleWindow(int nTemplate, int nDayType, int nMinuteOfDay, int nOffset)
 {
-    int nMinute = nMinuteOfDay + nOffset;
-    while (nMinute < 0) nMinute += 1440;
-    while (nMinute >= 1440) nMinute -= 1440;
+    int nMinute = (nMinuteOfDay + nOffset) % 1440;
+    if (nMinute < 0)
+    {
+        nMinute += 1440;
+    }
 
     if (nTemplate == DL_SCH_EARLY_WORKER)
     {
@@ -684,16 +695,18 @@ int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayTy
 
 int DL_ApplyOverrideToDirective(object oNPC, int nDirective, int nOverrideKind)
 {
+    int nFamily = DL_GetNpcFamily(oNPC);
+    int nSubtype = DL_GetNpcSubtype(oNPC);
     if (nOverrideKind == DL_OVR_FIRE)
     {
-        if (DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW) return DL_DIR_HOLD_POST;
+        if (nFamily == DL_FAMILY_LAW) return DL_DIR_HOLD_POST;
         return DL_DIR_HIDE_SAFE;
     }
     if (nOverrideKind == DL_OVR_QUARANTINE)
     {
-        if (DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW)
+        if (nFamily == DL_FAMILY_LAW)
         {
-            if (DL_GetNpcSubtype(oNPC) == DL_SUBTYPE_GATE_POST) return DL_DIR_HOLD_POST;
+            if (nSubtype == DL_SUBTYPE_GATE_POST) return DL_DIR_HOLD_POST;
             return DL_DIR_DUTY;
         }
         return DL_DIR_LOCKDOWN_BASE;
@@ -715,9 +728,11 @@ int DL_ResolveDirective(object oNPC, object oArea)
     int nDayType = DL_DetermineDayType(oArea);
     int nMinute = DL_GetCurrentMinuteOfDay();
     int nOffset = DL_GetPersonalTimeOffset(oNPC);
-    int nWindow = DL_DetermineScheduleWindow(DL_GetScheduleTemplate(oNPC), nDayType, nMinute, nOffset);
+    int nTemplate = DL_GetScheduleTemplate(oNPC);
+    int nWindow = DL_DetermineScheduleWindow(nTemplate, nDayType, nMinute, nOffset);
     int nDirective = DL_ResolveDirectiveFromSchedule(oNPC, nWindow, nDayType);
-    nDirective = DL_ApplyOverrideToDirective(oNPC, nDirective, DL_GetTopOverride(oNPC, oArea));
+    int nOverrideKind = DL_GetTopOverride(oNPC, oArea);
+    nDirective = DL_ApplyOverrideToDirective(oNPC, nDirective, nOverrideKind);
     if (!DL_SupportsDirective(oNPC, nDirective)) return DL_GetSupportedFallbackDirective(oNPC);
     return nDirective;
 }
@@ -741,9 +756,11 @@ int DL_ResolveAnchorGroup(object oNPC, int nDirective)
 
 int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
 {
+    int nFamily = DL_GetNpcFamily(oNPC);
+    int nSubtype = DL_GetNpcSubtype(oNPC);
     if (nOverrideKind == DL_OVR_FIRE)
     {
-        if (DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW && (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST))
+        if (nFamily == DL_FAMILY_LAW && (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST))
         {
             return DL_DLG_INSPECTION;
         }
@@ -752,7 +769,11 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
     if (nDirective == DL_DIR_WORK || nDirective == DL_DIR_SERVICE) return DL_DLG_WORK;
     if (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST)
     {
-        return DL_DLG_INSPECTION;
+        if (nFamily == DL_FAMILY_LAW || nSubtype == DL_SUBTYPE_INSPECTION || nSubtype == DL_SUBTYPE_GATE_POST)
+        {
+            return DL_DLG_INSPECTION;
+        }
+        return DL_DLG_OFF_DUTY;
     }
     if (nDirective == DL_DIR_LOCKDOWN_BASE) return DL_DLG_LOCKDOWN;
     if (nDirective == DL_DIR_HIDE_SAFE) return DL_DLG_HIDE;
