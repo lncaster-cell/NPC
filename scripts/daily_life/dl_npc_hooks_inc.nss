@@ -15,14 +15,20 @@ const int DL_UD_CLEANUP = 12004;
 const int DL_UD_PERCEPTION = 12005;
 const int DL_UD_PHYSICAL_ATTACKED = 12006;
 const int DL_UD_DISTURBED = 12007;
+const int DL_UD_DAMAGED = 12008;
+const int DL_UD_SPELL_CAST_AT = 12009;
 
 const string DL_L_UD_LAST_PERCEPTION_TICK = "dl_ud_last_perception_tick";
 const string DL_L_UD_LAST_ATTACK_TICK = "dl_ud_last_attack_tick";
 const string DL_L_UD_LAST_DISTURBED_TICK = "dl_ud_last_disturbed_tick";
+const string DL_L_UD_LAST_DAMAGED_TICK = "dl_ud_last_damaged_tick";
+const string DL_L_UD_LAST_SPELL_TICK = "dl_ud_last_spell_tick";
 
 const int DL_UD_PERCEPTION_COOLDOWN_SEC = 3;
 const int DL_UD_ATTACK_COOLDOWN_SEC = 1;
 const int DL_UD_DISTURBED_COOLDOWN_SEC = 2;
+const int DL_UD_DAMAGED_COOLDOWN_SEC = 1;
+const int DL_UD_SPELL_COOLDOWN_SEC = 2;
 
 int DL_GetHookClockSeconds()
 {
@@ -51,7 +57,7 @@ void DL_MarkHookCooldown(object oNPC, string sKey)
     SetLocalInt(oNPC, sKey, DL_GetHookClockSeconds());
 }
 
-int DL_IsNpcHookCandidate(object oNPC)
+int DL_IsNpcLifecycleSubject(object oNPC)
 {
     if (!GetIsObjectValid(oNPC))
     {
@@ -65,7 +71,81 @@ int DL_IsNpcHookCandidate(object oNPC)
     {
         return FALSE;
     }
+    return TRUE;
+}
+
+string DL_GetPendingBootstrapSlotId(object oNPC)
+{
+    object oModule;
+    string sFunctionSlotId;
+    string sLastAssignedSlot;
+    object oLastAssignedNpc;
+
+    if (!DL_IsNpcLifecycleSubject(oNPC))
+    {
+        return "";
+    }
+
+    sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
+    if (sFunctionSlotId != "")
+    {
+        return sFunctionSlotId;
+    }
+
+    oModule = GetModule();
+    sLastAssignedSlot = GetLocalString(oModule, DL_L_LAST_SLOT_ASSIGNED);
+    oLastAssignedNpc = GetLocalObject(oModule, DL_L_SLOT_ASSIGNED_NPC);
+    if (sLastAssignedSlot != "" && oLastAssignedNpc == oNPC)
+    {
+        return sLastAssignedSlot;
+    }
+
+    return "";
+}
+
+int DL_TryBootstrapNpcProfile(object oNPC)
+{
+    string sFunctionSlotId;
+
+    if (!DL_IsNpcLifecycleSubject(oNPC))
+    {
+        return FALSE;
+    }
+    if (DL_IsDailyLifeNpc(oNPC))
+    {
+        return TRUE;
+    }
+
+    sFunctionSlotId = DL_GetPendingBootstrapSlotId(oNPC);
+    if (sFunctionSlotId == "")
+    {
+        return FALSE;
+    }
+
+    if (DL_GetFunctionSlotId(oNPC) == "")
+    {
+        SetLocalString(oNPC, DL_L_FUNCTION_SLOT_ID, sFunctionSlotId);
+    }
+    if (DL_HasStagedFunctionSlotProfile(sFunctionSlotId))
+    {
+        DL_ApplyAssignedSlotProfile(oNPC, sFunctionSlotId);
+        DL_ClearFunctionSlotProfile(sFunctionSlotId);
+    }
+
     return DL_IsDailyLifeNpc(oNPC);
+}
+
+int DL_CanEmitNpcHookEvent(object oNPC)
+{
+    if (!DL_IsNpcLifecycleSubject(oNPC))
+    {
+        return FALSE;
+    }
+    if (DL_IsDailyLifeNpc(oNPC))
+    {
+        return TRUE;
+    }
+    return DL_GetPendingBootstrapSlotId(oNPC) != "";
 }
 
 void DL_SignalNpcUserDefined(object oNPC, int nEvent)
@@ -77,33 +157,38 @@ void DL_SignalNpcUserDefined(object oNPC, int nEvent)
     SignalEvent(oNPC, EventUserDefined(nEvent));
 }
 
-void DL_RequestNpcHookResync(object oNPC, int nReason, int bForceNow)
+int DL_RequestNpcHookResync(object oNPC, int nReason, int bForceNow)
 {
     object oArea;
 
-    if (!DL_IsNpcHookCandidate(oNPC))
+    if (!DL_IsNpcLifecycleSubject(oNPC))
     {
-        return;
+        return FALSE;
+    }
+    if (!DL_TryBootstrapNpcProfile(oNPC))
+    {
+        return FALSE;
     }
 
     oArea = GetArea(oNPC);
     if (bForceNow && GetIsObjectValid(oArea) && DL_ShouldRunDailyLife(oArea))
     {
         DL_RunForcedResync(oNPC, oArea, nReason);
-        return;
+        return TRUE;
     }
 
     DL_RequestResync(oNPC, nReason);
+    return TRUE;
 }
 
 void DL_OnNpcSpawnHook(object oNPC)
 {
-    if (!DL_IsNpcHookCandidate(oNPC))
+    if (!DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, FALSE))
     {
+        DL_LogNpc(oNPC, DL_DEBUG_VERBOSE, "npc spawn hook ignored: bootstrap not ready");
         return;
     }
 
-    DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, FALSE);
     DL_LogNpc(oNPC, DL_DEBUG_VERBOSE, "npc spawn hook -> worker resync requested");
 }
 
@@ -132,15 +217,15 @@ void DL_OnNpcDeathHook(object oNPC)
     DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_ATTACK_TICK);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_DISTURBED_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_DAMAGED_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_SPELL_TICK);
 
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, "npc death hook -> runtime cleanup complete");
 }
 
 void DL_OnNpcUserDefinedHook(object oNPC, int nEvent)
 {
-    object oArea;
-
-    if (!DL_IsNpcHookCandidate(oNPC) && nEvent != DL_UD_CLEANUP)
+    if (!DL_IsNpcLifecycleSubject(oNPC) && nEvent != DL_UD_CLEANUP)
     {
         return;
     }
@@ -171,24 +256,18 @@ void DL_OnNpcUserDefinedHook(object oNPC, int nEvent)
 
     if (nEvent == DL_UD_PERCEPTION
         || nEvent == DL_UD_PHYSICAL_ATTACKED
-        || nEvent == DL_UD_DISTURBED)
+        || nEvent == DL_UD_DISTURBED
+        || nEvent == DL_UD_DAMAGED
+        || nEvent == DL_UD_SPELL_CAST_AT)
     {
-        oArea = GetArea(oNPC);
-        if (GetIsObjectValid(oArea) && DL_ShouldRunDailyLife(oArea))
-        {
-            DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, TRUE);
-        }
-        else
-        {
-            DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, FALSE);
-        }
+        DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, FALSE);
         return;
     }
 }
 
 int DL_ShouldEmitPerceptionEvent(object oNPC, object oSeen)
 {
-    if (!DL_IsNpcHookCandidate(oNPC))
+    if (!DL_CanEmitNpcHookEvent(oNPC))
     {
         return FALSE;
     }
@@ -211,7 +290,7 @@ int DL_ShouldEmitPerceptionEvent(object oNPC, object oSeen)
 
 int DL_ShouldEmitAttackEvent(object oNPC)
 {
-    if (!DL_IsNpcHookCandidate(oNPC))
+    if (!DL_CanEmitNpcHookEvent(oNPC))
     {
         return FALSE;
     }
@@ -226,7 +305,7 @@ int DL_ShouldEmitAttackEvent(object oNPC)
 
 int DL_ShouldEmitDisturbedEvent(object oNPC)
 {
-    if (!DL_IsNpcHookCandidate(oNPC))
+    if (!DL_CanEmitNpcHookEvent(oNPC))
     {
         return FALSE;
     }
@@ -236,6 +315,36 @@ int DL_ShouldEmitDisturbedEvent(object oNPC)
     }
 
     DL_MarkHookCooldown(oNPC, DL_L_UD_LAST_DISTURBED_TICK);
+    return TRUE;
+}
+
+int DL_ShouldEmitDamagedEvent(object oNPC)
+{
+    if (!DL_CanEmitNpcHookEvent(oNPC))
+    {
+        return FALSE;
+    }
+    if (!DL_HasHookCooldownElapsed(oNPC, DL_L_UD_LAST_DAMAGED_TICK, DL_UD_DAMAGED_COOLDOWN_SEC))
+    {
+        return FALSE;
+    }
+
+    DL_MarkHookCooldown(oNPC, DL_L_UD_LAST_DAMAGED_TICK);
+    return TRUE;
+}
+
+int DL_ShouldEmitSpellEvent(object oNPC)
+{
+    if (!DL_CanEmitNpcHookEvent(oNPC))
+    {
+        return FALSE;
+    }
+    if (!DL_HasHookCooldownElapsed(oNPC, DL_L_UD_LAST_SPELL_TICK, DL_UD_SPELL_COOLDOWN_SEC))
+    {
+        return FALSE;
+    }
+
+    DL_MarkHookCooldown(oNPC, DL_L_UD_LAST_SPELL_TICK);
     return TRUE;
 }
 
