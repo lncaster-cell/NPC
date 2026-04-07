@@ -248,6 +248,7 @@ void DL_OnNpcDeathHook(object oNPC)
     if (sFunctionSlotId != "")
     {
         DL_RecordBaseLostEvent(oNPC, sFunctionSlotId, DL_DIR_ABSENT);
+        DL_ClearBaseLostEventForNpcOrSlot(oNPC, sFunctionSlotId);
         DL_RequestFunctionSlotReview(sFunctionSlotId, DL_RESYNC_BASE_LOST);
     }
 

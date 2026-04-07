@@ -1094,6 +1094,7 @@ void DL_RecordBaseLostEvent(object oNPC, string sFunctionSlotId, int nDirective)
     object oModule = GetModule();
     string sNpcSlotKey = DL_MakeBaseLostNpcKey(oNPC, "slot");
     string sNpcKindKey = DL_MakeBaseLostNpcKey(oNPC, "kind");
+    // Per-NPC/per-slot keys are transient; cleanup paths must call DL_ClearBaseLostEventForNpcOrSlot.
     SetLocalString(oModule, sNpcSlotKey, sFunctionSlotId);
     SetLocalInt(oModule, sNpcKindKey, nDirective);
     if (sFunctionSlotId != "")
@@ -2221,6 +2222,7 @@ void DL_OnNpcDeathHook(object oNPC)
     if (sFunctionSlotId != "")
     {
         DL_RecordBaseLostEvent(oNPC, sFunctionSlotId, DL_DIR_ABSENT);
+        DL_ClearBaseLostEventForNpcOrSlot(oNPC, sFunctionSlotId);
         DL_RequestFunctionSlotReview(sFunctionSlotId, DL_RESYNC_BASE_LOST);
     }
     DeleteLocalInt(oNPC, DL_L_RESYNC_PENDING);
