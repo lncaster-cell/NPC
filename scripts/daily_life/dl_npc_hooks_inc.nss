@@ -37,11 +37,13 @@ int DL_GetHookClockSeconds()
 
 int DL_HasHookCooldownElapsed(object oNPC, string sKey, int nCooldownSec)
 {
+    string sSetKey = sKey + "_set";
     int nNow = DL_GetHookClockSeconds();
+    int bHasValue = GetLocalInt(oNPC, sSetKey);
     int nLast = GetLocalInt(oNPC, sKey);
     int nElapsed = nNow - nLast;
 
-    if (nLast <= 0)
+    if (!bHasValue)
     {
         return TRUE;
     }
@@ -54,6 +56,7 @@ int DL_HasHookCooldownElapsed(object oNPC, string sKey, int nCooldownSec)
 
 void DL_MarkHookCooldown(object oNPC, string sKey)
 {
+    SetLocalInt(oNPC, sKey + "_set", TRUE);
     SetLocalInt(oNPC, sKey, DL_GetHookClockSeconds());
 }
 
@@ -249,10 +252,15 @@ void DL_OnNpcDeathHook(object oNPC)
     DeleteLocalInt(oNPC, DL_L_SERVICE_MODE);
     DeleteLocalInt(oNPC, DL_L_ANCHOR_GROUP);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK + "_set");
     DeleteLocalInt(oNPC, DL_L_UD_LAST_ATTACK_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_ATTACK_TICK + "_set");
     DeleteLocalInt(oNPC, DL_L_UD_LAST_DISTURBED_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_DISTURBED_TICK + "_set");
     DeleteLocalInt(oNPC, DL_L_UD_LAST_DAMAGED_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_DAMAGED_TICK + "_set");
     DeleteLocalInt(oNPC, DL_L_UD_LAST_SPELL_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_SPELL_TICK + "_set");
 
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, "npc death hook -> runtime cleanup complete");
 }
