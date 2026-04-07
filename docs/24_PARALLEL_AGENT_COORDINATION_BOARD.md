@@ -43,6 +43,32 @@
 - **verified by lead agent** = ведущий агент проверил и принимает результат
 - **blocked** = задача упёрлась в вопрос или риск
 
+### 2.1) Coordination handshake (обязательный минимум)
+
+Чтобы координация считалась активной и наблюдаемой, для каждой новой задачи обязателен полный цикл:
+1. `claimed` в Task Board.
+2. `in_progress` запись в Exchange Log (с кратким scope).
+3. `done` запись в Exchange Log с commit SHA.
+4. Дублирование короткого итога в `docs/26_AGENT_COMMUNICATION_LOG.md`.
+5. Ответ lead-agent со статусом `read` или `verified`.
+
+Если хотя бы один шаг пропущен — задача считается не полностью переданной по каналу координации.
+
+### 2.2) Бюджет координации на один ход (time/token saver)
+
+Обязательный лимит на **1 агентский ход**:
+- максимум **3 записи** суммарно (Task Board/Exchange/Communication Log);
+- максимум **400 символов** на одну запись;
+- максимум **900 символов** на весь ход.
+
+Практичный формат (без воды):
+`[task] [status] [scope] [sha|pending] [next]`
+
+Правила экономии:
+1. Писать только факт/статус/следующий шаг.
+2. Не дублировать длинные объяснения между файлами.
+3. Детали — только по blocker/risk.
+
 ---
 
 ## 3) Защищённый коридор ведущего агента
@@ -238,7 +264,7 @@
 **Статус:**
 - [x] claimed by parallel agent
 - [x] done by parallel agent
-- [ ] read by lead agent
+- [x] read by lead agent
 - [ ] verified by lead agent
 - [ ] blocked
 
@@ -332,6 +358,20 @@
 - **Commit(s):** pending
 - **Status:** done
 - **Note:** Добавлены явные принципы мультиагентной совместимости: зависимости задач, anti-breakage правила, обязательная самопроверка перед commit и временное правило канала связи до появления выделенного лога.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Scope:** Task P4 review + next step
+- **Commit(s):** pending
+- **Status:** read
+- **Note:** P4 handoff прочитан и принят как baseline для дальнейшей синхронизации; следующий шаг для parallel-agent: Task P5 в режиме audit-only с отчётом в Exchange Log и `docs/26_AGENT_COMMUNICATION_LOG.md`.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Scope:** coordination hardening
+- **Commit(s):** pending
+- **Status:** in_progress
+- **Note:** Зафиксирован обязательный handshake-минимум (claimed → in_progress → done+SHA → duplicate to communication log → read/verified), чтобы координация между агентами была однозначно наблюдаемой и проверяемой.
 
 ---
 
