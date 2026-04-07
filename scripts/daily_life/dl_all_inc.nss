@@ -681,6 +681,31 @@ int DL_ShouldDisableService(object oNPC, int nOverrideKind)
     return FALSE;
 }
 
+int DL_IsSocialScheduleWindow(int nScheduleWindow)
+{
+    return nScheduleWindow == DL_WIN_SOCIAL || nScheduleWindow == DL_WIN_LATE_SOCIAL;
+}
+
+int DL_IsDutyScheduleWindow(int nScheduleWindow)
+{
+    return nScheduleWindow == DL_WIN_DAY_DUTY || nScheduleWindow == DL_WIN_NIGHT_DUTY;
+}
+
+int DL_IsDutyDirective(int nDirective)
+{
+    return nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST;
+}
+
+int DL_IsWorkOrServiceDirective(int nDirective)
+{
+    return nDirective == DL_DIR_WORK || nDirective == DL_DIR_SERVICE;
+}
+
+int DL_IsUnavailableDirective(int nDirective)
+{
+    return nDirective == DL_DIR_UNASSIGNED || nDirective == DL_DIR_ABSENT;
+}
+
 int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayType)
 {
     int nFamily = DL_GetNpcFamily(oNPC);
@@ -689,7 +714,7 @@ int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayTy
     if (nScheduleWindow == DL_WIN_SLEEP) return DL_DIR_SLEEP;
     if (nFamily == DL_FAMILY_LAW)
     {
-        if (nScheduleWindow == DL_WIN_DAY_DUTY || nScheduleWindow == DL_WIN_NIGHT_DUTY)
+        if (DL_IsDutyScheduleWindow(nScheduleWindow))
         {
             if (nSubtype == DL_SUBTYPE_GATE_POST) return DL_DIR_HOLD_POST;
             return DL_DIR_DUTY;
@@ -700,7 +725,7 @@ int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayTy
     if (nFamily == DL_FAMILY_CRAFT)
     {
         if (nScheduleWindow == DL_WIN_WORK_CORE) return DL_DIR_WORK;
-        if (nScheduleWindow == DL_WIN_SOCIAL || nScheduleWindow == DL_WIN_LATE_SOCIAL || nDayType == DL_DAY_REST) return DL_DIR_SOCIAL;
+        if (DL_IsSocialScheduleWindow(nScheduleWindow) || nDayType == DL_DAY_REST) return DL_DIR_SOCIAL;
         return DL_DIR_PUBLIC_PRESENCE;
     }
     if (nFamily == DL_FAMILY_TRADE_SERVICE)
@@ -714,7 +739,7 @@ int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayTy
         if (nScheduleWindow == DL_WIN_SOCIAL) return DL_DIR_SOCIAL;
         return DL_DIR_PUBLIC_PRESENCE;
     }
-    if (nScheduleWindow == DL_WIN_SOCIAL || nScheduleWindow == DL_WIN_LATE_SOCIAL) return DL_DIR_SOCIAL;
+    if (DL_IsSocialScheduleWindow(nScheduleWindow)) return DL_DIR_SOCIAL;
     return DL_DIR_PUBLIC_PRESENCE;
 }
 
@@ -785,14 +810,14 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
     int nSubtype = DL_GetNpcSubtype(oNPC);
     if (nOverrideKind == DL_OVR_FIRE)
     {
-        if (nFamily == DL_FAMILY_LAW && (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST))
+        if (nFamily == DL_FAMILY_LAW && DL_IsDutyDirective(nDirective))
         {
             return DL_DLG_INSPECTION;
         }
         return DL_DLG_HIDE;
     }
-    if (nDirective == DL_DIR_WORK || nDirective == DL_DIR_SERVICE) return DL_DLG_WORK;
-    if (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST)
+    if (DL_IsWorkOrServiceDirective(nDirective)) return DL_DLG_WORK;
+    if (DL_IsDutyDirective(nDirective))
     {
         if (nFamily == DL_FAMILY_LAW || nSubtype == DL_SUBTYPE_INSPECTION || nSubtype == DL_SUBTYPE_GATE_POST)
         {
@@ -802,7 +827,7 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
     }
     if (nDirective == DL_DIR_LOCKDOWN_BASE) return DL_DLG_LOCKDOWN;
     if (nDirective == DL_DIR_HIDE_SAFE) return DL_DLG_HIDE;
-    if (nDirective == DL_DIR_UNASSIGNED || nDirective == DL_DIR_ABSENT) return DL_DLG_UNAVAILABLE;
+    if (DL_IsUnavailableDirective(nDirective)) return DL_DLG_UNAVAILABLE;
     return DL_DLG_OFF_DUTY;
 }
 
@@ -810,7 +835,7 @@ int DL_ResolveServiceMode(object oNPC, int nDirective, int nOverrideKind)
 {
     int nFamily = DL_GetNpcFamily(oNPC);
     if (DL_ShouldDisableService(oNPC, nOverrideKind)) return DL_SERVICE_DISABLED;
-    if (nDirective == DL_DIR_UNASSIGNED || nDirective == DL_DIR_ABSENT) return DL_SERVICE_NONE;
+    if (DL_IsUnavailableDirective(nDirective)) return DL_SERVICE_NONE;
     if (nFamily == DL_FAMILY_TRADE_SERVICE && nDirective == DL_DIR_SERVICE) return DL_SERVICE_AVAILABLE;
     if (nFamily == DL_FAMILY_CRAFT && nDirective == DL_DIR_WORK) return DL_SERVICE_LIMITED;
     return DL_SERVICE_DISABLED;

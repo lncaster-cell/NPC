@@ -9,6 +9,31 @@
 // Legacy compatibility include.
 // New runtime entry scripts should prefer the compile-safe aggregation path via dl_all_inc.
 
+int DL_IsSocialScheduleWindow(int nScheduleWindow)
+{
+    return nScheduleWindow == DL_WIN_SOCIAL || nScheduleWindow == DL_WIN_LATE_SOCIAL;
+}
+
+int DL_IsDutyScheduleWindow(int nScheduleWindow)
+{
+    return nScheduleWindow == DL_WIN_DAY_DUTY || nScheduleWindow == DL_WIN_NIGHT_DUTY;
+}
+
+int DL_IsDutyDirective(int nDirective)
+{
+    return nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST;
+}
+
+int DL_IsWorkOrServiceDirective(int nDirective)
+{
+    return nDirective == DL_DIR_WORK || nDirective == DL_DIR_SERVICE;
+}
+
+int DL_IsUnavailableDirective(int nDirective)
+{
+    return nDirective == DL_DIR_UNASSIGNED || nDirective == DL_DIR_ABSENT;
+}
+
 int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayType)
 {
     int nFamily = DL_GetNpcFamily(oNPC);
@@ -26,7 +51,7 @@ int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayTy
 
     if (nFamily == DL_FAMILY_LAW)
     {
-        if (nScheduleWindow == DL_WIN_DAY_DUTY || nScheduleWindow == DL_WIN_NIGHT_DUTY)
+        if (DL_IsDutyScheduleWindow(nScheduleWindow))
         {
             if (nSubtype == DL_SUBTYPE_GATE_POST)
             {
@@ -47,7 +72,7 @@ int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayTy
         {
             return DL_DIR_WORK;
         }
-        if (nScheduleWindow == DL_WIN_SOCIAL || nScheduleWindow == DL_WIN_LATE_SOCIAL || nDayType == DL_DAY_REST)
+        if (DL_IsSocialScheduleWindow(nScheduleWindow) || nDayType == DL_DAY_REST)
         {
             return DL_DIR_SOCIAL;
         }
@@ -75,7 +100,7 @@ int DL_ResolveDirectiveFromSchedule(object oNPC, int nScheduleWindow, int nDayTy
         return DL_DIR_PUBLIC_PRESENCE;
     }
 
-    if (nScheduleWindow == DL_WIN_SOCIAL || nScheduleWindow == DL_WIN_LATE_SOCIAL)
+    if (DL_IsSocialScheduleWindow(nScheduleWindow))
     {
         return DL_DIR_SOCIAL;
     }
@@ -202,17 +227,17 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
     if (nOverrideKind == DL_OVR_FIRE)
     {
         if (nFamily == DL_FAMILY_LAW
-            && (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST))
+            && DL_IsDutyDirective(nDirective))
         {
             return DL_DLG_INSPECTION;
         }
         return DL_DLG_HIDE;
     }
-    if (nDirective == DL_DIR_WORK || nDirective == DL_DIR_SERVICE)
+    if (DL_IsWorkOrServiceDirective(nDirective))
     {
         return DL_DLG_WORK;
     }
-    if (nDirective == DL_DIR_DUTY || nDirective == DL_DIR_HOLD_POST)
+    if (DL_IsDutyDirective(nDirective))
     {
         if (nFamily == DL_FAMILY_LAW
             || nSubtype == DL_SUBTYPE_INSPECTION
@@ -230,7 +255,7 @@ int DL_ResolveDialogueMode(object oNPC, int nDirective, int nOverrideKind)
     {
         return DL_DLG_HIDE;
     }
-    if (nDirective == DL_DIR_UNASSIGNED || nDirective == DL_DIR_ABSENT)
+    if (DL_IsUnavailableDirective(nDirective))
     {
         return DL_DLG_UNAVAILABLE;
     }
@@ -245,7 +270,7 @@ int DL_ResolveServiceMode(object oNPC, int nDirective, int nOverrideKind)
     {
         return DL_SERVICE_DISABLED;
     }
-    if (nDirective == DL_DIR_UNASSIGNED || nDirective == DL_DIR_ABSENT)
+    if (DL_IsUnavailableDirective(nDirective))
     {
         return DL_SERVICE_NONE;
     }
