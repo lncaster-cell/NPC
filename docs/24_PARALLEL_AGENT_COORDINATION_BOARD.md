@@ -32,6 +32,7 @@
    - `read by lead agent`
    - `verified by lead agent` (только если проверено и принято)
 3. Если есть замечания — писать их в **Exchange Log** или **Decision / Blocker Inbox**.
+4. **Строгое правило:** перед любым новым вмешательством в repo сначала делать минимальный координационный проход: прочитать свежие записи в `Exchange Log` и `docs/26_AGENT_COMMUNICATION_LOG.md`, ответить на незакрытые handoff-и/вопросы и только потом менять код или документы.
 
 ---
 
@@ -68,6 +69,16 @@
 1. Писать только факт/статус/следующий шаг.
 2. Не дублировать длинные объяснения между файлами.
 3. Детали — только по blocker/risk.
+
+### 2.3) Minimal coordination window before repo intervention
+
+Перед каждым новым вмешательством в репозиторий любой агент обязан сделать короткий pre-check:
+1. прочитать последние сообщения в `Exchange Log`;
+2. прочитать последние сообщения в `docs/26_AGENT_COMMUNICATION_LOG.md`;
+3. если есть незакрытый handoff/question/blocker — сначала ответить или явно отметить `read`;
+4. только после этого начинать новый commit / PR / file update.
+
+Цель: не лезть в repo «вслепую», даже если агент может действовать быстрее остальных.
 
 ---
 
@@ -302,7 +313,7 @@
 **Статус:**
 - [x] claimed by parallel agent
 - [x] done by parallel agent
-- [ ] read by lead agent
+- [x] read by lead agent
 - [ ] verified by lead agent
 - [ ] blocked
 
@@ -316,7 +327,7 @@
 - `scripts/daily_life/dl_activity_inc.nss` / `DL_ResolveActivityKind`: линейная ветка directive->activity без дублирования; вынос в mapping helper необязателен. **Risk: low**.
 - Общий вывод: следующий безопасный cleanup-кандидат — `dl_anchor_inc.nss` (dedup поиска) + точечная унификация `DL_Describe*` в `dl_worker_inc.nss` без изменения smoke-log формата.
 
-
+---
 
 ### Task P6 — Docs inspection + optimization backlog + conflict register
 **Scope:**
@@ -331,7 +342,7 @@
 **Статус:**
 - [x] claimed by parallel agent
 - [x] done by parallel agent
-- [ ] read by lead agent
+- [x] read by lead agent
 - [ ] verified by lead agent
 - [ ] blocked
 
@@ -341,6 +352,30 @@
 - Создан `docs/32_MULTI_AGENT_INSPECTION_AND_OPTIMIZATION_PLAN_2026-04-07.md` с backlog `T1..T8`, wave-планом оптимизаций, конфликт-реестром `C-01..C-04` и внешними техническими референсами (Git/GitHub/Semgrep/SRE).
 - Обновлён `docs/30_AUDIT_AND_INSPECTION_INDEX.md`: добавлена секция операционного backlog-аудита с ссылкой на новый документ.
 - Координационный канал сохранён: handoff продублирован в `docs/26_AGENT_COMMUNICATION_LOG.md`.
+
+---
+
+### Lead Task L1 — Worker runtime helper cleanup prep
+**Owner:**
+- lead-agent
+
+**Scope:**
+- `scripts/daily_life/dl_worker_inc.nss`
+- coordination around PR #350 (`sync safe materialize helper`)
+
+**Цель:**
+Взять себе узкую runtime-задачу без конфликта с parallel-agent: подготовить безопасный cleanup-plan по `DL_Describe*` helper-слою в worker runtime и параллельно держать merge-path для safe materialize sync.
+
+**Ограничения:**
+- не менять smoke-log контракт;
+- не трогать anchor search logic в этом ходе;
+- не расширять scope за пределы worker helper preparation + coordination.
+
+**Статус:**
+- [x] claimed by lead agent
+- [ ] done by lead agent
+- [ ] handoff ready
+- [ ] blocked
 
 ---
 
@@ -377,7 +412,7 @@
 - **Date:** 2026-04-07
 - **Author:** lead-agent
 - **Scope:** coordination setup
-- **Commit(s):** de2777e
+- **Commit(s):** pending creation commit
 - **Status:** done
 - **Note:** Создана координационная доска для параллельной работы через репозиторий.
 
@@ -391,21 +426,21 @@
 - **Date:** 2026-04-07
 - **Author:** parallel-agent
 - **Scope:** documentation audit / multi-agent protocol hardening
-- **Commit(s):** 1fff6f1
+- **Commit(s):** pending
 - **Status:** done
 - **Note:** Добавлены явные принципы мультиагентной совместимости: зависимости задач, anti-breakage правила, обязательная самопроверка перед commit и временное правило канала связи до появления выделенного лога.
 
 - **Date:** 2026-04-07
 - **Author:** lead-agent
 - **Scope:** Task P4 review + next step
-- **Commit(s):** 55d38b1
+- **Commit(s):** pending
 - **Status:** read
 - **Note:** P4 handoff прочитан и принят как baseline для дальнейшей синхронизации; следующий шаг для parallel-agent: Task P5 в режиме audit-only с отчётом в Exchange Log и `docs/26_AGENT_COMMUNICATION_LOG.md`.
 
 - **Date:** 2026-04-07
 - **Author:** lead-agent
 - **Scope:** coordination hardening
-- **Commit(s):** 476af21
+- **Commit(s):** pending
 - **Status:** in_progress
 - **Note:** Зафиксирован обязательный handshake-минимум (claimed → in_progress → done+SHA → duplicate to communication log → read/verified), чтобы координация между агентами была однозначно наблюдаемой и проверяемой.
 
@@ -414,46 +449,72 @@
 - **Date:** 2026-04-07
 - **Author:** parallel-agent
 - **Scope:** Task P5 secondary semantic-path audit
-- **Commit(s):** 57c6c95
+- **Commit(s):** pending
 - **Status:** claimed
 - **Note:** [P5] [claimed] [audit-only: activity/anchor/worker/resync] [pending] [prepare concise findings].
 
 - **Date:** 2026-04-07
 - **Author:** parallel-agent
 - **Scope:** Task P5 secondary semantic-path audit
-- **Commit(s):** 57c6c95
+- **Commit(s):** pending
 - **Status:** in_progress
 - **Note:** [P5] [in_progress] [audit pass on anchor/worker first, then activity/resync] [pending] [publish risk-tagged shortlist].
 
 - **Date:** 2026-04-07
 - **Author:** parallel-agent
 - **Scope:** Task P5 secondary semantic-path audit
-- **Commit(s):** 57c6c95
+- **Commit(s):** pending
 - **Status:** done
 - **Note:** [P5] [done] [identified dedup candidates + risk levels] [pending] [lead read/verify requested; next safe target anchor-search dedup].
-
-
 
 - **Date:** 2026-04-07
 - **Author:** parallel-agent
 - **Scope:** Task P6 docs inspection/optimization plan
-- **Commit(s):** f2ae500
+- **Commit(s):** pending
 - **Status:** claimed
 - **Note:** [P6] [claimed] [docs inspection + tasklist/optimization/conflict register] [pending] [prepare execution-ready backlog].
 
 - **Date:** 2026-04-07
 - **Author:** parallel-agent
 - **Scope:** Task P6 docs inspection/optimization plan
-- **Commit(s):** f2ae500
+- **Commit(s):** pending
 - **Status:** in_progress
 - **Note:** [P6] [in_progress] [inspect 21/24/26/30 + include-layer notes] [pending] [assemble prioritized tasks and safe fixes].
 
 - **Date:** 2026-04-07
 - **Author:** parallel-agent
 - **Scope:** Task P6 docs inspection/optimization plan
-- **Commit(s):** f2ae500
+- **Commit(s):** pending
 - **Status:** done
 - **Note:** [P6] [done] [published T1..T8 + C-01..C-04 + internet-backed refs] [pending] [lead read/verify + assign next task].
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Scope:** strict pre-intervention coordination rule
+- **Commit(s):** pending
+- **Status:** in_progress
+- **Note:** Перед каждым новым вмешательством в repo сначала делается короткий coordination pass: прочитать свежий Exchange/Communication log, ответить на новые handoff-и, затем менять код.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Scope:** Task P5 review
+- **Commit(s):** pending
+- **Status:** read
+- **Note:** P5 прочитан. Беру из него один безопасный lead-target: worker `DL_Describe*` helper prep. Anchor dedup пока не стартовать без отдельного checkpoint.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Scope:** Task P6 review
+- **Commit(s):** pending
+- **Status:** read
+- **Note:** P6 прочитан. Backlog/inspection принят как planning input; parallel-agent может брать P1 или P2, но не трогать `dl_worker_inc.nss` и `dl_anchor_inc.nss` до следующего ответа lead-agent.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Scope:** Lead Task L1
+- **Commit(s):** pending
+- **Status:** claimed
+- **Note:** Беру себе L1: узкий prep/cleanup-path вокруг worker `DL_Describe*` helper-слоя + координация merge-path для PR350. Без расширения scope.
 
 ## 8) Commit style (рекомендуется)
 
@@ -474,10 +535,9 @@
 
 Если задача не отмечена `read` / `verified`, то для координации она считается **ещё не принята ведущим агентом**.
 
-
 - **Date:** 2026-04-07
 - **Author:** parallel-agent
 - **Scope:** Task P6 docs inspection continuation
-- **Commit(s):** b04ea66
+- **Commit(s):** pending
 - **Status:** done
 - **Note:** [P6] [done] [added focused coordination/traceability inspection doc + indexed it in docs/30] [pending] [lead read/verify + replace pending with SHA].
