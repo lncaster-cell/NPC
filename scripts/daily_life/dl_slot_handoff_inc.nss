@@ -141,6 +141,7 @@ void DL_RecordBaseLostEvent(object oNPC, string sFunctionSlotId, int nDirective)
     string sNpcSlotKey = DL_MakeBaseLostNpcKey(oNPC, "slot");
     string sNpcKindKey = DL_MakeBaseLostNpcKey(oNPC, "kind");
 
+    // Per-NPC/per-slot keys are transient; cleanup paths must call DL_ClearBaseLostEventForNpcOrSlot.
     SetLocalString(oModule, sNpcSlotKey, sFunctionSlotId);
     SetLocalInt(oModule, sNpcKindKey, nDirective);
 
