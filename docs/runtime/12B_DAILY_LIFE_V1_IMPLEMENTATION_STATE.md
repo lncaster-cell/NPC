@@ -9,6 +9,7 @@
 ## 1) Короткий итог (для владельца проекта)
 
 - **Сделано:** каркас Milestone A (Steps A–E) реализован в `scripts/daily_life/`: есть контракты, resolver, materialization, area worker/tier lifecycle, base-lost/slot-handoff stub, NPC lifecycle/event hooks, compile-safe entry layer.
+- **Runtime edge-case fixed (2026-04-07):** midnight/`00:00:00` больше не трактуется как «пустое» время в cooldown/slot-review дедупликации; теперь используется явная инициализация состояния.
 - **Не сделано:** Milestone A acceptance не закрыт фактами прогонов A–G на owner/toolset среде.
 - **Граница текущего состояния:** система уже может вести NPC в `HOT`-зонах по расписанию и override-правилам, но это ещё не финальный production verdict.
 

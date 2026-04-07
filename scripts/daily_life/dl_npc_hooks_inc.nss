@@ -23,6 +23,7 @@ const string DL_L_UD_LAST_ATTACK_TICK = "dl_ud_last_attack_tick";
 const string DL_L_UD_LAST_DISTURBED_TICK = "dl_ud_last_disturbed_tick";
 const string DL_L_UD_LAST_DAMAGED_TICK = "dl_ud_last_damaged_tick";
 const string DL_L_UD_LAST_SPELL_TICK = "dl_ud_last_spell_tick";
+const string DL_L_UD_COOLDOWN_INIT_SUFFIX = "_init";
 
 const int DL_UD_PERCEPTION_COOLDOWN_SEC = 3;
 const int DL_UD_ATTACK_COOLDOWN_SEC = 1;
@@ -37,14 +38,19 @@ int DL_GetHookClockSeconds()
 
 int DL_HasHookCooldownElapsed(object oNPC, string sKey, int nCooldownSec)
 {
+    string sInitKey = sKey + DL_L_UD_COOLDOWN_INIT_SUFFIX;
     int nNow = DL_GetHookClockSeconds();
-    int nLast = GetLocalInt(oNPC, sKey);
-    int nElapsed = nNow - nLast;
+    int bInitialized = GetLocalInt(oNPC, sInitKey);
+    int nLast;
+    int nElapsed;
 
-    if (nLast <= 0)
+    if (!bInitialized)
     {
         return TRUE;
     }
+
+    nLast = GetLocalInt(oNPC, sKey);
+    nElapsed = nNow - nLast;
     if (nElapsed < 0)
     {
         nElapsed += 86400;
@@ -54,7 +60,10 @@ int DL_HasHookCooldownElapsed(object oNPC, string sKey, int nCooldownSec)
 
 void DL_MarkHookCooldown(object oNPC, string sKey)
 {
+    string sInitKey = sKey + DL_L_UD_COOLDOWN_INIT_SUFFIX;
+
     SetLocalInt(oNPC, sKey, DL_GetHookClockSeconds());
+    SetLocalInt(oNPC, sInitKey, TRUE);
 }
 
 int DL_IsNpcLifecycleSubject(object oNPC)
