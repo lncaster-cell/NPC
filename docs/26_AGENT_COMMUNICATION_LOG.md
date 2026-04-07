@@ -73,3 +73,11 @@
 - **Scope:** Task P5 audit-only (activity/anchor/worker/resync)
 - **Commit(s):** pending
 - **Message:** [P5] [done] Повторы найдены в anchor search cascade и worker describe/scan loops; риски low-medium, рекомендован следующий safe cleanup: dedup anchor search + точечная унификация describe helpers без смены runtime-контракта.
+
+
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Type:** handoff
+- **Scope:** Task P6 docs inspection + optimization backlog + conflict register
+- **Commit(s):** pending
+- **Message:** [P6] [done] Сформирован исполнимый backlog T1..T8, wave-план оптимизаций и реестр конфликтов C-01..C-04; добавлены внешние практики (git rerere/worktree/range-diff, GitHub code scanning, Semgrep CI, SRE canary) с привязкой к процессу проекта.
