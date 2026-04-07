@@ -1,7 +1,7 @@
 # Ambient Life v2 — Project Library
 
 Дата: 2026-04-07  
-Статус: Active (runtime + documentation sync)
+Статус: Active (runtime + documentation sync + registry)
 
 ## 1) Роль документа
 `00_PROJECT_LIBRARY.md` — служебный routing-слой.
@@ -16,6 +16,11 @@
 5. **Специализированные design-spec**: `20_NPC_BEHAVIOR_SYSTEM_DESIGN_RU.md` (детальная модель поведения NPC).
 6. **Служебные документы**: `10` (решения), `16` (sync-map), `18` (режим этапа), `21` (операционный контроль), `architecture/*` (вспомогательные карты).
 7. **Инспекционные отчёты документации/кода**: `30_AUDIT_AND_INSPECTION_INDEX.md` (единый вход), где агрегированы `23/24/25/27/28/29` как traceability-снимки.
+
+## 2A) Единый реестр и сортировка
+- Полная раскладка документов по слоям: `docs/library/DOCUMENT_REGISTRY.md`.
+- Быстрый переход по доменам: `docs/library/DOMAIN_INDEX.md`.
+- Для новых документов сначала выбираем слой в реестре, потом создаём файл.
 
 ## 3) Routing-правила
 - Меняется legal/world model → `12A`.

@@ -1,7 +1,7 @@
 # Ambient Life v2 — MASTER PLAN (краткая сводка и индекс)
 
 Дата: 2026-04-07
-Статус: навигационный индекс (не канонический дизайн-том)
+Статус: навигационный индекс (не канонический дизайн-том, привязан к реестру)
 
 ---
 
@@ -19,6 +19,7 @@
 ## 2) Быстрый маршрут чтения после `17`
 
 0. Если задача относится к текущей фазе активной реализации, сначала открыть `docs/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`.
+0.1. Для быстрой сортировки и поиска нужного класса документов открыть `docs/library/DOCUMENT_REGISTRY.md`.
 1. `docs/12A_WORLD_MODEL_CANON.md` — world/legal/witness/city response + планируемый судебный lifecycle.
 2. `docs/12B_RUNTIME_MASTER_PLAN.md` — runtime-архитектура, операционный контур и ограничения.
    - Детализация redesign Daily Life: `docs/12B_DAILY_LIFE_VNEXT_CANON.md`.

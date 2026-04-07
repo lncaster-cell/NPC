@@ -45,6 +45,7 @@
 1. `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md` — общий канон и инварианты.
 2. `docs/12_MASTER_PLAN.md` — короткая карта всей библиотеки.
 3. `docs/architecture/01_PROJECT_PASSPORT.md` — домены и границы.
+4. `docs/library/DOCUMENT_REGISTRY.md` — отсортированный реестр документации по слоям.
 
 ### Старт для активной разработки (ежедневный контур)
 1. `docs/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — операционная точка входа.

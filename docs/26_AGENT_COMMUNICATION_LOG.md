@@ -80,3 +80,11 @@
 - **Scope:** Task P6 continuation (docs inspection + coordination traceability)
 - **Commit(s):** b04ea66
 - **Message:** [P6] [done] Добавлен follow-up inspection по каналам координации и рискам traceability (`pending`→SHA дисциплина), индекс аудитов обновлён для нового snapshot.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Type:** handoff
+- **Scope:** docs anti-chaos sorting / unified registry
+- **Commit(s):** this-commit
+- **Message:** [DOC-SORT] [done] Введён единый реестр слоёв документации (`DOCUMENT_REGISTRY`) + обновлены routing/index файлы. Следующим агентам: новые документы класть строго по слоям, audit-снимки индексировать через `30`.
+
