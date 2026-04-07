@@ -106,6 +106,46 @@
    - базовый запуск: `scripts/daily_life/dl_smoke_milestone_a.nss`;
    - Step E проверка: `scripts/daily_life/dl_smoke_step_e.nss`.
 
+
+
+### 5.1) Preflight + smoke: подготовка к компиляции и запуску
+
+Чтобы не терять время на «пустые» smoke-прогоны, сначала выполняйте runtime preflight прямо в Toolset:
+
+1. Запустить скрипт: `scripts/daily_life/dl_smoke_preflight.nss`
+2. Убедиться, что в логе есть:
+   - `Preflight summary ... errors=0`
+   - `Preflight status=PASS`
+
+Если preflight даёт `FAIL`, сначала исправляем контрактные ошибки (locals/tiers/NPC), и только потом идём в A–G smoke.
+
+Что обязательно настроить в Toolset:
+
+- **Module Properties**
+  - `OnModuleLoad -> scripts/daily_life/dl_on_load`
+  - Local bool: `dl_smoke_trace = TRUE`
+- **Area Properties**
+  - `OnEnter -> scripts/daily_life/dl_area_enter`
+  - `OnExit -> scripts/daily_life/dl_area_exit`
+  - `OnHeartbeat -> scripts/daily_life/dl_area_tick`
+  - Local int: `dl_area_tier = 2` хотя бы в одной тестовой зоне
+- **NPC Properties**
+  - Locals: `dl_npc_family`, `dl_npc_subtype`, `dl_schedule_template`, `dl_npc_base`
+  - Рекомендуемый флаг участия в worker: `dl_named=TRUE` **или** `dl_persistent=TRUE`
+  - Hooks:
+    - `OnSpawn -> scripts/daily_life/dl_npc_onspawn`
+    - `OnUserDefined -> scripts/daily_life/dl_npc_onud`
+    - `OnDeath -> scripts/daily_life/dl_npc_ondeath`
+
+После preflight-запуска:
+- `scripts/daily_life/dl_smoke_milestone_a.nss` (основной A–G smoke),
+- `scripts/daily_life/dl_smoke_step_e.nss` (проверка Step E / base-lost handoff).
+
+Ожидаемые маркеры успеха в логах:
+- `MilestoneA smoke A..G status=...`
+- `smoke snapshot ... directive=... dialogue=... service=...`
+- для Step E: `checked/absent/unassigned/last_kind/last_slot`
+
 ---
 
 ## 6) Границы, которые нельзя размывать
