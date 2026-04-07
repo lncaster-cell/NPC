@@ -72,4 +72,11 @@
 - **Type:** note
 - **Scope:** docs cleanup / legacy ruleset archive / repo hygiene
 - **Commit(s):** pending
-- **Message:** [DOC-CLEANUP] [in_progress] [archive outdated ruleset + fix links + add gitignore hygiene] [pending] [handoff-ready for parallel read].
+- **Message:** [P6] [done] Сформирован исполнимый backlog T1..T8, wave-план оптимизаций и реестр конфликтов C-01..C-04; добавлены внешние практики (git rerere/worktree/range-diff, GitHub code scanning, Semgrep CI, SRE canary) с привязкой к процессу проекта.
+
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Type:** handoff
+- **Scope:** Task P6 continuation (docs inspection + coordination traceability)
+- **Commit(s):** pending
+- **Message:** [P6] [done] Добавлен follow-up inspection по каналам координации и рискам traceability (`pending`→SHA дисциплина), индекс аудитов обновлён для нового snapshot.

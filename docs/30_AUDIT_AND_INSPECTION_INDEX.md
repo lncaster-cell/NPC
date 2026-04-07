@@ -36,6 +36,7 @@
 
 ### D. Операционный inspection/optimization backlog
 7. `docs/32_MULTI_AGENT_INSPECTION_AND_OPTIMIZATION_PLAN_2026-04-07.md` — текущий список задач, план оптимизаций и стартовый реестр багов/конфликтов для мультиагентной работы.
+8. `docs/33_DOCUMENTATION_INSPECTION_AND_COORDINATION_2026-04-07.md` — продолжение инспекции по мультиагентной координации, рискам трассируемости и safe actions.
 
 ---
 

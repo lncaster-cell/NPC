@@ -474,3 +474,10 @@
 
 Если задача не отмечена `read` / `verified`, то для координации она считается **ещё не принята ведущим агентом**.
 
+
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Scope:** Task P6 docs inspection continuation
+- **Commit(s):** pending
+- **Status:** done
+- **Note:** [P6] [done] [added focused coordination/traceability inspection doc + indexed it in docs/30] [pending] [lead read/verify + replace pending with SHA].
