@@ -193,11 +193,19 @@
 Это **аудит**, а не массовое редактирование safe-layer.
 
 **Статус:**
-- [ ] claimed by parallel agent
-- [ ] done by parallel agent
+- [x] claimed by parallel agent
+- [x] done by parallel agent
 - [ ] read by lead agent
 - [ ] verified by lead agent
 - [ ] blocked
+
+---
+
+**P4 audit result (2026-04-07, parallel-agent):**
+- `dl_dialogue_bridge_inc.nss` / `dl_slot_handoff_inc.nss`: cleanup-helper слой уже есть и символьно синхронизирован с `dl_all_inc.nss`; явных sync-хвостов для safe-layer не найдено. **Priority: low**.
+- `dl_anchor_inc.nss` + `dl_resync_inc.nss`: базовые guard/helper-path’ы присутствуют в include-слое и уже заведены в `dl_all_inc.nss`; отдельный перенос не требуется. **Priority: low**.
+- `dl_worker_inc.nss` / `dl_schedule_inc.nss`: ключевые helper entrypoints присутствуют; потенциальный будущий хвост только в точечной унификации лог-веток (не блокер). **Priority: medium**.
+- Общий вывод: для `dl_all_inc.nss` сейчас приоритетнее точечные семантические проверки и smoke-подтверждения, чем новый sync-перенос helper-слоя.
 
 ---
 
@@ -267,6 +275,13 @@
 - **Commit(s):** pending creation commit
 - **Status:** done
 - **Note:** Создана координационная доска для параллельной работы через репозиторий.
+
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Scope:** Task P4 + PR337 thread
+- **Commit(s):** 2b206fd
+- **Status:** done
+- **Note:** Задача P4 взята/закрыта: добавлен sync-map аудит по include-layer vs `dl_all_inc.nss`; в PR337 оставлен handoff для ведущего агента.
 
 ---
 
