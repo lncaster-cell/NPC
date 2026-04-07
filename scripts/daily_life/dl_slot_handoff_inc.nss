@@ -20,6 +20,11 @@ string DL_MakeSlotReviewKey(string sFunctionSlotId, string sField)
     return "dl_slot_review_" + sFunctionSlotId + "_" + sField;
 }
 
+string DL_MakeSlotReviewInitKey(string sFunctionSlotId)
+{
+    return DL_MakeSlotReviewKey(sFunctionSlotId, "initialized");
+}
+
 int DL_GetCurrentSlotReviewTick()
 {
     return (GetTimeHour() * 3600) + (GetTimeMinute() * 60) + GetTimeSecond();
@@ -270,11 +275,13 @@ void DL_ClearFunctionSlotReviewState(object oModule, string sFunctionSlotId)
     string sLastTickSetKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick_set");
     string sLastReasonKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason");
     string sAttemptsKey = DL_MakeSlotReviewKey(sFunctionSlotId, "attempts");
+    string sInitializedKey = DL_MakeSlotReviewInitKey(sFunctionSlotId);
 
     DeleteLocalInt(oModule, sLastTickKey);
     DeleteLocalInt(oModule, sLastTickSetKey);
     DeleteLocalInt(oModule, sLastReasonKey);
     DeleteLocalInt(oModule, sAttemptsKey);
+    DeleteLocalInt(oModule, sInitializedKey);
 }
 
 void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
@@ -284,12 +291,14 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
     string sLastTickSetKey;
     string sLastReasonKey;
     string sAttemptsKey;
+    string sInitializedKey;
     int nNowTick;
     int nLastTick;
     int bHasLastTick;
     int nElapsed;
     int nLastReason;
     int nAttemptCount;
+    int bInitialized;
 
     if (sFunctionSlotId == "")
     {
@@ -301,10 +310,11 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
     sLastTickSetKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick_set");
     sLastReasonKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason");
     sAttemptsKey = DL_MakeSlotReviewKey(sFunctionSlotId, "attempts");
+    sInitializedKey = DL_MakeSlotReviewInitKey(sFunctionSlotId);
 
     nReason = DL_NormalizeSlotReviewReason(nReason);
     nNowTick = DL_GetCurrentSlotReviewTick();
-    bHasLastTick = GetLocalInt(oModule, sLastTickSetKey);
+    bInitialized = GetLocalInt(oModule, sInitializedKey);
     nLastTick = GetLocalInt(oModule, sLastTickKey);
     nLastReason = GetLocalInt(oModule, sLastReasonKey);
     nAttemptCount = GetLocalInt(oModule, sAttemptsKey) + 1;
@@ -316,7 +326,7 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
 
     SetLocalInt(oModule, sAttemptsKey, nAttemptCount);
 
-    if (bHasLastTick && nLastReason == nReason && nElapsed >= 0 && nElapsed < DL_SLOT_REVIEW_TTL_SECONDS)
+    if (bInitialized && nLastReason == nReason && nElapsed >= 0 && nElapsed < DL_SLOT_REVIEW_TTL_SECONDS)
     {
         DL_Log(DL_DEBUG_VERBOSE,
             "Slot review deduplicated: " + sFunctionSlotId
@@ -327,7 +337,7 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
         return;
     }
 
-    if (bHasLastTick && nLastReason == nReason && nElapsed >= DL_SLOT_REVIEW_TTL_SECONDS)
+    if (bInitialized && nLastReason == nReason && nElapsed >= DL_SLOT_REVIEW_TTL_SECONDS)
     {
         DL_Log(DL_DEBUG_BASIC,
             "Slot review re-requested after ttl: " + sFunctionSlotId
@@ -342,6 +352,7 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
     SetLocalInt(oModule, sLastTickSetKey, TRUE);
     SetLocalInt(oModule, sLastTickKey, nNowTick);
     SetLocalInt(oModule, sLastReasonKey, nReason);
+    SetLocalInt(oModule, sInitializedKey, TRUE);
     DL_Log(DL_DEBUG_BASIC,
         "Slot review requested: " + sFunctionSlotId
         + ", reason=" + IntToString(nReason)
