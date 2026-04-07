@@ -808,22 +808,36 @@ void DL_SetServiceMode(object oNPC, int nServiceMode)
     SetLocalInt(oNPC, DL_L_SERVICE_MODE, nServiceMode);
 }
 
+void DL_ApplyResolvedInteractionState(object oNPC, int nDirective, int nAnchorGroup, int nDialogueMode, int nServiceMode)
+{
+    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
+    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
+    DL_SetDialogueMode(oNPC, nDialogueMode);
+    DL_SetServiceMode(oNPC, nServiceMode);
+}
+
 void DL_RefreshInteractionState(object oNPC, object oArea)
 {
     int nDirective = DL_ResolveDirective(oNPC, oArea);
     int nOverride = DL_GetTopOverride(oNPC, oArea);
-    DL_SetDialogueMode(oNPC, DL_ResolveDialogueMode(oNPC, nDirective, nOverride));
-    DL_SetServiceMode(oNPC, DL_ResolveServiceMode(oNPC, nDirective, nOverride));
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_ResolveAnchorGroup(oNPC, nDirective));
+    DL_ApplyResolvedInteractionState(
+        oNPC,
+        nDirective,
+        DL_ResolveAnchorGroup(oNPC, nDirective),
+        DL_ResolveDialogueMode(oNPC, nDirective, nOverride),
+        DL_ResolveServiceMode(oNPC, nDirective, nOverride)
+    );
 }
 
 void DL_SetInteractionStateExplicit(object oNPC, int nDirective, int nDialogueMode, int nServiceMode)
 {
-    DL_SetDialogueMode(oNPC, nDialogueMode);
-    DL_SetServiceMode(oNPC, nServiceMode);
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_ResolveAnchorGroup(oNPC, nDirective));
+    DL_ApplyResolvedInteractionState(
+        oNPC,
+        nDirective,
+        DL_ResolveAnchorGroup(oNPC, nDirective),
+        nDialogueMode,
+        nServiceMode
+    );
 }
 
 int DL_IsAnchorContextAllowed(object oNPC, object oPoint)
@@ -1269,11 +1283,26 @@ int DL_IsConversationStoreCandidate(object oStore, string sStoreTag)
     return GetTag(oStore) == sStoreTag;
 }
 
+int DL_IsConversationStoreSearchArea(object oArea)
+{
+    return GetIsObjectValid(oArea) && GetObjectType(oArea) == OBJECT_TYPE_AREA;
+}
+
+void DL_LogConversationStoreAreaConflict(object oNPC, object oArea, string sStoreTag)
+{
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store tag conflict in area: area_tag=" + GetTag(oArea) + ", store_tag=" + sStoreTag);
+}
+
+void DL_LogConversationStoreSearchConflict(object oNPC, string sStoreTag)
+{
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store tag conflict across search context: store_tag=" + sStoreTag);
+}
+
 int DL_CountConversationStoresInArea(object oArea, string sStoreTag)
 {
     object oObject;
     int nMatchCount = 0;
-    if (!GetIsObjectValid(oArea)) return 0;
+    if (!DL_IsConversationStoreSearchArea(oArea)) return 0;
     oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
@@ -1286,7 +1315,7 @@ int DL_CountConversationStoresInArea(object oArea, string sStoreTag)
 object DL_FindConversationStoreInArea(object oArea, string sStoreTag)
 {
     object oObject;
-    if (!GetIsObjectValid(oArea)) return OBJECT_INVALID;
+    if (!DL_IsConversationStoreSearchArea(oArea)) return OBJECT_INVALID;
     oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
@@ -1318,7 +1347,7 @@ object DL_GetConversationStore(object oNPC)
     nAreaMatches = DL_CountConversationStoresInArea(oNpcArea, sStoreTag);
     if (nAreaMatches > 1)
     {
-        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store tag conflict in area: area_tag=" + GetTag(oNpcArea) + ", store_tag=" + sStoreTag);
+        DL_LogConversationStoreAreaConflict(oNPC, oNpcArea, sStoreTag);
         return OBJECT_INVALID;
     }
     if (nAreaMatches == 1)
@@ -1352,16 +1381,19 @@ object DL_GetConversationStore(object oNPC)
                 oArea = GetObjectByTag(sAreaTag, nAreaIndex);
                 continue;
             }
-            nAreaMatches = DL_CountConversationStoresInArea(oArea, sStoreTag);
-            if (nAreaMatches > 1)
+            if (DL_IsConversationStoreSearchArea(oArea))
             {
-                DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store tag conflict in area: area_tag=" + GetTag(oArea) + ", store_tag=" + sStoreTag);
-                return OBJECT_INVALID;
-            }
-            if (nAreaMatches == 1)
-            {
-                oCandidate = DL_FindConversationStoreInArea(oArea, sStoreTag);
-                nTotalMatches += 1;
+                nAreaMatches = DL_CountConversationStoresInArea(oArea, sStoreTag);
+                if (nAreaMatches > 1)
+                {
+                    DL_LogConversationStoreAreaConflict(oNPC, oArea, sStoreTag);
+                    return OBJECT_INVALID;
+                }
+                if (nAreaMatches == 1)
+                {
+                    oCandidate = DL_FindConversationStoreInArea(oArea, sStoreTag);
+                    nTotalMatches += 1;
+                }
             }
             nAreaIndex += 1;
             oArea = GetObjectByTag(sAreaTag, nAreaIndex);
@@ -1369,7 +1401,7 @@ object DL_GetConversationStore(object oNPC)
     }
     if (nTotalMatches > 1)
     {
-        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store tag conflict across search context: store_tag=" + sStoreTag);
+        DL_LogConversationStoreSearchConflict(oNPC, sStoreTag);
         return OBJECT_INVALID;
     }
     if (nTotalMatches == 1 && GetIsObjectValid(oCandidate)) return oCandidate;
@@ -1386,13 +1418,13 @@ int DL_OpenConversationStore(object oNPC, object oPC)
     if (!GetIsObjectValid(oPC) || !DL_CanOpenConversationStore(oNPC)) return FALSE;
     oStore = DL_GetConversationStore(oNPC);
     sStoreTag = GetLocalString(oNPC, DL_L_CONV_STORE_TAG);
-    sResolvedStoreTag = GetTag(oStore);
-    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "open conversation store: npc_tag=" + GetTag(oNPC) + ", store_tag=" + sStoreTag + ", resolved_store_tag=" + sResolvedStoreTag);
     if (!GetIsObjectValid(oStore))
     {
         DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store missing or invalid");
         return FALSE;
     }
+    sResolvedStoreTag = GetTag(oStore);
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "open conversation store: npc_tag=" + GetTag(oNPC) + ", store_tag=" + sStoreTag + ", resolved_store_tag=" + sResolvedStoreTag);
     nMarkup = GetLocalInt(oNPC, DL_L_CONV_STORE_MARKUP);
     nMarkdown = GetLocalInt(oNPC, DL_L_CONV_STORE_MARKDOWN);
     OpenStore(oStore, oPC, nMarkup, nMarkdown);
@@ -1419,14 +1451,6 @@ void DL_ApplyLocalWalk(object oNPC, object oPoint)
     if (!GetIsObjectValid(oPoint)) return;
     AssignCommand(oNPC, ClearAllActions());
     AssignCommand(oNPC, ActionMoveToObject(oPoint, TRUE));
-}
-
-void DL_ApplyResolvedInteractionState(object oNPC, int nDirective, int nAnchorGroup, int nDialogueMode, int nServiceMode)
-{
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
-    DL_SetDialogueMode(oNPC, nDialogueMode);
-    DL_SetServiceMode(oNPC, nServiceMode);
 }
 
 void DL_ApplyPlotModeByDirective(object oNPC, int nDirective)
