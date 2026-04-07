@@ -274,7 +274,7 @@ void DL_OnNpcDeathHook(object oNPC)
     DeleteLocalInt(oNPC, DL_L_DIALOGUE_MODE);
     DeleteLocalInt(oNPC, DL_L_SERVICE_MODE);
     DeleteLocalInt(oNPC, DL_L_ANCHOR_GROUP);
-    // Keep init-flag cleanup key in sync with DL_HasHookCooldownElapsed.
+    // Keep cooldown cleanup suffix in sync with DL_L_UD_COOLDOWN_INIT_SUFFIX.
     DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK + DL_L_UD_COOLDOWN_INIT_SUFFIX);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_ATTACK_TICK);
