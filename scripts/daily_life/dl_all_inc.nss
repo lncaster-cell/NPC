@@ -224,12 +224,17 @@ int DL_IsDirectiveVisible(int nDirective)
         && nDirective != DL_DIR_UNASSIGNED;
 }
 
+int DL_IsPlayableAreaPlayer(object oObject)
+{
+    return GetIsPC(oObject) && !GetIsDM(oObject);
+}
+
 int DL_HasAnyPlayers(object oArea)
 {
     object oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
-        if (GetIsPC(oObject) && !GetIsDM(oObject))
+        if (DL_IsPlayableAreaPlayer(oObject))
         {
             return TRUE;
         }
@@ -243,7 +248,7 @@ int DL_HasAnyPlayersExcept(object oArea, object oIgnored)
     object oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
-        if (oObject != oIgnored && GetIsPC(oObject) && !GetIsDM(oObject))
+        if (oObject != oIgnored && DL_IsPlayableAreaPlayer(oObject))
         {
             return TRUE;
         }
@@ -316,16 +321,21 @@ string DL_GetSubtypeAnchorToken(object oNPC, int nAnchorGroup)
     return DL_GetAnchorGroupToken(nAnchorGroup);
 }
 
+string DL_BuildIndexedAnchorTag(string sPrefix, string sToken, int nIndex)
+{
+    return sPrefix + "_" + sToken + "_" + IntToString(nIndex);
+}
+
 string DL_GetAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
 {
-    return GetTag(oNPC) + "_" + DL_GetAnchorGroupToken(nAnchorGroup) + "_" + IntToString(nIndex);
+    return DL_BuildIndexedAnchorTag(GetTag(oNPC), DL_GetAnchorGroupToken(nAnchorGroup), nIndex);
 }
 
 string DL_GetBaseAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
 {
     object oBase = GetLocalObject(oNPC, DL_L_NPC_BASE);
     if (!GetIsObjectValid(oBase)) return "";
-    return GetTag(oBase) + "_" + DL_GetAnchorGroupToken(nAnchorGroup) + "_" + IntToString(nIndex);
+    return DL_BuildIndexedAnchorTag(GetTag(oBase), DL_GetAnchorGroupToken(nAnchorGroup), nIndex);
 }
 
 string DL_GetSpecializedAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
@@ -335,7 +345,7 @@ string DL_GetSpecializedAnchorTagCandidate(object oNPC, int nAnchorGroup, int nI
     if (sToken == "") return "";
     if (GetIsObjectValid(oBase))
     {
-        return GetTag(oBase) + "_" + sToken + "_" + IntToString(nIndex);
+        return DL_BuildIndexedAnchorTag(GetTag(oBase), sToken, nIndex);
     }
     return sToken + "_" + IntToString(nIndex);
 }
@@ -343,7 +353,7 @@ string DL_GetSpecializedAnchorTagCandidate(object oNPC, int nAnchorGroup, int nI
 string DL_GetAreaAnchorTagCandidate(object oNPC, object oArea, int nAnchorGroup, int nIndex)
 {
     if (!GetIsObjectValid(oArea)) return "";
-    return GetTag(oArea) + "_" + DL_GetSubtypeAnchorToken(oNPC, nAnchorGroup) + "_" + IntToString(nIndex);
+    return DL_BuildIndexedAnchorTag(GetTag(oArea), DL_GetSubtypeAnchorToken(oNPC, nAnchorGroup), nIndex);
 }
 
 int DL_IsFamilyInFirstPlayableSlice(int nFamily)
@@ -643,15 +653,16 @@ int DL_HasCriticalOverride(object oNPC, object oArea)
     return nOverride == DL_OVR_FIRE || nOverride == DL_OVR_QUARANTINE;
 }
 
+int DL_IsLawFamilyOverrideExempt(object oNPC)
+{
+    return DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW;
+}
+
 int DL_ShouldSuppressMaterialization(object oNPC, int nOverrideKind)
 {
-    if (nOverrideKind == DL_OVR_FIRE)
+    if (nOverrideKind == DL_OVR_FIRE || nOverrideKind == DL_OVR_QUARANTINE)
     {
-        return DL_GetNpcFamily(oNPC) != DL_FAMILY_LAW;
-    }
-    if (nOverrideKind == DL_OVR_QUARANTINE)
-    {
-        return DL_GetNpcFamily(oNPC) != DL_FAMILY_LAW;
+        return !DL_IsLawFamilyOverrideExempt(oNPC);
     }
     return FALSE;
 }
@@ -659,7 +670,7 @@ int DL_ShouldSuppressMaterialization(object oNPC, int nOverrideKind)
 int DL_ShouldDisableService(object oNPC, int nOverrideKind)
 {
     if (nOverrideKind == DL_OVR_FIRE) return TRUE;
-    if (nOverrideKind == DL_OVR_QUARANTINE) return DL_GetNpcFamily(oNPC) != DL_FAMILY_LAW;
+    if (nOverrideKind == DL_OVR_QUARANTINE) return !DL_IsLawFamilyOverrideExempt(oNPC);
     return FALSE;
 }
 
