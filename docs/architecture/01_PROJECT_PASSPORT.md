@@ -11,8 +11,8 @@
 
 Он:
 - не заменяет `README.md`;
-- не заменяет `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`;
-- не заменяет `docs/12_MASTER_PLAN.md`;
+- не заменяет `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`;
+- не заменяет `docs/entry/12_MASTER_PLAN.md`;
 - не дублирует нормативную детализацию `12A–12E`, `13`, `14`.
 
 Если нужна общая картина проекта, открывается `17`, а не этот паспорт.
@@ -23,14 +23,14 @@
 
 | Домен | Граница (что это) | Primary SoT |
 |---|---|---|
-| NPC Daily Life | Штатная рутина NPC: schedule/route/sleep/activity и локальные отклонения | `docs/12B_RUNTIME_MASTER_PLAN.md` |
-| City Response | Оперативный городской ответ на инцидент (alarm/escalation/de-escalation) | `docs/12B_RUNTIME_MASTER_PLAN.md` |
-| Legal / Witness / Crime | Нормативная квалификация, свидетели, преступления, правовой lifecycle | `docs/12A_WORLD_MODEL_CANON.md` |
-| Player Property | Личное/клановое/публичное владение и права доступа | `docs/12C_PLAYER_PROPERTY_SYSTEM.md` |
-| World Travel | Межрегиональная связность, land/sea маршруты, travel-state | `docs/12D_WORLD_TRAVEL_CANON.md` |
-| Trade / City State | Макроустойчивость города, supply/deficit/crisis | `docs/12E_TRADE_AND_CITY_STATE_CANON.md` |
-| Clans | Политико-социальные клановые сущности и последствия | `docs/14_CLAN_SYSTEM_DESIGN.md` |
-| Aging / Succession | Старение, смерть, наследование и смена поколений | `docs/13_AGING_AND_CLAN_SUCCESSION.md` |
+| NPC Daily Life | Штатная рутина NPC: schedule/route/sleep/activity и локальные отклонения | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` |
+| City Response | Оперативный городской ответ на инцидент (alarm/escalation/de-escalation) | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` |
+| Legal / Witness / Crime | Нормативная квалификация, свидетели, преступления, правовой lifecycle | `docs/canon/12A_WORLD_MODEL_CANON.md` |
+| Player Property | Личное/клановое/публичное владение и права доступа | `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md` |
+| World Travel | Межрегиональная связность, land/sea маршруты, travel-state | `docs/canon/12D_WORLD_TRAVEL_CANON.md` |
+| Trade / City State | Макроустойчивость города, supply/deficit/crisis | `docs/canon/12E_TRADE_AND_CITY_STATE_CANON.md` |
+| Clans | Политико-социальные клановые сущности и последствия | `docs/canon/14_CLAN_SYSTEM_DESIGN.md` |
+| Aging / Succession | Старение, смерть, наследование и смена поколений | `docs/canon/13_AGING_AND_CLAN_SUCCESSION.md` |
 
 ---
 
