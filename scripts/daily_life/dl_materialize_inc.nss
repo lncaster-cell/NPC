@@ -75,11 +75,15 @@ void DL_ApplyPlotModeByDirective(object oNPC, int nDirective)
     }
 }
 
+void DL_ApplyUnavailableInteractionState(object oNPC, int nDirective)
+{
+    DL_SetInteractionStateExplicit(oNPC, nDirective, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+    DL_ApplyPlotModeByDirective(oNPC, nDirective);
+}
+
 void DL_HideOrMarkAbsent(object oNPC, int nDirective)
 {
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_AG_NONE);
-    DL_ApplyPlotModeByDirective(oNPC, nDirective);
+    DL_ApplyUnavailableInteractionState(oNPC, nDirective);
 }
 
 void DL_HandleUnassignedNpc(object oNPC)
@@ -87,11 +91,8 @@ void DL_HandleUnassignedNpc(object oNPC)
     string sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
 
     AssignCommand(oNPC, ClearAllActions());
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, DL_DIR_UNASSIGNED);
     SetLocalInt(oNPC, DL_L_ACTIVITY_KIND, DL_ACT_NONE);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_AG_NONE);
-    DL_ApplyPlotModeByDirective(oNPC, DL_DIR_UNASSIGNED);
-    DL_SetInteractionStateExplicit(oNPC, DL_DIR_UNASSIGNED, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+    DL_ApplyUnavailableInteractionState(oNPC, DL_DIR_UNASSIGNED);
     DL_RecordBaseLostEvent(oNPC, sFunctionSlotId, DL_DIR_UNASSIGNED);
 
     if (sFunctionSlotId != "")
@@ -237,8 +238,7 @@ int DL_HandleBaseLost(object oNPC, object oArea)
         {
             DL_RequestFunctionSlotReview(sFunctionSlotId, DL_RESYNC_BASE_LOST);
         }
-        DL_HideOrMarkAbsent(oNPC, DL_DIR_ABSENT);
-        DL_SetInteractionStateExplicit(oNPC, DL_DIR_ABSENT, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
+        DL_ApplyUnavailableInteractionState(oNPC, DL_DIR_ABSENT);
         DL_RecordBaseLostEvent(oNPC, sFunctionSlotId, DL_DIR_ABSENT);
         DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base lost branch=ABSENT");
         return TRUE;
@@ -294,8 +294,7 @@ void DL_MaterializeNpc(object oNPC, object oArea)
         {
             DL_LogNpc(oNPC, DL_DEBUG_BASIC, "anchor not found, marking absent");
         }
-        DL_ApplyResolvedInteractionState(oNPC, DL_DIR_ABSENT, DL_AG_NONE, DL_DLG_UNAVAILABLE, DL_SERVICE_NONE);
-        DL_ApplyPlotModeByDirective(oNPC, DL_DIR_ABSENT);
+        DL_ApplyUnavailableInteractionState(oNPC, DL_DIR_ABSENT);
         return;
     }
 
