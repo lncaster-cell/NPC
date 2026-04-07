@@ -25,6 +25,7 @@ const string DL_L_LAST_BASE_LOST_SLOT = "dl_last_base_lost_slot";
 const string DL_L_LAST_BASE_LOST_NPC = "dl_last_base_lost_npc";
 const string DL_L_LAST_BASE_LOST_KIND = "dl_last_base_lost_kind";
 const string DL_L_FUNCTION_SLOT_ID = "dl_function_slot_id";
+const string DL_L_PENDING_SLOT_ID = "dl_pending_slot_id";
 const string DL_L_SMOKE_TRACE = "dl_smoke_trace";
 
 const int DL_DEBUG_NONE = 0;
@@ -1282,6 +1283,9 @@ void DL_OnFunctionSlotAssigned(string sFunctionSlotId, object oNPC)
     DL_ClearFunctionSlotReviewState(oModule, sFunctionSlotId);
     if (GetIsObjectValid(oNPC))
     {
+        // Persist pending slot directly on NPC so bootstrap does not depend on module-wide buffers.
+        SetLocalString(oNPC, DL_L_PENDING_SLOT_ID, sFunctionSlotId);
+
         DL_ApplyAssignedSlotProfile(oNPC, sFunctionSlotId);
         DL_ClearFunctionSlotProfile(sFunctionSlotId);
         SetLocalString(oNPC, DL_L_FUNCTION_SLOT_ID, sFunctionSlotId);
@@ -2119,16 +2123,24 @@ int DL_IsNpcLifecycleSubject(object oNPC)
 string DL_GetPendingBootstrapSlotId(object oNPC)
 {
     object oModule;
+    string sPendingSlotId;
     string sFunctionSlotId;
     string sLastAssignedSlot;
     object oLastAssignedNpc;
     if (!DL_IsNpcLifecycleSubject(oNPC)) return "";
+    sPendingSlotId = GetLocalString(oNPC, DL_L_PENDING_SLOT_ID);
+    if (sPendingSlotId != "") return sPendingSlotId;
     sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
     if (sFunctionSlotId != "") return sFunctionSlotId;
+    // Temporary diagnostic fallback while module-global buffers are still populated.
     oModule = GetModule();
     sLastAssignedSlot = GetLocalString(oModule, DL_L_LAST_SLOT_ASSIGNED);
     oLastAssignedNpc = GetLocalObject(oModule, DL_L_SLOT_ASSIGNED_NPC);
-    if (sLastAssignedSlot != "" && oLastAssignedNpc == oNPC) return sLastAssignedSlot;
+    if (sLastAssignedSlot != "" && oLastAssignedNpc == oNPC)
+    {
+        DL_LogNpc(oNPC, DL_DEBUG_VERBOSE, "pending bootstrap slot fallback from module buffer: " + sLastAssignedSlot);
+        return sLastAssignedSlot;
+    }
     return "";
 }
 
@@ -2145,7 +2157,12 @@ int DL_TryBootstrapNpcProfile(object oNPC)
         DL_ApplyAssignedSlotProfile(oNPC, sFunctionSlotId);
         DL_ClearFunctionSlotProfile(sFunctionSlotId);
     }
-    return DL_IsDailyLifeNpc(oNPC);
+    if (DL_IsDailyLifeNpc(oNPC))
+    {
+        DeleteLocalString(oNPC, DL_L_PENDING_SLOT_ID);
+        return TRUE;
+    }
+    return FALSE;
 }
 
 int DL_CanEmitNpcHookEvent(object oNPC)
@@ -2223,6 +2240,7 @@ void DL_OnNpcDeathHook(object oNPC)
         DL_RecordBaseLostEvent(oNPC, sFunctionSlotId, DL_DIR_ABSENT);
         DL_RequestFunctionSlotReview(sFunctionSlotId, DL_RESYNC_BASE_LOST);
     }
+    DeleteLocalString(oNPC, DL_L_PENDING_SLOT_ID);
     DeleteLocalInt(oNPC, DL_L_RESYNC_PENDING);
     DeleteLocalInt(oNPC, DL_L_RESYNC_REASON);
     DeleteLocalInt(oNPC, DL_L_ACTIVITY_KIND);

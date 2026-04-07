@@ -381,6 +381,9 @@ void DL_OnFunctionSlotAssigned(string sFunctionSlotId, object oNPC)
 
     if (GetIsObjectValid(oNPC))
     {
+        // Persist pending slot directly on NPC so bootstrap does not depend on module-wide buffers.
+        SetLocalString(oNPC, DL_L_PENDING_SLOT_ID, sFunctionSlotId);
+
         DL_ApplyAssignedSlotProfile(oNPC, sFunctionSlotId);
         DL_ClearFunctionSlotProfile(sFunctionSlotId);
         SetLocalString(oNPC, DL_L_FUNCTION_SLOT_ID, sFunctionSlotId);

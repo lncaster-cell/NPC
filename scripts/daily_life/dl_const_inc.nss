@@ -28,6 +28,7 @@ const string DL_L_LAST_BASE_LOST_SLOT = "dl_last_base_lost_slot";
 const string DL_L_LAST_BASE_LOST_NPC = "dl_last_base_lost_npc";
 const string DL_L_LAST_BASE_LOST_KIND = "dl_last_base_lost_kind";
 const string DL_L_FUNCTION_SLOT_ID = "dl_function_slot_id";
+const string DL_L_PENDING_SLOT_ID = "dl_pending_slot_id";
 const string DL_L_SMOKE_TRACE = "dl_smoke_trace";
 
 const int DL_DEBUG_NONE = 0;
