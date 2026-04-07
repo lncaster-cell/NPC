@@ -1177,14 +1177,19 @@ void DL_RequestAssignedNpcResync(object oNPC)
 {
     int nCurrentReason;
     int nRequestedReason;
+    int nSelectedReason;
 
     if (!GetIsObjectValid(oNPC)) return;
 
     nCurrentReason = DL_NormalizeResyncReason(GetLocalInt(oNPC, DL_L_RESYNC_REASON));
     nRequestedReason = DL_NormalizeResyncReason(DL_RESYNC_SLOT_ASSIGNED);
+    nSelectedReason = DL_SelectStrongerResyncReason(nCurrentReason, nRequestedReason);
 
     SetLocalInt(oNPC, DL_L_RESYNC_PENDING, TRUE);
-    SetLocalInt(oNPC, DL_L_RESYNC_REASON, DL_SelectStrongerResyncReason(nCurrentReason, nRequestedReason));
+    if (nSelectedReason != nCurrentReason)
+    {
+        SetLocalInt(oNPC, DL_L_RESYNC_REASON, nSelectedReason);
+    }
 }
 
 void DL_ClearFunctionSlotReviewState(object oModule, string sFunctionSlotId)
