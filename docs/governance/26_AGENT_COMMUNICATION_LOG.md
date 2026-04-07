@@ -123,3 +123,10 @@
 - **Scope:** global runtime contour compliance audit (docs/canon/research)
 - **Commit(s):** pending
 - **Message:** [RUNTIME-GLOBAL-AUDIT] [done] Выполнен глобальный аудит контура Daily Life v1: зафиксировано соответствие event-driven/area-centric модели и выявлены gap-зоны по observability (counters, micro-SLO). Добавлен отчёт `docs/audits/35_*`, индекс аудитов обновлён.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Type:** handoff
+- **Scope:** README docs dedup / smoke setup section
+- **Commit(s):** pending
+- **Message:** [DOC-DEDUP] [done] Убрано дублирование setup-блоков в README: Module/Area/NPC contract сведены в один checklist-табличный блок, readiness-секция теперь ссылается на него без повторов.
