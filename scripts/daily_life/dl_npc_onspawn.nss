@@ -2,5 +2,5 @@
 
 void main()
 {
-    DL_OnNpcSpawnHook(OBJECT_SELF);
+    DL_SignalNpcUserDefined(OBJECT_SELF, DL_UD_BOOTSTRAP);
 }

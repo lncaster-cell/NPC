@@ -2,5 +2,5 @@
 
 void main()
 {
-    DL_OnNpcDeathHook(OBJECT_SELF);
+    DL_SignalNpcUserDefined(OBJECT_SELF, DL_UD_CLEANUP);
 }
