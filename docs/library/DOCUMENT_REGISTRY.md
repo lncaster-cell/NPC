@@ -65,6 +65,8 @@
 - `docs/governance/26_AGENT_COMMUNICATION_LOG.md`
 - `docs/architecture/01_PROJECT_PASSPORT.md`
 - `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md`
+- `docs/24_PARALLEL_AGENT_COORDINATION_BOARD.md` *(compatibility mirror while open PRs are merged)*
+- `docs/26_AGENT_COMMUNICATION_LOG.md` *(compatibility mirror while open PRs are merged)*
 
 ### 2.5 Audit layer
 

@@ -1,3 +1,7 @@
+> [!WARNING]
+> Compatibility mirror: canonical file moved to `docs/governance/26_AGENT_COMMUNICATION_LOG.md`.
+> Keep updates synchronized in both files until all open PRs are merged.
+
 # Agent Communication Log
 
 Статус: active  
