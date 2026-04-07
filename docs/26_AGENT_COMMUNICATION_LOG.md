@@ -113,3 +113,10 @@
 - **Scope:** runtime contour audit + event-driven hardening
 - **Commit(s):** pending
 - **Message:** [RUNTIME-AUDIT] [done] Проведён целевой audit docs↔code по Daily Life runtime контуру; `OnSpawn/OnDeath` централизованы через `OnUserDefined` dispatcher path, добавлен отчёт `34_*` и обновлён audit index.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Type:** handoff
+- **Scope:** owner docs / Daily Life contour presentation
+- **Commit(s):** pending
+- **Message:** [OWNER-PRESENTATION] [done] Подготовлен owner-facing документ `35_DAILY_LIFE_V1_OWNER_PRESENTATION_RU.md`: простой обзор контура Daily Life v1 + проверочная таблица механик + чеклист верификации + шаблон комментариев владельца.
