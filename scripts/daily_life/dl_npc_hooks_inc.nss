@@ -258,16 +258,17 @@ void DL_OnNpcDeathHook(object oNPC)
     DeleteLocalInt(oNPC, DL_L_DIALOGUE_MODE);
     DeleteLocalInt(oNPC, DL_L_SERVICE_MODE);
     DeleteLocalInt(oNPC, DL_L_ANCHOR_GROUP);
+    // Keep init-flag cleanup key in sync with DL_HasHookCooldownElapsed.
     DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK);
-    DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK + "_set");
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK + DL_L_UD_COOLDOWN_INIT_SUFFIX);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_ATTACK_TICK);
-    DeleteLocalInt(oNPC, DL_L_UD_LAST_ATTACK_TICK + "_set");
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_ATTACK_TICK + DL_L_UD_COOLDOWN_INIT_SUFFIX);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_DISTURBED_TICK);
-    DeleteLocalInt(oNPC, DL_L_UD_LAST_DISTURBED_TICK + "_set");
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_DISTURBED_TICK + DL_L_UD_COOLDOWN_INIT_SUFFIX);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_DAMAGED_TICK);
-    DeleteLocalInt(oNPC, DL_L_UD_LAST_DAMAGED_TICK + "_set");
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_DAMAGED_TICK + DL_L_UD_COOLDOWN_INIT_SUFFIX);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_SPELL_TICK);
-    DeleteLocalInt(oNPC, DL_L_UD_LAST_SPELL_TICK + "_set");
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_SPELL_TICK + DL_L_UD_COOLDOWN_INIT_SUFFIX);
 
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, "npc death hook -> runtime cleanup complete");
 }
