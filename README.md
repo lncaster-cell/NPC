@@ -42,16 +42,17 @@
 ## 3) Быстрая навигация (куда идти в первую очередь)
 
 ### Старт для понимания проекта
-1. `docs/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md` — общий канон и инварианты.
-2. `docs/12_MASTER_PLAN.md` — короткая карта всей библиотеки.
+1. `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md` — общий канон и инварианты.
+2. `docs/entry/12_MASTER_PLAN.md` — короткая карта всей библиотеки.
 3. `docs/architecture/01_PROJECT_PASSPORT.md` — домены и границы.
+4. `docs/library/DOCUMENT_REGISTRY.md` — отсортированный реестр документации по слоям.
 
 ### Старт для активной разработки (ежедневный контур)
-1. `docs/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — операционная точка входа.
-2. `docs/12B_DAILY_LIFE_V1_MILESTONE_A_CHECKLIST.md` — шаги A–E и критерии.
-3. `docs/12B_DAILY_LIFE_V1_SMOKE_RUNBOOK.md` — как прогонять проверки.
-4. `docs/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md` — фиксация фактических результатов.
-5. `docs/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md` — снимок «что реально сделано в коде».
+1. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — операционная точка входа.
+2. `docs/runtime/12B_DAILY_LIFE_V1_MILESTONE_A_CHECKLIST.md` — шаги A–E и критерии.
+3. `docs/runtime/12B_DAILY_LIFE_V1_SMOKE_RUNBOOK.md` — как прогонять проверки.
+4. `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md` — фиксация фактических результатов.
+5. `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md` — снимок «что реально сделано в коде».
 
 ### Код
 - Runtime-реализация: `scripts/daily_life/`.
@@ -121,6 +122,6 @@
 Если меняется механика:
 1. Сначала обновляется профильный SoT-документ (доменный канон).
 2. Затем синхронизируются обзорные документы (`README.md`, `12_MASTER_PLAN`, control panel).
-3. Если затронуты архитектурные компромиссы — фиксировать в `docs/10_DECISIONS_LOG.md`.
+3. Если затронуты архитектурные компромиссы — фиксировать в `docs/governance/10_DECISIONS_LOG.md`.
 
 README — это **маршрутизатор** и оперативная сводка, а не замена канонических документов.
