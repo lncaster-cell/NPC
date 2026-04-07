@@ -37,7 +37,7 @@
 - Rule-driven resolver: `schedule/day/override` -> `directive`.
 - Затем вычисляются `anchor_group`, `dialogue_mode`, `service_mode`.
 - Materialization применяет это состояние (перемещение/скрытие/absent + interaction state).
-- Внутренняя санитарная чистка идёт по runtime-first принципу: сначала optimizируются hot-path schedule/resolver/worker/resync/materialize/anchor helper-функции, потом менее частый legacy include-layer, handoff bookkeeping, conversation/store bridge helpers, NPC hook producer helpers и shared util/override helpers.
+- Внутренняя санитарная чистка идёт по runtime-first принципу: сначала optimizируются hot-path schedule/resolver/worker/resync/materialize/anchor helper-функции, потом менее частый legacy include-layer, handoff bookkeeping, conversation/store bridge helpers, NPC hook producer helpers и shared util/override/types helpers.
 
 ### 1.5 Граница текущей реализации
 - Реализован каркас Milestone A (A–E).
@@ -69,6 +69,7 @@
 | 2026-04-06 | Dialogue bridge cleanup | Упростить conversation/store search guards и dedup conflict logging | В `dl_dialogue_bridge_inc` добавлены helpers для search-area validation и conflict logging, `DL_OpenConversationStore` теперь логирует resolved tag только после valid store check | done |
 | 2026-04-06 | NPC hook producer cleanup | Убрать repeated cooldown-gated producer paths и event dispatch repetition в hook layer | В `dl_npc_hooks_inc` добавлены `DL_RequestNpcWorkerHookResync`, `DL_IsNpcProducerEvent`, `DL_IsPlayablePerceptionSource`, `DL_ShouldEmitHookEventWithCooldown`; `OnUserDefined` и `ShouldEmit*` paths упрощены | done |
 | 2026-04-06 | Util/override helper cleanup | Убрать repeated player checks, indexed anchor-tag building и repeated law-family override gates | В `dl_util_inc` добавлены `DL_IsPlayableAreaPlayer` и `DL_BuildIndexedAnchorTag`; в `dl_override_inc` добавлен `DL_IsLawFamilyOverrideExempt` | done |
+| 2026-04-07 | Types helper cleanup | Убрать repeated family/subtype decision branches в default schedule и default directive mask paths | В `dl_types_inc` добавлены `DL_GetDefaultScheduleTemplateForProfile` и `DL_GetDefaultAllowedDirectivesMaskForFamily`; compile-safe path синхронизирован через `dl_all_inc` | done |
 
 ---
 

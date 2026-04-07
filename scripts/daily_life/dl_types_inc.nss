@@ -76,11 +76,8 @@ int DL_IsDailyLifeNpc(object oNPC)
     return DL_GetNpcFamily(oNPC) != DL_FAMILY_NONE;
 }
 
-int DL_GetDefaultScheduleTemplate(object oNPC)
+int DL_GetDefaultScheduleTemplateForProfile(int nFamily, int nSubtype)
 {
-    int nFamily = DL_GetNpcFamily(oNPC);
-    int nSubtype = DL_GetNpcSubtype(oNPC);
-
     if (nFamily == DL_FAMILY_LAW)
     {
         if (nSubtype == DL_SUBTYPE_GATE_POST)
@@ -108,6 +105,11 @@ int DL_GetDefaultScheduleTemplate(object oNPC)
     return DL_SCH_CIVILIAN_HOME;
 }
 
+int DL_GetDefaultScheduleTemplate(object oNPC)
+{
+    return DL_GetDefaultScheduleTemplateForProfile(DL_GetNpcFamily(oNPC), DL_GetNpcSubtype(oNPC));
+}
+
 int DL_GetScheduleTemplate(object oNPC)
 {
     int nTemplate = GetLocalInt(oNPC, DL_L_SCHEDULE_TEMPLATE);
@@ -128,10 +130,8 @@ string DL_GetFunctionSlotId(object oNPC)
     return GetLocalString(oNPC, DL_L_FUNCTION_SLOT_ID);
 }
 
-int DL_GetDefaultAllowedDirectivesMask(object oNPC)
+int DL_GetDefaultAllowedDirectivesMaskForFamily(int nFamily)
 {
-    int nFamily = DL_GetNpcFamily(oNPC);
-
     if (nFamily == DL_FAMILY_LAW)
     {
         return (1 << DL_DIR_SLEEP)
@@ -168,6 +168,11 @@ int DL_GetDefaultAllowedDirectivesMask(object oNPC)
         | (1 << DL_DIR_PUBLIC_PRESENCE)
         | (1 << DL_DIR_HIDE_SAFE)
         | (1 << DL_DIR_ABSENT);
+}
+
+int DL_GetDefaultAllowedDirectivesMask(object oNPC)
+{
+    return DL_GetDefaultAllowedDirectivesMaskForFamily(DL_GetNpcFamily(oNPC));
 }
 
 int DL_GetAllowedDirectivesMask(object oNPC)
