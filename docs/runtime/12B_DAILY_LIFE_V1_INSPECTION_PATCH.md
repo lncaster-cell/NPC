@@ -8,7 +8,9 @@
 
 ## 1) Канонический приоритет документов
 
-Для Daily Life v1 использовать следующий порядок приоритета:
+Для Daily Life v1 использовать следующий порядок приоритета.
+Быстрый reference-map без дублирования поддерживается в:
+- `docs/runtime/12B_DAILY_LIFE_V1_SOURCE_OF_TRUTH.md`
 
 1. `docs/runtime/12B_DAILY_LIFE_V1_INSPECTION_PATCH.md`
 2. `docs/runtime/12B_DAILY_LIFE_V1_MILESTONE_A_CHECKLIST.md`

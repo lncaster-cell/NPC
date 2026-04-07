@@ -43,6 +43,7 @@
 - `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_SLICE.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md`
+- `docs/runtime/12B_DAILY_LIFE_V1_SOURCE_OF_TRUTH.md` *(единая карта приоритетов, чтобы не дублировать reference-блоки)*
 - `docs/runtime/12B_DAILY_LIFE_V1_RULESET_REV1.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_DATA_CONTRACTS.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_RUNTIME_PIPELINE.md`

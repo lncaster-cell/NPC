@@ -6,13 +6,8 @@
 
 ---
 
-> Этот документ дополняет:
-> - `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
-> - `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` *(legacy pointer, full source moved to REV1 + git history)*
-> - `docs/runtime/12B_DAILY_LIFE_V1_RULESET_REV1.md`
-> - `docs/runtime/12B_DAILY_LIFE_V1_DATA_CONTRACTS.md`
->
-> Его задача — описать, как именно Daily Life v1 должен исполняться в runtime: что вызывает area-контур, что делает resolver, что делает materialization, где происходит resync, где начинается handoff во внешние системы.
+> Source-of-truth и приоритет документов для Daily Life v1: `docs/runtime/12B_DAILY_LIFE_V1_SOURCE_OF_TRUTH.md`.
+> Этот документ описывает, как именно Daily Life v1 должен исполняться в runtime: что вызывает area-контур, что делает resolver, что делает materialization, где происходит resync, где начинается handoff во внешние системы.
 
 ## 1) Главный принцип runtime
 

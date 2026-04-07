@@ -41,12 +41,8 @@
 
 ---
 
-> Этот документ дополняет:
-> - `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
-> - `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` *(legacy pointer, full source moved to REV1 + git history)*
-> - `docs/runtime/12B_DAILY_LIFE_V1_RULESET_REV1.md`
->
-> Его задача — дать агенту и разработчику конкретный набор сущностей, enum-ов и полей, по которым можно писать код без повторного расползания дизайна.
+> Source-of-truth и приоритет документов для Daily Life v1: `docs/runtime/12B_DAILY_LIFE_V1_SOURCE_OF_TRUTH.md`.
+> Задача этого документа — дать агенту и разработчику конкретный набор сущностей, enum-ов и полей, по которым можно писать код без повторного расползания дизайна.
 
 ## 1) Общий принцип
 
