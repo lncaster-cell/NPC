@@ -16,12 +16,12 @@
 4. `docs/12B_DAILY_LIFE_V1_RUNTIME_PIPELINE.md`
 5. `docs/12B_DAILY_LIFE_V1_DATA_CONTRACTS.md`
 6. `docs/12B_DAILY_LIFE_V1_RULESET_REV1.md`
-7. `docs/12B_DAILY_LIFE_V1_RULESET.md`
+7. `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md`
 8. `docs/12B_DAILY_LIFE_VNEXT_CANON.md`
 
 Нормативное правило:
 - `docs/12B_DAILY_LIFE_V1_RULESET_REV1.md` считается каноническим ruleset-документом для v1.
-- `docs/12B_DAILY_LIFE_V1_RULESET.md` считать ранним черновиком, не использовать как основной source-of-truth для реализации.
+- `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` считать ранним черновиком, не использовать как основной source-of-truth для реализации.
 
 ---
 
