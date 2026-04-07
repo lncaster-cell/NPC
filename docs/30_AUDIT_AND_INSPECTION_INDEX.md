@@ -21,9 +21,10 @@
 ## 2) Актуальный порядок чтения (сверху вниз)
 
 ### A. Глубокий аудит (main line)
-1. `docs/29_DEEP_GLOBAL_AUDIT_CONTINUATION_2026-04-03.md` — **актуальная фаза** (Phase 3).
-2. `docs/28_DEEP_GLOBAL_AUDIT_CONTINUATION_2026-04-02.md` — количественная детализация (Phase 2).
-3. `docs/27_DEEP_GLOBAL_AUDIT_2026-04-02.md` — базовый сквозной аудит (Phase 1).
+1. `docs/31_GLOBAL_AUDIT_2026-04-07.md` — **актуальная фаза** (контрольный аудит).
+2. `docs/29_DEEP_GLOBAL_AUDIT_CONTINUATION_2026-04-03.md` — Phase 3.
+3. `docs/28_DEEP_GLOBAL_AUDIT_CONTINUATION_2026-04-02.md` — количественная детализация (Phase 2).
+4. `docs/27_DEEP_GLOBAL_AUDIT_2026-04-02.md` — базовый сквозной аудит (Phase 1).
 
 ### B. Инспекции doc↔code
 4. `docs/25_DOCUMENTATION_CODE_INSPECTION_2026-04-02.md` — актуальная инспекционная сверка.
