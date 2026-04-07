@@ -85,11 +85,10 @@ int DL_IsNpcLifecycleSubject(object oNPC)
 
 string DL_GetPendingBootstrapSlotId(object oNPC)
 {
-    object oModule;
     string sPendingSlotId;
     string sFunctionSlotId;
-    string sLastAssignedSlot;
-    object oLastAssignedNpc;
+    string sBootstrapSlotId;
+    object oBootstrapNpc;
 
     if (!DL_IsNpcLifecycleSubject(oNPC))
     {
@@ -108,14 +107,12 @@ string DL_GetPendingBootstrapSlotId(object oNPC)
         return sFunctionSlotId;
     }
 
-    // Temporary diagnostic fallback while module-global buffers are still populated.
-    oModule = GetModule();
-    sLastAssignedSlot = GetLocalString(oModule, DL_L_LAST_SLOT_ASSIGNED);
-    oLastAssignedNpc = GetLocalObject(oModule, DL_L_SLOT_ASSIGNED_NPC);
-    if (sLastAssignedSlot != "" && oLastAssignedNpc == oNPC)
+    sBootstrapSlotId = DL_GetSlotAssignedBootstrapSlotForNpc(oNPC);
+    oBootstrapNpc = DL_GetSlotAssignedBootstrapNpcForSlot(sBootstrapSlotId);
+    if (sBootstrapSlotId != "" && oBootstrapNpc == oNPC)
     {
-        DL_LogNpc(oNPC, DL_DEBUG_VERBOSE, "pending bootstrap slot fallback from module buffer: " + sLastAssignedSlot);
-        return sLastAssignedSlot;
+        DL_LogNpc(oNPC, DL_DEBUG_VERBOSE, "pending bootstrap slot fallback from per-slot mapping: " + sBootstrapSlotId);
+        return sBootstrapSlotId;
     }
 
     return "";
@@ -152,6 +149,7 @@ int DL_TryBootstrapNpcProfile(object oNPC)
 
     if (DL_IsDailyLifeNpc(oNPC))
     {
+        DL_ClearSlotAssignedBootstrapForNpcOrSlot(oNPC, sFunctionSlotId);
         DeleteLocalString(oNPC, DL_L_PENDING_SLOT_ID);
         return TRUE;
     }

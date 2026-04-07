@@ -1025,6 +1025,53 @@ string DL_MakeBaseLostSlotKey(string sFunctionSlotId, string sField)
     return "dl_base_lost_slot_" + sFunctionSlotId + "_" + sField;
 }
 
+string DL_MakeSlotAssignedNpcKey(object oNPC, string sField)
+{
+    return "dl_slot_assigned_npc_" + ObjectToString(oNPC) + "_" + sField;
+}
+
+string DL_MakeSlotAssignedSlotKey(string sFunctionSlotId, string sField)
+{
+    return "dl_slot_assigned_slot_" + sFunctionSlotId + "_" + sField;
+}
+
+void DL_RecordSlotAssignedBootstrap(object oNPC, string sFunctionSlotId)
+{
+    object oModule = GetModule();
+    string sNpcSlotKey;
+    string sSlotNpcKey;
+    if (!GetIsObjectValid(oNPC) || sFunctionSlotId == "") return;
+    sNpcSlotKey = DL_MakeSlotAssignedNpcKey(oNPC, "slot");
+    sSlotNpcKey = DL_MakeSlotAssignedSlotKey(sFunctionSlotId, "npc");
+    SetLocalString(oModule, sNpcSlotKey, sFunctionSlotId);
+    SetLocalObject(oModule, sSlotNpcKey, oNPC);
+}
+
+void DL_ClearSlotAssignedBootstrapForNpcOrSlot(object oNPC, string sFunctionSlotId)
+{
+    object oModule = GetModule();
+    if (GetIsObjectValid(oNPC))
+    {
+        DeleteLocalString(oModule, DL_MakeSlotAssignedNpcKey(oNPC, "slot"));
+    }
+    if (sFunctionSlotId != "")
+    {
+        DeleteLocalObject(oModule, DL_MakeSlotAssignedSlotKey(sFunctionSlotId, "npc"));
+    }
+}
+
+string DL_GetSlotAssignedBootstrapSlotForNpc(object oNPC)
+{
+    if (!GetIsObjectValid(oNPC)) return "";
+    return GetLocalString(GetModule(), DL_MakeSlotAssignedNpcKey(oNPC, "slot"));
+}
+
+object DL_GetSlotAssignedBootstrapNpcForSlot(string sFunctionSlotId)
+{
+    if (sFunctionSlotId == "") return OBJECT_INVALID;
+    return GetLocalObject(GetModule(), DL_MakeSlotAssignedSlotKey(sFunctionSlotId, "npc"));
+}
+
 void DL_StageFunctionSlotProfile(string sFunctionSlotId, int nFamily, int nSubtype, int nSchedule, object oBase)
 {
     object oModule = GetModule();
@@ -1286,10 +1333,11 @@ void DL_OnFunctionSlotAssigned(string sFunctionSlotId, object oNPC)
     {
         // Persist pending slot directly on NPC so bootstrap does not depend on module-wide buffers.
         SetLocalString(oNPC, DL_L_PENDING_SLOT_ID, sFunctionSlotId);
+        SetLocalString(oNPC, DL_L_FUNCTION_SLOT_ID, sFunctionSlotId);
+        DL_RecordSlotAssignedBootstrap(oNPC, sFunctionSlotId);
 
         DL_ApplyAssignedSlotProfile(oNPC, sFunctionSlotId);
         DL_ClearFunctionSlotProfile(sFunctionSlotId);
-        SetLocalString(oNPC, DL_L_FUNCTION_SLOT_ID, sFunctionSlotId);
         DL_RequestAssignedNpcResync(oNPC);
     }
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, "Slot assigned: " + sFunctionSlotId);
@@ -2123,24 +2171,21 @@ int DL_IsNpcLifecycleSubject(object oNPC)
 
 string DL_GetPendingBootstrapSlotId(object oNPC)
 {
-    object oModule;
     string sPendingSlotId;
     string sFunctionSlotId;
-    string sLastAssignedSlot;
-    object oLastAssignedNpc;
+    string sBootstrapSlotId;
+    object oBootstrapNpc;
     if (!DL_IsNpcLifecycleSubject(oNPC)) return "";
     sPendingSlotId = GetLocalString(oNPC, DL_L_PENDING_SLOT_ID);
     if (sPendingSlotId != "") return sPendingSlotId;
     sFunctionSlotId = DL_GetFunctionSlotId(oNPC);
     if (sFunctionSlotId != "") return sFunctionSlotId;
-    // Temporary diagnostic fallback while module-global buffers are still populated.
-    oModule = GetModule();
-    sLastAssignedSlot = GetLocalString(oModule, DL_L_LAST_SLOT_ASSIGNED);
-    oLastAssignedNpc = GetLocalObject(oModule, DL_L_SLOT_ASSIGNED_NPC);
-    if (sLastAssignedSlot != "" && oLastAssignedNpc == oNPC)
+    sBootstrapSlotId = DL_GetSlotAssignedBootstrapSlotForNpc(oNPC);
+    oBootstrapNpc = DL_GetSlotAssignedBootstrapNpcForSlot(sBootstrapSlotId);
+    if (sBootstrapSlotId != "" && oBootstrapNpc == oNPC)
     {
-        DL_LogNpc(oNPC, DL_DEBUG_VERBOSE, "pending bootstrap slot fallback from module buffer: " + sLastAssignedSlot);
-        return sLastAssignedSlot;
+        DL_LogNpc(oNPC, DL_DEBUG_VERBOSE, "pending bootstrap slot fallback from per-slot mapping: " + sBootstrapSlotId);
+        return sBootstrapSlotId;
     }
     return "";
 }
@@ -2160,6 +2205,7 @@ int DL_TryBootstrapNpcProfile(object oNPC)
     }
     if (DL_IsDailyLifeNpc(oNPC))
     {
+        DL_ClearSlotAssignedBootstrapForNpcOrSlot(oNPC, sFunctionSlotId);
         DeleteLocalString(oNPC, DL_L_PENDING_SLOT_ID);
         return TRUE;
     }
