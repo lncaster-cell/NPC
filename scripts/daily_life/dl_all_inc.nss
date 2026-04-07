@@ -2074,9 +2074,36 @@ int DL_RequestNpcHookResync(object oNPC, int nReason, int bForceNow)
     return TRUE;
 }
 
+int DL_RequestNpcWorkerHookResync(object oNPC, int bForceNow)
+{
+    return DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, bForceNow);
+}
+
+int DL_IsNpcProducerEvent(int nEvent)
+{
+    return nEvent == DL_UD_PERCEPTION
+        || nEvent == DL_UD_PHYSICAL_ATTACKED
+        || nEvent == DL_UD_DISTURBED
+        || nEvent == DL_UD_DAMAGED
+        || nEvent == DL_UD_SPELL_CAST_AT;
+}
+
+int DL_IsPlayablePerceptionSource(object oSeen)
+{
+    return GetIsObjectValid(oSeen) && GetIsPC(oSeen) && !GetIsDM(oSeen);
+}
+
+int DL_ShouldEmitHookEventWithCooldown(object oNPC, string sKey, int nCooldownSec)
+{
+    if (!DL_CanEmitNpcHookEvent(oNPC)) return FALSE;
+    if (!DL_HasHookCooldownElapsed(oNPC, sKey, nCooldownSec)) return FALSE;
+    DL_MarkHookCooldown(oNPC, sKey);
+    return TRUE;
+}
+
 void DL_OnNpcSpawnHook(object oNPC)
 {
-    if (!DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, FALSE))
+    if (!DL_RequestNpcWorkerHookResync(oNPC, FALSE))
     {
         DL_LogNpc(oNPC, DL_DEBUG_VERBOSE, "npc spawn hook ignored: bootstrap not ready");
         return;
@@ -2116,66 +2143,45 @@ void DL_OnNpcUserDefinedHook(object oNPC, int nEvent)
         DL_OnNpcSpawnHook(oNPC);
         return;
     }
-    if (nEvent == DL_UD_RESYNC)
-    {
-        DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, FALSE);
-        return;
-    }
-    if (nEvent == DL_UD_FORCE_RESYNC)
-    {
-        DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, TRUE);
-        return;
-    }
     if (nEvent == DL_UD_CLEANUP)
     {
         DL_OnNpcDeathHook(oNPC);
         return;
     }
-    if (nEvent == DL_UD_PERCEPTION || nEvent == DL_UD_PHYSICAL_ATTACKED || nEvent == DL_UD_DISTURBED || nEvent == DL_UD_DAMAGED || nEvent == DL_UD_SPELL_CAST_AT)
+    if (nEvent == DL_UD_RESYNC || nEvent == DL_UD_FORCE_RESYNC)
     {
-        DL_RequestNpcHookResync(oNPC, DL_RESYNC_WORKER, FALSE);
+        DL_RequestNpcWorkerHookResync(oNPC, nEvent == DL_UD_FORCE_RESYNC);
+        return;
+    }
+    if (DL_IsNpcProducerEvent(nEvent))
+    {
+        DL_RequestNpcWorkerHookResync(oNPC, FALSE);
         return;
     }
 }
 
 int DL_ShouldEmitPerceptionEvent(object oNPC, object oSeen)
 {
-    if (!DL_CanEmitNpcHookEvent(oNPC)) return FALSE;
-    if (!GetIsObjectValid(oSeen)) return FALSE;
-    if (!GetIsPC(oSeen) || GetIsDM(oSeen)) return FALSE;
-    if (!DL_HasHookCooldownElapsed(oNPC, DL_L_UD_LAST_PERCEPTION_TICK, DL_UD_PERCEPTION_COOLDOWN_SEC)) return FALSE;
-    DL_MarkHookCooldown(oNPC, DL_L_UD_LAST_PERCEPTION_TICK);
-    return TRUE;
+    if (!DL_IsPlayablePerceptionSource(oSeen)) return FALSE;
+    return DL_ShouldEmitHookEventWithCooldown(oNPC, DL_L_UD_LAST_PERCEPTION_TICK, DL_UD_PERCEPTION_COOLDOWN_SEC);
 }
 
 int DL_ShouldEmitAttackEvent(object oNPC)
 {
-    if (!DL_CanEmitNpcHookEvent(oNPC)) return FALSE;
-    if (!DL_HasHookCooldownElapsed(oNPC, DL_L_UD_LAST_ATTACK_TICK, DL_UD_ATTACK_COOLDOWN_SEC)) return FALSE;
-    DL_MarkHookCooldown(oNPC, DL_L_UD_LAST_ATTACK_TICK);
-    return TRUE;
+    return DL_ShouldEmitHookEventWithCooldown(oNPC, DL_L_UD_LAST_ATTACK_TICK, DL_UD_ATTACK_COOLDOWN_SEC);
 }
 
 int DL_ShouldEmitDisturbedEvent(object oNPC)
 {
-    if (!DL_CanEmitNpcHookEvent(oNPC)) return FALSE;
-    if (!DL_HasHookCooldownElapsed(oNPC, DL_L_UD_LAST_DISTURBED_TICK, DL_UD_DISTURBED_COOLDOWN_SEC)) return FALSE;
-    DL_MarkHookCooldown(oNPC, DL_L_UD_LAST_DISTURBED_TICK);
-    return TRUE;
+    return DL_ShouldEmitHookEventWithCooldown(oNPC, DL_L_UD_LAST_DISTURBED_TICK, DL_UD_DISTURBED_COOLDOWN_SEC);
 }
 
 int DL_ShouldEmitDamagedEvent(object oNPC)
 {
-    if (!DL_CanEmitNpcHookEvent(oNPC)) return FALSE;
-    if (!DL_HasHookCooldownElapsed(oNPC, DL_L_UD_LAST_DAMAGED_TICK, DL_UD_DAMAGED_COOLDOWN_SEC)) return FALSE;
-    DL_MarkHookCooldown(oNPC, DL_L_UD_LAST_DAMAGED_TICK);
-    return TRUE;
+    return DL_ShouldEmitHookEventWithCooldown(oNPC, DL_L_UD_LAST_DAMAGED_TICK, DL_UD_DAMAGED_COOLDOWN_SEC);
 }
 
 int DL_ShouldEmitSpellEvent(object oNPC)
 {
-    if (!DL_CanEmitNpcHookEvent(oNPC)) return FALSE;
-    if (!DL_HasHookCooldownElapsed(oNPC, DL_L_UD_LAST_SPELL_TICK, DL_UD_SPELL_COOLDOWN_SEC)) return FALSE;
-    DL_MarkHookCooldown(oNPC, DL_L_UD_LAST_SPELL_TICK);
-    return TRUE;
+    return DL_ShouldEmitHookEventWithCooldown(oNPC, DL_L_UD_LAST_SPELL_TICK, DL_UD_SPELL_COOLDOWN_SEC);
 }
