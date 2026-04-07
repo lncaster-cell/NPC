@@ -8,7 +8,9 @@
 
 ## 1) Канонический приоритет документов
 
-Для Daily Life v1 использовать следующий порядок приоритета:
+Для Daily Life v1 использовать следующий порядок приоритета.
+Быстрый reference-map без дублирования поддерживается в:
+- `docs/runtime/12B_DAILY_LIFE_V1_SOURCE_OF_TRUTH.md`
 
 1. `docs/runtime/12B_DAILY_LIFE_V1_INSPECTION_PATCH.md`
 2. `docs/runtime/12B_DAILY_LIFE_V1_MILESTONE_A_CHECKLIST.md`
@@ -21,7 +23,7 @@
 
 Нормативное правило:
 - `docs/runtime/12B_DAILY_LIFE_V1_RULESET_REV1.md` считается каноническим ruleset-документом для v1.
-- `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` считать ранним черновиком, не использовать как основной source-of-truth для реализации.
+- `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` — legacy-pointer на ранний черновик; использовать только для исторического контекста, не как source-of-truth.
 
 ---
 

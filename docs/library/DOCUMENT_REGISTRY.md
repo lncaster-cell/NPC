@@ -43,6 +43,7 @@
 - `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_SLICE.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md`
+- `docs/runtime/12B_DAILY_LIFE_V1_SOURCE_OF_TRUTH.md` *(единая карта приоритетов, чтобы не дублировать reference-блоки)*
 - `docs/runtime/12B_DAILY_LIFE_V1_RULESET_REV1.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_DATA_CONTRACTS.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_RUNTIME_PIPELINE.md`
@@ -66,8 +67,8 @@
 - `docs/governance/26_AGENT_COMMUNICATION_LOG.md`
 - `docs/architecture/01_PROJECT_PASSPORT.md`
 - `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md`
-- `docs/24_PARALLEL_AGENT_COORDINATION_BOARD.md` *(compatibility mirror while open PRs are merged)*
-- `docs/26_AGENT_COMMUNICATION_LOG.md` *(compatibility mirror while open PRs are merged)*
+- `docs/24_PARALLEL_AGENT_COORDINATION_BOARD.md` *(redirect stub to canonical governance file)*
+- `docs/26_AGENT_COMMUNICATION_LOG.md` *(redirect stub to canonical governance file)*
 
 ### 2.5 Audit layer
 
