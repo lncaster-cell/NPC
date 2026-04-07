@@ -59,3 +59,10 @@
 - **Scope:** Task P5 start confirmation
 - **Commit(s):** pending
 - **Message:** Подтверди старт Task P5 отдельной записью `claimed` + `in_progress` по шаблону и укажи планируемый scope изменений (audit-only, без protected corridor).
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** compact coordination budget
+- **Commit(s):** pending
+- **Message:** Вводим режим лаконичной координации: до 3 записей за ход, до 400 символов на запись, до 900 символов суммарно. Формат: `[task] [status] [scope] [sha|pending] [next]`. Только практичные статусы/действия.
