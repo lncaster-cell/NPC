@@ -6,6 +6,108 @@ string DL_SmokePassLabel(int bPass)
     return "FAIL";
 }
 
+int DL_SmokeIsInRange(int nValue, int nMin, int nMax)
+{
+    return nValue >= nMin && nValue <= nMax;
+}
+
+void DL_LogReadinessIssue(object oNPC, string sField, int nValue, string sExpected)
+{
+    DL_Log(
+        DL_DEBUG_BASIC,
+        "MilestoneA readiness issue npc=" + GetTag(oNPC) +
+        " field=" + sField +
+        " value=" + IntToString(nValue) +
+        " expected=" + sExpected
+    );
+}
+
+int DL_RunReadinessChecks()
+{
+    object oArea = GetFirstArea();
+    int nAreaCount = 0;
+    int nHotCount = 0;
+    int nNpcCount = 0;
+    int nWarnings = 0;
+    int nErrors = 0;
+    while (GetIsObjectValid(oArea))
+    {
+        int nTier = DL_GetAreaTier(oArea);
+        object oObject = GetFirstObjectInArea(oArea);
+        nAreaCount += 1;
+        if (nTier == DL_AREA_HOT) nHotCount += 1;
+        if (!DL_SmokeIsInRange(nTier, DL_AREA_FROZEN, DL_AREA_HOT))
+        {
+            DL_Log(DL_DEBUG_BASIC, "MilestoneA readiness issue area=" + GetTag(oArea) + " tier=" + IntToString(nTier) + " expected=0..2");
+            nErrors += 1;
+        }
+        while (GetIsObjectValid(oObject))
+        {
+            if (GetObjectType(oObject) == OBJECT_TYPE_CREATURE && !GetIsPC(oObject) && DL_IsDailyLifeNpc(oObject))
+            {
+                int nFamily = DL_GetNpcFamily(oObject);
+                int nSubtype = DL_GetNpcSubtype(oObject);
+                int nSchedule = DL_GetScheduleTemplate(oObject);
+                int nBase = DL_GetNpcBaseKind(oObject);
+                int bNamed = GetLocalInt(oObject, DL_L_NAMED);
+                int bPersistent = GetLocalInt(oObject, DL_L_PERSISTENT);
+                nNpcCount += 1;
+                if (!DL_SmokeIsInRange(nFamily, DL_FAMILY_LAW, DL_FAMILY_CLERGY))
+                {
+                    DL_LogReadinessIssue(oObject, DL_L_NPC_FAMILY, nFamily, "1..6");
+                    nErrors += 1;
+                }
+                if (!DL_SmokeIsInRange(nSubtype, DL_SUBTYPE_PATROL, DL_SUBTYPE_PRIEST))
+                {
+                    DL_LogReadinessIssue(oObject, DL_L_NPC_SUBTYPE, nSubtype, "1..16");
+                    nErrors += 1;
+                }
+                if (!DL_SmokeIsInRange(nSchedule, DL_SCH_EARLY_WORKER, DL_SCH_CIVILIAN_HOME))
+                {
+                    DL_LogReadinessIssue(oObject, DL_L_SCHEDULE_TEMPLATE, nSchedule, "1..7");
+                    nErrors += 1;
+                }
+                if (!DL_SmokeIsInRange(nBase, DL_BASE_HOME, DL_BASE_OFFICE))
+                {
+                    DL_LogReadinessIssue(oObject, DL_L_NPC_BASE, nBase, "1..7");
+                    nErrors += 1;
+                }
+                if (!bNamed && !bPersistent)
+                {
+                    DL_Log(DL_DEBUG_BASIC, "MilestoneA readiness warning npc=" + GetTag(oObject) + " has no worker guarantee flags (dl_named or dl_persistent)");
+                    nWarnings += 1;
+                }
+            }
+            oObject = GetNextObjectInArea(oArea);
+        }
+        oArea = GetNextArea();
+    }
+    if (GetLocalInt(GetModule(), DL_L_SMOKE_TRACE) == FALSE)
+    {
+        DL_Log(DL_DEBUG_BASIC, "MilestoneA readiness warning module local dl_smoke_trace=FALSE");
+        nWarnings += 1;
+    }
+    if (nAreaCount == 0)
+    {
+        DL_Log(DL_DEBUG_BASIC, "MilestoneA readiness issue no areas found in module");
+        nErrors += 1;
+    }
+    if (nHotCount == 0)
+    {
+        DL_Log(DL_DEBUG_BASIC, "MilestoneA readiness issue no HOT areas found (dl_area_tier=2)");
+        nErrors += 1;
+    }
+    if (nNpcCount == 0)
+    {
+        DL_Log(DL_DEBUG_BASIC, "MilestoneA readiness issue no Daily Life NPC found");
+        nErrors += 1;
+    }
+    DL_Log(DL_DEBUG_BASIC, "MilestoneA readiness summary areas=" + IntToString(nAreaCount) + " hot_areas=" + IntToString(nHotCount) + " dl_npc=" + IntToString(nNpcCount) + " warnings=" + IntToString(nWarnings) + " errors=" + IntToString(nErrors));
+    SetLocalInt(GetModule(), "dl_smoke_readiness_errors", nErrors);
+    SetLocalInt(GetModule(), "dl_smoke_readiness_warnings", nWarnings);
+    return nErrors;
+}
+
 void DL_LogScenarioResult(string sScenario, int bFound, int bPass, string sDetail)
 {
     string sStatus;
@@ -192,9 +294,17 @@ void DL_RunScenarioFGChecks()
 
 void main()
 {
+    int nReadinessErrors;
     int nStatusA; int nStatusB; int nStatusC; int nStatusD; int nStatusE; int nStatusF; int nStatusG;
     int nPassCount = 0; int nFailCount = 0; int nNotFoundCount = 0;
     DL_ClearScenarioMarkers();
+    nReadinessErrors = DL_RunReadinessChecks();
+    if (nReadinessErrors > 0)
+    {
+        DL_Log(DL_DEBUG_BASIC, "MilestoneA smoke overall aborted due to readiness errors=" + IntToString(nReadinessErrors));
+        DL_ClearScenarioMarkers();
+        return;
+    }
     DL_RunScenarioProfileChecks();
     DL_RunScenarioFGChecks();
     nStatusA = DL_GetScenarioStatusCode(GetLocalInt(GetModule(), "dl_smoke_found_A"), GetLocalInt(GetModule(), "dl_smoke_pass_A"));
