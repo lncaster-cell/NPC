@@ -66,3 +66,10 @@
 - **Scope:** compact coordination budget
 - **Commit(s):** pending
 - **Message:** Вводим режим лаконичной координации: до 3 записей за ход, до 400 символов на запись, до 900 символов суммарно. Формат: `[task] [status] [scope] [sha|pending] [next]`. Только практичные статусы/действия.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** docs cleanup / legacy ruleset archive / repo hygiene
+- **Commit(s):** pending
+- **Message:** [DOC-CLEANUP] [in_progress] [archive outdated ruleset + fix links + add gitignore hygiene] [pending] [handoff-ready for parallel read].

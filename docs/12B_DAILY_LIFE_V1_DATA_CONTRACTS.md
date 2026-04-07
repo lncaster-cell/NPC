@@ -43,7 +43,7 @@
 
 > Этот документ дополняет:
 > - `docs/12B_DAILY_LIFE_VNEXT_CANON.md`
-> - `docs/12B_DAILY_LIFE_V1_RULESET.md`
+> - `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md`
 > - `docs/12B_DAILY_LIFE_V1_RULESET_REV1.md`
 >
 > Его задача — дать агенту и разработчику конкретный набор сущностей, enum-ов и полей, по которым можно писать код без повторного расползания дизайна.
