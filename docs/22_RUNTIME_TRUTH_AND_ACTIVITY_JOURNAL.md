@@ -37,7 +37,7 @@
 - Rule-driven resolver: `schedule/day/override` -> `directive`.
 - Затем вычисляются `anchor_group`, `dialogue_mode`, `service_mode`.
 - Materialization применяет это состояние (перемещение/скрытие/absent + interaction state).
-- Внутренняя санитарная чистка идёт по runtime-first принципу: сначала optimizируются hot-path schedule/resolver/worker/resync/materialize/anchor helper-функции, потом менее частый legacy include-layer и handoff bookkeeping.
+- Внутренняя санитарная чистка идёт по runtime-first принципу: сначала optimizируются hot-path schedule/resolver/worker/resync/materialize/anchor helper-функции, потом менее частый legacy include-layer, handoff bookkeeping и conversation/store bridge helpers.
 
 ### 1.5 Граница текущей реализации
 - Реализован каркас Milestone A (A–E).
@@ -65,6 +65,8 @@
 | 2026-04-06 | Materialize single-pass cleanup | Убрать повторный resolver/interaction проход в materialization path | В `dl_materialize_inc` interaction-state теперь вычисляется один раз за проход materialize; compile-safe path синхронизирован через `dl_all_inc` | done |
 | 2026-04-06 | Anchor helper cleanup | Упростить marker-type checks и убрать лишнюю двусмысленность в anchor scan helpers | В `dl_anchor_inc` добавлены `DL_IsAnchorMarkerType` и `DL_ANCHOR_SEARCH_MAX_INDEX`, `DL_FindAnchorByTag` получил ранний invalid-area guard | done |
 | 2026-04-06 | Slot handoff bookkeeping cleanup | Убрать лишние repeated key-builder вызовы и dedup cleanup paths в handoff bookkeeping | В `dl_slot_handoff_inc` ключи профиля/review теперь кэшируются внутри функций, добавлен `DL_ClearFunctionSlotReviewState`, упрощён slot-review/profile cleanup path | done |
+| 2026-04-06 | Interact helper cleanup | Убрать дублирование между interaction-layer и materialize-layer | В `dl_interact_inc` добавлен общий `DL_ApplyResolvedInteractionState`, локальная копия удалена из `dl_materialize_inc` | done |
+| 2026-04-06 | Dialogue bridge cleanup | Упростить conversation/store search guards и dedup conflict logging | В `dl_dialogue_bridge_inc` добавлены helpers для search-area validation и conflict logging, `DL_OpenConversationStore` теперь логирует resolved tag только после valid store check | done |
 
 ---
 
