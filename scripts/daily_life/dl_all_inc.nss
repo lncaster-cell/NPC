@@ -1348,6 +1348,11 @@ void DL_LogConversationStoreSearchConflict(object oNPC, string sStoreTag)
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store tag conflict across search context: store_tag=" + sStoreTag);
 }
 
+void DL_LogConversationStoreCacheTagMismatch(object oNPC, object oStore, string sStoreTag)
+{
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store cache rejected due to tag mismatch: expected_tag=" + sStoreTag + ", cached_store_tag=" + GetTag(oStore));
+}
+
 int DL_CountConversationStoresInArea(object oArea, string sStoreTag)
 {
     object oObject;
@@ -1390,9 +1395,13 @@ object DL_GetConversationStore(object oNPC)
     int nAreaIndex;
     int nAreaMatches;
     int nTotalMatches = 0;
-    if (DL_IsConversationStoreCandidate(oStore, GetTag(oStore))) return oStore;
     sStoreTag = GetLocalString(oNPC, DL_L_CONV_STORE_TAG);
     if (sStoreTag == "") return OBJECT_INVALID;
+    if (DL_IsConversationStoreCandidate(oStore, sStoreTag)) return oStore;
+    if (GetIsObjectValid(oStore) && GetObjectType(oStore) == OBJECT_TYPE_STORE)
+    {
+        DL_LogConversationStoreCacheTagMismatch(oNPC, oStore, sStoreTag);
+    }
     oNpcArea = GetArea(oNPC);
     nAreaMatches = DL_CountConversationStoresInArea(oNpcArea, sStoreTag);
     if (nAreaMatches > 1)
