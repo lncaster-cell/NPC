@@ -300,11 +300,47 @@
 Сначала аудит. Не надо бездумно править все файлы сразу.
 
 **Статус:**
-- [ ] claimed by parallel agent
-- [ ] done by parallel agent
+- [x] claimed by parallel agent
+- [x] done by parallel agent
 - [ ] read by lead agent
 - [ ] verified by lead agent
 - [ ] blocked
+
+---
+
+**P5 audit result (2026-04-07, parallel-agent):**
+- `scripts/daily_life/dl_anchor_inc.nss` / `DL_FindAnchorPoint*`: повторяется каскад tag-candidate поиска (anchor/base/specialized/area) в policy/ignoring-policy ветках; возможен helper-итератор с переключаемой policy-проверкой. **Risk: medium**.
+- `scripts/daily_life/dl_worker_inc.nss` / `DL_Describe*`: повторяются enum->string маппинги (`reason/directive/dialogue/service/override`); можно унифицировать table-driven helper без смены контракта логов. **Risk: low**.
+- `scripts/daily_life/dl_worker_inc.nss` / area scan loops: повторный проход `GetFirst/NextObjectInArea` в marker-clear, candidate-collect и dispatch; потенциальный helper для creature-filter pass, но важно не сломать fairness-budget семантику. **Risk: medium**.
+- `scripts/daily_life/dl_resync_inc.nss` / request paths: однотипные обходы area/module при request-resync; можно вынести единый apply-callback pattern, но payoff низкий. **Risk: low**.
+- `scripts/daily_life/dl_activity_inc.nss` / `DL_ResolveActivityKind`: линейная ветка directive->activity без дублирования; вынос в mapping helper необязателен. **Risk: low**.
+- Общий вывод: следующий безопасный cleanup-кандидат — `dl_anchor_inc.nss` (dedup поиска) + точечная унификация `DL_Describe*` в `dl_worker_inc.nss` без изменения smoke-log формата.
+
+
+
+### Task P6 — Docs inspection + optimization backlog + conflict register
+**Scope:**
+- `docs/30_AUDIT_AND_INSPECTION_INDEX.md`
+- `docs/32_MULTI_AGENT_INSPECTION_AND_OPTIMIZATION_PLAN_2026-04-07.md`
+- `docs/24_PARALLEL_AGENT_COORDINATION_BOARD.md`
+- `docs/26_AGENT_COMMUNICATION_LOG.md`
+
+**Цель:**
+Если нет активной runtime-задачи — выполнить инспекцию, собрать исполнимый task list, план оптимизаций и стартовый реестр багов/конфликтов с мультиагентной координацией.
+
+**Статус:**
+- [x] claimed by parallel agent
+- [x] done by parallel agent
+- [ ] read by lead agent
+- [ ] verified by lead agent
+- [ ] blocked
+
+---
+
+**P6 result (2026-04-07, parallel-agent):**
+- Создан `docs/32_MULTI_AGENT_INSPECTION_AND_OPTIMIZATION_PLAN_2026-04-07.md` с backlog `T1..T8`, wave-планом оптимизаций, конфликт-реестром `C-01..C-04` и внешними техническими референсами (Git/GitHub/Semgrep/SRE).
+- Обновлён `docs/30_AUDIT_AND_INSPECTION_INDEX.md`: добавлена секция операционного backlog-аудита с ссылкой на новый документ.
+- Координационный канал сохранён: handoff продублирован в `docs/26_AGENT_COMMUNICATION_LOG.md`.
 
 ---
 
@@ -375,6 +411,50 @@
 
 ---
 
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Scope:** Task P5 secondary semantic-path audit
+- **Commit(s):** pending
+- **Status:** claimed
+- **Note:** [P5] [claimed] [audit-only: activity/anchor/worker/resync] [pending] [prepare concise findings].
+
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Scope:** Task P5 secondary semantic-path audit
+- **Commit(s):** pending
+- **Status:** in_progress
+- **Note:** [P5] [in_progress] [audit pass on anchor/worker first, then activity/resync] [pending] [publish risk-tagged shortlist].
+
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Scope:** Task P5 secondary semantic-path audit
+- **Commit(s):** pending
+- **Status:** done
+- **Note:** [P5] [done] [identified dedup candidates + risk levels] [pending] [lead read/verify requested; next safe target anchor-search dedup].
+
+
+
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Scope:** Task P6 docs inspection/optimization plan
+- **Commit(s):** pending
+- **Status:** claimed
+- **Note:** [P6] [claimed] [docs inspection + tasklist/optimization/conflict register] [pending] [prepare execution-ready backlog].
+
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Scope:** Task P6 docs inspection/optimization plan
+- **Commit(s):** pending
+- **Status:** in_progress
+- **Note:** [P6] [in_progress] [inspect 21/24/26/30 + include-layer notes] [pending] [assemble prioritized tasks and safe fixes].
+
+- **Date:** 2026-04-07
+- **Author:** parallel-agent
+- **Scope:** Task P6 docs inspection/optimization plan
+- **Commit(s):** pending
+- **Status:** done
+- **Note:** [P6] [done] [published T1..T8 + C-01..C-04 + internet-backed refs] [pending] [lead read/verify + assign next task].
+
 ## 8) Commit style (рекомендуется)
 
 Для параллельного агента предпочтительны короткие commit messages:
@@ -393,3 +473,4 @@
 Если результат не отражён в этом файле, то для второго агента он считается **не переданным**.
 
 Если задача не отмечена `read` / `verified`, то для координации она считается **ещё не принята ведущим агентом**.
+
