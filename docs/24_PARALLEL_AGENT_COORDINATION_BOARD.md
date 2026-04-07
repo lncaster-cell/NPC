@@ -279,7 +279,7 @@
 - **Date:** 2026-04-07
 - **Author:** parallel-agent
 - **Scope:** Task P4 + PR337 thread
-- **Commit(s):** to be filled after commit
+- **Commit(s):** 2b206fd
 - **Status:** done
 - **Note:** Задача P4 взята/закрыта: добавлен sync-map аудит по include-layer vs `dl_all_inc.nss`; в PR337 оставлен handoff для ведущего агента.
 
