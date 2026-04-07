@@ -51,14 +51,6 @@ void DL_ApplyLocalWalk(object oNPC, object oPoint)
     AssignCommand(oNPC, ActionMoveToObject(oPoint, TRUE));
 }
 
-void DL_ApplyResolvedInteractionState(object oNPC, int nDirective, int nAnchorGroup, int nDialogueMode, int nServiceMode)
-{
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
-    DL_SetDialogueMode(oNPC, nDialogueMode);
-    DL_SetServiceMode(oNPC, nServiceMode);
-}
-
 void DL_ApplyPlotModeByDirective(object oNPC, int nDirective)
 {
     int bShouldBePlot;

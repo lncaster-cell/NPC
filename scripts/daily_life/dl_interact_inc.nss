@@ -15,6 +15,14 @@ void DL_SetServiceMode(object oNPC, int nServiceMode)
     SetLocalInt(oNPC, DL_L_SERVICE_MODE, nServiceMode);
 }
 
+void DL_ApplyResolvedInteractionState(object oNPC, int nDirective, int nAnchorGroup, int nDialogueMode, int nServiceMode)
+{
+    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
+    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, nAnchorGroup);
+    DL_SetDialogueMode(oNPC, nDialogueMode);
+    DL_SetServiceMode(oNPC, nServiceMode);
+}
+
 void DL_RefreshInteractionState(object oNPC, object oArea)
 {
     // Recomputes directive/anchor/dialogue/service from current resolver state.
@@ -23,18 +31,24 @@ void DL_RefreshInteractionState(object oNPC, object oArea)
     int nDirective = DL_ResolveDirective(oNPC, oArea);
     int nOverride = DL_GetTopOverride(oNPC, oArea);
 
-    DL_SetDialogueMode(oNPC, DL_ResolveDialogueMode(oNPC, nDirective, nOverride));
-    DL_SetServiceMode(oNPC, DL_ResolveServiceMode(oNPC, nDirective, nOverride));
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_ResolveAnchorGroup(oNPC, nDirective));
+    DL_ApplyResolvedInteractionState(
+        oNPC,
+        nDirective,
+        DL_ResolveAnchorGroup(oNPC, nDirective),
+        DL_ResolveDialogueMode(oNPC, nDirective, nOverride),
+        DL_ResolveServiceMode(oNPC, nDirective, nOverride)
+    );
 }
 
 void DL_SetInteractionStateExplicit(object oNPC, int nDirective, int nDialogueMode, int nServiceMode)
 {
-    DL_SetDialogueMode(oNPC, nDialogueMode);
-    DL_SetServiceMode(oNPC, nServiceMode);
-    SetLocalInt(oNPC, DL_L_DIRECTIVE, nDirective);
-    SetLocalInt(oNPC, DL_L_ANCHOR_GROUP, DL_ResolveAnchorGroup(oNPC, nDirective));
+    DL_ApplyResolvedInteractionState(
+        oNPC,
+        nDirective,
+        DL_ResolveAnchorGroup(oNPC, nDirective),
+        nDialogueMode,
+        nServiceMode
+    );
 }
 
 #endif
