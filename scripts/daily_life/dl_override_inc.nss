@@ -27,17 +27,16 @@ int DL_HasCriticalOverride(object oNPC, object oArea)
     return nOverride == DL_OVR_FIRE || nOverride == DL_OVR_QUARANTINE;
 }
 
+int DL_IsLawFamilyOverrideExempt(object oNPC)
+{
+    return DL_GetNpcFamily(oNPC) == DL_FAMILY_LAW;
+}
+
 int DL_ShouldSuppressMaterialization(object oNPC, int nOverrideKind)
 {
-    if (nOverrideKind == DL_OVR_FIRE)
+    if (nOverrideKind == DL_OVR_FIRE || nOverrideKind == DL_OVR_QUARANTINE)
     {
-        return DL_GetNpcFamily(oNPC) != DL_FAMILY_LAW;
-    }
-
-    if (nOverrideKind == DL_OVR_QUARANTINE)
-    {
-        int nFamily = DL_GetNpcFamily(oNPC);
-        return nFamily != DL_FAMILY_LAW;
+        return !DL_IsLawFamilyOverrideExempt(oNPC);
     }
 
     return FALSE;
@@ -52,7 +51,7 @@ int DL_ShouldDisableService(object oNPC, int nOverrideKind)
 
     if (nOverrideKind == DL_OVR_QUARANTINE)
     {
-        return DL_GetNpcFamily(oNPC) != DL_FAMILY_LAW;
+        return !DL_IsLawFamilyOverrideExempt(oNPC);
     }
 
     return FALSE;

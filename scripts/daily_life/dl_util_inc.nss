@@ -30,12 +30,17 @@ int DL_IsDirectiveVisible(int nDirective)
         && nDirective != DL_DIR_UNASSIGNED;
 }
 
+int DL_IsPlayableAreaPlayer(object oObject)
+{
+    return GetIsPC(oObject) && !GetIsDM(oObject);
+}
+
 int DL_HasAnyPlayers(object oArea)
 {
     object oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
-        if (GetIsPC(oObject) && !GetIsDM(oObject))
+        if (DL_IsPlayableAreaPlayer(oObject))
         {
             return TRUE;
         }
@@ -49,7 +54,7 @@ int DL_HasAnyPlayersExcept(object oArea, object oIgnored)
     object oObject = GetFirstObjectInArea(oArea);
     while (GetIsObjectValid(oObject))
     {
-        if (oObject != oIgnored && GetIsPC(oObject) && !GetIsDM(oObject))
+        if (oObject != oIgnored && DL_IsPlayableAreaPlayer(oObject))
         {
             return TRUE;
         }
@@ -181,11 +186,14 @@ string DL_GetSubtypeAnchorToken(object oNPC, int nAnchorGroup)
     return DL_GetAnchorGroupToken(nAnchorGroup);
 }
 
+string DL_BuildIndexedAnchorTag(string sPrefix, string sToken, int nIndex)
+{
+    return sPrefix + "_" + sToken + "_" + IntToString(nIndex);
+}
+
 string DL_GetAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
 {
-    string sNpcTag = GetTag(oNPC);
-    string sGroup = DL_GetAnchorGroupToken(nAnchorGroup);
-    return sNpcTag + "_" + sGroup + "_" + IntToString(nIndex);
+    return DL_BuildIndexedAnchorTag(GetTag(oNPC), DL_GetAnchorGroupToken(nAnchorGroup), nIndex);
 }
 
 string DL_GetBaseAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
@@ -195,7 +203,7 @@ string DL_GetBaseAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
     {
         return "";
     }
-    return GetTag(oBase) + "_" + DL_GetAnchorGroupToken(nAnchorGroup) + "_" + IntToString(nIndex);
+    return DL_BuildIndexedAnchorTag(GetTag(oBase), DL_GetAnchorGroupToken(nAnchorGroup), nIndex);
 }
 
 string DL_GetSpecializedAnchorTagCandidate(object oNPC, int nAnchorGroup, int nIndex)
@@ -208,7 +216,7 @@ string DL_GetSpecializedAnchorTagCandidate(object oNPC, int nAnchorGroup, int nI
     }
     if (GetIsObjectValid(oBase))
     {
-        return GetTag(oBase) + "_" + sToken + "_" + IntToString(nIndex);
+        return DL_BuildIndexedAnchorTag(GetTag(oBase), sToken, nIndex);
     }
     return sToken + "_" + IntToString(nIndex);
 }
@@ -219,7 +227,7 @@ string DL_GetAreaAnchorTagCandidate(object oNPC, object oArea, int nAnchorGroup,
     {
         return "";
     }
-    return GetTag(oArea) + "_" + DL_GetSubtypeAnchorToken(oNPC, nAnchorGroup) + "_" + IntToString(nIndex);
+    return DL_BuildIndexedAnchorTag(GetTag(oArea), DL_GetSubtypeAnchorToken(oNPC, nAnchorGroup), nIndex);
 }
 
 #endif
