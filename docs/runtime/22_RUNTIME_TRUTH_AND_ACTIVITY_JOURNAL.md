@@ -13,9 +13,9 @@
 ## 1) Runtime Truth (факт по коду)
 
 ### 1.1 Контур исполнения
-- NPC `OnSpawn` может завести NPC в bounded runtime-контур через `dl_npc_onspawn`.
+- NPC `OnSpawn` заводит NPC в bounded runtime-контур через `DL_UD_BOOTSTRAP` -> `OnUserDefined` (`dl_npc_onspawn` -> `dl_npc_onud`).
 - NPC `OnUserDefined` является центральным thin dispatcher для внутренних Daily Life hook-events (`dl_npc_onud`).
-- NPC `OnDeath` выполняет cleanup/deregister path через `dl_npc_ondeath`.
+- NPC `OnDeath` выполняет cleanup/deregister path через `DL_UD_CLEANUP` -> `OnUserDefined` (`dl_npc_ondeath` -> `dl_npc_onud`).
 - Area `OnHeartbeat` вызывает `dl_area_tick` -> `DL_AreaWorkerTick`.
 - Worker обрабатывает NPC только если зона проходит `DL_ShouldRunDailyLife`.
 - В текущем коде `DL_ShouldRunDailyLife` возвращает `TRUE` для `HOT` и `WARM`, `FALSE` для `FROZEN` (через `DL_ShouldRunDailyLifeTier`).
@@ -72,6 +72,7 @@
 | 2026-04-07 | Types helper cleanup | Убрать repeated family/subtype decision branches в default schedule и default directive mask paths | В `dl_types_inc` добавлены `DL_GetDefaultScheduleTemplateForProfile` и `DL_GetDefaultAllowedDirectivesMaskForFamily`; compile-safe path синхронизирован через `dl_all_inc` | done |
 | 2026-04-07 | Resolver semantic helper cleanup | Убрать repeated semantic checks для групп schedule windows и directive states | В `dl_resolver_inc` добавлены `DL_IsSocialScheduleWindow`, `DL_IsDutyScheduleWindow`, `DL_IsDutyDirective`, `DL_IsWorkOrServiceDirective`, `DL_IsUnavailableDirective`; compile-safe path синхронизирован через `dl_all_inc` | done |
 | 2026-04-07 | Materialize unavailable-state cleanup | Убрать repeated unavailable interaction/plot state path в materialization fallback branches | В `dl_materialize_inc` добавлен `DL_ApplyUnavailableInteractionState`; через него сведены `ABSENT/UNASSIGNED` fallback branches | done |
+| 2026-04-07 | Event-driven NPC lifecycle hardening | Централизовать `OnSpawn/OnDeath` через единый dispatcher path и снизить риск split-behavior между hooks | `dl_npc_onspawn` и `dl_npc_ondeath` переведены на `DL_SignalNpcUserDefined` (`DL_UD_BOOTSTRAP`/`DL_UD_CLEANUP`) с исполнением через `dl_npc_onud` | done |
 
 ---
 

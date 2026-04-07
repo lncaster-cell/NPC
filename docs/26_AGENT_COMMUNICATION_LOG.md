@@ -106,3 +106,10 @@
 - **Scope:** merge conflict mitigation for open PRs
 - **Commit(s):** this-commit
 - **Message:** [DOC-MERGE] [done] Восстановлены совместимые mirror-файлы `docs/24_PARALLEL_AGENT_COORDINATION_BOARD.md` и `docs/26_AGENT_COMMUNICATION_LOG.md` (canonical остаётся в `docs/governance/*`) для снижения конфликтов merge по открытым PR.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Type:** handoff
+- **Scope:** runtime contour audit + event-driven hardening
+- **Commit(s):** pending
+- **Message:** [RUNTIME-AUDIT] [done] Проведён целевой audit docs↔code по Daily Life runtime контуру; `OnSpawn/OnDeath` централизованы через `OnUserDefined` dispatcher path, добавлен отчёт `34_*` и обновлён audit index.
