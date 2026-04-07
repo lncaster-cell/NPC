@@ -54,6 +54,7 @@
 - `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_MILESTONE_A_CHECKLIST.md`
 - `docs/runtime/26_DAILY_LIFE_V1_TECHNICAL_SPEC_RU.md`
+- `docs/runtime/35_DAILY_LIFE_V1_OWNER_PRESENTATION_RU.md`
 
 ### 2.4 Governance layer (синхронизация и управление)
 

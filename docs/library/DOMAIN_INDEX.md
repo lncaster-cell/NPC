@@ -7,6 +7,7 @@
 | Домен | Primary source | Secondary links |
 |---|---|---|
 | Runtime architecture | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/runtime/02_MECHANICS.md`, `docs/runtime/03_OPERATIONS.md`, `docs/runtime/06_SYSTEM_INVARIANTS.md` |
+| Runtime owner briefing | `docs/runtime/35_DAILY_LIFE_V1_OWNER_PRESENTATION_RU.md` | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `docs/runtime/26_DAILY_LIFE_V1_TECHNICAL_SPEC_RU.md`, `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md` |
 | World/legal canon | `docs/canon/12A_WORLD_MODEL_CANON.md` | `README.md`, `docs/governance/10_DECISIONS_LOG.md`, `docs/governance/18_REBUILD_RESET_CONTEXT.md` |
 | Player property system | `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md` | `docs/canon/12A_WORLD_MODEL_CANON.md` |
 | World travel system | `docs/canon/12D_WORLD_TRAVEL_CANON.md` | `docs/entry/12_MASTER_PLAN.md`, `docs/runtime/03_OPERATIONS.md` |
