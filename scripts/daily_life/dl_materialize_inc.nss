@@ -228,6 +228,20 @@ int DL_HandleBaseLost(object oNPC, object oArea)
     }
     if (DL_TryAssignProvisionalBase(oNPC, oArea))
     {
+        object oModule = GetModule();
+        object oLastBaseLostNpc = GetLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC);
+        string sLastBaseLostSlot = GetLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT);
+
+        DL_ClearBaseLostEventForNpcOrSlot(oNPC, sFunctionSlotId);
+
+        if (oLastBaseLostNpc == oNPC || (sFunctionSlotId != "" && sLastBaseLostSlot == sFunctionSlotId))
+        {
+            DeleteLocalString(oModule, DL_L_LAST_BASE_LOST_SLOT);
+            DeleteLocalObject(oModule, DL_L_LAST_BASE_LOST_NPC);
+            DeleteLocalInt(oModule, DL_L_LAST_BASE_LOST_KIND);
+        }
+
+        DL_LogNpc(oNPC, DL_DEBUG_BASIC, "base lost cleared after provisional recovery");
         return FALSE;
     }
 
