@@ -108,16 +108,15 @@
 
 
 
-### 5.1) Preflight + smoke: подготовка к компиляции и запуску
+### 5.1) Readiness внутри smoke: подготовка к компиляции и запуску
 
-Чтобы не терять время на «пустые» smoke-прогоны, сначала выполняйте runtime preflight прямо в Toolset:
+Отдельный preflight-скрипт не нужен: базовый smoke `scripts/daily_life/dl_smoke_milestone_a.nss` теперь сам начинает прогон с readiness-проверки.
 
-1. Запустить скрипт: `scripts/daily_life/dl_smoke_preflight.nss`
-2. Убедиться, что в логе есть:
-   - `Preflight summary ... errors=0`
-   - `Preflight status=PASS`
+Перед запуском A–G сценариев скрипт пишет:
+- `MilestoneA readiness summary ... errors=<N>`
+- при проблемах: `MilestoneA smoke overall aborted due to readiness errors=<N>`
 
-Если preflight даёт `FAIL`, сначала исправляем контрактные ошибки (locals/tiers/NPC), и только потом идём в A–G smoke.
+Если `errors > 0`, сначала правим контрактные ошибки (locals/tiers/NPC), затем перезапускаем smoke.
 
 Что обязательно настроить в Toolset:
 
@@ -137,8 +136,8 @@
     - `OnUserDefined -> scripts/daily_life/dl_npc_onud`
     - `OnDeath -> scripts/daily_life/dl_npc_ondeath`
 
-После preflight-запуска:
-- `scripts/daily_life/dl_smoke_milestone_a.nss` (основной A–G smoke),
+После readiness-проверки внутри smoke:
+- `scripts/daily_life/dl_smoke_milestone_a.nss` (основной A–G smoke с встроенным readiness),
 - `scripts/daily_life/dl_smoke_step_e.nss` (проверка Step E / base-lost handoff).
 
 Ожидаемые маркеры успеха в логах:

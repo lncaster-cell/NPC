@@ -23,9 +23,9 @@ Runbook не доказывает окончательный production-grade ve
 
 ## 2) Подготовка окружения перед прогоном
 
-0. Перед smoke выполнить preflight-скрипт:
-   - `scripts/daily_life/dl_smoke_preflight.nss`;
-   - продолжать smoke только если в логе `Preflight status=PASS` и `errors=0`.
+0. Отдельный preflight-скрипт не используется:
+   - readiness-проверка встроена в `scripts/daily_life/dl_smoke_milestone_a.nss`;
+   - продолжать интерпретацию A–G результатов только если в логе `MilestoneA readiness summary ... errors=0`.
 
 1. Включить trace-флаг модуля:
    - `dl_smoke_trace = TRUE`.
