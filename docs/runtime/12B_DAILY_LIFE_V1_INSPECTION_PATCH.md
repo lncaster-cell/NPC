@@ -21,7 +21,7 @@
 
 Нормативное правило:
 - `docs/runtime/12B_DAILY_LIFE_V1_RULESET_REV1.md` считается каноническим ruleset-документом для v1.
-- `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` считать ранним черновиком, не использовать как основной source-of-truth для реализации.
+- `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` — legacy-pointer на ранний черновик; использовать только для исторического контекста, не как source-of-truth.
 
 ---
 

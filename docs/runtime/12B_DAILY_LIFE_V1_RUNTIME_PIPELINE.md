@@ -8,7 +8,7 @@
 
 > Этот документ дополняет:
 > - `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
-> - `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md`
+> - `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` *(legacy pointer, full source moved to REV1 + git history)*
 > - `docs/runtime/12B_DAILY_LIFE_V1_RULESET_REV1.md`
 > - `docs/runtime/12B_DAILY_LIFE_V1_DATA_CONTRACTS.md`
 >
