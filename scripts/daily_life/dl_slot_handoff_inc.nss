@@ -251,6 +251,7 @@ void DL_RequestAssignedNpcResync(object oNPC)
 {
     int nCurrentReason;
     int nRequestedReason;
+    int nSelectedReason;
 
     if (!GetIsObjectValid(oNPC))
     {
@@ -259,19 +260,25 @@ void DL_RequestAssignedNpcResync(object oNPC)
 
     nCurrentReason = DL_NormalizeResyncReason(GetLocalInt(oNPC, DL_L_RESYNC_REASON));
     nRequestedReason = DL_NormalizeResyncReason(DL_RESYNC_SLOT_ASSIGNED);
+    nSelectedReason = DL_SelectStrongerResyncReason(nCurrentReason, nRequestedReason);
 
     SetLocalInt(oNPC, DL_L_RESYNC_PENDING, TRUE);
-    SetLocalInt(oNPC, DL_L_RESYNC_REASON, DL_SelectStrongerResyncReason(nCurrentReason, nRequestedReason));
+    if (nSelectedReason != nCurrentReason)
+    {
+        SetLocalInt(oNPC, DL_L_RESYNC_REASON, nSelectedReason);
+    }
 }
 
 void DL_ClearFunctionSlotReviewState(object oModule, string sFunctionSlotId)
 {
     string sLastTickKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick");
+    string sLastTickSetKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick_set");
     string sLastReasonKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason");
     string sAttemptsKey = DL_MakeSlotReviewKey(sFunctionSlotId, "attempts");
     string sInitializedKey = DL_MakeSlotReviewInitKey(sFunctionSlotId);
 
     DeleteLocalInt(oModule, sLastTickKey);
+    DeleteLocalInt(oModule, sLastTickSetKey);
     DeleteLocalInt(oModule, sLastReasonKey);
     DeleteLocalInt(oModule, sAttemptsKey);
     DeleteLocalInt(oModule, sInitializedKey);
@@ -281,11 +288,13 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
 {
     object oModule = GetModule();
     string sLastTickKey;
+    string sLastTickSetKey;
     string sLastReasonKey;
     string sAttemptsKey;
     string sInitializedKey;
     int nNowTick;
     int nLastTick;
+    int bHasLastTick;
     int nElapsed;
     int nLastReason;
     int nAttemptCount;
@@ -298,6 +307,7 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
     }
 
     sLastTickKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick");
+    sLastTickSetKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick_set");
     sLastReasonKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason");
     sAttemptsKey = DL_MakeSlotReviewKey(sFunctionSlotId, "attempts");
     sInitializedKey = DL_MakeSlotReviewInitKey(sFunctionSlotId);
@@ -339,6 +349,7 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
 
     SetLocalString(oModule, DL_L_LAST_SLOT_REVIEW, sFunctionSlotId);
     SetLocalInt(oModule, DL_L_LAST_SLOT_REVIEW_REASON, nReason);
+    SetLocalInt(oModule, sLastTickSetKey, TRUE);
     SetLocalInt(oModule, sLastTickKey, nNowTick);
     SetLocalInt(oModule, sLastReasonKey, nReason);
     SetLocalInt(oModule, sInitializedKey, TRUE);

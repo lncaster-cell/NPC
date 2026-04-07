@@ -1182,23 +1182,30 @@ void DL_RequestAssignedNpcResync(object oNPC)
 {
     int nCurrentReason;
     int nRequestedReason;
+    int nSelectedReason;
 
     if (!GetIsObjectValid(oNPC)) return;
 
     nCurrentReason = DL_NormalizeResyncReason(GetLocalInt(oNPC, DL_L_RESYNC_REASON));
     nRequestedReason = DL_NormalizeResyncReason(DL_RESYNC_SLOT_ASSIGNED);
+    nSelectedReason = DL_SelectStrongerResyncReason(nCurrentReason, nRequestedReason);
 
     SetLocalInt(oNPC, DL_L_RESYNC_PENDING, TRUE);
-    SetLocalInt(oNPC, DL_L_RESYNC_REASON, DL_SelectStrongerResyncReason(nCurrentReason, nRequestedReason));
+    if (nSelectedReason != nCurrentReason)
+    {
+        SetLocalInt(oNPC, DL_L_RESYNC_REASON, nSelectedReason);
+    }
 }
 
 void DL_ClearFunctionSlotReviewState(object oModule, string sFunctionSlotId)
 {
     string sLastTickKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick");
+    string sLastTickSetKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick_set");
     string sLastReasonKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason");
     string sAttemptsKey = DL_MakeSlotReviewKey(sFunctionSlotId, "attempts");
     string sInitializedKey = DL_MakeSlotReviewInitKey(sFunctionSlotId);
     DeleteLocalInt(oModule, sLastTickKey);
+    DeleteLocalInt(oModule, sLastTickSetKey);
     DeleteLocalInt(oModule, sLastReasonKey);
     DeleteLocalInt(oModule, sAttemptsKey);
     DeleteLocalInt(oModule, sInitializedKey);
@@ -1208,11 +1215,13 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
 {
     object oModule = GetModule();
     string sLastTickKey;
+    string sLastTickSetKey;
     string sLastReasonKey;
     string sAttemptsKey;
     string sInitializedKey;
     int nNowTick;
     int nLastTick;
+    int bHasLastTick;
     int nElapsed;
     int nLastReason;
     int nAttemptCount;
@@ -1223,6 +1232,7 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
         return;
     }
     sLastTickKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick");
+    sLastTickSetKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_tick_set");
     sLastReasonKey = DL_MakeSlotReviewKey(sFunctionSlotId, "last_reason");
     sAttemptsKey = DL_MakeSlotReviewKey(sFunctionSlotId, "attempts");
     sInitializedKey = DL_MakeSlotReviewInitKey(sFunctionSlotId);
@@ -1246,6 +1256,7 @@ void DL_RequestFunctionSlotReview(string sFunctionSlotId, int nReason)
     }
     SetLocalString(oModule, DL_L_LAST_SLOT_REVIEW, sFunctionSlotId);
     SetLocalInt(oModule, DL_L_LAST_SLOT_REVIEW_REASON, nReason);
+    SetLocalInt(oModule, sLastTickSetKey, TRUE);
     SetLocalInt(oModule, sLastTickKey, nNowTick);
     SetLocalInt(oModule, sLastReasonKey, nReason);
     SetLocalInt(oModule, sInitializedKey, TRUE);
@@ -1360,6 +1371,11 @@ void DL_LogConversationStoreSearchConflict(object oNPC, string sStoreTag)
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store tag conflict across search context: store_tag=" + sStoreTag);
 }
 
+void DL_LogConversationStoreCacheTagMismatch(object oNPC, object oStore, string sStoreTag)
+{
+    DL_LogNpc(oNPC, DL_DEBUG_BASIC, "conversation store cache rejected due to tag mismatch: expected_tag=" + sStoreTag + ", cached_store_tag=" + GetTag(oStore));
+}
+
 int DL_CountConversationStoresInArea(object oArea, string sStoreTag)
 {
     object oObject;
@@ -1402,9 +1418,13 @@ object DL_GetConversationStore(object oNPC)
     int nAreaIndex;
     int nAreaMatches;
     int nTotalMatches = 0;
-    if (DL_IsConversationStoreCandidate(oStore, GetTag(oStore))) return oStore;
     sStoreTag = GetLocalString(oNPC, DL_L_CONV_STORE_TAG);
     if (sStoreTag == "") return OBJECT_INVALID;
+    if (DL_IsConversationStoreCandidate(oStore, sStoreTag)) return oStore;
+    if (GetIsObjectValid(oStore) && GetObjectType(oStore) == OBJECT_TYPE_STORE)
+    {
+        DL_LogConversationStoreCacheTagMismatch(oNPC, oStore, sStoreTag);
+    }
     oNpcArea = GetArea(oNPC);
     nAreaMatches = DL_CountConversationStoresInArea(oNpcArea, sStoreTag);
     if (nAreaMatches > 1)
@@ -2210,10 +2230,15 @@ void DL_OnNpcDeathHook(object oNPC)
     DeleteLocalInt(oNPC, DL_L_SERVICE_MODE);
     DeleteLocalInt(oNPC, DL_L_ANCHOR_GROUP);
     DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_PERCEPTION_TICK + "_set");
     DeleteLocalInt(oNPC, DL_L_UD_LAST_ATTACK_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_ATTACK_TICK + "_set");
     DeleteLocalInt(oNPC, DL_L_UD_LAST_DISTURBED_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_DISTURBED_TICK + "_set");
     DeleteLocalInt(oNPC, DL_L_UD_LAST_DAMAGED_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_DAMAGED_TICK + "_set");
     DeleteLocalInt(oNPC, DL_L_UD_LAST_SPELL_TICK);
+    DeleteLocalInt(oNPC, DL_L_UD_LAST_SPELL_TICK + "_set");
     DL_LogNpc(oNPC, DL_DEBUG_BASIC, "npc death hook -> runtime cleanup complete");
 }
 
