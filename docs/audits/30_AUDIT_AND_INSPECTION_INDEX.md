@@ -21,11 +21,12 @@
 ## 2) Актуальный порядок чтения (сверху вниз)
 
 ### A. Глубокий аудит (main line)
-1. `docs/audits/34_RUNTIME_CONTOUR_EVENT_DRIVEN_AUDIT_2026-04-07.md` — целевой аудит runtime-контура и event-driven исполнения после отрицательного owner-run.
-2. `docs/audits/31_GLOBAL_AUDIT_2026-04-07.md` — **актуальная фаза** (контрольный аудит).
-3. `docs/audits/29_DEEP_GLOBAL_AUDIT_CONTINUATION_2026-04-03.md` — Phase 3.
-4. `docs/audits/28_DEEP_GLOBAL_AUDIT_CONTINUATION_2026-04-02.md` — количественная детализация (Phase 2).
-5. `docs/audits/27_DEEP_GLOBAL_AUDIT_2026-04-02.md` — базовый сквозной аудит (Phase 1).
+1. `docs/audits/35_GLOBAL_RUNTIME_CONTOUR_CANON_COMPLIANCE_AUDIT_2026-04-07.md` — глобальный аудит runtime-контура на соответствие docs/canon/research с action-plan по метрикам и SLO.
+2. `docs/audits/34_RUNTIME_CONTOUR_EVENT_DRIVEN_AUDIT_2026-04-07.md` — целевой аудит runtime-контура и event-driven исполнения после отрицательного owner-run.
+3. `docs/audits/31_GLOBAL_AUDIT_2026-04-07.md` — **актуальная фаза** (контрольный аудит).
+4. `docs/audits/29_DEEP_GLOBAL_AUDIT_CONTINUATION_2026-04-03.md` — Phase 3.
+5. `docs/audits/28_DEEP_GLOBAL_AUDIT_CONTINUATION_2026-04-02.md` — количественная детализация (Phase 2).
+6. `docs/audits/27_DEEP_GLOBAL_AUDIT_2026-04-02.md` — базовый сквозной аудит (Phase 1).
 ### B. Инспекции doc↔code
 4. `docs/audits/25_DOCUMENTATION_CODE_INSPECTION_2026-04-02.md` — актуальная инспекционная сверка.
 5. `docs/audits/24_DOCUMENTATION_CODE_INSPECTION_2026-04-01.md` — предыдущий snapshot.

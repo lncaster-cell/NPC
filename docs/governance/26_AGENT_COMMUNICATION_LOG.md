@@ -116,3 +116,10 @@
 - **Scope:** owner docs / Daily Life contour presentation
 - **Commit(s):** pending
 - **Message:** [OWNER-PRESENTATION] [done] Подготовлен owner-facing документ `35_DAILY_LIFE_V1_OWNER_PRESENTATION_RU.md`: простой обзор контура Daily Life v1 + проверочная таблица механик + чеклист верификации + шаблон комментариев владельца.
+
+- **Date:** 2026-04-07
+- **Author:** lead-agent
+- **Type:** handoff
+- **Scope:** global runtime contour compliance audit (docs/canon/research)
+- **Commit(s):** pending
+- **Message:** [RUNTIME-GLOBAL-AUDIT] [done] Выполнен глобальный аудит контура Daily Life v1: зафиксировано соответствие event-driven/area-centric модели и выявлены gap-зоны по observability (counters, micro-SLO). Добавлен отчёт `docs/audits/35_*`, индекс аудитов обновлён.
