@@ -418,6 +418,11 @@ Daily Life v1 строится не как честная симуляция, а
 
 Назначение: описать функцию города отдельно от конкретной личности.
 
+Bootstrap/handoff contract (runtime):
+- первичный источник bootstrap для NPC: `DL_L_FUNCTION_SLOT_ID` (local на NPC), затем `DL_L_PENDING_SLOT_ID`;
+- если нужен module-level recovery, используется только per-NPC/per-slot mapping (ключи вида `dl_slot_assigned_npc_<npc>_*` и `dl_slot_assigned_slot_<slot>_*`);
+- bootstrap **не** зависит от single global "last assigned" буфера (`DL_L_LAST_SLOT_ASSIGNED` / `DL_L_SLOT_ASSIGNED_NPC`), он допустим только как диагностический след для лога/обзора.
+
 ---
 
 ## 3.6 Override input record
