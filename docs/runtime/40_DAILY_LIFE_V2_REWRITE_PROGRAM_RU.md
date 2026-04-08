@@ -41,9 +41,9 @@
 - [ ] Зафиксировать performance budget и degradation-policy.
 
 ### Фаза B — Runtime Skeleton
-- [ ] Ввести пустой bootstrap и диагностический лог.
-- [ ] Ввести первый валидированный helper.
-- [ ] Подключить smoke-проверку helper-функции.
+- [x] Ввести пустой bootstrap и диагностический лог.
+- [x] Ввести первый валидированный helper (`DL2_IsRuntimeEnabled`).
+- [x] Подключить smoke-проверку helper-функции (`dl2_smoke_step_01.nss`).
 
 ### Фаза C — Controlled Growth
 - [ ] Resolver (в изолированных функциях).
