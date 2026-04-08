@@ -11,11 +11,3 @@
 ## Стартовая точка
 - Текущая фаза: проектирование и подготовка репозитория.
 - Активный документ-план: `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`.
-
-## Progress log
-
-### Step 01 — Runtime gate helper
-- Добавлен include: `dl_v2_runtime_inc.nss`.
-- Добавлена функция: `DL2_IsRuntimeEnabled()`.
-- Добавлен smoke script: `dl2_smoke_step_01.nss` (3 кейса из baseline).
-- `dl_v2_bootstrap.nss` подключен к helper и пишет диагностический сигнал.
