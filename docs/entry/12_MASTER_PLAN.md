@@ -1,6 +1,6 @@
 # Ambient Life v2 — MASTER PLAN (краткая сводка и индекс)
 
-Дата: 2026-04-07
+Дата: 2026-04-08
 Статус: навигационный индекс (не канонический дизайн-том, привязан к реестру)
 
 ---
@@ -24,6 +24,7 @@
 2. `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` — runtime-архитектура, операционный контур и ограничения.
    - Детализация redesign Daily Life: `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`.
    - Owner-facing презентация текущего контура: `docs/runtime/35_DAILY_LIFE_V1_OWNER_PRESENTATION_RU.md`.
+   - Единый конспект-квинтэссенция контура: `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`.
 3. `docs/canon/19_MECHANICS_SYSTEM_DEPENDENCY_MAP_RU.md` — поперечная карта механик, таблица зависимостей и граница World Memory vs Runtime.
 4. `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md` — имущество игрока, ownership и доступ.
 5. `docs/canon/12D_WORLD_TRAVEL_CANON.md` — наземные и морские перемещения.
