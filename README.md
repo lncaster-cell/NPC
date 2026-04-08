@@ -7,17 +7,21 @@
 
 ---
 
-## 1) Краткая сводка проекта
+## 1) Что сейчас является source of truth
 
-**Цель проекта:** построить единую модель мира, где повседневная жизнь NPC, право, городская реакция и долгие социально-экономические последствия работают согласованно.
+### Канон и инварианты
+1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
+2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
 
 **Текущий активный контур:**
 - `Daily Life v2` — clean-room перепись с нуля (инкрементально, функция за функцией).
 - `Daily Life v1` сохранён как legacy-архив и используется только как референс.
 
-**Ключевой архитектурный принцип:**
-- фракции NWN2 — это инструмент локального runtime-поведения;
-- юридическая квалификация, право собственности, институты и долгие последствия живут в отдельных канонических доменах.
+### Активные документы v2
+1. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
+2. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+3. `docs/runtime/42_DAILY_LIFE_V2_REPOSITORY_RESET_LOG_RU.md`
+4. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
 
 ---
 
@@ -33,21 +37,22 @@
 - Запущен отдельный план переписи:
   - `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`.
 
-## Что ещё не закрыто
+**Выход этапа:**
+- утверждённый `v2 data-contract`;
+- утверждённый `v2 event-pipeline`;
+- утверждённый performance baseline (`budget`, `degradation`, `idempotency`).
 
 - Нужно спроектировать v2-контур на основе канона и уроков v1 (до написания рабочего кода).
 - Нужно последовательно собрать v2-runtime с проверками на каждом шаге.
 - Нужно обновить связанные документы и runbook под новую стратегию разработки.
 
----
+### Этап B — Runtime Skeleton
+**Цель:** построить минимальный исполняемый каркас v2.
 
-## 3) Быстрая навигация (куда идти в первую очередь)
-
-### Старт для понимания проекта
-1. `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md` — общий канон и инварианты.
-2. `docs/entry/12_MASTER_PLAN.md` — короткая карта всей библиотеки.
-3. `docs/architecture/01_PROJECT_PASSPORT.md` — домены и границы.
-4. `docs/library/DOCUMENT_REGISTRY.md` — отсортированный реестр документации по слоям.
+**Выход этапа:**
+- `OnModuleLoad`, `OnAreaEnter`, `OnAreaHeartbeat`, `OnNPCSpawn`, `OnNPCUserDefined` в виде контролируемых заготовок;
+- первая рабочая helper-функция;
+- первый smoke step с PASS/FAIL-логами.
 
 ### Старт для активной разработки (ежедневный контур)
 1. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — операционная точка входа.
@@ -62,21 +67,15 @@
 
 ---
 
-## 4) Планируемые механизмы vs реализованные механизмы
+**Правило:** в одном PR только один функциональный шаг.
 
-Ниже краткий статус по верхнеуровневым системам.
+### Этап D — Acceptance + Owner Run
+**Цель:** подтвердить работоспособность v2 на smoke и owner-run.
 
-| Домен / механизм | План | Текущее состояние |
-|---|---|---|
-| **Daily Life (NPC routine)** | Полный цикл повседневной жизни NPC, recovery после отклонений, role-based расписания | **Частично реализовано (Milestone A):** рабочий runtime-каркас A–E, smoke/acceptance ещё в процессе |
-| **City Response** | Полноценная стадийная реакция города (alarm/escalation/de-escalation) | **На уровне канона и границ**, без полноценной production-интеграции в текущем milestone |
-| **Legal / World Model** | Единая правовая истина мира: юрисдикция, статусы, легитимность институтов | **Канон сформирован в документации**, runtime-интеграция отложена за рамки текущего milestone |
-| **Witness / Crime / Arrest / Trial** | Сквозная процессуальная цепочка от сигнала до судебного решения | **Концептуально определено**, не является активным scope Milestone A |
-| **Player Property** | Права владения/доступа/конфискации с legal-связкой | **Документарный канон**, не активная реализация в текущем спринте |
-| **World Travel** | Межрегиональный перенос состояния и последствий | **Документарный канон**, runtime не в текущем execution scope |
-| **Trade / City State** | Макродинамика снабжения/кризисов и городского состояния | **Документарный канон**, глубокая интеграция отложена |
-| **Clan System** | Политико-социальные последствия, лояльности, конфликты | **Документарный канон**, не активная кодовая фаза |
-| **Aging / Succession** | Поколенческий контур, наследование, длинная память мира | **Документарный канон**, реализация вне Milestone A |
+**Выход этапа:**
+- обновлённый runbook;
+- заполненный acceptance journal;
+- финальный verdict `PASS/PARTIAL/FAIL` по owner-run.
 
 ---
 
@@ -85,47 +84,34 @@
 Эта секция оставлена как историческая справка для сравнения поведения со старым контуром.
 Активная разработка ведётся по v2-программе: `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`.
 
-| Scope | Что настроить |
-|---|---|
-| **Module** | `OnModuleLoad -> scripts/daily_life/dl_on_load`, local bool `dl_smoke_trace = TRUE` (опционально для подробных логов) |
-| **Area** | `OnEnter -> scripts/daily_life/dl_area_enter`, `OnExit -> scripts/daily_life/dl_area_exit`, `OnHeartbeat -> scripts/daily_life/dl_area_tick`, local int `dl_area_tier = 2` (`HOT`) хотя бы в одной тестовой зоне |
-| **NPC** | locals `dl_npc_family`, `dl_npc_subtype`, `dl_schedule_template`, `dl_npc_base`; флаг участия `dl_named=TRUE` **или** `dl_persistent=TRUE`; hooks `OnSpawn -> scripts/daily_life/dl_npc_onspawn`, `OnUserDefined -> scripts/daily_life/dl_npc_onud`, `OnDeath -> scripts/daily_life/dl_npc_ondeath` |
-
-Smoke-команды:
-- базовый запуск: `scripts/daily_life/dl_smoke_milestone_a.nss`;
-- точечная проверка Step E: `scripts/daily_life/dl_smoke_step_e.nss`.
-
-### 5.1) Readiness внутри smoke: подготовка к запуску
-
-Отдельный preflight-скрипт не нужен: `scripts/daily_life/dl_smoke_milestone_a.nss` автоматически начинает прогон с readiness-проверки по checklist выше.
-
-Перед запуском A–G сценариев скрипт пишет:
-- `MilestoneA readiness summary ... errors=<N>`
-- при проблемах: `MilestoneA smoke overall aborted due to readiness errors=<N>`
-
-Если `errors > 0`, сначала исправляем контракт setup (Module/Area/NPC из таблицы), затем перезапускаем smoke.
-
-Ожидаемые маркеры успеха в логах:
-- `MilestoneA smoke A..G status=...`
-- `smoke snapshot ... directive=... dialogue=... service=...`
-- для Step E: `checked/absent/unassigned/last_kind/last_slot`
+Каждый шаг закрывается только после фактической проверки и записи результата.
 
 ---
 
-## 6) Границы, которые нельзя размывать
+## 4) Правила реализации (обязательные)
 
-- **Daily Life ≠ City Response** (рутина ≠ режим тревоги).
-- **City Response ≠ Legal System** (оперативная реакция ≠ юридическая квалификация).
-- **Legal System ≠ Clan/Trade/Long-term effects** (разные уровни последствий).
-- **World Travel ≠ Local area movement** (межрегиональный перенос ≠ локальная навигация).
+1. **Один шаг = одна функция/модуль** (без смешивания нескольких подсистем).
+2. Сначала контракт, потом код, потом проверка, потом отчёт.
+3. Если меняется логика — синхронно обновляется документация.
+4. Никакой избыточной логики: код должен быть читаемым, коротким, предсказуемым.
+5. Любая неоднозначность фиксируется в control panel до следующего кодового шага.
 
 ---
 
-## 7) Правило работы с документацией
+## 5) Структура репозитория для текущей фазы
 
-Если меняется механика:
-1. Сначала обновляется профильный SoT-документ (доменный канон).
-2. Затем синхронизируются обзорные документы (`README.md`, `12_MASTER_PLAN`, control panel).
-3. Если затронуты архитектурные компромиссы — фиксировать в `docs/governance/10_DECISIONS_LOG.md`.
+- Активный v2 workspace: `scripts/daily_life/`
+- Legacy v1 archive: `archive/daily_life_v1_legacy/scripts/daily_life/`
+- Общий реестр документации: `docs/library/DOCUMENT_REGISTRY.md`
 
-README — это **маршрутизатор** и оперативная сводка, а не замена канонических документов.
+---
+
+## 6) Формат отчётности по каждому шагу
+
+В каждом PR/коммите обязательно:
+1. Что изменено (1–3 пункта).
+2. Чем проверено (точные команды/скрипты).
+3. Что подтверждено фактом.
+4. Следующий микро-шаг.
+
+Это основной анти-хаос контракт разработки.
