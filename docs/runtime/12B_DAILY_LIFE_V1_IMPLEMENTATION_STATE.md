@@ -152,6 +152,8 @@
 - В `DL_HasHookCooldownElapsed` убрана неявная трактовка `0` как «неинициализировано»: теперь используется отдельный флаг `<key>_set`, поэтому `00:00:00` участвует в cooldown как валидный timestamp.
 - В `DL_RequestFunctionSlotReview` дедупликация переведена с проверки `nLastTick > 0` на явное состояние `last_tick_set`, поэтому значение `nLastTick == 0` (полночь) корректно учитывается в TTL-окне.
 - В cleanup ветках синхронно очищаются и значения времени, и флаги `*_set`, чтобы после смерти NPC/clear-review не оставалось «висячего» состояния.
+- `DL_IsDailyLifeNpc` снова принимает все канонические семейства (`LAW..CLERGY`), а не только first playable slice: это устраняет silent-ignore NPC в owner-run, где профили уже используют `CIVILIAN`/`ELITE_ADMIN`/`CLERGY`.
+- Начат поэтапный refactor-протокол «по одной функции»: сначала выделен явный gate `DL_IsCanonicalDailyLifeFamily`, а legacy-обёртка `DL_IsFamilyInFirstPlayableSlice` оставлена только для обратной совместимости include-потребителей.
 
 Риски расхождения, которые нужно проверять owner-run’ом:
 - фактическая постановка NPC по anchor в реальных toolset area-data;
