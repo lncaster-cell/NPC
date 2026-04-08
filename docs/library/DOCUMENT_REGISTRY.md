@@ -57,6 +57,8 @@
 - `docs/runtime/26_DAILY_LIFE_V1_TECHNICAL_SPEC_RU.md`
 - `docs/runtime/35_DAILY_LIFE_V1_OWNER_PRESENTATION_RU.md`
 - `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
+- `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+- `docs/runtime/42_DAILY_LIFE_V2_REPOSITORY_RESET_LOG_RU.md`
 
 ### 2.4 Governance layer (синхронизация и управление)
 

@@ -35,8 +35,9 @@
 ## 4. Фазы переписи
 
 ### Фаза A — Design Baseline
-- [ ] Зафиксировать минимальный v2 data-contract.
-- [ ] Зафиксировать v2 event-pipeline (module/area/npc hooks).
+- [x] Черновик baseline-документа создан (`41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`).
+- [ ] Утвердить минимальный v2 data-contract с владельцем.
+- [ ] Утвердить v2 event-pipeline (module/area/npc hooks).
 - [ ] Зафиксировать performance budget и degradation-policy.
 
 ### Фаза B — Runtime Skeleton
@@ -59,6 +60,7 @@
 - v1 runtime архивирован: `archive/daily_life_v1_legacy/scripts/daily_life/`
 - v2 runtime workspace открыт: `scripts/daily_life/`
 - стартовый stub: `scripts/daily_life/dl_v2_bootstrap.nss`
+- reset-лог: `docs/runtime/42_DAILY_LIFE_V2_REPOSITORY_RESET_LOG_RU.md`
 
 ## 6. Формат отчётности (жёсткий)
 
