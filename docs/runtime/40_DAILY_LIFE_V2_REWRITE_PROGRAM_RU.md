@@ -32,6 +32,14 @@
 - менять архитектуру и runtime-код без синхронизации документации;
 - «лечить всё сразу» без изолированного шага.
 
+## 3.1 Этап 0 — Alignment (зафиксирован 2026-04-08)
+
+Закрыто как отдельный организационный этап до расширения runtime:
+- границы Daily Life (in/out of scope) подтверждены по digest;
+- event-driven + area-centric модель подтверждена как обязательная;
+- per-NPC heartbeat-first ядро зафиксировано как недопустимое;
+- Definition of Done микро-шага зафиксирован в control panel.
+
 ## 4. Фазы переписи
 
 ### Фаза A — Design Baseline
@@ -41,9 +49,9 @@
 - [ ] Зафиксировать performance budget и degradation-policy.
 
 ### Фаза B — Runtime Skeleton
-- [ ] Ввести пустой bootstrap и диагностический лог.
-- [ ] Ввести первый валидированный helper.
-- [ ] Подключить smoke-проверку helper-функции.
+- [x] Ввести пустой bootstrap и диагностический лог.
+- [x] Ввести первый валидированный helper (`DL2_IsRuntimeEnabled`).
+- [x] Подключить smoke-проверку helper-функции (`dl2_smoke_step_01.nss`).
 
 ### Фаза C — Controlled Growth
 - [ ] Resolver (в изолированных функциях).

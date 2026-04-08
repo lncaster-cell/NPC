@@ -51,7 +51,7 @@
 
 ## 6) Первый технический шаг (после approval)
 
-### Шаг 1 (первая функция)
+### Шаг 1 (первая функция) — IMPLEMENTED (2026-04-08)
 `DL2_IsRuntimeEnabled()`
 
 Контракт:
@@ -59,8 +59,11 @@
 - Выход: `TRUE/FALSE`.
 - Логика: проверяет `dl2_enabled` и `dl2_contract_version`.
 
+Реализация:
+- `scripts/daily_life/dl_v2_runtime_inc.nss`
+
 Проверка шага:
-- smoke-скрипт `dl2_smoke_step_01.nss` логирует PASS/FAIL для 3 кейсов:
+- smoke-скрипт `scripts/daily_life/dl2_smoke_step_01.nss` логирует PASS/FAIL для 3 кейсов:
   1. модуль выключен,
   2. включен с неверной версией,
   3. включен с `v2.a0`.
