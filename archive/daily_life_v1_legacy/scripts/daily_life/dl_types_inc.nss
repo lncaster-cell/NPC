@@ -4,11 +4,22 @@
 #include "dl_const_inc"
 #include "dl_util_inc"
 
-int DL_IsFamilyInFirstPlayableSlice(int nFamily)
+// NOTE:
+// Historical name kept for backward compatibility in include consumers.
+// The runtime gate now uses full canonical Daily Life family coverage.
+int DL_IsCanonicalDailyLifeFamily(int nFamily)
 {
     return nFamily == DL_FAMILY_LAW
         || nFamily == DL_FAMILY_CRAFT
-        || nFamily == DL_FAMILY_TRADE_SERVICE;
+        || nFamily == DL_FAMILY_TRADE_SERVICE
+        || nFamily == DL_FAMILY_CIVILIAN
+        || nFamily == DL_FAMILY_ELITE_ADMIN
+        || nFamily == DL_FAMILY_CLERGY;
+}
+
+int DL_IsFamilyInFirstPlayableSlice(int nFamily)
+{
+    return DL_IsCanonicalDailyLifeFamily(nFamily);
 }
 
 int DL_IsSubtypeAllowedForFamily(int nFamily, int nSubtype)
@@ -36,6 +47,22 @@ int DL_IsSubtypeAllowedForFamily(int nFamily, int nSubtype)
             || nSubtype == DL_SUBTYPE_INNKEEPER
             || nSubtype == DL_SUBTYPE_WANDERING_VENDOR;
     }
+    if (nFamily == DL_FAMILY_CIVILIAN)
+    {
+        return nSubtype == DL_SUBTYPE_RESIDENT
+            || nSubtype == DL_SUBTYPE_HOMELESS
+            || nSubtype == DL_SUBTYPE_SERVANT;
+    }
+    if (nFamily == DL_FAMILY_ELITE_ADMIN)
+    {
+        return nSubtype == DL_SUBTYPE_NOBLE
+            || nSubtype == DL_SUBTYPE_OFFICIAL
+            || nSubtype == DL_SUBTYPE_SCRIBE;
+    }
+    if (nFamily == DL_FAMILY_CLERGY)
+    {
+        return nSubtype == DL_SUBTYPE_PRIEST;
+    }
     return FALSE;
 }
 
@@ -52,7 +79,7 @@ int DL_IsPersistent(object oNPC)
 int DL_GetNpcFamily(object oNPC)
 {
     int nFamily = GetLocalInt(oNPC, DL_L_NPC_FAMILY);
-    if (DL_IsFamilyInFirstPlayableSlice(nFamily))
+    if (DL_IsCanonicalDailyLifeFamily(nFamily))
     {
         return nFamily;
     }

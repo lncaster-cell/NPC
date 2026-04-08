@@ -1,6 +1,6 @@
 # Document Registry — Ambient Life v2
 
-Дата: 2026-04-07  
+Дата: 2026-04-08
 Статус: active
 
 ## Цель
@@ -38,7 +38,7 @@
 - `docs/canon/13_AGING_AND_CLAN_SUCCESSION.md`
 - `docs/canon/14_CLAN_SYSTEM_DESIGN.md`
 
-### 2.3 Runtime layer (Daily Life v1 implementation)
+### 2.3 Runtime layer (Daily Life rewrite: v1 archive + v2 active)
 
 - `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_SLICE.md`
@@ -56,6 +56,9 @@
 - `docs/runtime/12B_DAILY_LIFE_V1_MILESTONE_A_CHECKLIST.md`
 - `docs/runtime/26_DAILY_LIFE_V1_TECHNICAL_SPEC_RU.md`
 - `docs/runtime/35_DAILY_LIFE_V1_OWNER_PRESENTATION_RU.md`
+- `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
+- `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+- `docs/runtime/42_DAILY_LIFE_V2_REPOSITORY_RESET_LOG_RU.md`
 
 ### 2.4 Governance layer (синхронизация и управление)
 
