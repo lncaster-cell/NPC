@@ -2,8 +2,8 @@
 
 > Обновлено: **2026-04-08**.
 
-Репозиторий переведён в режим **переписи Daily Life с нуля (v2)**.
-Старый runtime (`v1`) сохранён как reference-архив и не используется как активная кодовая база.
+Репозиторий содержит канон и реализацию систем «живого мира» для NWN2.
+С **2026-04-08** проект переведён в режим **полной переписи Daily Life-контура с нуля**: прежняя реализация `Daily Life v1` заархивирована, активная разработка ведётся как `Daily Life v2` по шагам «одна функция → проверка → следующая функция».
 
 ---
 
@@ -13,9 +13,9 @@
 1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
 
-### Ретроспектива и уроки v1
-1. `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md`
-2. `archive/daily_life_v1_legacy/scripts/daily_life/`
+**Текущий активный контур:**
+- `Daily Life v2` — clean-room перепись с нуля (инкрементально, функция за функцией).
+- `Daily Life v1` сохранён как legacy-архив и используется только как референс.
 
 ### Активные документы v2
 1. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
@@ -25,22 +25,26 @@
 
 ---
 
-## 2) Чёткий план разработки v2
+## 2) Текущий прогресс (на 2026-04-08)
 
-Ниже — основной рабочий план. Любая задача должна попадать в один из этапов.
+## Что уже сделано
 
-### Этап A — Design Baseline (сейчас активен)
-**Цель:** спроектировать минимальный, чистый и управляемый контур до написания runtime-логики.
+- **Daily Life v1** сохранён в архив для анализа и точечного переиспользования решений:
+  - `archive/daily_life_v1_legacy/scripts/daily_life/`.
+- Подготовлен чистый рабочий каталог для `Daily Life v2`:
+  - `scripts/daily_life/README.md`
+  - `scripts/daily_life/dl_v2_bootstrap.nss`
+- Запущен отдельный план переписи:
+  - `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`.
 
 **Выход этапа:**
 - утверждённый `v2 data-contract`;
 - утверждённый `v2 event-pipeline`;
 - утверждённый performance baseline (`budget`, `degradation`, `idempotency`).
 
-**Проверка готовности этапа:**
-- есть явный список locals/состояний/событий;
-- нет противоречий с каноном и инвариантами;
-- есть план первого микро-шага кода (`1 функция + smoke`).
+- Нужно спроектировать v2-контур на основе канона и уроков v1 (до написания рабочего кода).
+- Нужно последовательно собрать v2-runtime с проверками на каждом шаге.
+- Нужно обновить связанные документы и runbook под новую стратегию разработки.
 
 ### Этап B — Runtime Skeleton
 **Цель:** построить минимальный исполняемый каркас v2.
@@ -50,15 +54,18 @@
 - первая рабочая helper-функция;
 - первый smoke step с PASS/FAIL-логами.
 
-### Этап C — Functional Growth (строго по одной функции)
-**Цель:** последовательно добавлять функциональность без «больших прыжков».
+### Старт для активной разработки (ежедневный контур)
+1. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — операционная точка входа.
+2. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md` — проектирование и пошаговый протокол v2.
+3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md` — базовая архитектура v2 и первый шаг реализации.
+4. `docs/runtime/42_DAILY_LIFE_V2_REPOSITORY_RESET_LOG_RU.md` — зафиксированная подготовка репозитория к переписи.
+5. `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md` — зафиксированное состояние и уроки v1.
 
-**Порядок блоков:**
-1. runtime enabled/contract guard;
-2. profile/state resolver;
-3. anchor selection;
-4. materialization;
-5. worker fairness + budget.
+### Код
+- Legacy runtime v1: `archive/daily_life_v1_legacy/scripts/daily_life/`.
+- Активный runtime v2 (чистый старт): `scripts/daily_life/`.
+
+---
 
 **Правило:** в одном PR только один функциональный шаг.
 
@@ -72,13 +79,10 @@
 
 ---
 
-## 3) Микро-план (ближайшие шаги)
+## 5) Legacy-ссылка: Daily Life v1 (архивный контур)
 
-- [ ] **Шаг 1:** `DL2_IsRuntimeEnabled()` + `dl2_smoke_step_01.nss`
-- [ ] **Шаг 2:** контракт `dl2_profile_id` и валидация профиля
-- [ ] **Шаг 3:** базовый state machine (`IDLE/TRANSIT/ACTIVE/BLOCKED`)
-- [ ] **Шаг 4:** минимальный area worker tick (без materialization)
-- [ ] **Шаг 5:** безопасная materialization-заготовка с ограничениями
+Эта секция оставлена как историческая справка для сравнения поведения со старым контуром.
+Активная разработка ведётся по v2-программе: `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`.
 
 Каждый шаг закрывается только после фактической проверки и записи результата.
 
