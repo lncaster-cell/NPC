@@ -1,8 +1,9 @@
 # Ambient Life v2 (NPC) — README
 
-> Обновлено: **2026-04-07**.
+> Обновлено: **2026-04-08**.
 
-Репозиторий содержит канон и рабочую реализацию систем «живого мира» для NWN2. Сейчас проект находится в фазе **active development** с фокусом на **Daily Life v1 / Milestone A**: архитектура уже формализована в документации, а в `scripts/daily_life/` реализован рабочий runtime-контур.
+Репозиторий содержит канон и реализацию систем «живого мира» для NWN2.
+С **2026-04-08** проект переведён в режим **полной переписи Daily Life-контура с нуля**: прежняя реализация `Daily Life v1` заархивирована, активная разработка ведётся как `Daily Life v2` по шагам «одна функция → проверка → следующая функция».
 
 ---
 
@@ -11,8 +12,8 @@
 **Цель проекта:** построить единую модель мира, где повседневная жизнь NPC, право, городская реакция и долгие социально-экономические последствия работают согласованно.
 
 **Текущий активный контур:**
-- `Daily Life v1` (Milestone A) — единственный implementation-priority.
-- Проект **не** в состоянии «только документы»: runtime-скрипты уже используются для smoke/acceptance цикла.
+- `Daily Life v2` — clean-room перепись с нуля (инкрементально, функция за функцией).
+- `Daily Life v1` сохранён как legacy-архив и используется только как референс.
 
 **Ключевой архитектурный принцип:**
 - фракции NWN2 — это инструмент локального runtime-поведения;
@@ -20,22 +21,23 @@
 
 ---
 
-## 2) Текущий прогресс (на 2026-04-07)
+## 2) Текущий прогресс (на 2026-04-08)
 
-## Что уже реализовано
+## Что уже сделано
 
-В коде собран каркас Milestone A (Steps A–E):
-- **A — Contracts foundation:** константы, locals-контракты, утилиты, логгер.
-- **B — Resolver:** deterministic цепочка `schedule -> directive -> anchor/dialogue/service`, override (`QUARANTINE`, `FIRE`).
-- **C — Materialization/interaction:** anchor fallback, materialize path, обновление `dialogue_mode/service_mode`, safe fallback-ветки.
-- **D — Area worker/lifecycle:** `HOT/WARM/FROZEN`, bounded worker budget, area/NPC hooks, resync path.
-- **E — Stub handoff:** API для slot-review/slot-assigned и безопасные ветки `BASE_LOST -> ABSENT/UNASSIGNED`.
+- **Daily Life v1** сохранён в архив для анализа и точечного переиспользования решений:
+  - `archive/daily_life_v1_legacy/scripts/daily_life/`.
+- Подготовлен чистый рабочий каталог для `Daily Life v2`:
+  - `scripts/daily_life/README.md`
+  - `scripts/daily_life/dl_v2_bootstrap.nss`
+- Запущен отдельный план переписи:
+  - `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`.
 
 ## Что ещё не закрыто
 
-- Нет подтверждённого полного acceptance-цикла A–G со статусом PASS.
-- Нет финального owner-run на целевой машине, который закрывает Milestone A.
-- Часть зон остаётся намеренно stub-level до подтверждения smoke-прогонами.
+- Нужно спроектировать v2-контур на основе канона и уроков v1 (до написания рабочего кода).
+- Нужно последовательно собрать v2-runtime с проверками на каждом шаге.
+- Нужно обновить связанные документы и runbook под новую стратегию разработки.
 
 ---
 
@@ -49,14 +51,13 @@
 
 ### Старт для активной разработки (ежедневный контур)
 1. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — операционная точка входа.
-2. `docs/runtime/12B_DAILY_LIFE_V1_MILESTONE_A_CHECKLIST.md` — шаги A–E и критерии.
-3. `docs/runtime/12B_DAILY_LIFE_V1_SMOKE_RUNBOOK.md` — как прогонять проверки.
-4. `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md` — фиксация фактических результатов.
-5. `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md` — снимок «что реально сделано в коде».
+2. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md` — проектирование и пошаговый протокол v2.
+3. `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md` — зафиксированное состояние и уроки v1.
+4. `docs/runtime/12B_DAILY_LIFE_V1_SMOKE_RUNBOOK.md` — legacy-runbook (для ретроспективной сверки поведения v1).
 
 ### Код
-- Runtime-реализация: `scripts/daily_life/`.
-- Базовая compile-safe точка входа include-слоя: `scripts/daily_life/dl_all_inc.nss`.
+- Legacy runtime v1: `archive/daily_life_v1_legacy/scripts/daily_life/`.
+- Активный runtime v2 (чистый старт): `scripts/daily_life/`.
 
 ---
 
@@ -78,9 +79,10 @@
 
 ---
 
-## 5) Быстрый старт Daily Life v1 (Milestone A)
+## 5) Legacy-ссылка: Daily Life v1 (архивный контур)
 
-Минимальный setup для рабочего smoke-контура (единый checklist без дублирования):
+Эта секция оставлена как историческая справка для сравнения поведения со старым контуром.
+Активная разработка ведётся по v2-программе: `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`.
 
 | Scope | Что настроить |
 |---|---|
