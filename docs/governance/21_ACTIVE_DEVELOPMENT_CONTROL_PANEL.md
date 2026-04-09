@@ -7,10 +7,11 @@
 
 ## 0) Текущий статус
 
-- Legacy-контур `Daily Life v1` хранится в `archive/daily_life_v1_legacy/scripts/daily_life/`.
-- Активный каталог `scripts/daily_life/` сейчас содержит два рабочих артефакта:
-  - `dl_v2_runtime_inc.nss`
-  - `dl2_smoke_step_01.nss`
+- Статус выполнения: **ACTIVE (owner decision applied)**.
+- Решение владельца от **2026-04-09**: legacy-reference не восстанавливаем, разработка v2 идёт clean-room с нуля.
+- Восстановлен активный runtime-каталог `scripts/daily_life/` для нового baseline v2.
+- Текущий микро-шаг: event-ingress ядро (`OnSpawn`/`OnDeath` -> `SignalEvent(EventUserDefined)` -> `OnUserDefined`).
+- Нумерация clean-room шагов перезапущена с **Step 01** после удаления прежнего кода.
 - Работа идёт в режиме: `один микро-шаг -> одна проверка -> документирование факта`.
 
 Ключевые документы для текущей фазы:
@@ -20,6 +21,12 @@
 
 ---
 
+## 0.1) Owner resolution (applied)
+
+- Тип решения: глобальный architectural direction от владельца.
+- Решение: разработка Daily Life v2 продолжается с нуля без восстановления legacy reference.
+- Ограничение: pipeline остаётся event-driven + area-centric, без helper-first runtime в обход событийного контура.
+
 ## 1) Зафиксированное
 
 ### 1.1 Этап 0 — Alignment (завершён)
@@ -28,8 +35,8 @@
 - Per-NPC heartbeat-first ядро запрещено.
 
 ### 1.2 Шаг 1 baseline-runtime (завершён)
-- Реализована функция `DL2_IsRuntimeEnabled()`.
-- Есть smoke `dl2_smoke_step_01.nss` (3 кейса PASS/FAIL).
+- Базовый include `dl_v2_core_inc.nss` содержит module contract (`DL2_IsRuntimeEnabled`, `DL2_InitModuleContract`).
+- Добавлен smoke `dl2_smoke_step_01_event_pipeline.nss` для проверки init-contract.
 
 ---
 
@@ -41,7 +48,7 @@ DoD фазы:
 - [ ] Утверждён минимальный data-contract v2.
 - [ ] Утверждён event-pipeline hooks set (module/area/npc).
 - [ ] Утверждён performance budget + degradation policy.
-- [x] Реализован и проверен первый helper + smoke.
+- [x] Реализован init-contract + event-ingress hooks + smoke.
 
 ---
 
@@ -59,9 +66,9 @@ DoD фазы:
 
 ## 4) Ближайший backlog
 
-1. Step 02: `OnModuleLoad` init contract (включая version stamp).
-2. Step 03: area-tier bootstrap (`HOT/WARM/FROZEN`) без полного worker-loop.
-3. Step 04: минимальный dispatcher hook для controlled resync event.
+1. Step 02: area-tier bootstrap (`HOT/WARM/FROZEN`) без полного worker-loop.
+2. Step 03: минимальный dispatcher/resync hook для controlled событий.
+3. Step 04: registry + bounded worker skeleton.
 
 ---
 

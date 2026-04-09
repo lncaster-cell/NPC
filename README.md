@@ -45,11 +45,14 @@
 `scripts/daily_life/`
 
 Текущие файлы:
-- `dl_v2_runtime_inc.nss` — helper-контракт `DL2_IsRuntimeEnabled()`.
-- `dl2_smoke_step_01.nss` — smoke-проверка helper в 3 базовых кейсах.
+- `dl_v2_core_inc.nss` — module contract + lifecycle event ingress.
+- `dl_on_load.nss` — init contract на `OnModuleLoad`.
+- `dl_npc_onspawn.nss` / `dl_npc_ondeath.nss` — ingress lifecycle hooks.
+- `dl_npc_onud.nss` — dispatcher для `OnUserDefined`.
+- `dl2_smoke_step_01_event_pipeline.nss` — smoke-проверка init-contract.
 
-### Архивная зона v1 (reference only)
-`archive/daily_life_v1_legacy/scripts/daily_life/`
+### Архивная зона v1
+- Legacy reference каталоги в текущем baseline не используются (clean-room направление от 2026-04-09).
 
 ---
 

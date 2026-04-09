@@ -12,33 +12,36 @@
 - Канон: `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 - Инварианты: `docs/runtime/06_SYSTEM_INVARIANTS.md`
 - Digest: `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`
-- Legacy reference code: `archive/daily_life_v1_legacy/scripts/daily_life/`
+- Owner directive (2026-04-09): clean-room implementation without legacy reference restoration
 
 ## 3) Минимальный v2 Data Contract (предлагаемый)
 
-### 3.1 Module locals (уже частично в коде)
+### 3.1 Module locals (зафиксировано в коде)
 - `dl2_enabled`
 - `dl2_contract_version`
+- `dl2_module_event_seq`
+- `dl2_module_last_event_kind`
+- `dl2_module_last_event_actor`
+- `dl2_module_spawn_count`
+- `dl2_module_death_count`
 
 ### 3.2 Area locals (кандидаты на Step 02/03)
 - `dl2_area_tier` (`HOT/WARM/FROZEN`)
 - `dl2_worker_cursor`
 - `dl2_worker_budget`
 
-### 3.3 NPC locals (кандидаты на Step 03+)
-- `dl2_profile_id`
-- `dl2_state`
-- `dl2_anchor_id`
-- `dl2_last_tick`
-- `dl2_debug_trace`
+### 3.3 NPC locals (минимум event-ingress)
+- `dl2_npc_event_kind`
+- `dl2_npc_event_seq`
+- (`dl2_profile_id`, `dl2_state`, `dl2_anchor_id`, `dl2_last_tick`, `dl2_debug_trace`) остаются на следующих шагах
 
 ## 4) Event Pipeline v2 (MVP proposal)
 
 1. `OnModuleLoad` — инициализация module contract.
-2. `OnAreaEnter/OnAreaExit` — управление tier активацией.
-3. `OnAreaHeartbeat` — bounded worker tick.
-4. `OnNPCSpawn` — регистрация NPC в pipeline.
-5. `OnNPCUserDefined` — targeted resync/diagnostic.
+2. `OnNPCSpawn` и `OnNPCDeath` — ingress lifecycle-сигналов.
+3. `OnNPCUserDefined` — единый dispatcher lifecycle-сигналов (`SignalEvent(EventUserDefined)`).
+4. `OnAreaEnter/OnAreaExit` — управление tier активацией (следующий шаг).
+5. `OnAreaHeartbeat` — bounded worker tick (после registry/bootstrap).
 
 ## 5) Performance baseline
 
@@ -48,19 +51,23 @@
 
 ## 6) Фактически реализовано на сегодня
 
-### Step 01 — IMPLEMENTED
-`DL2_IsRuntimeEnabled()`
+### Step 01 — IMPLEMENTED (clean-room reset index)
+`DL2_InitModuleContract()` + lifecycle event ingress (`OnSpawn`/`OnDeath`/`OnUserDefined`).
 
 Контракт:
-- Вход: нет.
-- Выход: `TRUE/FALSE`.
-- Логика: `dl2_enabled == TRUE` и `dl2_contract_version == v2.a0`.
+- `OnModuleLoad` фиксирует contract version и runtime-enabled gate.
+- `OnSpawn`/`OnDeath` не выполняют heavy-логику: только отправляют `SignalEvent(EventUserDefined)`.
+- `OnUserDefined` обрабатывает только DL2-сигналы и записывает module-level counters.
 
 Реализация:
-- `scripts/daily_life/dl_v2_runtime_inc.nss`
+- `scripts/daily_life/dl_v2_core_inc.nss`
+- `scripts/daily_life/dl_on_load.nss`
+- `scripts/daily_life/dl_npc_onspawn.nss`
+- `scripts/daily_life/dl_npc_ondeath.nss`
+- `scripts/daily_life/dl_npc_onud.nss`
 
 Проверка:
-- `scripts/daily_life/dl2_smoke_step_01.nss` (3 кейса: disabled / invalid version / valid version).
+- `scripts/daily_life/dl2_smoke_step_01_event_pipeline.nss` (module contract init gate).
 
 ## 7) Ограничения до Step 02+
 

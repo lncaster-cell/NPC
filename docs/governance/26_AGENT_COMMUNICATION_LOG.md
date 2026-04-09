@@ -107,7 +107,7 @@
 - **Author:** lead-agent
 - **Type:** handoff
 - **Scope:** runtime contour audit + event-driven hardening
-- **Commit(s):** pending
+- **Commit(s):** 2fe787f
 - **Message:** [RUNTIME-AUDIT] [done] Проведён целевой audit docs↔code по Daily Life runtime контуру; `OnSpawn/OnDeath` централизованы через `OnUserDefined` dispatcher path, добавлен отчёт `34_*` и обновлён audit index.
 
 - **Date:** 2026-04-07
@@ -137,3 +137,25 @@
 - **Scope:** full documentation refresh / stale links cleanup
 - **Commit(s):** pending
 - **Message:** [DOC-REFRESH-2026-04-09] [done] Обновлены entry/library/governance/runtime опорные документы под фактическое состояние репозитория v2; убраны устаревшие ссылки на несуществующие bootstrap-файлы, синхронизированы roadmap и DoD.
+
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** blocker
+- **Scope:** Daily Life v2 Step 02 start gate
+- **Commit(s):** 6635e1a
+- **Message:** [DL2-STEP02] [blocked] Подтверждено расхождение docs↔repo: отсутствуют `scripts/daily_life/` и `archive/daily_life_v1_legacy/scripts/daily_life/`. Кодовый шаг остановлен; требуется owner-решение по восстановлению или переопределению runtime layout.
+
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** DL2 clean-room restart + event-ingress step
+- **Commit(s):** 51cac94
+- **Message:** [DL2-RESTART] [done] Принято owner-решение: legacy reference не восстанавливаем. Создан новый `scripts/daily_life/` и реализован стартовый lifecycle ingress контур `OnSpawn/OnDeath -> SignalEvent(EventUserDefined) -> OnUserDefined`. Индексация шагов clean-room перезапущена с Step 01.
+
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** DL2 clean-room step index correction
+- **Commit(s):** 2fe787f
+- **Message:** [DL2-INDEX-RESET] [done] Исправлена нумерация: текущая реализация event-ingress помечена как Step 01 (а не Step 02), так как кодовая база была очищена и перезапущена с нуля.
+
