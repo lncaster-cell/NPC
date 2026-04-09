@@ -150,6 +150,16 @@
 Проверка:
 - `scripts/daily_life/dl_smk_res.nss`.
 
+### Step 06 — IMPLEMENTED (runbook artifact)
+`Acceptance runbook` + `owner-run checklist`.
+
+Контракт:
+- Runbook фиксирует последовательность проверок Steps 01–05 без расширения runtime.
+- Owner-run выполняется отдельно по зафиксированному шаблону отчёта (`PASS/FAIL`, `GO/HOLD`).
+
+Реализация:
+- `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`.
+
 
 ## 8) Этапы выполнения (самостоятельно декомпозированные)
 
@@ -158,4 +168,4 @@
 3. **Step 03 (done):** dispatcher/resync contract (включая death-cleanup правила).
 4. **Step 04 (done):** registry + bounded worker skeleton.
 5. **Step 05 (done):** resolver/materialization skeleton.
-6. **Step 06+:** acceptance по rewrite program.
+6. **Step 06:** runbook готов, owner-run pending.

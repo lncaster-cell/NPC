@@ -18,6 +18,7 @@
    - `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
    - `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
    - `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+   - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
 
 2. **Быстрый owner/agent контекст**
    - `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`

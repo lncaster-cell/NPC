@@ -54,7 +54,7 @@
 - [ ] Worker/fairness loop + profiling.
 
 ### Фаза D — Acceptance
-- [ ] Runbook.
+- [x] Runbook (`52_*`).
 - [ ] Owner-run по сценариям.
 - [ ] Финальный PASS-протокол.
 
@@ -77,6 +77,7 @@
   - `scripts/daily_life/dl_smk_work.nss`
   - `scripts/daily_life/dl_res_inc.nss`
   - `scripts/daily_life/dl_smk_res.nss`
+  - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
 
 ## 5.1 Принцип интеграции NWN2 (текущий фокус)
 
@@ -96,7 +97,7 @@
 3. Step 03 — dispatcher/resync contract (+ death cleanup policy) (done).
 4. Step 04 — registry + worker skeleton (done).
 5. Step 05 — resolver/materialization skeleton (done).
-6. Step 06 — acceptance runbook + owner-run.
+6. Step 06 — acceptance runbook (done), owner-run (pending).
 
 ## 6. Формат отчётности
 

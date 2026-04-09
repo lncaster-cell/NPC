@@ -15,6 +15,7 @@
 2. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md` — протокол переписи.
 3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md` — минимальный baseline контрактов и пайплайна.
 4. `docs/library/DOCUMENT_REGISTRY.md` — карта всей документации по слоям.
+5. `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md` — acceptance-процедура owner-run для текущего baseline.
 
 ---
 

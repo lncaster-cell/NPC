@@ -201,3 +201,10 @@
 - **Scope:** Step 05 resolver/materialization skeleton
 - **Commit(s):** pending
 - **Message:** [DL-STEP05] [done] Добавлен sleep-only resolver/materialization skeleton (`dl_res_inc.nss`) для профиля `early_worker` с owner-окном `22:00..06:00`; подключено в worker-touch pipeline, добавлен smoke `dl_smk_res.nss`, active docs синхронизированы.
+
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** Step 06 acceptance runbook
+- **Commit(s):** pending
+- **Message:** [DL-STEP06-RUNBOOK] [done] Подготовлен `52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md` с preflight, smoke-последовательностью A..E, PASS-критерием и шаблоном owner-вердикта; active docs синхронизированы, owner-run оставлен как следующий операционный шаг.

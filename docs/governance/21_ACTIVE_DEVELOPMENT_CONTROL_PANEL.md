@@ -10,7 +10,7 @@
 - Статус выполнения: **ACTIVE (owner decision applied)**.
 - Решение владельца от **2026-04-09**: legacy-reference не восстанавливаем, разработка идёт clean-room с нуля.
 - Восстановлен активный runtime-каталог `scripts/daily_life/` для нового baseline.
-- Текущий микро-шаг: Step 06 `acceptance runbook + owner-run`.
+- Текущий микро-шаг: Step 06 `owner-run execution (runbook ready)`.
 - UserDefined ID для текущего ingress: `3001` (project range `3000+`).
 - Нумерация clean-room шагов перезапущена с **Step 01** после удаления прежнего кода.
 - Работа идёт в режиме: `один микро-шаг -> одна проверка -> документирование факта`.
@@ -61,6 +61,11 @@
 - Materialization остаётся skeleton-уровнем (`dl_npc_mat_req`, `dl_npc_mat_tag`) без anchor/activity runtime.
 - Добавлен smoke `dl_smk_res.nss`.
 
+### 1.7 Шаг 6 acceptance runbook (завершён, owner-run pending)
+- Подготовлен единый runbook: `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`.
+- Зафиксированы preflight, последовательность smoke-проверок A..E и PASS-критерий этапа.
+- Owner-run отмечен как следующий операционный шаг.
+
 
 ---
 
@@ -90,7 +95,7 @@ DoD фазы:
 
 ## 4) Ближайшие этапы
 
-1. Step 06: acceptance runbook + owner-run.
+1. Step 06: owner-run по acceptance runbook.
 
 ---
 
