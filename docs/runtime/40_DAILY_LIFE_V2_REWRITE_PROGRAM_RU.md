@@ -49,8 +49,8 @@
 - [x] Registry + bounded area worker skeleton (Step 04).
 
 ### Фаза C — Controlled Growth
-- [ ] Resolver.
-- [ ] Materialization.
+- [x] Resolver (Step 05 skeleton).
+- [x] Materialization (Step 05 skeleton).
 - [ ] Worker/fairness loop + profiling.
 
 ### Фаза D — Acceptance
@@ -75,6 +75,8 @@
   - `scripts/daily_life/dl_smk_sync.nss`
   - `scripts/daily_life/dl_a_hb.nss`
   - `scripts/daily_life/dl_smk_work.nss`
+  - `scripts/daily_life/dl_res_inc.nss`
+  - `scripts/daily_life/dl_smk_res.nss`
 
 ## 5.1 Принцип интеграции NWN2 (текущий фокус)
 
@@ -93,7 +95,8 @@
 2. Step 02 — area-tier bootstrap (done).
 3. Step 03 — dispatcher/resync contract (+ death cleanup policy) (done).
 4. Step 04 — registry + worker skeleton (done).
-5. Step 05 — resolver/materialization skeleton.
+5. Step 05 — resolver/materialization skeleton (done).
+6. Step 06 — acceptance runbook + owner-run.
 
 ## 6. Формат отчётности
 

@@ -194,3 +194,10 @@
 - **Scope:** Step 04 registry + bounded worker skeleton
 - **Commit(s):** pending
 - **Message:** [DL-STEP04] [done] Реализованы registry primitives (`DL_RegisterNpc`, `DL_UnregisterNpc`) и bounded area worker tick (`DL_RunAreaWorkerTick`) с `budget/cursor` и scan-cap; добавлены hooks/smoke `dl_a_hb.nss`, `dl_smk_work.nss`; active docs синхронизированы.
+
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** Step 05 resolver/materialization skeleton
+- **Commit(s):** pending
+- **Message:** [DL-STEP05] [done] Добавлен sleep-only resolver/materialization skeleton (`dl_res_inc.nss`) для профиля `early_worker` с owner-окном `22:00..06:00`; подключено в worker-touch pipeline, добавлен smoke `dl_smk_res.nss`, active docs синхронизированы.

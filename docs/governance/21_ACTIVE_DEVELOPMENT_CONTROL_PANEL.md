@@ -10,7 +10,7 @@
 - Статус выполнения: **ACTIVE (owner decision applied)**.
 - Решение владельца от **2026-04-09**: legacy-reference не восстанавливаем, разработка идёт clean-room с нуля.
 - Восстановлен активный runtime-каталог `scripts/daily_life/` для нового baseline.
-- Текущий микро-шаг: Step 05 `resolver/materialization skeleton`.
+- Текущий микро-шаг: Step 06 `acceptance runbook + owner-run`.
 - UserDefined ID для текущего ingress: `3001` (project range `3000+`).
 - Нумерация clean-room шагов перезапущена с **Step 01** после удаления прежнего кода.
 - Работа идёт в режиме: `один микро-шаг -> одна проверка -> документирование факта`.
@@ -55,6 +55,12 @@
 - Добавлен area heartbeat hook `dl_a_hb.nss`.
 - Добавлен smoke `dl_smk_work.nss`.
 
+### 1.6 Шаг 5 resolver/materialization skeleton (завершён)
+- Добавлен include `dl_res_inc.nss` с первым resolver-срезом: только директива `SLEEP` для профиля `early_worker`.
+- Зафиксировано owner-окно сна для этого шага: `22:00..06:00`.
+- Materialization остаётся skeleton-уровнем (`dl_npc_mat_req`, `dl_npc_mat_tag`) без anchor/activity runtime.
+- Добавлен smoke `dl_smk_res.nss`.
+
 
 ---
 
@@ -84,8 +90,7 @@ DoD фазы:
 
 ## 4) Ближайшие этапы
 
-1. Step 05: resolver/materialization skeleton.
-2. Step 06: acceptance runbook + owner-run.
+1. Step 06: acceptance runbook + owner-run.
 
 ---
 

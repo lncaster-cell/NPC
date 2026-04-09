@@ -37,6 +37,9 @@
 - `dl_npc_event_seq`
 - `dl_reg_on`
 - `dl_npc_worker_seq`
+- `dl_npc_directive`
+- `dl_npc_mat_req`
+- `dl_npc_mat_tag`
 - (`dl_profile_id`, `dl_state`, `dl_anchor_id`, `dl_last_tick`, `dl_debug_trace`) остаются на следующих шагах
 
 ## 4) Event Pipeline (MVP proposal)
@@ -110,7 +113,7 @@
 Проверка:
 - `scripts/daily_life/dl_smk_sync.nss`.
 
-## 7) Ограничения до Step 05+
+## 7) Ограничения до Step 06+
 
 - Не добавлять resolver/materialization/slot-handoff до фиксации init-contract.
 - Не мигрировать legacy API массово.
@@ -131,6 +134,22 @@
 Проверка:
 - `scripts/daily_life/dl_smk_work.nss`.
 
+### Step 05 — IMPLEMENTED
+`DL_ResolveNpcDirective*()` + `DL_ApplyDirectiveSkeleton()` + `DL_ApplyMaterializationSkeleton()`.
+
+Контракт:
+- Первый resolver-срез ограничен только профилем `early_worker`.
+- Единственная директива шага: `SLEEP`.
+- Окно сна фиксировано owner-решением: `22:00..06:00`.
+- Materialization на этом шаге только skeleton-сигнал (`dl_npc_mat_req`, `dl_npc_mat_tag`) без activity/anchor-исполнения.
+
+Реализация:
+- `scripts/daily_life/dl_res_inc.nss`
+- `scripts/daily_life/dl_core_inc.nss` (вызов resolver/materialization skeleton из worker touch).
+
+Проверка:
+- `scripts/daily_life/dl_smk_res.nss`.
+
 
 ## 8) Этапы выполнения (самостоятельно декомпозированные)
 
@@ -138,4 +157,5 @@
 2. **Step 02 (done):** area-tier bootstrap (`HOT/WARM/FROZEN`) без worker-loop.
 3. **Step 03 (done):** dispatcher/resync contract (включая death-cleanup правила).
 4. **Step 04 (done):** registry + bounded worker skeleton.
-5. **Step 05+:** resolver/materialization/acceptance по rewrite program.
+5. **Step 05 (done):** resolver/materialization skeleton.
+6. **Step 06+:** acceptance по rewrite program.

@@ -1,6 +1,8 @@
 #ifndef DL_CORE_INC_NSS
 #define DL_CORE_INC_NSS
 
+#include "dl_res_inc"
+
 // Daily Life core event ingress (clean-room).
 // Ingress scope: OnSpawn/OnDeath -> OnUserDefined bridge.
 
@@ -364,6 +366,9 @@ void DL_WorkerTouchNpc(object oNpc)
     int nWorkerSeq = GetLocalInt(oModule, DL_L_MODULE_WORKER_SEQ) + 1;
     SetLocalInt(oModule, DL_L_MODULE_WORKER_SEQ, nWorkerSeq);
     SetLocalInt(oNpc, DL_L_NPC_WORKER_SEQ, nWorkerSeq);
+
+    int nDirective = DL_ResolveNpcDirective(oNpc);
+    DL_ApplyDirectiveSkeleton(oNpc, nDirective);
 }
 
 void DL_RunAreaWorkerTick(object oArea)

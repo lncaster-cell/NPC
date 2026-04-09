@@ -24,7 +24,7 @@
 ## 3) Что добавлено
 
 ### 3.1 Resolver include
-Добавлен `scripts/daily_life/dl_v2_resolver_inc.nss`.
+Добавлен `scripts/daily_life/dl_res_inc.nss`.
 
 Назначение:
 - ввести минимальный enum директив для первого шага;
@@ -33,7 +33,7 @@
 - ввести специализированный helper для `EARLY_WORKER`.
 
 ### 3.2 Smoke check
-Добавлен `scripts/daily_life/dl2_smoke_step_05_sleep_resolver.nss`.
+Добавлен `scripts/daily_life/dl_smk_res.nss`.
 
 Проверяет кейсы:
 - `05:00` -> `SLEEP`

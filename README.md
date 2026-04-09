@@ -55,6 +55,8 @@
 - `dl_smk_tier.nss` — smoke-проверка area-tier bootstrap.
 - `dl_smk_sync.nss` — smoke-проверка dispatcher/resync contract.
 - `dl_smk_work.nss` — smoke-проверка registry + worker cursor.
+- `dl_res_inc.nss` — resolver/materialization skeleton (sleep-only, `early_worker`).
+- `dl_smk_res.nss` — smoke-проверка sleep-resolver окна `22:00..06:00`.
 
 ### Архивная зона v1
 - Legacy reference каталоги в текущем baseline не используются (clean-room направление от 2026-04-09).
