@@ -187,3 +187,10 @@
 - **Commit(s):** 013d8af
 - **Message:** [DL-STEP03] [done] Реализован минимальный dispatcher/resync contract через OnUserDefined path: добавлены `DL_RequestResync`, `DL_ProcessResync`, death-cleanup `DL_CleanupNpcRuntimeState`; добавлен smoke `dl_smk_sync.nss`.
 
+
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** Step 04 registry + bounded worker skeleton
+- **Commit(s):** pending
+- **Message:** [DL-STEP04] [done] Реализованы registry primitives (`DL_RegisterNpc`, `DL_UnregisterNpc`) и bounded area worker tick (`DL_RunAreaWorkerTick`) с `budget/cursor` и scan-cap; добавлены hooks/smoke `dl_a_hb.nss`, `dl_smk_work.nss`; active docs синхронизированы.

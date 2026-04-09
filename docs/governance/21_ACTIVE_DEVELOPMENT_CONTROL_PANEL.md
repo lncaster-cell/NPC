@@ -10,7 +10,7 @@
 - Статус выполнения: **ACTIVE (owner decision applied)**.
 - Решение владельца от **2026-04-09**: legacy-reference не восстанавливаем, разработка идёт clean-room с нуля.
 - Восстановлен активный runtime-каталог `scripts/daily_life/` для нового baseline.
-- Текущий микро-шаг: event-ingress ядро (`OnSpawn`/`OnDeath` -> `SignalEvent(EventUserDefined)` -> `OnUserDefined`).
+- Текущий микро-шаг: Step 05 `resolver/materialization skeleton`.
 - UserDefined ID для текущего ingress: `3001` (project range `3000+`).
 - Нумерация clean-room шагов перезапущена с **Step 01** после удаления прежнего кода.
 - Работа идёт в режиме: `один микро-шаг -> одна проверка -> документирование факта`.
@@ -49,6 +49,12 @@
 - Добавлен cleanup path для death-сценария (`DL_CleanupNpcRuntimeState`).
 - Добавлен smoke `dl_smk_sync.nss`.
 
+### 1.5 Шаг 4 registry + bounded worker skeleton (завершён)
+- Добавлен registry-контракт (`DL_RegisterNpc`, `DL_UnregisterNpc`) для runtime-candidate NPC.
+- Добавлен bounded worker tick `DL_RunAreaWorkerTick` с `budget/cursor` и scan-cap.
+- Добавлен area heartbeat hook `dl_a_hb.nss`.
+- Добавлен smoke `dl_smk_work.nss`.
+
 
 ---
 
@@ -78,9 +84,8 @@ DoD фазы:
 
 ## 4) Ближайшие этапы
 
-1. Step 04: registry + bounded worker skeleton.
-2. Step 05: resolver/materialization skeleton.
-3. Step 06: acceptance runbook + owner-run.
+1. Step 05: resolver/materialization skeleton.
+2. Step 06: acceptance runbook + owner-run.
 
 ---
 

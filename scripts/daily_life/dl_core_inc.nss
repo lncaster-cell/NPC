@@ -30,10 +30,24 @@ const int DL_RESYNC_USER = 3;
 
 
 const string DL_L_AREA_TIER = "dl_area_tier";
+const string DL_L_AREA_REG_COUNT = "dl_reg_count";
+const string DL_L_AREA_REG_SEQ = "dl_reg_seq";
+const string DL_L_AREA_WORKER_TICK = "dl_worker_tick";
 
 const int DL_TIER_FROZEN = 0;
 const int DL_TIER_WARM = 1;
 const int DL_TIER_HOT = 2;
+
+const string DL_L_AREA_WORKER_CURSOR = "dl_worker_cursor";
+const string DL_L_AREA_WORKER_BUDGET = "dl_worker_budget";
+
+const string DL_L_NPC_REG_ON = "dl_reg_on";
+const string DL_L_NPC_PROFILE_ID = "dl_profile_id";
+const string DL_L_NPC_STATE = "dl_state";
+const string DL_L_NPC_WORKER_SEQ = "dl_npc_worker_seq";
+
+const string DL_L_MODULE_WORKER_SEQ = "dl_module_worker_seq";
+const string DL_L_MODULE_WORKER_TICKS = "dl_module_worker_ticks";
 
 const int DL_NPC_EVENT_NONE = 0;
 const int DL_NPC_EVENT_SPAWN = 1;
@@ -41,6 +55,12 @@ const int DL_NPC_EVENT_DEATH = 2;
 
 // 3000+ range chosen for project-defined user events (avoid BioWare 1000..1011, 1510, 1511).
 const int DL_UD_PIPELINE_NPC_EVENT = 3001;
+
+const int DL_WORKER_BUDGET_MIN = 1;
+const int DL_WORKER_BUDGET_WARM = 2;
+const int DL_WORKER_BUDGET_HOT = 4;
+const int DL_WORKER_BUDGET_MAX = 12;
+const int DL_WORKER_SCAN_CAP = 128;
 
 int DL_IsRuntimeEnabled()
 {
@@ -105,6 +125,53 @@ void DL_SetAreaTier(object oArea, int nTier)
     SetLocalInt(oArea, DL_L_AREA_TIER, nTier);
 }
 
+int DL_GetAreaWorkerBudget(object oArea)
+{
+    int nBudget = GetLocalInt(oArea, DL_L_AREA_WORKER_BUDGET);
+    if (nBudget < DL_WORKER_BUDGET_MIN || nBudget > DL_WORKER_BUDGET_MAX)
+    {
+        int nTier = DL_GetAreaTier(oArea);
+        if (nTier == DL_TIER_HOT)
+        {
+            return DL_WORKER_BUDGET_HOT;
+        }
+        return DL_WORKER_BUDGET_WARM;
+    }
+    return nBudget;
+}
+
+void DL_SetAreaWorkerBudget(object oArea, int nBudget)
+{
+    if (nBudget < DL_WORKER_BUDGET_MIN)
+    {
+        nBudget = DL_WORKER_BUDGET_MIN;
+    }
+    if (nBudget > DL_WORKER_BUDGET_MAX)
+    {
+        nBudget = DL_WORKER_BUDGET_MAX;
+    }
+    SetLocalInt(oArea, DL_L_AREA_WORKER_BUDGET, nBudget);
+}
+
+int DL_GetAreaWorkerCursor(object oArea)
+{
+    int nCursor = GetLocalInt(oArea, DL_L_AREA_WORKER_CURSOR);
+    if (nCursor < 0)
+    {
+        return 0;
+    }
+    return nCursor;
+}
+
+void DL_SetAreaWorkerCursor(object oArea, int nCursor)
+{
+    if (nCursor < 0)
+    {
+        nCursor = 0;
+    }
+    SetLocalInt(oArea, DL_L_AREA_WORKER_CURSOR, nCursor);
+}
+
 void DL_BootstrapAreaTier(object oArea)
 {
     if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
@@ -123,6 +190,15 @@ void DL_BootstrapAreaTier(object oArea)
     }
 
     DL_SetAreaTier(oArea, nTier);
+
+    if (GetLocalInt(oArea, DL_L_AREA_WORKER_CURSOR) < 0)
+    {
+        DL_SetAreaWorkerCursor(oArea, 0);
+    }
+    if (GetLocalInt(oArea, DL_L_AREA_WORKER_BUDGET) < DL_WORKER_BUDGET_MIN)
+    {
+        DL_SetAreaWorkerBudget(oArea, DL_GetAreaTier(oArea) == DL_TIER_HOT ? DL_WORKER_BUDGET_HOT : DL_WORKER_BUDGET_WARM);
+    }
 }
 
 void DL_OnAreaEnterBootstrap(object oArea, object oEnter)
@@ -176,6 +252,63 @@ void DL_RequestResync(object oNpc, int nReason)
     SetLocalInt(oModule, DL_L_MODULE_RESYNC_REQ, GetLocalInt(oModule, DL_L_MODULE_RESYNC_REQ) + 1);
 }
 
+void DL_RegisterNpc(object oNpc)
+{
+    if (!DL_IsPipelineNpc(oNpc))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) == TRUE)
+    {
+        return;
+    }
+
+    SetLocalInt(oNpc, DL_L_NPC_REG_ON, TRUE);
+
+    if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == "")
+    {
+        SetLocalString(oNpc, DL_L_NPC_PROFILE_ID, "default");
+    }
+    if (GetLocalString(oNpc, DL_L_NPC_STATE) == "")
+    {
+        SetLocalString(oNpc, DL_L_NPC_STATE, "idle");
+    }
+
+    object oArea = GetArea(oNpc);
+    if (GetIsObjectValid(oArea))
+    {
+        SetLocalInt(oArea, DL_L_AREA_REG_COUNT, GetLocalInt(oArea, DL_L_AREA_REG_COUNT) + 1);
+        SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
+    }
+}
+
+void DL_UnregisterNpc(object oNpc)
+{
+    if (!DL_IsPipelineNpc(oNpc))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) != TRUE)
+    {
+        return;
+    }
+
+    DeleteLocalInt(oNpc, DL_L_NPC_REG_ON);
+
+    object oArea = GetArea(oNpc);
+    if (GetIsObjectValid(oArea))
+    {
+        int nCount = GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
+        if (nCount > 0)
+        {
+            SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nCount - 1);
+        }
+        SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
+    }
+}
+
 void DL_ProcessResync(object oNpc)
 {
     if (!DL_IsPipelineNpc(oNpc))
@@ -203,13 +336,110 @@ void DL_CleanupNpcRuntimeState(object oNpc)
         return;
     }
 
+    DL_UnregisterNpc(oNpc);
+
     DeleteLocalInt(oNpc, DL_L_NPC_EVENT_KIND);
     DeleteLocalInt(oNpc, DL_L_NPC_EVENT_SEQ);
     DeleteLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING);
     DeleteLocalInt(oNpc, DL_L_NPC_RESYNC_REASON);
+    DeleteLocalInt(oNpc, DL_L_NPC_WORKER_SEQ);
 
     object oModule = GetModule();
     SetLocalInt(oModule, DL_L_MODULE_CLEANUP_CNT, GetLocalInt(oModule, DL_L_MODULE_CLEANUP_CNT) + 1);
+}
+
+void DL_WorkerTouchNpc(object oNpc)
+{
+    if (!DL_IsPipelineNpc(oNpc))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) != TRUE)
+    {
+        DL_RegisterNpc(oNpc);
+    }
+
+    object oModule = GetModule();
+    int nWorkerSeq = GetLocalInt(oModule, DL_L_MODULE_WORKER_SEQ) + 1;
+    SetLocalInt(oModule, DL_L_MODULE_WORKER_SEQ, nWorkerSeq);
+    SetLocalInt(oNpc, DL_L_NPC_WORKER_SEQ, nWorkerSeq);
+}
+
+void DL_RunAreaWorkerTick(object oArea)
+{
+    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    {
+        return;
+    }
+
+    if (!DL_IsRuntimeEnabled())
+    {
+        return;
+    }
+
+    DL_BootstrapAreaTier(oArea);
+    if (DL_GetAreaTier(oArea) == DL_TIER_FROZEN)
+    {
+        return;
+    }
+
+    int nBudget = DL_GetAreaWorkerBudget(oArea);
+    int nCursor = DL_GetAreaWorkerCursor(oArea);
+    int nTouched = 0;
+    int nScanned = 0;
+    int nIndex = 0;
+    object oObj = GetFirstObjectInArea(oArea);
+
+    while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
+    {
+        if (DL_IsPipelineNpc(oObj))
+        {
+            if (nIndex >= nCursor)
+            {
+                DL_WorkerTouchNpc(oObj);
+                nTouched = nTouched + 1;
+            }
+            nIndex = nIndex + 1;
+        }
+        oObj = GetNextObjectInArea(oArea);
+        nScanned = nScanned + 1;
+    }
+
+    if (nTouched < nBudget && nCursor > 0)
+    {
+        oObj = GetFirstObjectInArea(oArea);
+        nScanned = 0;
+        nIndex = 0;
+
+        while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
+        {
+            if (DL_IsPipelineNpc(oObj))
+            {
+                if (nIndex < nCursor)
+                {
+                    DL_WorkerTouchNpc(oObj);
+                    nTouched = nTouched + 1;
+                }
+                nIndex = nIndex + 1;
+            }
+            oObj = GetNextObjectInArea(oArea);
+            nScanned = nScanned + 1;
+        }
+    }
+
+    if (nIndex <= 0)
+    {
+        DL_SetAreaWorkerCursor(oArea, 0);
+    }
+    else
+    {
+        DL_SetAreaWorkerCursor(oArea, (nCursor + nTouched) % nIndex);
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK) + 1);
+    object oModule = GetModule();
+    SetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS, GetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS) + 1);
 }
 
 int DL_IsPipelineNpc(object oNpc)
@@ -293,6 +523,7 @@ void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
 
     if (nEventKind == DL_NPC_EVENT_SPAWN)
     {
+        DL_RegisterNpc(oNpc);
         DL_RequestResync(oNpc, DL_RESYNC_SPAWN);
         DL_ProcessResync(oNpc);
         return;

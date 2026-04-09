@@ -29,10 +29,14 @@
 - `dl_area_tier` (`HOT/WARM/FROZEN`)
 - `dl_worker_cursor`
 - `dl_worker_budget`
+- `dl_reg_count`
+- `dl_reg_seq`
 
 ### 3.3 NPC locals (минимум event-ingress)
 - `dl_npc_event_kind`
 - `dl_npc_event_seq`
+- `dl_reg_on`
+- `dl_npc_worker_seq`
 - (`dl_profile_id`, `dl_state`, `dl_anchor_id`, `dl_last_tick`, `dl_debug_trace`) остаются на следующих шагах
 
 ## 4) Event Pipeline (MVP proposal)
@@ -106,11 +110,26 @@
 Проверка:
 - `scripts/daily_life/dl_smk_sync.nss`.
 
-## 7) Ограничения до Step 04+
+## 7) Ограничения до Step 05+
 
 - Не добавлять resolver/materialization/slot-handoff до фиксации init-contract.
 - Не мигрировать legacy API массово.
 - Не расширять runtime за границы согласованного baseline.
+
+### Step 04 — IMPLEMENTED
+`DL_RegisterNpc()` + `DL_UnregisterNpc()` + `DL_RunAreaWorkerTick()`.
+
+Контракт:
+- Runtime-candidate NPC регистрируется в registry layer (`dl_reg_on`, area counters).
+- Worker выполняется на `OnAreaHeartbeat`, использует `dl_worker_budget` и `dl_worker_cursor`.
+- Worker остаётся bounded: scan-cap и ограничение budget, без resolver/materialization логики.
+
+Реализация:
+- `scripts/daily_life/dl_core_inc.nss`
+- `scripts/daily_life/dl_a_hb.nss`
+
+Проверка:
+- `scripts/daily_life/dl_smk_work.nss`.
 
 
 ## 8) Этапы выполнения (самостоятельно декомпозированные)
@@ -118,5 +137,5 @@
 1. **Step 01 (done):** module init contract + lifecycle ingress (`OnSpawn/OnDeath/OnUserDefined`).
 2. **Step 02 (done):** area-tier bootstrap (`HOT/WARM/FROZEN`) без worker-loop.
 3. **Step 03 (done):** dispatcher/resync contract (включая death-cleanup правила).
-4. **Step 04:** registry + bounded worker skeleton.
+4. **Step 04 (done):** registry + bounded worker skeleton.
 5. **Step 05+:** resolver/materialization/acceptance по rewrite program.

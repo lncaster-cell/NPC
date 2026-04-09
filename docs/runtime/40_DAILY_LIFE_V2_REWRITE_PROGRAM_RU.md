@@ -46,6 +46,7 @@
 - [x] `OnModuleLoad` init contract.
 - [x] Area-tier bootstrap (Step 02).
 - [x] Минимальный dispatcher/resync hook (через `OnUserDefined`, Step 03).
+- [x] Registry + bounded area worker skeleton (Step 04).
 
 ### Фаза C — Controlled Growth
 - [ ] Resolver.
@@ -72,6 +73,8 @@
   - `scripts/daily_life/dl_a_exit.nss`
   - `scripts/daily_life/dl_smk_tier.nss`
   - `scripts/daily_life/dl_smk_sync.nss`
+  - `scripts/daily_life/dl_a_hb.nss`
+  - `scripts/daily_life/dl_smk_work.nss`
 
 ## 5.1 Принцип интеграции NWN2 (текущий фокус)
 
@@ -89,7 +92,8 @@
 1. Step 01 — done: init + lifecycle ingress.
 2. Step 02 — area-tier bootstrap (done).
 3. Step 03 — dispatcher/resync contract (+ death cleanup policy) (done).
-4. Step 04 — registry + worker skeleton.
+4. Step 04 — registry + worker skeleton (done).
+5. Step 05 — resolver/materialization skeleton.
 
 ## 6. Формат отчётности
 
