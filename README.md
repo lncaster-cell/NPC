@@ -1,4 +1,4 @@
-# Ambient Life v2 (NPC) — README
+# PysukSystems (NPC) — README
 
 > Обновлено: **2026-04-09**.
 
