@@ -180,3 +180,10 @@
 - **Commit(s):** fe7728d
 - **Message:** [DL-STEP02] [done] Реализован area-tier bootstrap: `dl_area_tier` + hooks `dl_a_enter/dl_a_exit`; `HOT` при наличии игрока, `WARM` при выходе последнего игрока; добавлен smoke `dl_smk_tier.nss`.
 
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** Step 03 dispatcher/resync contract
+- **Commit(s):** 013d8af
+- **Message:** [DL-STEP03] [done] Реализован минимальный dispatcher/resync contract через OnUserDefined path: добавлены `DL_RequestResync`, `DL_ProcessResync`, death-cleanup `DL_CleanupNpcRuntimeState`; добавлен smoke `dl_smk_sync.nss`.
+

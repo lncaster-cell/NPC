@@ -44,6 +44,11 @@
 - Реализован tier bootstrap `DL_BootstrapAreaTier` с диапазоном `FROZEN/WARM/HOT` и правилом `HOT`, если в area есть игрок.
 - Добавлен smoke `dl_smk_tier.nss` для фиксации tier после bootstrap.
 
+### 1.4 Шаг 3 dispatcher/resync contract (завершён)
+- Добавлен resync-контракт (`DL_RequestResync`, `DL_ProcessResync`) через существующий event-driven контур.
+- Добавлен cleanup path для death-сценария (`DL_CleanupNpcRuntimeState`).
+- Добавлен smoke `dl_smk_sync.nss`.
+
 
 ---
 
@@ -73,9 +78,9 @@ DoD фазы:
 
 ## 4) Ближайшие этапы
 
-1. Step 03: dispatcher/resync contract + формализация death-cleanup policy.
-2. Step 04: registry + bounded worker skeleton.
-3. Step 05: resolver/materialization skeleton.
+1. Step 04: registry + bounded worker skeleton.
+2. Step 05: resolver/materialization skeleton.
+3. Step 06: acceptance runbook + owner-run.
 
 ---
 

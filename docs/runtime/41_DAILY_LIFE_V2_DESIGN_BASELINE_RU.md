@@ -92,7 +92,21 @@
 Проверка:
 - `scripts/daily_life/dl_smk_tier.nss`.
 
-## 7) Ограничения до Step 03+
+### Step 03 — IMPLEMENTED
+`DL_RequestResync()` + `DL_ProcessResync()` + death-cleanup path.
+
+Контракт:
+- Resync-request хранится в NPC locals (`dl_npc_resync_pending`, `dl_npc_resync_reason`).
+- On spawn: ставится resync-request и выполняется минимальный `DL_ProcessResync`.
+- On death: ставится resync-request и выполняется `DL_CleanupNpcRuntimeState`.
+
+Реализация:
+- `scripts/daily_life/dl_core_inc.nss`
+
+Проверка:
+- `scripts/daily_life/dl_smk_sync.nss`.
+
+## 7) Ограничения до Step 04+
 
 - Не добавлять resolver/materialization/slot-handoff до фиксации init-contract.
 - Не мигрировать legacy API массово.
@@ -103,6 +117,6 @@
 
 1. **Step 01 (done):** module init contract + lifecycle ingress (`OnSpawn/OnDeath/OnUserDefined`).
 2. **Step 02 (done):** area-tier bootstrap (`HOT/WARM/FROZEN`) без worker-loop.
-3. **Step 03:** dispatcher/resync contract (включая death-cleanup правила).
+3. **Step 03 (done):** dispatcher/resync contract (включая death-cleanup правила).
 4. **Step 04:** registry + bounded worker skeleton.
 5. **Step 05+:** resolver/materialization/acceptance по rewrite program.

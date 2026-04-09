@@ -52,6 +52,7 @@
 - `dl_smoke_ev.nss` — smoke-проверка init-contract.
 - `dl_a_enter.nss` / `dl_a_exit.nss` — area-tier bootstrap hooks.
 - `dl_smk_tier.nss` — smoke-проверка area-tier bootstrap.
+- `dl_smk_sync.nss` — smoke-проверка dispatcher/resync contract.
 
 ### Архивная зона v1
 - Legacy reference каталоги в текущем baseline не используются (clean-room направление от 2026-04-09).

@@ -17,6 +17,17 @@ const string DL_L_MODULE_LAST_EVENT_ACTOR = "dl_module_last_event_actor";
 const string DL_L_MODULE_SPAWN_COUNT = "dl_module_spawn_count";
 const string DL_L_MODULE_DEATH_COUNT = "dl_module_death_count";
 
+const string DL_L_NPC_RESYNC_PENDING = "dl_npc_resync_pending";
+const string DL_L_NPC_RESYNC_REASON = "dl_npc_resync_reason";
+
+const string DL_L_MODULE_RESYNC_REQ = "dl_module_resync_req";
+const string DL_L_MODULE_CLEANUP_CNT = "dl_module_cleanup_cnt";
+
+const int DL_RESYNC_NONE = 0;
+const int DL_RESYNC_SPAWN = 1;
+const int DL_RESYNC_DEATH = 2;
+const int DL_RESYNC_USER = 3;
+
 
 const string DL_L_AREA_TIER = "dl_area_tier";
 
@@ -146,6 +157,61 @@ void DL_OnAreaExitBootstrap(object oArea, object oExit)
     DL_BootstrapAreaTier(oArea);
 }
 
+void DL_RequestResync(object oNpc, int nReason)
+{
+    if (!DL_IsPipelineNpc(oNpc))
+    {
+        return;
+    }
+
+    if (nReason < DL_RESYNC_NONE || nReason > DL_RESYNC_USER)
+    {
+        nReason = DL_RESYNC_USER;
+    }
+
+    SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, TRUE);
+    SetLocalInt(oNpc, DL_L_NPC_RESYNC_REASON, nReason);
+
+    object oModule = GetModule();
+    SetLocalInt(oModule, DL_L_MODULE_RESYNC_REQ, GetLocalInt(oModule, DL_L_MODULE_RESYNC_REQ) + 1);
+}
+
+void DL_ProcessResync(object oNpc)
+{
+    if (!DL_IsPipelineNpc(oNpc))
+    {
+        return;
+    }
+
+    if (!DL_IsRuntimeEnabled())
+    {
+        return;
+    }
+
+    if (GetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING) != TRUE)
+    {
+        return;
+    }
+
+    SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, FALSE);
+}
+
+void DL_CleanupNpcRuntimeState(object oNpc)
+{
+    if (!DL_IsPipelineNpc(oNpc))
+    {
+        return;
+    }
+
+    DeleteLocalInt(oNpc, DL_L_NPC_EVENT_KIND);
+    DeleteLocalInt(oNpc, DL_L_NPC_EVENT_SEQ);
+    DeleteLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING);
+    DeleteLocalInt(oNpc, DL_L_NPC_RESYNC_REASON);
+
+    object oModule = GetModule();
+    SetLocalInt(oModule, DL_L_MODULE_CLEANUP_CNT, GetLocalInt(oModule, DL_L_MODULE_CLEANUP_CNT) + 1);
+}
+
 int DL_IsPipelineNpc(object oNpc)
 {
     if (!GetIsObjectValid(oNpc))
@@ -224,6 +290,19 @@ void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
     }
 
     DL_RecordNpcLifecycleEvent(oNpc, nEventKind);
+
+    if (nEventKind == DL_NPC_EVENT_SPAWN)
+    {
+        DL_RequestResync(oNpc, DL_RESYNC_SPAWN);
+        DL_ProcessResync(oNpc);
+        return;
+    }
+
+    if (nEventKind == DL_NPC_EVENT_DEATH)
+    {
+        DL_RequestResync(oNpc, DL_RESYNC_DEATH);
+        DL_CleanupNpcRuntimeState(oNpc);
+    }
 }
 
 #endif
