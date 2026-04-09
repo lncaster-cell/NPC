@@ -1,4 +1,4 @@
-# 40 — Daily Life v2 Rewrite Program (RU)
+# 40 — Daily Life Rewrite Program (RU)
 
 > Статус: **ACTIVE**  
 > Дата запуска: **2026-04-08**  
@@ -12,11 +12,13 @@
 - bounded performance,
 - поэтапная проверка фактом.
 
+Нумерация шагов в clean-room ветке перезапущена с `Step 01`.
+
 ## 2. Обязательные источники перед каждым шагом
 1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
 3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
-4. `archive/daily_life_v1_legacy/scripts/daily_life/` (только reference)
+4. `README.md` (фактическое состояние репозитория и active workspace)
 
 ## 3. Протокол «одна функция за шаг»
 
@@ -35,34 +37,67 @@
 
 ### Фаза A — Design Baseline (active)
 - [x] Создан baseline-документ (`41_*`).
-- [x] Реализован и проверен helper `DL2_IsRuntimeEnabled()`.
-- [ ] Утвердить минимальный data-contract v2.
+- [x] Реализован module contract (`DL_IsRuntimeEnabled`, `DL_InitModuleContract`).
+- [ ] Утвердить минимальный data-contract.
 - [ ] Утвердить event-pipeline hooks.
 - [ ] Утвердить budget/degradation policy.
 
 ### Фаза B — Runtime Skeleton
-- [ ] `OnModuleLoad` init contract.
-- [ ] Area-tier bootstrap.
-- [ ] Минимальный dispatcher/resync hook.
+- [x] `OnModuleLoad` init contract.
+- [x] Area-tier bootstrap (Step 02).
+- [x] Минимальный dispatcher/resync hook (через `OnUserDefined`, Step 03).
+- [x] Registry + bounded area worker skeleton (Step 04).
 
 ### Фаза C — Controlled Growth
-- [ ] Resolver.
-- [ ] Materialization.
+- [x] Resolver (Step 05 skeleton).
+- [x] Materialization (Step 05 skeleton).
 - [ ] Worker/fairness loop + profiling.
 
 ### Фаза D — Acceptance
-- [ ] Runbook v2.
+- [x] Runbook (`52_*`).
 - [ ] Owner-run по сценариям.
 - [ ] Финальный PASS-протокол.
 
 ## 5. Актуальный репозиторный факт (2026-04-09)
 
-- v1 runtime архивирован: `archive/daily_life_v1_legacy/scripts/daily_life/`
-- активный runtime workspace: `scripts/daily_life/`
-- текущие файлы v2:
-  - `scripts/daily_life/dl_v2_runtime_inc.nss`
-  - `scripts/daily_life/dl2_smoke_step_01.nss`
-- reset-лог: `docs/runtime/42_DAILY_LIFE_V2_REPOSITORY_RESET_LOG_RU.md`
+- Владелец подтвердил clean-room путь: legacy reference не восстанавливается.
+- Активный runtime workspace: `scripts/daily_life/`.
+- В рамках текущего шага добавлены файлы:
+  - `scripts/daily_life/dl_core_inc.nss`
+  - `scripts/daily_life/dl_load.nss`
+  - `scripts/daily_life/dl_spawn.nss`
+  - `scripts/daily_life/dl_death.nss`
+  - `scripts/daily_life/dl_userdef.nss`
+  - `scripts/daily_life/dl_smoke_ev.nss`
+  - `scripts/daily_life/dl_a_enter.nss`
+  - `scripts/daily_life/dl_a_exit.nss`
+  - `scripts/daily_life/dl_smk_tier.nss`
+  - `scripts/daily_life/dl_smk_sync.nss`
+  - `scripts/daily_life/dl_a_hb.nss`
+  - `scripts/daily_life/dl_smk_work.nss`
+  - `scripts/daily_life/dl_res_inc.nss`
+  - `scripts/daily_life/dl_smk_res.nss`
+  - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
+
+## 5.1 Принцип интеграции NWN2 (текущий фокус)
+
+- Не обходить `OnSpawn`/`OnDeath`/`OnUserDefined`.
+- `OnSpawn`/`OnDeath` работают как ingress-точки и отправляют событие через `SignalEvent(EventUserDefined)`.
+- `OnUserDefined` — единая шина обработки lifecycle-сигналов Daily Life.
+- UserDefined диапазон проекта: `3000+` (текущий ID `3001`).
+
+Справка по UserDefined диапазонам:
+- не использовать engine/BioWare события `1000..1011`, `1510`, `1511`;
+- для внутренних событий Daily Life использовать отдельный project-диапазон.
+
+## 5.2 Этапы (рабочая декомпозиция)
+
+1. Step 01 — done: init + lifecycle ingress.
+2. Step 02 — area-tier bootstrap (done).
+3. Step 03 — dispatcher/resync contract (+ death cleanup policy) (done).
+4. Step 04 — registry + worker skeleton (done).
+5. Step 05 — resolver/materialization skeleton (done).
+6. Step 06 — acceptance runbook (done), owner-run (pending).
 
 ## 6. Формат отчётности
 
@@ -71,3 +106,9 @@
 - Чем проверено.
 - Фактический результат.
 - Следующий шаг.
+
+## 7. Текущий операционный статус Step 06
+
+- Runbook подготовлен и синхронизирован.
+- Owner-run требует NWN2 runtime/toolset окружение и не может быть финализирован только репозиторными проверками.
+- До фиксации owner-run verdict (`GO/HOLD`) переход к Step 07+ запрещён.
