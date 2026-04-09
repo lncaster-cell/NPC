@@ -1,48 +1,56 @@
-# Ambient Life v2 — MASTER PLAN (краткая сводка и индекс)
+# Ambient Life v2 — MASTER PLAN (краткий индекс)
 
-Дата: 2026-04-08
-Статус: навигационный индекс (не канонический дизайн-том, привязан к реестру)
+Дата: 2026-04-09
+Статус: навигационный индекс (вторичен относительно канона)
 
 ---
 
 ## 1) Роль файла
 
-`12_MASTER_PLAN.md` — это **супер-краткий навигатор** по документации проекта.
-Это навигационный слой, и он вторичен относительно SoT: `17`, `12A–12E`, `13`, `14`.
-
-- Главный канонический дизайн-документ: `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`.
-- Этот файл не дублирует механики и не конкурирует с доменными томами.
-- Нормальный порядок: `README` → `17` → `12_MASTER_PLAN` → профильные тома.
+`12_MASTER_PLAN.md` — это короткий маршрут чтения и синхронизации.
+Документ не заменяет канон и не хранит детальные runtime-алгоритмы.
 
 ---
 
-## 2) Быстрый маршрут чтения после `17`
+## 2) Куда идти по задачам
 
-0. Если задача относится к текущей фазе активной реализации, сначала открыть `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`.
-0.1. Для быстрой сортировки и поиска нужного класса документов открыть `docs/library/DOCUMENT_REGISTRY.md`.
-1. `docs/canon/12A_WORLD_MODEL_CANON.md` — world/legal/witness/city response + планируемый судебный lifecycle.
-2. `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` — runtime-архитектура, операционный контур и ограничения.
-   - Детализация redesign Daily Life: `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`.
-   - Owner-facing презентация текущего контура: `docs/runtime/35_DAILY_LIFE_V1_OWNER_PRESENTATION_RU.md`.
-   - Единый конспект-квинтэссенция контура: `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`.
-3. `docs/canon/19_MECHANICS_SYSTEM_DEPENDENCY_MAP_RU.md` — поперечная карта механик, таблица зависимостей и граница World Memory vs Runtime.
-4. `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md` — имущество игрока, ownership и доступ.
-5. `docs/canon/12D_WORLD_TRAVEL_CANON.md` — наземные и морские перемещения.
-6. `docs/canon/12E_TRADE_AND_CITY_STATE_CANON.md` — торговля и состояние города.
-7. `docs/canon/14_CLAN_SYSTEM_DESIGN.md` + `docs/canon/13_AGING_AND_CLAN_SUCCESSION.md` — кланы, старение, наследование.
+1. **Активная разработка v2**
+   - `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
+   - `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
+   - `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+
+2. **Быстрый owner/agent контекст**
+   - `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`
+
+3. **Канон (SoT)**
+   - `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`
+   - `docs/canon/12A_WORLD_MODEL_CANON.md`
+   - `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
+   - `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md`
+   - `docs/canon/12D_WORLD_TRAVEL_CANON.md`
+   - `docs/canon/12E_TRADE_AND_CITY_STATE_CANON.md`
+   - `docs/canon/13_AGING_AND_CLAN_SUCCESSION.md`
+   - `docs/canon/14_CLAN_SYSTEM_DESIGN.md`
+
+4. **Реестр и доменная навигация**
+   - `docs/library/DOCUMENT_REGISTRY.md`
+   - `docs/library/DOMAIN_INDEX.md`
+
+5. **Аудиты/traceability**
+   - `docs/audits/30_AUDIT_AND_INSPECTION_INDEX.md`
 
 ---
 
-## 3) Правила синхронизации
+## 3) Правило приоритета при конфликте формулировок
 
-1. Общий замысел и междоменные связи фиксируются в `17`.
-2. Детализация правил живёт в профильных доменных документах.
-3. `16/00/18` используются как служебные и контекстные документы, но не как source of truth по механикам.
-4. При конфликте формулировок приоритет: `17` (общий канон) → профильный доменный документ (детализация).
+`SoT-канон` → `runtime baseline/program` → `служебные governance/entry документы`.
+
 ---
 
-## 4) Актуальный контроль целостности документации
+## 4) Определение «документация актуальна»
 
-- Единая точка входа в аудит/инспекции: `docs/audits/30_AUDIT_AND_INSPECTION_INDEX.md`.
-- Через индекс доступны последние deep-audit и doc↔code inspection snapshots (`23/24/25/27/28/29`).
-- Аудит-документы используются как журналы проверки и не заменяют SoT-документы (`12A–12E`, `13`, `14`, `17`).
+Документация считается актуальной, если:
+- ссылки соответствуют реально существующим файлам,
+- в control panel отражён текущий этап и ближайший шаг,
+- README и entry-слой не расходятся с runtime baseline,
+- канонические границы Daily Life не размыты в служебных документах.

@@ -130,3 +130,10 @@
 - **Scope:** README docs dedup / smoke setup section
 - **Commit(s):** pending
 - **Message:** [DOC-DEDUP] [done] Убрано дублирование setup-блоков в README: Module/Area/NPC contract сведены в один checklist-табличный блок, readiness-секция теперь ссылается на него без повторов.
+
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** full documentation refresh / stale links cleanup
+- **Commit(s):** pending
+- **Message:** [DOC-REFRESH-2026-04-09] [done] Обновлены entry/library/governance/runtime опорные документы под фактическое состояние репозитория v2; убраны устаревшие ссылки на несуществующие bootstrap-файлы, синхронизированы roadmap и DoD.

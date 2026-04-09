@@ -1,79 +1,73 @@
 # 40 — Daily Life v2 Rewrite Program (RU)
 
-> Статус: **ACTIVE / STARTED**  
-> Дата запуска: **2026-04-08**
+> Статус: **ACTIVE**  
+> Дата запуска: **2026-04-08**  
+> Последняя актуализация: **2026-04-09**
 
 ## 1. Цель
 
-Переписать Daily Life-контур с нуля, сохранив канонические принципы, но убрав накопленный технический шум:
-- чистые контракты;
-- предсказуемое поведение;
-- контроль производительности;
-- пошаговая проверка без «больших слепых поставок».
+Переписать Daily Life-контур с нуля, сохранив канонические принципы и убрав технический шум:
+- contract-first,
+- предсказуемый runtime,
+- bounded performance,
+- поэтапная проверка фактом.
 
-## 2. Источники проектирования (обязательно)
-
-Перед каждой новой функцией сверяемся минимум с:
+## 2. Обязательные источники перед каждым шагом
 1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
-3. `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md`
-4. `archive/daily_life_v1_legacy/scripts/daily_life/` (как тех. референс, не как копипаст).
+3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+4. `archive/daily_life_v1_legacy/scripts/daily_life/` (только reference)
 
 ## 3. Протокол «одна функция за шаг»
 
-Каждый шаг обязан содержать:
-1. **Контракт функции** (что принимает, что возвращает, какие гарантии).
-2. **Минимальную реализацию** (без побочной «магии»).
-3. **Локальную проверку** (smoke/diagnostic script под конкретную функцию).
-4. **Запись результата** (что работает, что не работает, что дальше).
+Каждый шаг включает:
+1. Контракт функции.
+2. Минимальную реализацию.
+3. Локальную проверку (smoke/diagnostic).
+4. Синхронное обновление документации.
 
 Запрещено:
-- добавлять несколько новых подсистем в одном PR;
-- менять архитектуру и runtime-код без синхронизации документации;
-- «лечить всё сразу» без изолированного шага.
-
-## 3.1 Этап 0 — Alignment (зафиксирован 2026-04-08)
-
-Закрыто как отдельный организационный этап до расширения runtime:
-- границы Daily Life (in/out of scope) подтверждены по digest;
-- event-driven + area-centric модель подтверждена как обязательная;
-- per-NPC heartbeat-first ядро зафиксировано как недопустимое;
-- Definition of Done микро-шага зафиксирован в control panel.
+- внедрять несколько подсистем в одном шаге,
+- менять runtime без doc-sync,
+- делать «массовый рефактор» без этапной верификации.
 
 ## 4. Фазы переписи
 
-### Фаза A — Design Baseline
-- [x] Черновик baseline-документа создан (`41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`).
-- [ ] Утвердить минимальный v2 data-contract с владельцем.
-- [ ] Утвердить v2 event-pipeline (module/area/npc hooks).
-- [ ] Зафиксировать performance budget и degradation-policy.
+### Фаза A — Design Baseline (active)
+- [x] Создан baseline-документ (`41_*`).
+- [x] Реализован и проверен helper `DL2_IsRuntimeEnabled()`.
+- [ ] Утвердить минимальный data-contract v2.
+- [ ] Утвердить event-pipeline hooks.
+- [ ] Утвердить budget/degradation policy.
 
 ### Фаза B — Runtime Skeleton
-- [x] Ввести пустой bootstrap и диагностический лог.
-- [x] Ввести первый валидированный helper (`DL2_IsRuntimeEnabled`).
-- [x] Подключить smoke-проверку helper-функции (`dl2_smoke_step_01.nss`).
+- [ ] `OnModuleLoad` init contract.
+- [ ] Area-tier bootstrap.
+- [ ] Минимальный dispatcher/resync hook.
 
 ### Фаза C — Controlled Growth
-- [ ] Resolver (в изолированных функциях).
-- [ ] Materialization (отдельно от resolver).
-- [ ] Worker/fairness loop с профилированием.
+- [ ] Resolver.
+- [ ] Materialization.
+- [ ] Worker/fairness loop + profiling.
 
 ### Фаза D — Acceptance
-- [ ] Обновлённый runbook для v2.
-- [ ] Поэтапный owner-run.
+- [ ] Runbook v2.
+- [ ] Owner-run по сценариям.
 - [ ] Финальный PASS-протокол.
 
-## 5. Репозиторный статус на старте
+## 5. Актуальный репозиторный факт (2026-04-09)
 
 - v1 runtime архивирован: `archive/daily_life_v1_legacy/scripts/daily_life/`
-- v2 runtime workspace открыт: `scripts/daily_life/`
-- стартовый stub: `scripts/daily_life/dl_v2_bootstrap.nss`
+- активный runtime workspace: `scripts/daily_life/`
+- текущие файлы v2:
+  - `scripts/daily_life/dl_v2_runtime_inc.nss`
+  - `scripts/daily_life/dl2_smoke_step_01.nss`
 - reset-лог: `docs/runtime/42_DAILY_LIFE_V2_REPOSITORY_RESET_LOG_RU.md`
 
-## 6. Формат отчётности (жёсткий)
+## 6. Формат отчётности
 
 На каждый шаг:
-- Что изменено (1–3 пункта).
-- Чем проверено (конкретные команды/скрипты).
-- Что подтверждено фактом.
-- Какой следующий микро-шаг.
+- Что изменено.
+- Чем проверено.
+- Фактический результат.
+- Следующий шаг.
