@@ -12,7 +12,7 @@
 - Канон: `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 - Инварианты: `docs/runtime/06_SYSTEM_INVARIANTS.md`
 - Digest: `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`
-- Legacy reference code: `archive/daily_life_v1_legacy/scripts/daily_life/`
+- Legacy reference constants: `scripts/daily_life/dl_v2_activity_animation_constants_inc.nss` (v1 код удалён 2026-04-09).
 
 ## 3) Минимальный v2 Data Contract (предлагаемый)
 

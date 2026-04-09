@@ -48,8 +48,8 @@
 - `dl_v2_runtime_inc.nss` — helper-контракт `DL2_IsRuntimeEnabled()`.
 - `dl2_smoke_step_01.nss` — smoke-проверка helper в 3 базовых кейсах.
 
-### Архивная зона v1 (reference only)
-`archive/daily_life_v1_legacy/scripts/daily_life/`
+### Legacy v1 code
+Удалён из репозитория 2026-04-09 после извлечения reference-констант в `scripts/daily_life/dl_v2_activity_animation_constants_inc.nss`.
 
 ---
 

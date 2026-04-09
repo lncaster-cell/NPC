@@ -9,19 +9,25 @@
 
 ## Что было сделано в reset-фазе
 
-1. Legacy-runtime v1 перенесён в архив:
-   - из `scripts/daily_life/*.nss`
-   - в `archive/daily_life_v1_legacy/scripts/daily_life/`
+1. Legacy-runtime v1 был временно вынесен в архив для инспекции.
 2. Активная рабочая зона `scripts/daily_life/` очищена для v2 шагов.
 3. Навигационные и governance-документы переведены на v2 rewrite track.
+
+## Дополнительная очистка (2026-04-09)
+
+1. После фиксации полезного наследия полностью удалены legacy v1 скрипты:
+   - `archive/daily_life_v1_legacy/scripts/daily_life/*.nss`
+2. Сохранён reference со списком activity ID и константами анимаций:
+   - `scripts/daily_life/dl_v2_activity_animation_constants_inc.nss`
 
 ## Фактическое текущее состояние (2026-04-09)
 
 В `scripts/daily_life/` находятся:
 - `dl_v2_runtime_inc.nss`
 - `dl2_smoke_step_01.nss`
+- `dl_v2_activity_animation_constants_inc.nss`
 
-Это означает, что ранние reset-заметки со ссылками на scripts/daily_life/README.md и scripts/daily_life/dl_v2_bootstrap.nss считаются историческими и больше не отражают текущий факт.
+Это означает, что legacy v1 код полностью удалён из репозитория, а нужные константы сохранены в отдельном v2 reference include.
 
 ## Ограничения
 

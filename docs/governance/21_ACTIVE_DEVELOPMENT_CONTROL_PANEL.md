@@ -7,10 +7,11 @@
 
 ## 0) Текущий статус
 
-- Legacy-контур `Daily Life v1` хранится в `archive/daily_life_v1_legacy/scripts/daily_life/`.
-- Активный каталог `scripts/daily_life/` сейчас содержит два рабочих артефакта:
+- Legacy-контур `Daily Life v1` (код) удалён из репозитория 2026-04-09; сохранён reference-файл `scripts/daily_life/dl_v2_activity_animation_constants_inc.nss`.
+- Активный каталог `scripts/daily_life/` сейчас содержит три рабочих артефакта:
   - `dl_v2_runtime_inc.nss`
   - `dl2_smoke_step_01.nss`
+  - `dl_v2_activity_animation_constants_inc.nss`
 - Работа идёт в режиме: `один микро-шаг -> одна проверка -> документирование факта`.
 
 Ключевые документы для текущей фазы:
