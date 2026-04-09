@@ -1,75 +1,69 @@
 # 41 — Daily Life v2 Design Baseline (RU)
 
-> Дата: 2026-04-08  
-> Статус: draft for owner approval
+> Дата: 2026-04-09  
+> Статус: draft for owner approval (updated to real repository state)
 
 ## 1) Цель baseline
 
-Согласовать минимальную архитектуру v2 до написания рабочего runtime-кода.
+Согласовать минимальную архитектуру v2 до расширения runtime-логики.
 
 ## 2) Входные источники
 
 - Канон: `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 - Инварианты: `docs/runtime/06_SYSTEM_INVARIANTS.md`
-- Ретроспектива v1: `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md`
+- Digest: `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`
 - Legacy reference code: `archive/daily_life_v1_legacy/scripts/daily_life/`
 
 ## 3) Минимальный v2 Data Contract (предлагаемый)
 
-### 3.1 NPC locals (ядро)
+### 3.1 Module locals (уже частично в коде)
+- `dl2_enabled`
+- `dl2_contract_version`
 
-- `dl2_profile_id` — строковый идентификатор профиля поведения.
-- `dl2_state` — текущее состояние автомата (`IDLE`, `TRANSIT`, `ACTIVE`, `BLOCKED`).
-- `dl2_anchor_id` — текущий целевой anchor.
-- `dl2_last_tick` — последний обработанный тик (для защиты от дублей).
-- `dl2_debug_trace` — флаг расширенной диагностики.
+### 3.2 Area locals (кандидаты на Step 02/03)
+- `dl2_area_tier` (`HOT/WARM/FROZEN`)
+- `dl2_worker_cursor`
+- `dl2_worker_budget`
 
-### 3.2 Area locals
+### 3.3 NPC locals (кандидаты на Step 03+)
+- `dl2_profile_id`
+- `dl2_state`
+- `dl2_anchor_id`
+- `dl2_last_tick`
+- `dl2_debug_trace`
 
-- `dl2_area_tier` — `HOT/WARM/FROZEN`.
-- `dl2_worker_cursor` — курсор fairness-обхода.
-- `dl2_worker_budget` — лимит NPC на тик.
+## 4) Event Pipeline v2 (MVP proposal)
 
-### 3.3 Module locals
+1. `OnModuleLoad` — инициализация module contract.
+2. `OnAreaEnter/OnAreaExit` — управление tier активацией.
+3. `OnAreaHeartbeat` — bounded worker tick.
+4. `OnNPCSpawn` — регистрация NPC в pipeline.
+5. `OnNPCUserDefined` — targeted resync/diagnostic.
 
-- `dl2_enabled` — глобальный флаг включения v2.
-- `dl2_contract_version` — версия контракта (`v2.a0` на старте).
+## 5) Performance baseline
 
-## 4) Event Pipeline v2 (MVP)
+- На тик обрабатывается не более `budget` NPC.
+- В `FROZEN` tier нет фоновой симуляции.
+- Функции должны быть идемпотентными в пределах одного тика.
 
-1. `OnModuleLoad` — инициализация контракта/флагов.
-2. `OnAreaEnter` — перевод area в HOT при входе игрока.
-3. `OnAreaHeartbeat` — worker tick по budget.
-4. `OnNPCSpawn` — регистрация NPC в v2-пайплайне.
-5. `OnNPCUserDefined` — точечные resync/diagnostic события.
+## 6) Фактически реализовано на сегодня
 
-## 5) Производительность и контроль
-
-- На каждом тике обрабатывается не более `budget` NPC.
-- В `FROZEN` tier runtime-процессинг отключается.
-- Каждая функция должна быть idempotent в рамках одного тика.
-
-## 6) Первый технический шаг (после approval)
-
-### Шаг 1 (первая функция) — IMPLEMENTED (2026-04-08)
+### Step 01 — IMPLEMENTED
 `DL2_IsRuntimeEnabled()`
 
 Контракт:
 - Вход: нет.
 - Выход: `TRUE/FALSE`.
-- Логика: проверяет `dl2_enabled` и `dl2_contract_version`.
+- Логика: `dl2_enabled == TRUE` и `dl2_contract_version == v2.a0`.
 
 Реализация:
 - `scripts/daily_life/dl_v2_runtime_inc.nss`
 
-Проверка шага:
-- smoke-скрипт `scripts/daily_life/dl2_smoke_step_01.nss` логирует PASS/FAIL для 3 кейсов:
-  1. модуль выключен,
-  2. включен с неверной версией,
-  3. включен с `v2.a0`.
+Проверка:
+- `scripts/daily_life/dl2_smoke_step_01.nss` (3 кейса: disabled / invalid version / valid version).
 
-## 7) Что НЕ делаем до Шага 1
+## 7) Ограничения до Step 02+
 
-- Не вводим resolver/materialization/slot-handoff.
-- Не подключаем полноценные диалоги.
-- Не мигрируем весь legacy API в v2-нейминг.
+- Не добавлять resolver/materialization/slot-handoff до фиксации init-contract.
+- Не мигрировать legacy API массово.
+- Не расширять runtime за границы согласованного baseline.
