@@ -1,9 +1,9 @@
-# Ambient Life v2 (NPC) — README
+# Ambient Life (NPC) — README
 
 > Обновлено: **2026-04-09**.
 
 Репозиторий содержит канон, runtime-документацию и кодовую базу для контура Daily Life в NWN2.
-Текущий режим разработки: **пошаговая перепись v2** (clean-room подход).
+Текущий режим разработки: **пошаговая перепись** (clean-room подход).
 
 Ключевой рабочий digest: `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`.
 
@@ -12,7 +12,7 @@
 ## 1) Быстрый старт (что открыть в первую очередь)
 
 1. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — текущая активная фаза и ближайшие микро-шаги.
-2. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md` — протокол переписи v2.
+2. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md` — протокол переписи.
 3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md` — минимальный baseline контрактов и пайплайна.
 4. `docs/library/DOCUMENT_REGISTRY.md` — карта всей документации по слоям.
 
@@ -41,15 +41,15 @@
 
 ## 3) Состояние кода (факт на 2026-04-09)
 
-### Активная зона v2
+### Активная зона
 `scripts/daily_life/`
 
 Текущие файлы:
-- `dl_v2_core_inc.nss` — module contract + lifecycle event ingress.
-- `dl_on_load.nss` — init contract на `OnModuleLoad`.
-- `dl_npc_onspawn.nss` / `dl_npc_ondeath.nss` — ingress lifecycle hooks.
-- `dl_npc_onud.nss` — dispatcher для `OnUserDefined`.
-- `dl2_smoke_step_01_event_pipeline.nss` — smoke-проверка init-contract.
+- `dl_core_inc.nss` — module contract + lifecycle event ingress.
+- `dl_load.nss` — init contract на `OnModuleLoad`.
+- `dl_spawn.nss` / `dl_death.nss` — ingress lifecycle hooks.
+- `dl_userdef.nss` — dispatcher для `OnUserDefined`.
+- `dl_smoke_ev.nss` — smoke-проверка init-contract.
 
 ### Архивная зона v1
 - Legacy reference каталоги в текущем baseline не используются (clean-room направление от 2026-04-09).

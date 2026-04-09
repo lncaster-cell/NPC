@@ -1,4 +1,4 @@
-# 40 — Daily Life v2 Rewrite Program (RU)
+# 40 — Daily Life Rewrite Program (RU)
 
 > Статус: **ACTIVE**  
 > Дата запуска: **2026-04-08**  
@@ -37,8 +37,8 @@
 
 ### Фаза A — Design Baseline (active)
 - [x] Создан baseline-документ (`41_*`).
-- [x] Реализован module contract (`DL2_IsRuntimeEnabled`, `DL2_InitModuleContract`).
-- [ ] Утвердить минимальный data-contract v2.
+- [x] Реализован module contract (`DL_IsRuntimeEnabled`, `DL_InitModuleContract`).
+- [ ] Утвердить минимальный data-contract.
 - [ ] Утвердить event-pipeline hooks.
 - [ ] Утвердить budget/degradation policy.
 
@@ -53,7 +53,7 @@
 - [ ] Worker/fairness loop + profiling.
 
 ### Фаза D — Acceptance
-- [ ] Runbook v2.
+- [ ] Runbook.
 - [ ] Owner-run по сценариям.
 - [ ] Финальный PASS-протокол.
 
@@ -62,18 +62,18 @@
 - Владелец подтвердил clean-room путь: legacy reference не восстанавливается.
 - Активный runtime workspace: `scripts/daily_life/`.
 - В рамках текущего шага добавлены файлы:
-  - `scripts/daily_life/dl_v2_core_inc.nss`
-  - `scripts/daily_life/dl_on_load.nss`
-  - `scripts/daily_life/dl_npc_onspawn.nss`
-  - `scripts/daily_life/dl_npc_ondeath.nss`
-  - `scripts/daily_life/dl_npc_onud.nss`
-  - `scripts/daily_life/dl2_smoke_step_01_event_pipeline.nss`
+  - `scripts/daily_life/dl_core_inc.nss`
+  - `scripts/daily_life/dl_load.nss`
+  - `scripts/daily_life/dl_spawn.nss`
+  - `scripts/daily_life/dl_death.nss`
+  - `scripts/daily_life/dl_userdef.nss`
+  - `scripts/daily_life/dl_smoke_ev.nss`
 
 ## 5.1 Принцип интеграции NWN2 (текущий фокус)
 
 - Не обходить `OnSpawn`/`OnDeath`/`OnUserDefined`.
 - `OnSpawn`/`OnDeath` работают как ingress-точки и отправляют событие через `SignalEvent(EventUserDefined)`.
-- `OnUserDefined` — единая шина обработки lifecycle-сигналов Daily Life v2.
+- `OnUserDefined` — единая шина обработки lifecycle-сигналов Daily Life.
 
 ## 6. Формат отчётности
 
