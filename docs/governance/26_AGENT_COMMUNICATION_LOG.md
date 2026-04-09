@@ -173,3 +173,10 @@
 - **Commit(s):** 0ca7050
 - **Message:** [DL-STAGE-RANGE] [done] Зафиксирован project-range `3000+` (ID `3001`) для OnUserDefined ingress; уточнены критерии pipeline NPC и границы death-handling; этапы Step02..04 декомпозированы, активные документы уплотнены.
 
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** Step 02 area-tier bootstrap
+- **Commit(s):** fe7728d
+- **Message:** [DL-STEP02] [done] Реализован area-tier bootstrap: `dl_area_tier` + hooks `dl_a_enter/dl_a_exit`; `HOT` при наличии игрока, `WARM` при выходе последнего игрока; добавлен smoke `dl_smk_tier.nss`.
+

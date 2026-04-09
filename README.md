@@ -50,6 +50,8 @@
 - `dl_spawn.nss` / `dl_death.nss` — ingress lifecycle hooks.
 - `dl_userdef.nss` — dispatcher для `OnUserDefined` (project-range `3000+`).
 - `dl_smoke_ev.nss` — smoke-проверка init-contract.
+- `dl_a_enter.nss` / `dl_a_exit.nss` — area-tier bootstrap hooks.
+- `dl_smk_tier.nss` — smoke-проверка area-tier bootstrap.
 
 ### Архивная зона v1
 - Legacy reference каталоги в текущем baseline не используются (clean-room направление от 2026-04-09).

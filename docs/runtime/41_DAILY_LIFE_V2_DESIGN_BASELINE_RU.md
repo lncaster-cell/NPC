@@ -25,7 +25,7 @@
 - `dl_module_spawn_count`
 - `dl_module_death_count`
 
-### 3.2 Area locals (кандидаты на Step 02/03)
+### 3.2 Area locals (зафиксировано после Step 02)
 - `dl_area_tier` (`HOT/WARM/FROZEN`)
 - `dl_worker_cursor`
 - `dl_worker_budget`
@@ -76,7 +76,23 @@
 Проверка:
 - `scripts/daily_life/dl_smoke_ev.nss` (module contract init gate).
 
-## 7) Ограничения до Step 02+
+### Step 02 — IMPLEMENTED
+`DL_BootstrapAreaTier()` + area lifecycle hooks (`OnAreaEnter`/`OnAreaExit`).
+
+Контракт:
+- Tier хранится в `dl_area_tier` как `FROZEN/WARM/HOT`.
+- Если в area есть игрок, tier поднимается до `HOT`.
+- Если игроки покинули area, tier опускается до `WARM`.
+
+Реализация:
+- `scripts/daily_life/dl_core_inc.nss`
+- `scripts/daily_life/dl_a_enter.nss`
+- `scripts/daily_life/dl_a_exit.nss`
+
+Проверка:
+- `scripts/daily_life/dl_smk_tier.nss`.
+
+## 7) Ограничения до Step 03+
 
 - Не добавлять resolver/materialization/slot-handoff до фиксации init-contract.
 - Не мигрировать legacy API массово.
@@ -86,7 +102,7 @@
 ## 8) Этапы выполнения (самостоятельно декомпозированные)
 
 1. **Step 01 (done):** module init contract + lifecycle ingress (`OnSpawn/OnDeath/OnUserDefined`).
-2. **Step 02:** area-tier bootstrap (`HOT/WARM/FROZEN`) без worker-loop.
+2. **Step 02 (done):** area-tier bootstrap (`HOT/WARM/FROZEN`) без worker-loop.
 3. **Step 03:** dispatcher/resync contract (включая death-cleanup правила).
 4. **Step 04:** registry + bounded worker skeleton.
 5. **Step 05+:** resolver/materialization/acceptance по rewrite program.

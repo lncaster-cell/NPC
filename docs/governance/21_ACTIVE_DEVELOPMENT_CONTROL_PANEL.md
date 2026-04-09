@@ -39,6 +39,12 @@
 - Базовый include `dl_core_inc.nss` содержит module contract (`DL_IsRuntimeEnabled`, `DL_InitModuleContract`).
 - Добавлен smoke `dl_smoke_ev.nss` для проверки init-contract.
 
+### 1.3 Шаг 2 area-tier bootstrap (завершён)
+- Добавлены area hooks `dl_a_enter.nss` / `dl_a_exit.nss`.
+- Реализован tier bootstrap `DL_BootstrapAreaTier` с диапазоном `FROZEN/WARM/HOT` и правилом `HOT`, если в area есть игрок.
+- Добавлен smoke `dl_smk_tier.nss` для фиксации tier после bootstrap.
+
+
 ---
 
 ## 2) Текущая активная фаза
@@ -67,9 +73,9 @@ DoD фазы:
 
 ## 4) Ближайшие этапы
 
-1. Step 02: area-tier bootstrap (`HOT/WARM/FROZEN`) без полного worker-loop.
-2. Step 03: dispatcher/resync contract + формализация death-cleanup policy.
-3. Step 04: registry + bounded worker skeleton.
+1. Step 03: dispatcher/resync contract + формализация death-cleanup policy.
+2. Step 04: registry + bounded worker skeleton.
+3. Step 05: resolver/materialization skeleton.
 
 ---
 
