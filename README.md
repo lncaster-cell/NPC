@@ -17,6 +17,8 @@
 4. `docs/library/DOCUMENT_REGISTRY.md` — карта всей документации по слоям.
 5. `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md` — acceptance-процедура owner-run для текущего baseline.
 
+Текущий operational gate: переход к следующим шагам возможен только после owner-run verdict по `52_*`.
+
 ---
 
 ## 2) Source of Truth и границы системы

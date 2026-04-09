@@ -1,16 +1,16 @@
 # Ambient Life — Active Development Control Panel
 
 Дата: 2026-04-09  
-Статус: active execution control panel (rewrite track)
+Статус: execution control panel (rewrite track)
 
 ---
 
 ## 0) Текущий статус
 
-- Статус выполнения: **ACTIVE (owner decision applied)**.
+- Статус выполнения: **WAITING OWNER-RUN (runtime environment required)**.
 - Решение владельца от **2026-04-09**: legacy-reference не восстанавливаем, разработка идёт clean-room с нуля.
 - Восстановлен активный runtime-каталог `scripts/daily_life/` для нового baseline.
-- Текущий микро-шаг: Step 06 `owner-run execution (runbook ready)`.
+- Текущий микро-шаг: Step 06 `owner-run execution in NWN2 toolset/runtime`.
 - UserDefined ID для текущего ingress: `3001` (project range `3000+`).
 - Нумерация clean-room шагов перезапущена с **Step 01** после удаления прежнего кода.
 - Работа идёт в режиме: `один микро-шаг -> одна проверка -> документирование факта`.
@@ -96,6 +96,7 @@ DoD фазы:
 ## 4) Ближайшие этапы
 
 1. Step 06: owner-run по acceptance runbook.
+2. После PASS owner-run: переход к Step 07+.
 
 ---
 

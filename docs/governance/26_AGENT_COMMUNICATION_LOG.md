@@ -208,3 +208,10 @@
 - **Scope:** Step 06 acceptance runbook
 - **Commit(s):** pending
 - **Message:** [DL-STEP06-RUNBOOK] [done] Подготовлен `52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md` с preflight, smoke-последовательностью A..E, PASS-критерием и шаблоном owner-вердикта; active docs синхронизированы, owner-run оставлен как следующий операционный шаг.
+
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** blocker
+- **Scope:** Step 06 owner-run execution gate
+- **Commit(s):** pending
+- **Message:** [DL-STEP06-GATE] [blocked] Runbook готов, но owner-run требует NWN2 runtime/toolset окружение. До получения owner verdict (`GO/HOLD`) переход к Step 07+ остановлен по правилу “не прыгать через незавершённый шаг”.
