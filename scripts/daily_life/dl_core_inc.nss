@@ -21,7 +21,8 @@ const int DL_NPC_EVENT_NONE = 0;
 const int DL_NPC_EVENT_SPAWN = 1;
 const int DL_NPC_EVENT_DEATH = 2;
 
-const int DL_UD_PIPELINE_NPC_EVENT = 2001;
+// 3000+ range chosen for project-defined user events (avoid BioWare 1000..1011, 1510, 1511).
+const int DL_UD_PIPELINE_NPC_EVENT = 3001;
 
 int DL_IsRuntimeEnabled()
 {

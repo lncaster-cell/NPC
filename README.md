@@ -48,7 +48,7 @@
 - `dl_core_inc.nss` — module contract + lifecycle event ingress.
 - `dl_load.nss` — init contract на `OnModuleLoad`.
 - `dl_spawn.nss` / `dl_death.nss` — ingress lifecycle hooks.
-- `dl_userdef.nss` — dispatcher для `OnUserDefined`.
+- `dl_userdef.nss` — dispatcher для `OnUserDefined` (project-range `3000+`).
 - `dl_smoke_ev.nss` — smoke-проверка init-contract.
 
 ### Архивная зона v1

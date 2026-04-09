@@ -114,7 +114,7 @@
 - **Author:** lead-agent
 - **Type:** handoff
 - **Scope:** owner docs / Daily Life contour presentation
-- **Commit(s):** pending
+- **Commit(s):** 0ca7050
 - **Message:** [OWNER-PRESENTATION] [done] Подготовлен owner-facing документ `35_DAILY_LIFE_V1_OWNER_PRESENTATION_RU.md`: простой обзор контура Daily Life v1 + проверочная таблица механик + чеклист верификации + шаблон комментариев владельца.
 
 - **Date:** 2026-04-07
@@ -165,4 +165,11 @@
 - **Scope:** script naming policy + version label cleanup
 - **Commit(s):** 8353836, ec30c63
 - **Message:** [DL-NAME-CLEANUP] [done] Убраны метки версии из runtime-скриптов и активной документации; все имена скриптов в `scripts/daily_life/` приведены к краткому формату (<=16 символов).
+
+- **Date:** 2026-04-09
+- **Author:** lead-agent
+- **Type:** note
+- **Scope:** user-defined range + stage decomposition + docs cleanup
+- **Commit(s):** 0ca7050
+- **Message:** [DL-STAGE-RANGE] [done] Зафиксирован project-range `3000+` (ID `3001`) для OnUserDefined ingress; уточнены критерии pipeline NPC и границы death-handling; этапы Step02..04 декомпозированы, активные документы уплотнены.
 

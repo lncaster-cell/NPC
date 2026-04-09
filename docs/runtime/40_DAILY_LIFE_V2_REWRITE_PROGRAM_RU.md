@@ -74,6 +74,18 @@
 - Не обходить `OnSpawn`/`OnDeath`/`OnUserDefined`.
 - `OnSpawn`/`OnDeath` работают как ingress-точки и отправляют событие через `SignalEvent(EventUserDefined)`.
 - `OnUserDefined` — единая шина обработки lifecycle-сигналов Daily Life.
+- UserDefined диапазон проекта: `3000+` (текущий ID `3001`).
+
+Справка по UserDefined диапазонам:
+- не использовать engine/BioWare события `1000..1011`, `1510`, `1511`;
+- для внутренних событий Daily Life использовать отдельный project-диапазон.
+
+## 5.2 Этапы (рабочая декомпозиция)
+
+1. Step 01 — done: init + lifecycle ingress.
+2. Step 02 — area-tier bootstrap.
+3. Step 03 — dispatcher/resync contract (+ death cleanup policy).
+4. Step 04 — registry + worker skeleton.
 
 ## 6. Формат отчётности
 

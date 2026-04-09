@@ -37,6 +37,13 @@
 
 ## 4) Event Pipeline (MVP proposal)
 
+Принятые уточнения:
+- UserDefined event range для Daily Life: `3000+` (текущий ID: `3001`).
+- Зарезервированные движком/BioWare значения (`1000..1011`, `1510`, `1511`) не используем для внутренних событий Daily Life.
+- Критерий pipeline NPC на текущем шаге: только `OBJECT_TYPE_CREATURE`, исключая DM; расширение фильтра (summon/companion/service actors) — отдельным шагом.
+- Обработка `OnDeath` на текущем шаге ограничена event ingress + counters; cleanup/respawn policy будет формализована в следующем этапе lifecycle/resync.
+
+
 1. `OnModuleLoad` — инициализация module contract.
 2. `OnNPCSpawn` и `OnNPCDeath` — ingress lifecycle-сигналов.
 3. `OnNPCUserDefined` — единый dispatcher lifecycle-сигналов (`SignalEvent(EventUserDefined)`).
@@ -74,3 +81,12 @@
 - Не добавлять resolver/materialization/slot-handoff до фиксации init-contract.
 - Не мигрировать legacy API массово.
 - Не расширять runtime за границы согласованного baseline.
+
+
+## 8) Этапы выполнения (самостоятельно декомпозированные)
+
+1. **Step 01 (done):** module init contract + lifecycle ingress (`OnSpawn/OnDeath/OnUserDefined`).
+2. **Step 02:** area-tier bootstrap (`HOT/WARM/FROZEN`) без worker-loop.
+3. **Step 03:** dispatcher/resync contract (включая death-cleanup правила).
+4. **Step 04:** registry + bounded worker skeleton.
+5. **Step 05+:** resolver/materialization/acceptance по rewrite program.

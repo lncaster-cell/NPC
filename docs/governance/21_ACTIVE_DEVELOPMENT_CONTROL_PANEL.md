@@ -11,6 +11,7 @@
 - Решение владельца от **2026-04-09**: legacy-reference не восстанавливаем, разработка идёт clean-room с нуля.
 - Восстановлен активный runtime-каталог `scripts/daily_life/` для нового baseline.
 - Текущий микро-шаг: event-ingress ядро (`OnSpawn`/`OnDeath` -> `SignalEvent(EventUserDefined)` -> `OnUserDefined`).
+- UserDefined ID для текущего ingress: `3001` (project range `3000+`).
 - Нумерация clean-room шагов перезапущена с **Step 01** после удаления прежнего кода.
 - Работа идёт в режиме: `один микро-шаг -> одна проверка -> документирование факта`.
 
@@ -64,10 +65,10 @@ DoD фазы:
 
 ---
 
-## 4) Ближайший backlog
+## 4) Ближайшие этапы
 
 1. Step 02: area-tier bootstrap (`HOT/WARM/FROZEN`) без полного worker-loop.
-2. Step 03: минимальный dispatcher/resync hook для controlled событий.
+2. Step 03: dispatcher/resync contract + формализация death-cleanup policy.
 3. Step 04: registry + bounded worker skeleton.
 
 ---
