@@ -36,13 +36,13 @@
 | 2026-03-27 | smoke-script-bootstrap-001 | process prep | repo scripts | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | добавлен scripted helper `dl_smoke_milestone_a.nss` для единого A–G summary; ожидается фактический прогон в toolset/owner PC |
 | 2026-03-31 | smoke-script-fix-b-001 | process prep | repo scripts | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | в `dl_smoke_milestone_a.nss` исправлен учёт сценария B: non-work кузнец теперь ищется независимо от PASS сценария A, без ложного `NOT_FOUND` при наличии mixed blacksmith набора |
 | 2026-04-07 | status-sync-001 | process sync | repo docs | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | подтверждён статус: фактические scripted/manual прогоны A–G ещё не зафиксированы; milestone gate остаётся открытым |
-| 2026-04-10 | manual-smoke-lifecycle-001 | manual smoke | toolset / owner PC | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | PARTIAL | NOT_RUN | подтверждены `AREA_ENTER`, `HB`, lifecycle death path и cleanup регистрации в isolated area (`reg: 1 -> 0`); полная acceptance-проверка F и сценарий G ещё не закрыты |
+| 2026-04-10 | manual-smoke-lifecycle-001 | manual smoke | toolset / owner PC | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | PARTIAL | NOT_RUN | **owner-run текущего clean-room lifecycle/registry slice выполнен**: подтверждены `AREA_ENTER`, `HB`, death lifecycle и cleanup регистрации в isolated area (`reg: 1 -> 0`); это не эквивалентно полному PASS Milestone A, потому что сценарии A–E и G отдельно не пройдены |
 
 ## 2.2 Детализация расхождений (заполнять только при PARTIAL/FAIL)
 
 | Дата | Run ID | Сценарий | Факт | Ожидание | Гипотеза причины | Следующий шаг |
 |---|---|---|---|---|---|---|
-| 2026-04-10 | manual-smoke-lifecycle-001 | F (Area enter resync) | подтверждены enter hook, heartbeat, death lifecycle и cleanup area registry; полная materialization/resync acceptance не пройдена отдельным run | bounded resync/materialization на входе игрока должны быть подтверждены как сценарий целиком | текущий прогон был точечным lifecycle/registry smoke, а не полным scenario F acceptance | провести отдельный scenario F run по runbook и зафиксировать итог PASS/FAIL |
+| 2026-04-10 | manual-smoke-lifecycle-001 | F (Area enter resync) | подтверждены enter hook, heartbeat, death lifecycle и cleanup area registry; owner-run текущего lifecycle/registry slice завершён | bounded resync/materialization на входе игрока должны быть подтверждены как сценарий целиком | текущий прогон был точечным lifecycle/registry smoke, а не полным scenario F acceptance | провести отдельный scenario F run по runbook и зафиксировать итог PASS/FAIL |
 
 ---
 
@@ -52,11 +52,11 @@
 
 | Шаг | Статус | Чем подтверждено | Комментарий |
 |---|---|---|---|
-| Step A — Contracts foundation | PARTIAL | code inspection | Runbook готов; на 2026-04-07 фактический scripted/manual прогон с логом smoke snapshot всё ещё не зафиксирован. |
-| Step B — Pure resolver | PARTIAL | code inspection | Runbook готов; scripted smoke поправлен, чтобы B-сценарий не терялся из-за ветвления `else`; на 2026-04-07 отдельный run с проверкой детерминизма ещё не зафиксирован. |
-| Step C — Materialization and interaction | PARTIAL | code inspection | Runbook готов; на 2026-04-07 сценарные подтверждения изменения dialogue/service в A/B/D ещё не зафиксированы. |
-| Step D — Area worker and lifecycle | PARTIAL | code inspection + manual smoke | На 2026-04-10 подтверждены area enter hook, heartbeat, death lifecycle cleanup и isolated area registry decrement (`reg: 1 -> 0`), но полная acceptance-проверка F/G всё ещё не закрыта отдельным run. |
-| Step E — Stub handoff | PARTIAL | code inspection | Добавлен scripted hook `dl_smoke_step_e` + marker-поля `base_lost_kind/base_lost_slot`; на 2026-04-07 фактический прогон в toolset/owner PC ещё не зафиксирован. |
+| Step A — Contracts foundation | PARTIAL | code inspection | Runbook готов; фактический smoke trace для полного foundation acceptance ещё не зафиксирован отдельным run. |
+| Step B — Pure resolver | PARTIAL | code inspection | Runbook готов; отдельный run с проверкой детерминизма и полных directive/dialogue/service outputs ещё не зафиксирован. |
+| Step C — Materialization and interaction | PARTIAL | code inspection | Скелет materialization есть; сценарные подтверждения изменения dialogue/service в A/B/D ещё не зафиксированы. |
+| Step D — Area worker and lifecycle | PARTIAL | code inspection + manual smoke | На 2026-04-10 подтверждены area enter hook, heartbeat, death lifecycle cleanup и isolated area registry decrement (`reg: 1 -> 0`); owner-run текущего slice завершён, но полная acceptance-проверка F/G ещё не закрыта отдельными run. |
+| Step E — Stub handoff | PARTIAL | code inspection | Hook/markers существуют, но фактический owner-run handoff-сценария ещё не зафиксирован. |
 
 ---
 
@@ -65,10 +65,15 @@
 Milestone A может быть закрыт только если одновременно выполнено:
 - в таблице `2.1` есть минимум один run, где `A–G = PASS`;
 - нет открытых `FAIL`, влияющих на deterministic/bounded свойства;
-- owner-проверка на реальном ПК проведена и зафиксирована отдельной записью.
+- полная owner-проверка Milestone A проведена и зафиксирована отдельной записью.
+
+Пояснение:
+- owner-run текущего clean-room lifecycle/registry slice **уже проведён** и зафиксирован записью `manual-smoke-lifecycle-001`;
+- это **не равно** полному закрытию Milestone A.
 
 ---
 
 ## 5) Операционная пометка
 
 - По состоянию на `2026-04-10` временное debug/logging **остаётся в игровом чате** и не удаляется до следующей итерации проверки Daily Life.
+- Термин `owner-run` без уточнения не использовать: нужно явно писать либо `owner-run текущего slice`, либо `полный owner-run Milestone A`.

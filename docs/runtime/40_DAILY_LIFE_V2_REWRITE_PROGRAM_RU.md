@@ -2,7 +2,7 @@
 
 > Статус: **ACTIVE**  
 > Дата запуска: **2026-04-08**  
-> Последняя актуализация: **2026-04-09**
+> Последняя актуализация: **2026-04-11**
 
 ## 1. Цель
 
@@ -19,6 +19,8 @@
 2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
 3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
 4. `README.md` (фактическое состояние репозитория и active workspace)
+5. `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
+6. `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
 
 ## 3. Протокол «одна функция за шаг»
 
@@ -55,29 +57,17 @@
 
 ### Фаза D — Acceptance
 - [x] Runbook (`52_*`).
-- [ ] Owner-run по сценариям.
-- [ ] Финальный PASS-протокол.
+- [x] Owner-run текущего clean-room lifecycle/registry slice.
+- [ ] Remaining acceptance: Scenario F (full bounded resync/materialization).
+- [ ] Remaining acceptance: Scenario G (`HOT/WARM/FROZEN`).
+- [ ] Финальный PASS-протокол Milestone A.
 
-## 5. Актуальный репозиторный факт (2026-04-09)
+## 5. Актуальный репозиторный факт (2026-04-11)
 
 - Владелец подтвердил clean-room путь: legacy reference не восстанавливается.
-- Активный runtime workspace: `scripts/daily_life/`.
-- В рамках текущего шага добавлены файлы:
-  - `scripts/daily_life/dl_core_inc.nss`
-  - `scripts/daily_life/dl_load.nss`
-  - `scripts/daily_life/dl_spawn.nss`
-  - `scripts/daily_life/dl_death.nss`
-  - `scripts/daily_life/dl_userdef.nss`
-  - `scripts/daily_life/dl_smoke_ev.nss`
-  - `scripts/daily_life/dl_a_enter.nss`
-  - `scripts/daily_life/dl_a_exit.nss`
-  - `scripts/daily_life/dl_smk_tier.nss`
-  - `scripts/daily_life/dl_smk_sync.nss`
-  - `scripts/daily_life/dl_a_hb.nss`
-  - `scripts/daily_life/dl_smk_work.nss`
-  - `scripts/daily_life/dl_res_inc.nss`
-  - `scripts/daily_life/dl_smk_res.nss`
-  - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
+- Active runtime workspace: `daily_life/`.
+- Временное debug/logging остаётся в игровом чате.
+- Owner-run текущего clean-room lifecycle/registry slice уже выполнен и зафиксирован в acceptance journal.
 
 ## 5.1 Принцип интеграции NWN2 (текущий фокус)
 
@@ -97,7 +87,9 @@
 3. Step 03 — dispatcher/resync contract (+ death cleanup policy) (done).
 4. Step 04 — registry + worker skeleton (done).
 5. Step 05 — resolver/materialization skeleton (done).
-6. Step 06 — acceptance runbook (done), owner-run (pending).
+6. Step 06A — owner-run текущего clean-room lifecycle/registry slice (done).
+7. Step 06B — remaining acceptance: Scenario F + Scenario G (pending).
+8. Step 07 — first vertical slice after acceptance gate (pending, not started).
 
 ## 6. Формат отчётности
 
@@ -107,8 +99,17 @@
 - Фактический результат.
 - Следующий шаг.
 
-## 7. Текущий операционный статус Step 06
+## 7. Текущий операционный статус
 
 - Runbook подготовлен и синхронизирован.
-- Owner-run требует NWN2 runtime/toolset окружение и не может быть финализирован только репозиторными проверками.
-- До фиксации owner-run verdict (`GO/HOLD`) переход к Step 07+ запрещён.
+- Owner-run текущего clean-room lifecycle/registry slice выполнен владельцем в NWN2 toolset/runtime окружении.
+- Это не эквивалентно полному owner-run Milestone A.
+- Следующий обязательный шаг: закрыть Scenario F и Scenario G как отдельные acceptance-run.
+- До фиксации verdict по F/G переход к Step 07+ запрещён.
+
+## 8. Что не делать сейчас
+
+- Не расширять систему в новые NPC-family, пока не закрыты F/G.
+- Не делать массовый foundation-refactor ради красоты.
+- Не переносить logging из чата в другой канал в этой итерации.
+- Не возвращать legacy reference path.
