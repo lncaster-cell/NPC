@@ -454,7 +454,7 @@ void DL_RunAreaWorkerTick(object oArea)
     }
 
     DL_BootstrapAreaTier(oArea);
-    if (DL_GetAreaTier(oArea) == DL_TIER_FROZEN)
+    if (DL_GetAreaTier(oArea) != DL_TIER_HOT)
     {
         return;
     }
