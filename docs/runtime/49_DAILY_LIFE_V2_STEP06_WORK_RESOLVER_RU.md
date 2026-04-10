@@ -1,7 +1,7 @@
 # 49 — Daily Life v2 Step 06: Work Resolver for EARLY_WORKER (RU)
 
 > Дата: 2026-04-09  
-> Статус: implementation slice in progress
+> Статус: implemented (clean-room runtime)
 
 ## 1) Цель шага
 
@@ -20,8 +20,8 @@
 
 ## 3) Что добавлено
 
-### 3.1 Work resolver include
-Добавлен `scripts/daily_life/dl_v2_work_resolver_inc.nss`.
+### 3.1 Work resolver update
+Обновлён `daily_life/dl_res_inc.nss`.
 
 Назначение:
 - ввести минимальный `WORK` directive slice;
@@ -32,7 +32,7 @@
   - иначе `UNASSIGNED`
 
 ### 3.2 Smoke check
-Добавлен `scripts/daily_life/dl2_smoke_step_06_work_resolver.nss`.
+Обновлён `daily_life/dl_smk_res.nss`.
 
 Проверяет кейсы:
 - `07:00` -> `UNASSIGNED`

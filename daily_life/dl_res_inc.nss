@@ -7,6 +7,7 @@ const string DL_L_NPC_MAT_TAG = "dl_npc_mat_tag";
 
 const int DL_DIR_NONE = 0;
 const int DL_DIR_SLEEP = 1;
+const int DL_DIR_WORK = 2;
 
 int DL_NormalizeHour(int nHour)
 {
@@ -27,6 +28,12 @@ int DL_IsEarlyWorkerSleepHour(int nHour)
     return nHour >= 22 || nHour < 6;
 }
 
+int DL_IsEarlyWorkerWorkHour(int nHour)
+{
+    nHour = DL_NormalizeHour(nHour);
+    return nHour >= 8 && nHour < 18;
+}
+
 int DL_ResolveNpcDirectiveAtHour(object oNpc, int nHour)
 {
     if (!GetIsObjectValid(oNpc))
@@ -39,6 +46,11 @@ int DL_ResolveNpcDirectiveAtHour(object oNpc, int nHour)
         if (DL_IsEarlyWorkerSleepHour(nHour))
         {
             return DL_DIR_SLEEP;
+        }
+
+        if (DL_IsEarlyWorkerWorkHour(nHour))
+        {
+            return DL_DIR_WORK;
         }
     }
 
@@ -81,6 +93,10 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
     {
         SetLocalString(oNpc, "dl_state", "sleep");
     }
+    else if (nDirective == DL_DIR_WORK)
+    {
+        SetLocalString(oNpc, "dl_state", "work");
+    }
     else if (GetLocalString(oNpc, "dl_state") == "")
     {
         SetLocalString(oNpc, "dl_state", "idle");
@@ -88,4 +104,3 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
 
     DL_ApplyMaterializationSkeleton(oNpc, nDirective);
 }
-
