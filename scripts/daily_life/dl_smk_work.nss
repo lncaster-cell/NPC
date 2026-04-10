@@ -7,12 +7,12 @@ void main()
     object oArea = OBJECT_SELF;
     object oModule = GetModule();
 
-    if (GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    if (!DL_IsAreaObject(oArea))
     {
         oArea = GetArea(GetFirstPC());
     }
 
-    if (!GetIsObjectValid(oArea))
+    if (!DL_IsAreaObject(oArea))
     {
         return;
     }

@@ -2,5 +2,20 @@
 
 void main()
 {
-    DL_RequestNpcLifecycleSignal(OBJECT_SELF, DL_NPC_EVENT_DEATH);
+    object oNpc = OBJECT_SELF;
+    object oArea = GetArea(oNpc);
+
+    DL_RequestNpcLifecycleSignal(oNpc, DL_NPC_EVENT_DEATH);
+
+    object oPC = GetFirstPC();
+    string sLog = "[DL][DEATH_SIGNAL] npc=" + GetName(oNpc) +
+                  " area=" + GetName(oArea) +
+                  " kind=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_EVENT_KIND)) +
+                  " seq=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_EVENT_SEQ));
+
+    if (GetIsObjectValid(oPC))
+    {
+        SendMessageToPC(oPC, sLog);
+    }
+    PrintString(sLog);
 }

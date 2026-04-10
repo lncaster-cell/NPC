@@ -1,6 +1,3 @@
-#ifndef DL_CORE_INC_NSS
-#define DL_CORE_INC_NSS
-
 #include "dl_res_inc"
 
 // Daily Life core event ingress (clean-room).
@@ -47,6 +44,7 @@ const string DL_L_NPC_REG_ON = "dl_reg_on";
 const string DL_L_NPC_PROFILE_ID = "dl_profile_id";
 const string DL_L_NPC_STATE = "dl_state";
 const string DL_L_NPC_WORKER_SEQ = "dl_npc_worker_seq";
+const string DL_L_NPC_REG_AREA = "dl_npc_reg_area";
 
 const string DL_L_MODULE_WORKER_SEQ = "dl_module_worker_seq";
 const string DL_L_MODULE_WORKER_TICKS = "dl_module_worker_ticks";
@@ -89,6 +87,55 @@ void DL_InitModuleContract()
     }
 }
 
+int DL_IsAreaObject(object oObject)
+{
+    if (!GetIsObjectValid(oObject))
+    {
+        return FALSE;
+    }
+
+    return GetArea(oObject) == oObject;
+}
+
+int DL_IsPipelineNpc(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return FALSE;
+    }
+
+    if (GetObjectType(oNpc) != OBJECT_TYPE_CREATURE)
+    {
+        return FALSE;
+    }
+
+    if (GetIsPC(oNpc))
+    {
+        return FALSE;
+    }
+
+    if (GetIsDM(oNpc))
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+int DL_IsActivePipelineNpc(object oNpc)
+{
+    if (!DL_IsPipelineNpc(oNpc))
+    {
+        return FALSE;
+    }
+
+    if (GetIsDead(oNpc))
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
 
 int DL_AreaHasPlayer(object oArea)
 {
@@ -176,7 +223,7 @@ void DL_SetAreaWorkerCursor(object oArea, int nCursor)
 
 void DL_BootstrapAreaTier(object oArea)
 {
-    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    if (!DL_IsAreaObject(oArea))
     {
         return;
     }
@@ -256,7 +303,7 @@ void DL_RequestResync(object oNpc, int nReason)
 
 void DL_RegisterNpc(object oNpc)
 {
-    if (!DL_IsPipelineNpc(oNpc))
+    if (!DL_IsActivePipelineNpc(oNpc))
     {
         return;
     }
@@ -280,6 +327,7 @@ void DL_RegisterNpc(object oNpc)
     object oArea = GetArea(oNpc);
     if (GetIsObjectValid(oArea))
     {
+        SetLocalObject(oNpc, DL_L_NPC_REG_AREA, oArea);
         SetLocalInt(oArea, DL_L_AREA_REG_COUNT, GetLocalInt(oArea, DL_L_AREA_REG_COUNT) + 1);
         SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
     }
@@ -287,7 +335,22 @@ void DL_RegisterNpc(object oNpc)
 
 void DL_UnregisterNpc(object oNpc)
 {
-    if (!DL_IsPipelineNpc(oNpc))
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    if (GetObjectType(oNpc) != OBJECT_TYPE_CREATURE)
+    {
+        return;
+    }
+
+    if (GetIsPC(oNpc))
+    {
+        return;
+    }
+
+    if (GetIsDM(oNpc))
     {
         return;
     }
@@ -300,6 +363,11 @@ void DL_UnregisterNpc(object oNpc)
     DeleteLocalInt(oNpc, DL_L_NPC_REG_ON);
 
     object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea))
+    {
+        oArea = GetLocalObject(oNpc, DL_L_NPC_REG_AREA);
+    }
+
     if (GetIsObjectValid(oArea))
     {
         int nCount = GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
@@ -309,11 +377,13 @@ void DL_UnregisterNpc(object oNpc)
         }
         SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
     }
+
+    DeleteLocalObject(oNpc, DL_L_NPC_REG_AREA);
 }
 
 void DL_ProcessResync(object oNpc)
 {
-    if (!DL_IsPipelineNpc(oNpc))
+    if (!DL_IsActivePipelineNpc(oNpc))
     {
         return;
     }
@@ -333,7 +403,7 @@ void DL_ProcessResync(object oNpc)
 
 void DL_CleanupNpcRuntimeState(object oNpc)
 {
-    if (!DL_IsPipelineNpc(oNpc))
+    if (!GetIsObjectValid(oNpc))
     {
         return;
     }
@@ -352,7 +422,7 @@ void DL_CleanupNpcRuntimeState(object oNpc)
 
 void DL_WorkerTouchNpc(object oNpc)
 {
-    if (!DL_IsPipelineNpc(oNpc))
+    if (!DL_IsActivePipelineNpc(oNpc))
     {
         return;
     }
@@ -373,7 +443,7 @@ void DL_WorkerTouchNpc(object oNpc)
 
 void DL_RunAreaWorkerTick(object oArea)
 {
-    if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
+    if (!DL_IsAreaObject(oArea))
     {
         return;
     }
@@ -398,7 +468,7 @@ void DL_RunAreaWorkerTick(object oArea)
 
     while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
     {
-        if (DL_IsPipelineNpc(oObj))
+        if (DL_IsActivePipelineNpc(oObj))
         {
             if (nIndex >= nCursor)
             {
@@ -419,7 +489,7 @@ void DL_RunAreaWorkerTick(object oArea)
 
         while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
         {
-            if (DL_IsPipelineNpc(oObj))
+            if (DL_IsActivePipelineNpc(oObj))
             {
                 if (nIndex < nCursor)
                 {
@@ -445,26 +515,6 @@ void DL_RunAreaWorkerTick(object oArea)
     SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK) + 1);
     object oModule = GetModule();
     SetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS, GetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS) + 1);
-}
-
-int DL_IsPipelineNpc(object oNpc)
-{
-    if (!GetIsObjectValid(oNpc))
-    {
-        return FALSE;
-    }
-
-    if (GetObjectType(oNpc) != OBJECT_TYPE_CREATURE)
-    {
-        return FALSE;
-    }
-
-    if (GetIsDM(oNpc))
-    {
-        return FALSE;
-    }
-
-    return TRUE;
 }
 
 void DL_RequestNpcLifecycleSignal(object oNpc, int nEventKind)
@@ -508,7 +558,7 @@ void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
         return;
     }
 
-    if (!DL_IsPipelineNpc(oNpc))
+    if (!GetIsObjectValid(oNpc))
     {
         return;
     }
@@ -528,6 +578,11 @@ void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
 
     if (nEventKind == DL_NPC_EVENT_SPAWN)
     {
+        if (!DL_IsActivePipelineNpc(oNpc))
+        {
+            return;
+        }
+
         DL_RegisterNpc(oNpc);
         DL_RequestResync(oNpc, DL_RESYNC_SPAWN);
         DL_ProcessResync(oNpc);
@@ -536,9 +591,6 @@ void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
 
     if (nEventKind == DL_NPC_EVENT_DEATH)
     {
-        DL_RequestResync(oNpc, DL_RESYNC_DEATH);
         DL_CleanupNpcRuntimeState(oNpc);
     }
 }
-
-#endif
