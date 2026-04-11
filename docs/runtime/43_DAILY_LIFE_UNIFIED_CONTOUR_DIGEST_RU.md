@@ -1,7 +1,7 @@
 # 43 — Daily Life Unified Contour Digest (RU)
 
 Дата: 2026-04-11  
-Статус: frozen legacy digest (не обновляется; только historical reference)
+Статус: frozen legacy digest (вне active doc set; historical reference only)
 
 ---
 
