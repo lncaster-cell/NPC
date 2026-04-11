@@ -31,6 +31,7 @@ void main()
     SetLocalString(oNpc, DL_L_NPC_PROFILE_ID, DL_PROFILE_BLACKSMITH);
     SetLocalInt(oModule, "dl_smk_bs_10", DL_ResolveNpcDirectiveAtHour(oNpc, 10));
     SetLocalInt(oModule, "dl_smk_bs_21", DL_ResolveNpcDirectiveAtHour(oNpc, 21));
+    SetLocalInt(oModule, "dl_smk_bs_23", DL_ResolveNpcDirectiveAtHour(oNpc, 23));
 
     DL_ApplyDirectiveSkeleton(oNpc, DL_ResolveNpcDirectiveAtHour(oNpc, 10));
     SetLocalString(oModule, "dl_smk_bs_10_dlg", GetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE));
@@ -60,7 +61,8 @@ void main()
         GetLocalInt(oModule, "dl_smk_bs_21") == DL_DIR_SOCIAL &&
         GetLocalString(oModule, "dl_smk_bs_21_dlg") == DL_DIALOGUE_SOCIAL &&
         GetLocalString(oModule, "dl_smk_bs_21_srv") == DL_SERVICE_OFF &&
-        GetLocalString(oModule, "dl_smk_bs_21_tag") == DL_MAT_SOCIAL;
+        GetLocalString(oModule, "dl_smk_bs_21_tag") == DL_MAT_SOCIAL &&
+        GetLocalInt(oModule, "dl_smk_bs_23") == DL_DIR_SLEEP;
     SetLocalInt(oModule, "dl_smk_bs_ab_pass", bBlacksmithABPass);
 
     SetLocalInt(oModule, "dl_smk_res_pass", bEarlyWorkerWindowPass && bBlacksmithABPass);
