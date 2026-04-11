@@ -37,6 +37,7 @@
 | 2026-03-31 | smoke-script-fix-b-001 | process prep | repo scripts | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | в `dl_smoke_milestone_a.nss` исправлен учёт сценария B: non-work кузнец теперь ищется независимо от PASS сценария A, без ложного `NOT_FOUND` при наличии mixed blacksmith набора |
 | 2026-04-07 | status-sync-001 | process sync | repo docs | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | подтверждён статус: фактические scripted/manual прогоны A–G ещё не зафиксированы; milestone gate остаётся открытым |
 | 2026-04-10 | manual-smoke-lifecycle-001 | manual smoke | toolset / owner PC | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | PARTIAL | NOT_RUN | **owner-run текущего clean-room lifecycle/registry slice выполнен**: подтверждены `AREA_ENTER`, `HB`, death lifecycle и cleanup регистрации в isolated area (`reg: 1 -> 0`); это не эквивалентно полному PASS Milestone A, потому что сценарии A–E и G отдельно не пройдены |
+| 2026-04-11 | manual-owner-fg-003 | manual smoke | toolset / owner PC | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | PASS | PASS | owner-run подтвердил F/G: bounded area-enter resync стабильно завершается через heartbeat/worker path без лагов; hidden full simulation и визуальная дёрготня/хаотичный телепорт NPC не наблюдались; tier-cycle подтверждён на `Gotha Kuznica`/`Gotha` (`HOT=2 -> WARM=1 -> HOT=2`) с повторным enter-resync |
 
 ## 2.2 Детализация расхождений (заполнять только при PARTIAL/FAIL)
 
@@ -55,7 +56,7 @@
 | Step A — Contracts foundation | PARTIAL | code inspection | Runbook готов; фактический smoke trace для полного foundation acceptance ещё не зафиксирован отдельным run. |
 | Step B — Pure resolver | PARTIAL | code inspection | Runbook готов; отдельный run с проверкой детерминизма и полных directive/dialogue/service outputs ещё не зафиксирован. |
 | Step C — Materialization and interaction | PARTIAL | code inspection | Скелет materialization есть; сценарные подтверждения изменения dialogue/service в A/B/D ещё не зафиксированы. |
-| Step D — Area worker and lifecycle | PARTIAL | code inspection + manual smoke | На 2026-04-10 подтверждены area enter hook, heartbeat, death lifecycle cleanup и isolated area registry decrement (`reg: 1 -> 0`); owner-run текущего slice завершён, но полная acceptance-проверка F/G ещё не закрыта отдельными run. |
+| Step D — Area worker and lifecycle | PARTIAL | code inspection + manual smoke | На 2026-04-11 acceptance gate F/G закрыт фактическим owner-run (`F=PASS`, `G=PASS`): подтверждены bounded enter-resync, стабильный heartbeat/worker path и tier-cycle `HOT/WARM/HOT`; при этом Step D остаётся PARTIAL до закрытия сценариев A–E. |
 | Step E — Stub handoff | PARTIAL | code inspection | Hook/markers существуют, но фактический owner-run handoff-сценария ещё не зафиксирован. |
 
 ---

@@ -16,9 +16,11 @@
 - active runtime workspace: `daily_life/`.
 
 Не подтверждено как acceptance целиком:
-- Scenario F как полный bounded resync/materialization run;
-- Scenario G как отдельный `HOT/WARM/FROZEN` acceptance run;
 - вертикальные сценарии A–E (`BLACKSMITH`, `GATE_POST`, `INNKEEPER`, `QUARANTINE`).
+
+Подтверждено как acceptance:
+- Scenario F = PASS (bounded area-enter resync закрыт);
+- Scenario G = PASS (`HOT/WARM` tier-переходы подтверждены на `Gotha Kuznica`/`Gotha`).
 
 ---
 
@@ -40,34 +42,17 @@
 
 ## 3. Следующий реальный план работ
 
-### Шаг 1 — Закрыть Scenario F
-Цель:
-- подтвердить bounded resync/materialization на входе игрока в area как целостный сценарий.
-
-Что должно быть подтверждено:
-- вход игрока поднимает area в `HOT`;
-- выполняется bounded resync;
-- NPC materialize-ятся в правдоподобное текущее состояние;
-- не проигрывается hidden full simulation;
-- нет хаотичного телепорта перед глазами игрока.
+### Шаг 1 — Acceptance gate F/G закрыт
+Зафиксировано:
+- Scenario F = PASS;
+- Scenario G = PASS;
+- по F подтверждены bounded enter-resync и отсутствие hidden full simulation/визуальной дёрготни;
+- по G подтверждён lifecycle `HOT=2 -> WARM=1 -> HOT=2` для `Gotha Kuznica`/`Gotha`.
 
 Результат:
-- отдельная запись PASS/FAIL в acceptance journal.
+- обязательный acceptance gate по F/G закрыт; возврат к этим шагам нужен только при регрессии.
 
-### Шаг 2 — Закрыть Scenario G
-Цель:
-- подтвердить, что tier-поведение area соответствует baseline.
-
-Что должно быть подтверждено:
-- `HOT` обрабатывается bounded worker;
-- `WARM` не живёт как полноценная active-area;
-- `FROZEN` молчит;
-- нет полного исполнения рутины без игрока.
-
-Результат:
-- отдельная запись PASS/FAIL в acceptance journal.
-
-### Шаг 3 — После PASS по F/G выбрать первый vertical slice
+### Шаг 2 — Выбрать первый vertical slice (без Step 07+)
 Первый vertical slice по умолчанию:
 - `BLACKSMITH`
 - два состояния:
@@ -82,7 +67,7 @@
 Результат:
 - первый end-to-end сценарий A/B.
 
-### Шаг 4 — Только после этого расширять дальше
+### Шаг 3 — Только после этого расширять дальше
 Следующие кандидаты после blacksmith:
 1. `LAW / GATE_POST`
 2. `TRADE_SERVICE / INNKEEPER`
@@ -90,7 +75,7 @@
 
 ---
 
-## 4. Что запрещено до закрытия F/G
+## 4. Что запрещено на текущей итерации
 
 - не переходить к Step 07+;
 - не расползаться в новые подсистемы;
@@ -104,6 +89,6 @@
 
 Формула ближайшей итерации простая:
 
-`F -> G -> BLACKSMITH A/B`
+`BLACKSMITH A/B -> затем C/D/E по согласованному порядку`
 
 Всё остальное считается преждевременным расширением.

@@ -15,8 +15,9 @@
 - Owner-run текущего clean-room lifecycle/registry slice уже выполнен (см. acceptance journal).
 - Подтверждены `AREA_ENTER`, `HB`, death lifecycle и cleanup регистрации в isolated area (`reg: 1 -> 0`).
 - Это **не равно** полному закрытию Milestone A.
-- Незакрытые обязательные acceptance-шаги: **Scenario F** и **Scenario G**.
-- До фиксации verdict по F/G переход к Step 07+ не считается подтверждённым.
+- Обязательный acceptance gate по **Scenario F** и **Scenario G** закрыт (`PASS/PASS`).
+- Текущая рабочая точка: сценарии A–E (первый целевой vertical slice — `BLACKSMITH` A/B).
+- Переход к Step 07+ по-прежнему не подтверждён до закрытия A–G целиком.
 
 ## 2) Active doc set (обязательный)
 
