@@ -1,73 +1,34 @@
 # PysukSystems (NPC) — README
 
-> Обновлено: **2026-04-09**.
+> Обновлено: **2026-04-11**.
 
-Репозиторий содержит канон, runtime-документацию и кодовую базу для контура Daily Life в NWN2.
-Текущий режим разработки: **пошаговая перепись v2** (clean-room подход).
+Цель текущего этапа: прекратить рост мета-документации и развивать runtime-код в `daily_life/`.
 
-Ключевой рабочий digest: `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`.
+## ACTIVE DOC SET (только 5 файлов)
 
----
+Основной канонический маршрут:
+1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
+2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
+3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+4. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
+5. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
 
-## 1) Быстрый старт (что открыть в первую очередь)
+Важно: это **основной маршрут**, но не запрет на использование операционных reference-документов текущего этапа.
+Для уточнения acceptance-статуса и фактической рабочей точки также используются:
+- `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
+- `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
+- `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
 
-1. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — текущая активная фаза и ближайшие микро-шаги.
-2. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md` — протокол переписи v2.
-3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md` — минимальный baseline контрактов и пайплайна.
-4. `docs/library/DOCUMENT_REGISTRY.md` — карта всей документации по слоям.
+## Канонический workspace path
 
----
+Единый путь разработки runtime: `daily_life/`.
 
-## 2) Source of Truth и границы системы
+- новые `.nss` файлы и изменения вносятся только сюда;
+- ссылки на `scripts/daily_life/` считаются устаревшими;
+- документация должна ссылаться на `daily_life/` как на единственный активный путь.
 
-### Канонические опоры
-- `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
-- `docs/runtime/06_SYSTEM_INVARIANTS.md`
+## Практическое правило на следующий шаг
 
-### Что входит в Daily Life runtime
-- directive-resolver (time/profile/context/override),
-- anchor/materialization,
-- interaction refresh (service/dialogue),
-- tier execution HOT/WARM/FROZEN,
-- resync/handoff.
-
-### Что НЕ входит в ядро Daily Life
-- legal truth и судебная квалификация,
-- макроэкономика и полный trade-engine,
-- полноформатный travel runtime,
-- clan demography/aging/succession как самостоятельные truth-domain подсистемы.
-
----
-
-## 3) Состояние кода (факт на 2026-04-09)
-
-### Активная зона v2
-`scripts/daily_life/`
-
-Текущие файлы:
-- `dl_v2_runtime_inc.nss` — helper-контракт `DL2_IsRuntimeEnabled()`.
-- `dl2_smoke_step_01.nss` — smoke-проверка helper в 3 базовых кейсах.
-
-### Архивная зона v1 (reference only)
-`archive/daily_life_v1_legacy/scripts/daily_life/`
-
----
-
-## 4) Протокол микро-шага (обязательный)
-
-Каждый шаг выполняется строго циклом:
-1. План шага (1 функция/1 участок).
-2. Изменение кода.
-3. Проверка (команда + факт PASS/FAIL).
-4. Док-синхронизация в этом же коммите.
-5. Короткий отчёт владельцу: что сделано, чем проверено, следующий шаг.
-
----
-
-## 5) Документационный DoD
-
-Перед завершением любого шага убедиться, что:
-- обновлён профильный документ (runtime/canon/governance),
-- изменённые маршруты отражены в `docs/entry/12_MASTER_PLAN.md` и/или `docs/entry/00_PROJECT_LIBRARY.md`,
-- новые/перемещённые документы внесены в `docs/library/DOCUMENT_REGISTRY.md`,
-- запись о синхронизации добавлена в `docs/governance/26_AGENT_COMMUNICATION_LOG.md` (для мультиагентной прозрачности).
+Следующие PR должны быть code-first:
+- минимум 1 изменение в `daily_life/*.nss`,
+- документация правится только как короткая синхронизация в active doc set.
