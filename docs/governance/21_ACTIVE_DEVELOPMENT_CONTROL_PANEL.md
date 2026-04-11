@@ -1,6 +1,6 @@
 # Ambient Life — Active Development Control Panel
 
-Дата: 2026-04-09  
+Дата: 2026-04-11  
 Статус: execution control panel (rewrite track)
 
 ---
@@ -9,16 +9,17 @@
 
 - Статус выполнения: **WAITING OWNER-RUN (runtime environment required)**.
 - Решение владельца от **2026-04-09**: legacy-reference не восстанавливаем, разработка идёт clean-room с нуля.
-- Восстановлен активный runtime-каталог `scripts/daily_life/` для нового baseline.
+- Активный runtime-каталог: `daily_life/`.
 - Текущий микро-шаг: Step 06 `owner-run execution in NWN2 toolset/runtime`.
 - UserDefined ID для текущего ingress: `3001` (project range `3000+`).
 - Нумерация clean-room шагов перезапущена с **Step 01** после удаления прежнего кода.
-- Работа идёт в режиме: `один микро-шаг -> одна проверка -> документирование факта`.
+- Режим исполнения: `один микро-шаг -> одна проверка -> документирование факта`.
 
 Ключевые документы для текущей фазы:
-1. `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`
-2. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
+1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
+2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
 3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+4. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
 
 ---
 
@@ -66,7 +67,6 @@
 - Зафиксированы preflight, последовательность smoke-проверок A..E и PASS-критерий этапа.
 - Owner-run отмечен как следующий операционный шаг.
 
-
 ---
 
 ## 2) Текущая активная фаза
@@ -90,6 +90,7 @@ DoD фазы:
    - проверка,
    - синхронизация docs.
 3. Нельзя смешивать resolver/materialization/worker в одном шаге без явного отдельного approval.
+4. Нельзя добавлять новые digest-документы вместо обновления этого control panel и runtime-baseline/program.
 
 ---
 

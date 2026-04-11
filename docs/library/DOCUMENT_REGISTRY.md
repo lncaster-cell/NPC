@@ -1,6 +1,6 @@
 # Document Registry — Ambient Life v2
 
-Дата: 2026-04-09
+Дата: 2026-04-11
 Статус: active
 
 ## Цель
@@ -35,29 +35,21 @@
 - `docs/canon/14_CLAN_SYSTEM_DESIGN.md`
 
 ### 2.3 Runtime layer
+- `docs/runtime/06_SYSTEM_INVARIANTS.md`
+- `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`
 - `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
 - `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
-- `docs/runtime/42_DAILY_LIFE_V2_REPOSITORY_RESET_LOG_RU.md`
-- `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`
-- `docs/runtime/48_DAILY_LIFE_V2_STEP05_SLEEP_RESOLVER_RU.md`
 - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
-- `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`
-- `docs/runtime/06_SYSTEM_INVARIANTS.md`
-- `docs/runtime/12B_DAILY_LIFE_V1_SOURCE_OF_TRUTH.md`
-- `docs/runtime/12B_DAILY_LIFE_V1_IMPLEMENTATION_STATE.md`
-- прочие `docs/runtime/12B_*`, `26_*`, `35_*`, `02_*`, `03_*`, `04_*`, `07_*`, `10_*`, `22_*`
+- профильные шаги реализации `docs/runtime/45_*`, `46_*`, `47_*`, `48_*`, `49_*`, `50_*`, `51_*`, `53_*`
+- legacy-runtime reference: `docs/runtime/12B_*`, `26_*`, `35_*`, `02_*`, `03_*`, `04_*`, `07_*`, `10_*`, `22_*`
 
 ### 2.4 Governance layer
 - `docs/governance/10_DECISIONS_LOG.md`
 - `docs/governance/16_IDEA_INVENTORY_AND_SYNC_MAP.md`
 - `docs/governance/18_REBUILD_RESET_CONTEXT.md`
 - `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
-- `docs/governance/24_PARALLEL_AGENT_COORDINATION_BOARD.md`
-- `docs/governance/26_AGENT_COMMUNICATION_LOG.md`
 - `docs/architecture/01_PROJECT_PASSPORT.md`
 - `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md`
-- `docs/24_PARALLEL_AGENT_COORDINATION_BOARD.md` *(redirect stub)*
-- `docs/26_AGENT_COMMUNICATION_LOG.md` *(redirect stub)*
 
 ### 2.5 Audit layer
 - `docs/audits/30_AUDIT_AND_INSPECTION_INDEX.md` (главный вход)
@@ -65,7 +57,6 @@
 
 ### 2.6 Archive layer
 - `docs/archive/*`
-- `archive/daily_life_v1_legacy/*`
 
 ---
 
@@ -75,9 +66,10 @@
 3. Процесс/координация/решения — только в Governance layer.
 4. Инспекции — только в Audit layer + ссылка из `30_AUDIT_AND_INSPECTION_INDEX.md`.
 5. Устаревшие версии — перенос в Archive layer с пометкой `legacy`.
+6. Новые digest-файлы не создаются: статус фиксируется обновлением control panel и runtime baseline/program.
 
 ## 4) Anti-chaos DoD для документации
 - [ ] Ссылки в обновлённых файлах ведут на существующие артефакты.
 - [ ] Изменённые документы учтены в реестре и индексах.
-- [ ] Runtime-факты согласованы с фактическим содержимым `scripts/daily_life/`.
+- [ ] Runtime-факты согласованы с фактическим содержимым `daily_life/`.
 - [ ] В governance-слое отражён текущий этап работы.

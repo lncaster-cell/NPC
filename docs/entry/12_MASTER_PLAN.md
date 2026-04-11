@@ -1,6 +1,6 @@
 # Ambient Life v2 — MASTER PLAN (краткий индекс)
 
-Дата: 2026-04-09
+Дата: 2026-04-11
 Статус: навигационный индекс (вторичен относительно канона)
 
 ---
@@ -12,39 +12,31 @@
 
 ---
 
-## 2) Куда идти по задачам
+## 2) Канонический маршрут по задачам
 
-1. **Активная разработка v2**
-   - `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
-   - `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
-   - `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
-   - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
-
-2. **Быстрый owner/agent контекст**
-   - `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`
-
-3. **Канон (SoT)**
-   - `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`
-   - `docs/canon/12A_WORLD_MODEL_CANON.md`
+1. **Канон (SoT)**
    - `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
-   - `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md`
-   - `docs/canon/12D_WORLD_TRAVEL_CANON.md`
-   - `docs/canon/12E_TRADE_AND_CITY_STATE_CANON.md`
-   - `docs/canon/13_AGING_AND_CLAN_SUCCESSION.md`
-   - `docs/canon/14_CLAN_SYSTEM_DESIGN.md`
+   - `docs/runtime/06_SYSTEM_INVARIANTS.md`
+   - `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`
 
-4. **Реестр и доменная навигация**
+2. **Активная разработка v2**
+   - `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+   - `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
+   - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
+   - `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
+
+3. **Реестр и доменная навигация**
    - `docs/library/DOCUMENT_REGISTRY.md`
    - `docs/library/DOMAIN_INDEX.md`
 
-5. **Аудиты/traceability**
+4. **Аудиты/traceability**
    - `docs/audits/30_AUDIT_AND_INSPECTION_INDEX.md`
 
 ---
 
 ## 3) Правило приоритета при конфликте формулировок
 
-`SoT-канон` → `runtime baseline/program` → `служебные governance/entry документы`.
+`SoT-канон` → `runtime invariants/baseline` → `rewrite program` → `governance/entry`.
 
 ---
 
@@ -54,4 +46,5 @@
 - ссылки соответствуют реально существующим файлам,
 - в control panel отражён текущий этап и ближайший шаг,
 - README и entry-слой не расходятся с runtime baseline,
-- канонические границы Daily Life не размыты в служебных документах.
+- канонические границы Daily Life не размыты в служебных документах,
+- не создаются новые digest-документы вместо обновления канонического маршрута.

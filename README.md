@@ -1,20 +1,22 @@
 # PysukSystems (NPC) — README
 
-> Обновлено: **2026-04-09**.
+> Обновлено: **2026-04-11**.
 
 Репозиторий содержит канон, runtime-документацию и кодовую базу для контура Daily Life в NWN2.
 Текущий режим разработки: **пошаговая перепись v2** (clean-room подход).
 
-Ключевой рабочий digest: `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`.
-
 ---
 
-## 1) Быстрый старт (что открыть в первую очередь)
+## 1) Единый канон маршрута (без дополнительных digest)
 
-1. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — текущая активная фаза и ближайшие микро-шаги.
-2. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md` — протокол переписи v2.
-3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md` — минимальный baseline контрактов и пайплайна.
-4. `docs/library/DOCUMENT_REGISTRY.md` — карта всей документации по слоям.
+Единственный обязательный маршрут чтения:
+1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md` — доменные границы и целевая модель Daily Life.
+2. `docs/runtime/06_SYSTEM_INVARIANTS.md` — инварианты runtime, которые нельзя нарушать.
+3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md` — минимальный baseline контрактов v2.
+4. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md` — протокол шагов реализации.
+5. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` — текущий активный шаг и execution-статус.
+
+`docs/library/DOCUMENT_REGISTRY.md` используется как технический реестр структуры, но не как отдельный смысловой слой.
 
 ---
 
@@ -39,17 +41,17 @@
 
 ---
 
-## 3) Состояние кода (факт на 2026-04-09)
+## 3) Состояние кода (факт на 2026-04-11)
 
 ### Активная зона v2
-`scripts/daily_life/`
+`daily_life/`
 
-Текущие файлы:
-- `dl_v2_runtime_inc.nss` — helper-контракт `DL2_IsRuntimeEnabled()`.
-- `dl2_smoke_step_01.nss` — smoke-проверка helper в 3 базовых кейсах.
-
-### Архивная зона v1 (reference only)
-`archive/daily_life_v1_legacy/scripts/daily_life/`
+Текущие файлы clean-room контура:
+- `dl_core_inc.nss` — базовые runtime-контракты и общие хелперы.
+- `dl_a_enter.nss`, `dl_a_exit.nss`, `dl_a_hb.nss` — area ingress/egress/heartbeat hooks.
+- `dl_res_inc.nss` — resolver-срез.
+- `dl_spawn.nss`, `dl_load.nss`, `dl_death.nss`, `dl_userdef.nss` — lifecycle/event точки.
+- `dl_smoke_ev.nss`, `dl_smk_tier.nss`, `dl_smk_sync.nss`, `dl_smk_work.nss`, `dl_smk_res.nss` — smoke-проверки шагов.
 
 ---
 
@@ -69,5 +71,4 @@
 Перед завершением любого шага убедиться, что:
 - обновлён профильный документ (runtime/canon/governance),
 - изменённые маршруты отражены в `docs/entry/12_MASTER_PLAN.md` и/или `docs/entry/00_PROJECT_LIBRARY.md`,
-- новые/перемещённые документы внесены в `docs/library/DOCUMENT_REGISTRY.md`,
-- запись о синхронизации добавлена в `docs/governance/26_AGENT_COMMUNICATION_LOG.md` (для мультиагентной прозрачности).
+- новые/перемещённые документы внесены в `docs/library/DOCUMENT_REGISTRY.md`.
