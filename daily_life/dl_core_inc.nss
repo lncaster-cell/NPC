@@ -26,6 +26,7 @@ const int DL_RESYNC_NONE = 0;
 const int DL_RESYNC_SPAWN = 1;
 const int DL_RESYNC_DEATH = 2;
 const int DL_RESYNC_USER = 3;
+const int DL_RESYNC_AREA_ENTER = 4;
 
 
 const string DL_L_AREA_TIER = "dl_area_tier";
@@ -39,6 +40,10 @@ const int DL_TIER_HOT = 2;
 
 const string DL_L_AREA_WORKER_CURSOR = "dl_worker_cursor";
 const string DL_L_AREA_WORKER_BUDGET = "dl_worker_budget";
+const string DL_L_AREA_ENTER_RESYNC_PENDING = "dl_area_enter_resync_pending";
+const string DL_L_AREA_ENTER_RESYNC_CURSOR = "dl_area_enter_resync_cursor";
+const string DL_L_AREA_ENTER_RESYNC_TOUCHED = "dl_area_enter_resync_touched";
+const string DL_L_AREA_ENTER_RESYNC_DONE = "dl_area_enter_resync_done";
 
 const string DL_L_NPC_REG_ON = "dl_reg_on";
 const string DL_L_NPC_PROFILE_ID = "dl_profile_id";
@@ -260,6 +265,7 @@ void DL_OnAreaEnterBootstrap(object oArea, object oEnter)
     if (GetIsPC(oEnter) && !GetIsDM(oEnter))
     {
         DL_SetAreaTier(oArea, DL_TIER_HOT);
+        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, TRUE);
         return;
     }
 
@@ -289,7 +295,7 @@ void DL_RequestResync(object oNpc, int nReason)
         return;
     }
 
-    if (nReason < DL_RESYNC_NONE || nReason > DL_RESYNC_USER)
+    if (nReason < DL_RESYNC_NONE || nReason > DL_RESYNC_AREA_ENTER)
     {
         nReason = DL_RESYNC_USER;
     }
@@ -398,6 +404,13 @@ void DL_ProcessResync(object oNpc)
         return;
     }
 
+    int nReason = GetLocalInt(oNpc, DL_L_NPC_RESYNC_REASON);
+    if (nReason == DL_RESYNC_SPAWN || nReason == DL_RESYNC_USER || nReason == DL_RESYNC_AREA_ENTER)
+    {
+        int nDirective = DL_ResolveNpcDirective(oNpc);
+        DL_ApplyDirectiveSkeleton(oNpc, nDirective);
+    }
+
     SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, FALSE);
 }
 
@@ -441,6 +454,104 @@ void DL_WorkerTouchNpc(object oNpc)
     DL_ApplyDirectiveSkeleton(oNpc, nDirective);
 }
 
+void DL_RunAreaEnterResyncTick(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    if (!DL_IsRuntimeEnabled())
+    {
+        return;
+    }
+
+    if (DL_GetAreaTier(oArea) != DL_TIER_HOT)
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING) != TRUE)
+    {
+        return;
+    }
+
+    int nBudget = DL_GetAreaWorkerBudget(oArea);
+    if (nBudget < DL_WORKER_BUDGET_MIN)
+    {
+        nBudget = DL_WORKER_BUDGET_MIN;
+    }
+
+    int nCursor = GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR);
+    if (nCursor < 0)
+    {
+        nCursor = 0;
+    }
+
+    int nTouched = 0;
+    int nScanned = 0;
+    int nIndex = 0;
+    object oObj = GetFirstObjectInArea(oArea);
+
+    while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
+    {
+        if (DL_IsActivePipelineNpc(oObj))
+        {
+            if (nIndex >= nCursor)
+            {
+                DL_RequestResync(oObj, DL_RESYNC_AREA_ENTER);
+                DL_ProcessResync(oObj);
+                nTouched = nTouched + 1;
+            }
+            nIndex = nIndex + 1;
+        }
+        oObj = GetNextObjectInArea(oArea);
+        nScanned = nScanned + 1;
+    }
+
+    if (nTouched < nBudget && nCursor > 0)
+    {
+        oObj = GetFirstObjectInArea(oArea);
+        nScanned = 0;
+        nIndex = 0;
+
+        while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
+        {
+            if (DL_IsActivePipelineNpc(oObj))
+            {
+                if (nIndex < nCursor)
+                {
+                    DL_RequestResync(oObj, DL_RESYNC_AREA_ENTER);
+                    DL_ProcessResync(oObj);
+                    nTouched = nTouched + 1;
+                }
+                nIndex = nIndex + 1;
+            }
+            oObj = GetNextObjectInArea(oArea);
+            nScanned = nScanned + 1;
+        }
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_TOUCHED, nTouched);
+
+    if (nIndex <= 0)
+    {
+        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
+        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE, GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE) + 1);
+        return;
+    }
+
+    int nNextCursor = (nCursor + nTouched) % nIndex;
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, nNextCursor);
+
+    if (nNextCursor == 0)
+    {
+        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
+        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE, GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE) + 1);
+    }
+}
+
 void DL_RunAreaWorkerTick(object oArea)
 {
     if (!DL_IsAreaObject(oArea))
@@ -458,6 +569,8 @@ void DL_RunAreaWorkerTick(object oArea)
     {
         return;
     }
+
+    DL_RunAreaEnterResyncTick(oArea);
 
     int nBudget = DL_GetAreaWorkerBudget(oArea);
     int nCursor = DL_GetAreaWorkerCursor(oArea);

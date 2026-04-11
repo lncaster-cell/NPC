@@ -12,7 +12,8 @@ void main()
     string sLog = "[DL][AREA_ENTER] area=" + GetName(oArea) +
                   " actor=" + sActor +
                   " tier=" + IntToString(DL_GetAreaTier(oArea)) +
-                  " reg=" + IntToString(GetLocalInt(oArea, DL_L_AREA_REG_COUNT));
+                  " reg=" + IntToString(GetLocalInt(oArea, DL_L_AREA_REG_COUNT)) +
+                  " resync_req=" + IntToString(GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING));
 
     if (GetIsObjectValid(oPC))
     {
