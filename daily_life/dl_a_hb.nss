@@ -7,7 +7,6 @@ void main()
 
     DL_RunAreaWorkerTick(oArea);
 
-    object oPC = GetFirstPC();
     string sLog = "[DL][HB] area=" + GetName(oArea) +
                   " tier=" + IntToString(DL_GetAreaTier(oArea)) +
                   " tick=" + IntToString(GetLocalInt(oArea, DL_L_AREA_WORKER_TICK)) +
@@ -19,9 +18,5 @@ void main()
                   " rs_touch=" + IntToString(GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_TOUCHED)) +
                   " rs_done=" + IntToString(GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE));
 
-    if (GetIsObjectValid(oPC))
-    {
-        SendMessageToPC(oPC, sLog);
-    }
-    PrintString(sLog);
+    DL_LogRuntime(sLog);
 }

@@ -7,15 +7,10 @@ void main()
 
     DL_RequestNpcLifecycleSignal(oNpc, DL_NPC_EVENT_SPAWN);
 
-    object oPC = GetFirstPC();
     string sLog = "[DL][SPAWN_SIGNAL] npc=" + GetName(oNpc) +
                   " area=" + GetName(oArea) +
                   " kind=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_EVENT_KIND)) +
                   " seq=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_EVENT_SEQ));
 
-    if (GetIsObjectValid(oPC))
-    {
-        SendMessageToPC(oPC, sLog);
-    }
-    PrintString(sLog);
+    DL_LogRuntime(sLog);
 }

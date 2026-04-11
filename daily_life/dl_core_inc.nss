@@ -6,6 +6,8 @@
 const string DL_L_MODULE_ENABLED = "dl_enabled";
 const string DL_L_MODULE_CONTRACT_VERSION = "dl_contract_version";
 const string DL_CONTRACT_VERSION_A0 = "a0";
+const string DL_L_MODULE_CHAT_LOG = "dl_chat_log";
+const string DL_L_MODULE_CHAT_LOG_INIT = "dl_chat_log_init";
 
 const string DL_L_NPC_EVENT_KIND = "dl_npc_event_kind";
 const string DL_L_NPC_EVENT_SEQ = "dl_npc_event_seq";
@@ -78,6 +80,26 @@ int DL_IsRuntimeEnabled()
     return GetLocalString(oModule, DL_L_MODULE_CONTRACT_VERSION) == DL_CONTRACT_VERSION_A0;
 }
 
+int DL_IsChatLogEnabled()
+{
+    object oModule = GetModule();
+    return GetLocalInt(oModule, DL_L_MODULE_CHAT_LOG) == TRUE;
+}
+
+void DL_LogRuntime(string sLog)
+{
+    if (DL_IsChatLogEnabled())
+    {
+        object oPC = GetFirstPC();
+        if (GetIsObjectValid(oPC))
+        {
+            SendMessageToPC(oPC, sLog);
+        }
+    }
+
+    PrintString(sLog);
+}
+
 void DL_InitModuleContract()
 {
     object oModule = GetModule();
@@ -89,6 +111,12 @@ void DL_InitModuleContract()
     if (GetLocalInt(oModule, DL_L_MODULE_EVENT_SEQ) < 0)
     {
         SetLocalInt(oModule, DL_L_MODULE_EVENT_SEQ, 0);
+    }
+
+    if (GetLocalInt(oModule, DL_L_MODULE_CHAT_LOG_INIT) != TRUE)
+    {
+        SetLocalInt(oModule, DL_L_MODULE_CHAT_LOG, TRUE);
+        SetLocalInt(oModule, DL_L_MODULE_CHAT_LOG_INIT, TRUE);
     }
 }
 
