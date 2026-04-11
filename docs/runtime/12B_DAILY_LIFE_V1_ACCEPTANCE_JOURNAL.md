@@ -56,7 +56,7 @@
 | Step A — Contracts foundation | PARTIAL | code inspection | Runbook готов; фактический smoke trace для полного foundation acceptance ещё не зафиксирован отдельным run. |
 | Step B — Pure resolver | PARTIAL | code inspection | Runbook готов; отдельный run с проверкой детерминизма и полных directive/dialogue/service outputs ещё не зафиксирован. |
 | Step C — Materialization and interaction | PARTIAL | code inspection | Скелет materialization есть; сценарные подтверждения изменения dialogue/service в A/B/D ещё не зафиксированы. |
-| Step D — Area worker and lifecycle | PARTIAL | code inspection + manual smoke | На 2026-04-10 подтверждены area enter hook, heartbeat, death lifecycle cleanup и isolated area registry decrement (`reg: 1 -> 0`); owner-run текущего slice завершён, но полная acceptance-проверка F/G ещё не закрыта отдельными run. |
+| Step D — Area worker and lifecycle | PARTIAL | code inspection + manual smoke | На 2026-04-11 acceptance gate F/G закрыт фактическим owner-run (`F=PASS`, `G=PASS`): подтверждены bounded enter-resync, стабильный heartbeat/worker path и tier-cycle `HOT/WARM/HOT`; при этом Step D остаётся PARTIAL до закрытия сценариев A–E. |
 | Step E — Stub handoff | PARTIAL | code inspection | Hook/markers существуют, но фактический owner-run handoff-сценария ещё не зафиксирован. |
 
 ---
