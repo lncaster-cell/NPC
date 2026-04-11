@@ -8,7 +8,6 @@ void main()
 
     DL_HandleNpcUserDefined(oNpc, nEvent);
 
-    object oPC = GetFirstPC();
     string sLog = "[DL][USERDEF] npc=" + GetName(oNpc) +
                   " event=" + IntToString(nEvent) +
                   " kind=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_EVENT_KIND)) +
@@ -19,9 +18,5 @@ void main()
                   " spawn=" + IntToString(GetLocalInt(oModule, DL_L_MODULE_SPAWN_COUNT)) +
                   " death=" + IntToString(GetLocalInt(oModule, DL_L_MODULE_DEATH_COUNT));
 
-    if (GetIsObjectValid(oPC))
-    {
-        SendMessageToPC(oPC, sLog);
-    }
-    PrintString(sLog);
+    DL_LogRuntime(sLog);
 }
