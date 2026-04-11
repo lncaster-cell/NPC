@@ -37,14 +37,13 @@
 | 2026-03-31 | smoke-script-fix-b-001 | process prep | repo scripts | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | в `dl_smoke_milestone_a.nss` исправлен учёт сценария B: non-work кузнец теперь ищется независимо от PASS сценария A, без ложного `NOT_FOUND` при наличии mixed blacksmith набора |
 | 2026-04-07 | status-sync-001 | process sync | repo docs | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | подтверждён статус: фактические scripted/manual прогоны A–G ещё не зафиксированы; milestone gate остаётся открытым |
 | 2026-04-10 | manual-smoke-lifecycle-001 | manual smoke | toolset / owner PC | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | PARTIAL | NOT_RUN | **owner-run текущего clean-room lifecycle/registry slice выполнен**: подтверждены `AREA_ENTER`, `HB`, death lifecycle и cleanup регистрации в isolated area (`reg: 1 -> 0`); это не эквивалентно полному PASS Milestone A, потому что сценарии A–E и G отдельно не пройдены |
-| 2026-04-11 | manual-smoke-f-002 | manual smoke | toolset / owner PC | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | PASS | NOT_RUN | scenario F подтверждён в owner-run: после `AREA_ENTER` фиксируется bounded enter-resync (`resync_req=1` -> `rs_pend=0`), heartbeat по активной зоне стабилен (`reg=1`, `rs_done=1`), зависаний pending не наблюдается |
+| 2026-04-11 | manual-owner-fg-003 | manual smoke | toolset / owner PC | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | NOT_RUN | PASS | PASS | owner-run подтвердил F/G: bounded area-enter resync стабильно завершается через heartbeat/worker path без лагов; hidden full simulation и визуальная дёрготня/хаотичный телепорт NPC не наблюдались; tier-cycle подтверждён на `Gotha Kuznica`/`Gotha` (`HOT=2 -> WARM=1 -> HOT=2`) с повторным enter-resync |
 
 ## 2.2 Детализация расхождений (заполнять только при PARTIAL/FAIL)
 
 | Дата | Run ID | Сценарий | Факт | Ожидание | Гипотеза причины | Следующий шаг |
 |---|---|---|---|---|---|---|
 | 2026-04-10 | manual-smoke-lifecycle-001 | F (Area enter resync) | подтверждены enter hook, heartbeat, death lifecycle и cleanup area registry; owner-run текущего lifecycle/registry slice завершён | bounded resync/materialization на входе игрока должны быть подтверждены как сценарий целиком | текущий прогон был точечным lifecycle/registry smoke, а не полным scenario F acceptance | провести отдельный scenario F run по runbook и зафиксировать итог PASS/FAIL |
-| 2026-04-11 | manual-smoke-f-002 | G (WARM/FROZEN) | не запускался в рамках текущей сессии; после фиксации F переход к G объявлен следующим шагом | подтвердить lifecycle-переходы `HOT/WARM/FROZEN` по runbook-критериям и отсутствие лишнего worker в `FROZEN` | текущий owner-run был сфокусирован на enter-resync (F), без полного tier-cycle проверки | выполнить отдельный сценарный прогон G и зафиксировать PASS/PARTIAL/FAIL |
 
 ---
 
