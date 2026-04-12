@@ -335,7 +335,6 @@ void DL_ExecuteSleepDirective(object oNpc)
 {
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
     object oBed = DL_ResolveSleepBedWaypoint(oNpc);
-    string sNpcTag = GetTag(oNpc);
     int bInvalidArea = FALSE;
 
     if (GetIsObjectValid(oApproach) && !DL_IsSleepWaypointInNpcArea(oNpc, oApproach))
@@ -365,15 +364,16 @@ void DL_ExecuteSleepDirective(object oNpc)
         return;
     }
 
-    string sTargetTag = GetTag(oBed);
-    SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, sTargetTag);
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, GetTag(oBed));
+    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
 
     location lApproach = GetLocation(oApproach);
     location lBed = GetLocation(oBed);
     int nPhase = GetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
     string sStatus = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
+    int bCommittedToBed = nPhase == DL_SLEEP_PHASE_JUMPING || nPhase == DL_SLEEP_PHASE_ON_BED;
 
-    if (GetDistanceBetweenLocations(GetLocation(oNpc), lApproach) > DL_SLEEP_APPROACH_RADIUS)
+    if (!bCommittedToBed && GetDistanceBetweenLocations(GetLocation(oNpc), lApproach) > DL_SLEEP_APPROACH_RADIUS)
     {
         if (nPhase != DL_SLEEP_PHASE_MOVING || sStatus != "moving_to_approach")
         {
@@ -383,6 +383,14 @@ void DL_ExecuteSleepDirective(object oNpc)
             AssignCommand(oNpc, ActionMoveToLocation(lApproach, TRUE));
         }
         return;
+    }
+
+    if (!bCommittedToBed)
+    {
+        SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_JUMPING);
+        SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "approach_reached");
+        nPhase = DL_SLEEP_PHASE_JUMPING;
+        sStatus = "approach_reached";
     }
 
     if (GetDistanceBetweenLocations(GetLocation(oNpc), lBed) > DL_SLEEP_BED_RADIUS)
