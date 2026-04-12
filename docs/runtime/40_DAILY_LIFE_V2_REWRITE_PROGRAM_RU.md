@@ -2,7 +2,7 @@
 
 > Статус: **ACTIVE**  
 > Дата запуска: **2026-04-08**  
-> Последняя актуализация: **2026-04-11**
+> Последняя актуализация: **2026-04-12**
 
 ## 1. Цель
 
@@ -53,21 +53,27 @@
 ### Фаза C — Controlled Growth
 - [x] Resolver (Step 05 skeleton).
 - [x] Materialization (Step 05 skeleton).
+- [x] Acceptance hardening: bounded area-enter resync (`Scenario F`).
+- [x] Acceptance hardening: `HOT/WARM` tier-cycle (`Scenario G`).
+- [x] Первый vertical slice запущен: `BLACKSMITH A/B` как `WORK/SLEEP`.
 - [ ] Worker/fairness loop + profiling.
+- [ ] Remaining Milestone A verticals: `C/D/E`.
 
 ### Фаза D — Acceptance
 - [x] Runbook (`52_*`).
 - [x] Owner-run текущего clean-room lifecycle/registry slice.
-- [ ] Remaining acceptance: Scenario F (full bounded resync/materialization).
-- [ ] Remaining acceptance: Scenario G (`HOT/WARM/FROZEN`).
-- [ ] Финальный PASS-протокол Milestone A.
+- [x] Scenario F (full bounded resync/materialization on area enter).
+- [x] Scenario G (`HOT/WARM/FROZEN` acceptance subset for active tier-cycle).
+- [ ] Финальный PASS-протокол Milestone A (`A–G = PASS` в одном owner-run или эквивалентном итоговом acceptance verdict).
 
-## 5. Актуальный репозиторный факт (2026-04-11)
+## 5. Актуальный репозиторный факт (2026-04-12)
 
 - Владелец подтвердил clean-room путь: legacy reference не восстанавливается.
 - Active runtime workspace: `daily_life/`.
-- Временное debug/logging остаётся в игровом чате.
+- Временное debug/logging остаётся в игровом чате через централизованный helper `DL_LogRuntime`; текущая debug-ориентированная инициализация управляется модульным флагом `dl_chat_log`.
 - Owner-run текущего clean-room lifecycle/registry slice уже выполнен и зафиксирован в acceptance journal.
+- Acceptance gate по `Scenario F` и `Scenario G` закрыт.
+- Текущая рабочая точка: первый vertical slice `BLACKSMITH A/B` (`WORK/SLEEP`) без перехода к broad `Step 07+`.
 
 ## 5.1 Принцип интеграции NWN2 (текущий фокус)
 
@@ -88,8 +94,9 @@
 4. Step 04 — registry + worker skeleton (done).
 5. Step 05 — resolver/materialization skeleton (done).
 6. Step 06A — owner-run текущего clean-room lifecycle/registry slice (done).
-7. Step 06B — remaining acceptance: Scenario F + Scenario G (pending).
-8. Step 07 — first vertical slice after acceptance gate (pending, not started).
+7. Step 06B — acceptance gate `Scenario F + Scenario G` (done).
+8. Текущая рабочая точка — первый vertical slice `BLACKSMITH A/B` (`WORK/SLEEP`) в `daily_life/`.
+9. Step 07+ broad expansion — not started / not confirmed.
 
 ## 6. Формат отчётности
 
@@ -101,15 +108,15 @@
 
 ## 7. Текущий операционный статус
 
-- Runbook подготовлен и синхронизирован.
-- Owner-run текущего clean-room lifecycle/registry slice выполнен владельцем в NWN2 toolset/runtime окружении.
+- Baseline runbook подготовлен и уже использован для owner-run текущего clean-room lifecycle/registry slice.
 - Это не эквивалентно полному owner-run Milestone A.
-- Следующий обязательный шаг: закрыть Scenario F и Scenario G как отдельные acceptance-run.
-- До фиксации verdict по F/G переход к Step 07+ запрещён.
+- Acceptance gate по `Scenario F/G` уже закрыт и зафиксирован в `53_*` и acceptance journal.
+- Следующий рабочий шаг: продолжать первый vertical slice `BLACKSMITH A/B` (`WORK/SLEEP`) и не расширяться шире согласованного scope.
+- До итогового закрытия `A–G` broad переход к `Step 07+` не считается подтверждённым.
 
 ## 8. Что не делать сейчас
 
-- Не расширять систему в новые NPC-family, пока не закрыты F/G.
+- Не расползаться шире текущего `BLACKSMITH A/B`, пока не зафиксирован результат первого vertical slice.
 - Не делать массовый foundation-refactor ради красоты.
 - Не переносить logging из чата в другой канал в этой итерации.
 - Не возвращать legacy reference path.
