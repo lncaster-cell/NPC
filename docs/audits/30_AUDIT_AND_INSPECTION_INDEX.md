@@ -1,6 +1,6 @@
 # Ambient Life v2 — Audit & Inspection Index (Consolidated)
 
-Дата: 2026-04-07  
+Дата: 2026-04-12  
 Статус: active index (consolidated navigation)  
 Роль: единая точка входа в аудит/инспекционные отчёты без поиска по десяткам датированных файлов.
 Этот документ является навигационным слоем и вторичен относительно SoT: `17`, `12A–12E`, `13`, `14`.
@@ -48,7 +48,12 @@
 - При новом аудите добавляйте его **в начало соответствующей секции**.
 - Старые файлы не удаляются: сохраняются как история решений и проверок.
 - Явно устаревшие черновики переносить в `docs/archive/` и оставлять в активных документах только ссылки на архив.
-- В обзорных документах (`README`, `12_MASTER_PLAN`, `00_PROJECT_LIBRARY`, `21_ACTIVE_DEVELOPMENT_CONTROL_PANEL`) ссылаться на этот индекс, а не на один конкретный датированный отчёт.
+- В активных навигационных документах (`README.md`, `docs/library/DOCUMENT_REGISTRY.md`, `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`) ссылаться на этот индекс, а не на один конкретный датированный отчёт.
+
+## Legacy redirects (historical compatibility only)
+
+- `docs/entry/12_MASTER_PLAN.md` — redirect/frozen.
+- `docs/entry/00_PROJECT_LIBRARY.md` — redirect/frozen.
 
 ---
 

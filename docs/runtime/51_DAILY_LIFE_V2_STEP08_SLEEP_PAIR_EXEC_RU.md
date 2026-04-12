@@ -19,7 +19,7 @@
 ## 3) Что добавлено
 
 ### 3.1 Sleep pair contract
-Добавлен `scripts/daily_life/dl_v2_sleep_anchor_inc.nss`.
+Добавлен `daily_life/dl_v2_sleep_anchor_inc.nss`.
 
 Назначение:
 - закрепить двухточечный sleep pair contract;
@@ -27,7 +27,7 @@
 - валидировать пару waypoint в одной area.
 
 ### 3.2 Sleep execution helper
-Добавлен `scripts/daily_life/dl_v2_sleep_exec_inc.nss`.
+Добавлен `daily_life/dl_v2_sleep_exec_inc.nss`.
 
 Назначение:
 - вести NPC к `approach` waypoint;
@@ -54,7 +54,7 @@ Fast path:
 
 ## 6) Smoke
 
-Добавлен `scripts/daily_life/dl2_smoke_step_08_sleep_pair_exec.nss`.
+Добавлен `daily_life/dl2_smoke_step_08_sleep_pair_exec.nss`.
 
 Он проверяет:
 - найден ли runtime NPC на стенде;
@@ -67,3 +67,6 @@ Fast path:
 1. либо подтвердить, что move->snap работает стабильно;
 2. либо скорректировать snap distance / pair placement;
 3. затем отдельно подключить sleep presentation/animation hook.
+---
+
+**Текущий canonical runtime path: `daily_life/`.**

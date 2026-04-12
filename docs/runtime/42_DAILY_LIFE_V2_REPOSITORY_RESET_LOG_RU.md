@@ -10,21 +10,32 @@
 ## Что было сделано в reset-фазе
 
 1. Legacy-runtime v1 перенесён в архив:
-   - из `scripts/daily_life/*.nss`
-   - в `archive/daily_life_v1_legacy/scripts/daily_life/`
-2. Активная рабочая зона `scripts/daily_life/` очищена для v2 шагов.
+   - из `scripts/daily_life/*.nss` *(историческое имя пути на момент PR)*
+   - в `archive/daily_life_v1_legacy/scripts/daily_life/` *(историческое имя пути на момент PR)*
+2. Активная рабочая зона `daily_life/` очищена для v2 шагов.
 3. Навигационные и governance-документы переведены на v2 rewrite track.
 
 ## Фактическое текущее состояние (2026-04-09)
 
-В `scripts/daily_life/` находятся:
+В `daily_life/` находятся:
 - `dl_v2_runtime_inc.nss`
 - `dl2_smoke_step_01.nss`
 
-Это означает, что ранние reset-заметки со ссылками на scripts/daily_life/README.md и scripts/daily_life/dl_v2_bootstrap.nss считаются историческими и больше не отражают текущий факт.
+Это означает, что ранние reset-заметки со ссылками на `scripts/daily_life/README.md` и `scripts/daily_life/dl_v2_bootstrap.nss` *(историческое имя пути на момент PR)* считаются историческими и больше не отражают текущий факт.
 
 ## Ограничения
 
 - Legacy smoke/runbook документы v1 сохраняются как база сравнения.
 - До утверждения baseline запрещено добавлять крупные runtime-подсистемы в v2.
 - Каждый новый v2-файл добавляется только вместе с проверкой и doc-sync.
+
+## Текстовый проход `docs/runtime/*.md` по `scripts/daily_life/` (2026-04-12)
+
+Классификация остатков после нормализации v2 step-доков:
+
+- **Актуальный контур (runtime v2):**
+  - `42_DAILY_LIFE_V2_REPOSITORY_RESET_LOG_RU.md` — только исторические ссылки с явной пометкой.
+- **Legacy-архив / v1-документация:**
+  - документы серии `12B_*`, `26_*`, `35_*`, `10_*`, `07_*`, `22_*` и `12B_DAILY_LIFE_V1_LEGACY_TO_RUNTIME_MAPPING.md`.
+
+Принцип: в v2 step-доках и новых runtime-описаниях canonical путь фиксируется как `daily_life/`; упоминания `scripts/daily_life/` допустимы только как исторические.
