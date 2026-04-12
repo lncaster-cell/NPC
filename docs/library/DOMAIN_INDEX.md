@@ -4,11 +4,13 @@
 
 Обновлено: 2026-04-12.
 
-## Основной путь навигации (active)
+## Основной путь навигации
 
 1. `README.md`
 2. `docs/library/DOCUMENT_REGISTRY.md`
 3. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
+
+Границы active scope (canonical vs operational reference) задаются только в `docs/library/DOCUMENT_REGISTRY.md`.
 
 | Домен | Primary source | Secondary links |
 |---|---|---|

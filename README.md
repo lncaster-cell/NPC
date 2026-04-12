@@ -4,7 +4,7 @@
 
 Цель текущего этапа: прекратить рост мета-документации и развивать runtime-код в `daily_life/`.
 
-## ACTIVE DOC SET (только 5 файлов)
+## ACTIVE DOC MODEL (5 canonical + ограниченный operational reference list)
 
 Основной канонический маршрут:
 1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
@@ -13,11 +13,7 @@
 4. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
 5. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
 
-Важно: это **основной маршрут**, но не запрет на использование операционных reference-документов текущего этапа.
-Для уточнения acceptance-статуса и фактической рабочей точки также используются:
-- `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
-- `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
-- `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
+Модель scope согласована с реестром: **5 canonical + ограниченный operational reference list** (см. `docs/library/DOCUMENT_REGISTRY.md`).
 
 ## Канонический workspace path
 

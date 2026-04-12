@@ -6,7 +6,7 @@
 ## 0) Режим работы
 
 - Формат: **code-first**.
-- Документация ограничена active doc set (5 файлов).
+- Документационный scope ведётся только через `docs/library/DOCUMENT_REGISTRY.md`: **5 canonical + ограниченный operational reference list**.
 - Канонический runtime workspace path: `daily_life/`.
 - Любые ссылки на `scripts/daily_life/` считаются legacy.
 
@@ -20,25 +20,18 @@
 - **Текущий микро-фокус итерации:** не расширять vertical slice дальше, а **закрыть именно `SLEEP` directive scenario** как устойчивый execution-path, включая sleep behavior / sleep presentation / sleep animations без визуальной дёрготни и ложного state-advance.
 - Переход к Step 07+ по-прежнему не подтверждён до закрытия A–G целиком.
 
-## 2) Active doc set (обязательный)
+## 2) Документационный scope (единый источник)
 
-1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
-2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
-3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
-4. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
-5. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
+Единый источник границ: `docs/library/DOCUMENT_REGISTRY.md`.
 
-## 3) Операционные reference-документы текущей рабочей итерации
+Двухуровневая модель:
+1. **Canonical active set (5 файлов)** — обязательный канонический контур.
+2. **Operational reference (allowed but non-canonical)** — ограниченный список для текущей операционной точки; не расширяет canonical контур.
 
-- `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
-- `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
-- `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
-- `docs/runtime/54_DAILY_LIFE_V2_EXECUTION_TASK_LIST_RU.md` (**только frozen redirect, не отдельный roadmap-source**)
+Для этой панели любые самостоятельные трактовки scope запрещены: состав и статус слоёв берётся только из реестра.
 
-Используются для уточнения acceptance-статуса и фактической текущей точки без расширения active doc set.
-
-## 4) Правила PR
+## 3) Правила PR
 
 1. Каждый PR должен содержать полезный кодовый сдвиг в `daily_life/`, кроме специально выделенных cleanup PR.
-2. Док-изменения допускаются только в active doc set и только как синхронизация факта.
+2. Док-изменения допускаются только в рамках модели из `DOCUMENT_REGISTRY.md` и только как синхронизация факта.
 3. Новые digest/индексные meta-файлы не добавляются.

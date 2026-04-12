@@ -9,4 +9,4 @@
 - `README.md`
 - `docs/library/DOCUMENT_REGISTRY.md`
 
-Active doc set ограничен 5 файлами (см. `DOCUMENT_REGISTRY.md`).
+Границы active scope (canonical vs operational reference) определяются только реестром: `docs/library/DOCUMENT_REGISTRY.md`.

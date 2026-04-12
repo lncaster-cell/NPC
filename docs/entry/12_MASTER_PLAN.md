@@ -8,6 +8,6 @@
 Текущий execution-source:
 - `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
 
-Канонический active doc set и path policy:
-- `README.md`
+Актуальные границы active scope и path policy определяются только реестром:
 - `docs/library/DOCUMENT_REGISTRY.md`
+- `README.md`
