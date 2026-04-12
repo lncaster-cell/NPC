@@ -52,12 +52,12 @@
 Результат:
 - обязательный acceptance gate по F/G закрыт; возврат к этим шагам нужен только при регрессии.
 
-### Шаг 2 — Выбрать первый vertical slice (без Step 07+)
+### Шаг 2 — Первый vertical slice: BLACKSMITH A/B (без Step 07+)
 Первый vertical slice по умолчанию:
 - `BLACKSMITH`
 - два состояния:
   - `WORK`
-  - non-`WORK` / social-rest window
+  - `SLEEP`
 
 Почему именно он:
 - уже есть базовый resolver/materialization skeleton;

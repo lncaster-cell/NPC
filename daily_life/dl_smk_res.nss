@@ -31,16 +31,21 @@ void main()
     SetLocalString(oNpc, DL_L_NPC_PROFILE_ID, DL_PROFILE_BLACKSMITH);
     SetLocalInt(oModule, "dl_smk_bs_10", DL_ResolveNpcDirectiveAtHour(oNpc, 10));
     SetLocalInt(oModule, "dl_smk_bs_21", DL_ResolveNpcDirectiveAtHour(oNpc, 21));
+    SetLocalInt(oModule, "dl_smk_bs_23", DL_ResolveNpcDirectiveAtHour(oNpc, 23));
 
     DL_ApplyDirectiveSkeleton(oNpc, DL_ResolveNpcDirectiveAtHour(oNpc, 10));
     SetLocalString(oModule, "dl_smk_bs_10_dlg", GetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE));
     SetLocalString(oModule, "dl_smk_bs_10_srv", GetLocalString(oNpc, DL_L_NPC_SERVICE_MODE));
     SetLocalString(oModule, "dl_smk_bs_10_tag", GetLocalString(oNpc, DL_L_NPC_MAT_TAG));
+    SetLocalInt(oModule, "dl_smk_bs_10_act", GetLocalInt(oNpc, DL_L_NPC_ACTIVITY_ID));
+    SetLocalString(oModule, "dl_smk_bs_10_anim", GetLocalString(oNpc, DL_L_NPC_ANIM_SET));
 
     DL_ApplyDirectiveSkeleton(oNpc, DL_ResolveNpcDirectiveAtHour(oNpc, 21));
     SetLocalString(oModule, "dl_smk_bs_21_dlg", GetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE));
     SetLocalString(oModule, "dl_smk_bs_21_srv", GetLocalString(oNpc, DL_L_NPC_SERVICE_MODE));
     SetLocalString(oModule, "dl_smk_bs_21_tag", GetLocalString(oNpc, DL_L_NPC_MAT_TAG));
+    SetLocalInt(oModule, "dl_smk_bs_21_act", GetLocalInt(oNpc, DL_L_NPC_ACTIVITY_ID));
+    SetLocalString(oModule, "dl_smk_bs_21_anim", GetLocalString(oNpc, DL_L_NPC_ANIM_SET));
 
     int bEarlyWorkerWindowPass =
         GetLocalInt(oModule, "dl_smk_res_05") == DL_DIR_SLEEP &&
@@ -57,10 +62,15 @@ void main()
         GetLocalString(oModule, "dl_smk_bs_10_dlg") == DL_DIALOGUE_WORK &&
         GetLocalString(oModule, "dl_smk_bs_10_srv") == DL_SERVICE_AVAILABLE &&
         GetLocalString(oModule, "dl_smk_bs_10_tag") == DL_MAT_WORK &&
-        GetLocalInt(oModule, "dl_smk_bs_21") == DL_DIR_SOCIAL &&
-        GetLocalString(oModule, "dl_smk_bs_21_dlg") == DL_DIALOGUE_SOCIAL &&
+        GetLocalInt(oModule, "dl_smk_bs_10_act") == DL_ARCH_ACT_NPC_FORGE &&
+        GetLocalString(oModule, "dl_smk_bs_10_anim") == DL_ARCH_ANIMS_FORGE &&
+        GetLocalInt(oModule, "dl_smk_bs_21") == DL_DIR_SLEEP &&
+        GetLocalString(oModule, "dl_smk_bs_21_dlg") == DL_DIALOGUE_SLEEP &&
         GetLocalString(oModule, "dl_smk_bs_21_srv") == DL_SERVICE_OFF &&
-        GetLocalString(oModule, "dl_smk_bs_21_tag") == DL_MAT_SOCIAL;
+        GetLocalString(oModule, "dl_smk_bs_21_tag") == DL_MAT_SLEEP &&
+        GetLocalInt(oModule, "dl_smk_bs_21_act") == DL_ARCH_ACT_NPC_SLEEP_BED &&
+        GetLocalString(oModule, "dl_smk_bs_21_anim") == DL_ARCH_ANIMS_SLEEP_BED &&
+        GetLocalInt(oModule, "dl_smk_bs_23") == DL_DIR_SLEEP;
     SetLocalInt(oModule, "dl_smk_bs_ab_pass", bBlacksmithABPass);
 
     SetLocalInt(oModule, "dl_smk_res_pass", bEarlyWorkerWindowPass && bBlacksmithABPass);
