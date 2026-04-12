@@ -17,9 +17,11 @@
 
 ## 2) Инвентаризация legacy-ссылок (факт)
 
+### Исторический срез на дату аудита (2026-04-02)
+
 ### 2.1 Файлы с прямым `scripts/ambient_life`
 
-На текущем проходе найдено **11** markdown-файлов с прямым упоминанием `scripts/ambient_life`:
+На текущем проходе найдено **11** markdown-файлов с прямым упоминанием `scripts/ambient_life` *(as-of 2026-04-02)*:
 
 1. `docs/runtime/07_SCENARIOS_AND_ALGORITHMS.md`
 2. `docs/runtime/10_NPC_RESPAWN_MECHANICS.md`
@@ -35,7 +37,7 @@
 
 ### 2.2 Файлы с явными `al_*.nss`-именами
 
-Найдено **5** документов, где перечисляются legacy runtime-файлы `al_*.nss`:
+Найдено **5** документов, где перечисляются legacy runtime-файлы `al_*.nss` *(as-of 2026-04-02)*:
 
 - `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`
 - `docs/runtime/07_SCENARIOS_AND_ALGORITHMS.md`
@@ -43,22 +45,24 @@
 - `docs/runtime/10_NPC_RESPAWN_MECHANICS.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_ACTIVITY_ANIMATION_REFERENCE.md`
 
-Уникальных legacy имён `al_*.nss`: **39**.
+Уникальных legacy имён `al_*.nss`: **39** *(as-of 2026-04-02)*.
 
 ---
 
 ## 3) Проверка «простого rename» (`al_ -> dl_`)
 
+### Исторический срез на дату аудита (2026-04-02)
+
 Сопоставление выполнено механически: `al_xxx.nss` -> `dl_xxx.nss`, затем проверка наличия файла в `scripts/daily_life/`.
 
 Итог:
-- Всего проверено legacy имён: **39**.
-- Прямое совпадение после rename: **4**.
+- Всего проверено legacy имён: **39** *(as-of 2026-04-02)*.
+- Прямое совпадение после rename: **4** *(as-of 2026-04-02)*.
   - `al_activity_inc.nss -> dl_activity_inc.nss`
   - `al_area_inc.nss -> dl_area_inc.nss`
   - `al_area_tick.nss -> dl_area_tick.nss`
   - `al_schedule_inc.nss -> dl_schedule_inc.nss`
-- Не совпало/отсутствует в текущем runtime: **35**.
+- Не совпало/отсутствует в текущем runtime: **35** *(as-of 2026-04-02)*.
 
 Вывод: drift не сводится к простому массовому префикс-rename; нужен ручной mapping-слой «legacy design names -> Milestone A runtime files/модули».
 
@@ -66,14 +70,18 @@
 
 ## 4) Runtime-текущая база (контрольная точка)
 
-Каталог `scripts/daily_life/` содержит **21** `.nss` файл.  
-Проверка include-цепочек по этим 21 файлам в данном проходе: **0 missing include**.
+### Исторический срез на дату аудита (2026-04-02)
+
+Каталог `scripts/daily_life/` содержит **21** `.nss` файл *(as-of 2026-04-02)*.  
+Проверка include-цепочек по этим **21** файлам в данном проходе: **0 missing include** *(as-of 2026-04-02)*.
 
 Это подтверждает, что основная проблема остаётся документационной (navigation/spec sync), а не структурной целостностью скриптового каталога.
 
 ---
 
 ## 5) Приоритетная программа правок (конкретизация)
+
+### Актуально на текущий момент (2026-04-12)
 
 ### Wave A (операционный минимум, 1 проход)
 
@@ -85,7 +93,7 @@
 
 ### Wave B (канон/рамки)
 
-5. `docs/canon/12A_WORLD_MODEL_CANON.md`, `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md`, `docs/canon/12D_WORLD_TRAVEL_CANON.md` — привести scope-блоки к `scripts/daily_life/*` или нейтральной формулировке без жёсткого path.
+5. `docs/canon/12A_WORLD_MODEL_CANON.md`, `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md`, `docs/canon/12D_WORLD_TRAVEL_CANON.md` — привести scope-блоки к `daily_life/*` или нейтральной формулировке без жёсткого path.
 6. `docs/runtime/06_SYSTEM_INVARIANTS.md` и `docs/library/IDEA_CARD_TEMPLATE.md` — убрать legacy путь из инвариантов/шаблонов.
 
 ### Wave C (архив/история)
