@@ -1,6 +1,6 @@
 # Ambient Life — Active Development Control Panel
 
-Дата: 2026-04-11
+Дата: 2026-04-12
 Статус: execution control panel
 
 ## 0) Режим работы
@@ -16,7 +16,7 @@
 - Подтверждены `AREA_ENTER`, `HB`, death lifecycle и cleanup регистрации в isolated area (`reg: 1 -> 0`).
 - Это **не равно** полному закрытию Milestone A.
 - Обязательный acceptance gate по **Scenario F** и **Scenario G** закрыт (`PASS/PASS`).
-- Текущая рабочая точка: сценарии A–E (первый целевой vertical slice — `BLACKSMITH` A/B).
+- Текущая рабочая точка: сценарии A–E (первый целевой vertical slice — `BLACKSMITH` A/B как `WORK/SLEEP`).
 - Переход к Step 07+ по-прежнему не подтверждён до закрытия A–G целиком.
 
 ## 2) Active doc set (обязательный)
@@ -27,7 +27,7 @@
 4. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
 5. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
 
-## 3) Операционные reference-документы текущего acceptance-этапа
+## 3) Операционные reference-документы текущей рабочей итерации
 
 - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
 - `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`

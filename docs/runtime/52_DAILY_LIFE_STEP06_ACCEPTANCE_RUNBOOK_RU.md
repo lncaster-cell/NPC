@@ -1,24 +1,29 @@
 # 52 — Daily Life Step 06 Acceptance Runbook (RU)
 
-> Дата: 2026-04-09  
-> Статус: ready for owner-run
+> Дата: 2026-04-12  
+> Статус: baseline runbook used; kept as operational reference for completed Step 06 foundation-slice
 
 ## 1) Цель
 
-Зафиксировать единый acceptance-порядок для текущего clean-room baseline (Steps 01–05) перед переходом к следующей волне расширения runtime.
+Зафиксировать единый baseline acceptance-порядок для clean-room foundation-среза (Steps 01–05), который был использован перед переходом к следующим runtime-расширениям.
 
-## 2) Scope acceptance (текущий)
+Важно:
+- этот runbook уже использовался для baseline owner-run;
+- актуальные фактические owner-run результаты фиксируются в acceptance journal;
+- текущая рабочая точка после закрытия `Scenario F/G` отслеживается в `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`.
 
-Проверяем только уже зафиксированные контракты:
+## 2) Scope acceptance (baseline)
+
+Проверяются только foundation-контракты:
 1. module init contract;
 2. lifecycle ingress (`OnSpawn`/`OnDeath` -> `OnUserDefined`);
 3. area-tier bootstrap;
 4. registry + bounded worker skeleton;
-5. sleep-only resolver/materialization skeleton.
+5. baseline resolver/materialization skeleton.
 
-## 3) Preflight перед owner-run
+## 3) Preflight перед baseline owner-run
 
-1. Runtime scripts размещены в `scripts/daily_life/`.
+1. Runtime scripts размещены в `daily_life/`.
 2. Событийные хендлеры NWN2 подключены к актуальным скриптам:
    - `OnModuleLoad` -> `dl_load`
    - `OnSpawn` -> `dl_spawn`
@@ -28,8 +33,9 @@
    - `OnAreaExit` -> `dl_a_exit`
    - `OnAreaHeartbeat` -> `dl_a_hb`
 3. На модуле включён runtime gate: `dl_enabled = 1`.
+4. При необходимости chat-debug контролируется модульным флагом `dl_chat_log`.
 
-## 4) Acceptance-процедура (минимальный прогон)
+## 4) Baseline acceptance-процедура (минимальный прогон)
 
 ### A. Module contract
 - Запустить `dl_smoke_ev`.
@@ -61,28 +67,32 @@
   - `dl_smk_res_23 == 1`
   - `dl_smk_res_mat == 1`
 
-## 5) PASS-критерий текущего этапа
+## 5) PASS-критерий baseline-этапа
 
-Текущий этап считается пройденным, если:
+Baseline-этап считается пройденным, если:
 - все smoke-проверки из раздела 4 дают ожидаемые значения;
 - не обнаружено нарушения event-driven + area-centric модели;
-- не добавлена логика вне согласованного scope (resolver/materialization skeleton only).
+- не добавлена логика вне согласованного foundation-scope.
 
-## 6) Что НЕ входит в этот acceptance
+## 6) Что НЕ входит в этот baseline acceptance
 
 - Полный activity/materialization runtime.
 - Anchor policy execution.
 - Full fairness/profiling worker loop.
+- Вертикальные сценарии `A–E`.
 - Интеграционные сценарии с incident/trade/legal/travel системами.
 
 ## 7) Формат owner-отчёта (короткий)
 
 1. Дата прогона.
 2. PASS/FAIL по каждому smoke шагу (A..E).
-3. Общий verdict: `GO Step 07+` или `HOLD`.
+3. Общий verdict: `GO next agreed slice` или `HOLD`.
 4. Если `HOLD` — конкретный блокер и требуемое действие.
 
 ## 8) Ограничение среды
 
 - Этот runbook требует выполнения в NWN2 runtime/toolset окружении.
 - Проверки в рамках только git/markdown репозитория не заменяют owner-run verdict.
+- Для текущего фактического статуса после baseline owner-run использовать:
+  - `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
+  - `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
