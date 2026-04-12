@@ -13,6 +13,7 @@ const string DL_L_NPC_STATE = "dl_state";
 const string DL_L_NPC_SLEEP_PHASE = "dl_npc_sleep_phase";
 const string DL_L_NPC_SLEEP_STATUS = "dl_npc_sleep_status";
 const string DL_L_NPC_SLEEP_TARGET = "dl_npc_sleep_target";
+const string DL_L_NPC_SLEEP_DIAGNOSTIC = "dl_npc_sleep_diagnostic";
 const string DL_L_NPC_ACTIVITY_ID = "dl_npc_activity_id";
 const string DL_L_NPC_ANIM_SET = "dl_npc_anim_set";
 
@@ -156,28 +157,61 @@ object DL_GetSleepWaypointByTag(string sTag)
     return oWp;
 }
 
+int DL_IsSleepWaypointInNpcArea(object oNpc, object oWp)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oWp))
+    {
+        return FALSE;
+    }
+
+    return GetArea(oWp) == GetArea(oNpc);
+}
+
+int DL_IsSleepWaypointTagInvalidArea(object oNpc, string sTag)
+{
+    object oWp = DL_GetSleepWaypointByTag(sTag);
+    if (!GetIsObjectValid(oWp))
+    {
+        return FALSE;
+    }
+
+    return !DL_IsSleepWaypointInNpcArea(oNpc, oWp);
+}
+
 object DL_ResolveSleepApproachWaypoint(object oNpc)
 {
     string sNpcTag = GetTag(oNpc);
     object oWp = DL_GetSleepWaypointByTag("dl_sleep_" + sNpcTag + "_approach");
-    if (GetIsObjectValid(oWp))
+    if (DL_IsSleepWaypointInNpcArea(oNpc, oWp))
     {
         return oWp;
     }
 
-    return DL_GetSleepWaypointByTag("dl_sleep_approach");
+    oWp = DL_GetSleepWaypointByTag("dl_sleep_approach");
+    if (DL_IsSleepWaypointInNpcArea(oNpc, oWp))
+    {
+        return oWp;
+    }
+
+    return OBJECT_INVALID;
 }
 
 object DL_ResolveSleepBedWaypoint(object oNpc)
 {
     string sNpcTag = GetTag(oNpc);
     object oWp = DL_GetSleepWaypointByTag("dl_sleep_" + sNpcTag + "_bed");
-    if (GetIsObjectValid(oWp))
+    if (DL_IsSleepWaypointInNpcArea(oNpc, oWp))
     {
         return oWp;
     }
 
-    return DL_GetSleepWaypointByTag("dl_sleep_bed");
+    oWp = DL_GetSleepWaypointByTag("dl_sleep_bed");
+    if (DL_IsSleepWaypointInNpcArea(oNpc, oWp))
+    {
+        return oWp;
+    }
+
+    return OBJECT_INVALID;
 }
 
 void DL_ClearSleepExecutionState(object oNpc)
@@ -185,6 +219,7 @@ void DL_ClearSleepExecutionState(object oNpc)
     DeleteLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
+    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
 }
 
 void DL_ClearActivityPresentation(object oNpc)
@@ -225,14 +260,45 @@ void DL_ExecuteSleepDirective(object oNpc)
 {
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
     object oBed = DL_ResolveSleepBedWaypoint(oNpc);
+    string sNpcTag = GetTag(oNpc);
+    int bInvalidArea = FALSE;
+
+    if (GetIsObjectValid(oApproach) && !DL_IsSleepWaypointInNpcArea(oNpc, oApproach))
+    {
+        oApproach = OBJECT_INVALID;
+        bInvalidArea = TRUE;
+    }
+    if (GetIsObjectValid(oBed) && !DL_IsSleepWaypointInNpcArea(oNpc, oBed))
+    {
+        oBed = OBJECT_INVALID;
+        bInvalidArea = TRUE;
+    }
 
     if (!GetIsObjectValid(oApproach) || !GetIsObjectValid(oBed))
     {
+        if (!bInvalidArea)
+        {
+            bInvalidArea =
+                DL_IsSleepWaypointTagInvalidArea(oNpc, "dl_sleep_" + sNpcTag + "_approach") ||
+                DL_IsSleepWaypointTagInvalidArea(oNpc, "dl_sleep_approach") ||
+                DL_IsSleepWaypointTagInvalidArea(oNpc, "dl_sleep_" + sNpcTag + "_bed") ||
+                DL_IsSleepWaypointTagInvalidArea(oNpc, "dl_sleep_bed");
+        }
+
         SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "missing_waypoints");
+        if (bInvalidArea)
+        {
+            SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_target_invalid_area");
+        }
+        else
+        {
+            DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+        }
         DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
         return;
     }
 
+    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
     SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, GetTag(oBed));
 
     location lApproach = GetLocation(oApproach);
@@ -249,8 +315,18 @@ void DL_ExecuteSleepDirective(object oNpc)
 
     if (GetDistanceBetweenLocations(GetLocation(oNpc), lBed) > DL_SLEEP_BED_RADIUS)
     {
-        AssignCommand(oNpc, ClearAllActions(TRUE));
-        AssignCommand(oNpc, ActionJumpToLocation(lBed));
+        if (GetAreaFromLocation(lBed) == GetArea(oNpc))
+        {
+            AssignCommand(oNpc, ClearAllActions(TRUE));
+            AssignCommand(oNpc, ActionJumpToLocation(lBed));
+        }
+        else
+        {
+            SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "missing_waypoints");
+            SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_target_invalid_area");
+            DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
+            return;
+        }
     }
 
     SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_ON_BED);
