@@ -24,7 +24,7 @@
 ## 3) Что добавлено
 
 ### 3.1 Resolver include
-Добавлен `scripts/daily_life/dl_res_inc.nss`.
+Добавлен `daily_life/dl_res_inc.nss`.
 
 Назначение:
 - ввести минимальный enum директив для первого шага;
@@ -33,7 +33,7 @@
 - ввести специализированный helper для `EARLY_WORKER`.
 
 ### 3.2 Smoke check
-Добавлен `scripts/daily_life/dl_smk_res.nss`.
+Добавлен `daily_life/dl_smk_res.nss`.
 
 Проверяет кейсы:
 - `05:00` -> `SLEEP`
@@ -59,3 +59,6 @@
 2. расширить directive layer следующей директивой;
 3. ввести schedule-template id как вход resolver helper;
 4. после этого переходить к anchor policy helper.
+---
+
+**Текущий canonical runtime path: `daily_life/`.**
