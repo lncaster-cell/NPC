@@ -17,6 +17,7 @@
 - Это **не равно** полному закрытию Milestone A.
 - Обязательный acceptance gate по **Scenario F** и **Scenario G** закрыт (`PASS/PASS`).
 - Текущая рабочая точка: сценарии A–E (первый целевой vertical slice — `BLACKSMITH` A/B как `WORK/SLEEP`).
+- **Текущий микро-фокус итерации:** не расширять vertical slice дальше, а **закрыть именно `SLEEP` directive scenario** как устойчивый execution-path, включая sleep behavior / sleep presentation / sleep animations без визуальной дёрготни и ложного state-advance.
 - Переход к Step 07+ по-прежнему не подтверждён до закрытия A–G целиком.
 
 ## 2) Active doc set (обязательный)
