@@ -7,7 +7,6 @@ void main()
 
     DL_OnAreaEnterBootstrap(oArea, oEnter);
 
-    object oPC = GetFirstPC();
     string sActor = GetIsObjectValid(oEnter) ? GetName(oEnter) : "<invalid>";
     string sLog = "[DL][AREA_ENTER] area=" + GetName(oArea) +
                   " actor=" + sActor +
@@ -15,9 +14,5 @@ void main()
                   " reg=" + IntToString(GetLocalInt(oArea, DL_L_AREA_REG_COUNT)) +
                   " resync_req=" + IntToString(GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING));
 
-    if (GetIsObjectValid(oPC))
-    {
-        SendMessageToPC(oPC, sLog);
-    }
-    PrintString(sLog);
+    DL_LogRuntime(sLog);
 }

@@ -88,6 +88,11 @@ int DL_ResolveNpcDirectiveAtHour(object oNpc, int nHour)
     }
     else if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_BLACKSMITH)
     {
+        if (DL_IsEarlyWorkerSleepHour(nHour))
+        {
+            return DL_DIR_SLEEP;
+        }
+
         if (DL_IsBlacksmithWorkHour(nHour))
         {
             return DL_DIR_WORK;
