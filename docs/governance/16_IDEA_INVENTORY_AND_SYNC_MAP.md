@@ -31,11 +31,11 @@
 | Area-centric orchestration + bounded event-driven runtime | Реализовано (база) | Runtime | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/runtime/06_SYSTEM_INVARIANTS.md`, `docs/runtime/02_MECHANICS.md`, `README.md` | `daily_life/dl_area_tick.nss`, `daily_life/dl_area_inc.nss`, `daily_life/dl_worker_inc.nss`, `daily_life/dl_types_inc.nss` | DEC-2026-03-14-001 | Per-NPC heartbeat архитектура |
 | Registry/cache/dispatch discipline | Реализовано | Runtime | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/governance/18_REBUILD_RESET_CONTEXT.md`, `docs/runtime/07_SCENARIOS_AND_ALGORITHMS.md` | `dl_worker_inc.nss`, `dl_util_inc.nss`, `dl_log_inc.nss` | DEC-2026-03-14-001 | Глобальный world-scan регистр |
 | Routine pipeline (route/transition/sleep/activity/schedule) | Реализовано (Stage I.2) | Runtime | `docs/runtime/02_MECHANICS.md` | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `docs/governance/18_REBUILD_RESET_CONTEXT.md` | `dl_schedule_inc.nss`, `dl_activity_inc.nss`, `dl_resolver_inc.nss`, `dl_resync_inc.nss`, `dl_anchor_inc.nss` | — | Reactive/crime контур |
-| Полная design-спецификация поведения NPC (state machine + recovery + bounded policy) | Канон (дизайн, специализированный том) | Runtime | `docs/canon/20_NPC_BEHAVIOR_SYSTEM_DESIGN_RU.md` | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`, `docs/entry/12_MASTER_PLAN.md` | `—` | — | Обзорный runtime summary без полного описания автомата |
+| Полная design-спецификация поведения NPC (state machine + recovery + bounded policy) | Канон (дизайн, специализированный том) | Runtime | `docs/canon/20_NPC_BEHAVIOR_SYSTEM_DESIGN_RU.md` | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`, `docs/entry/01_PROJECT_OVERVIEW.md` | `—` | — | Обзорный runtime summary без полного описания автомата |
 | Reactive layer (blocked/disturbed) | Реализовано (Stage I.2) | Runtime | `docs/runtime/02_MECHANICS.md` | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `docs/runtime/03_OPERATIONS.md` | `dl_resolver_inc.nss`, `dl_resync_inc.nss`, `dl_interact_inc.nss` | — | Legal pipeline Stage I.3 |
 | City crime/alarm FSM | Реализовано (локальный city слой) | Runtime + Legal bridge | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/canon/12A_WORLD_MODEL_CANON.md`, `docs/governance/18_REBUILD_RESET_CONTEXT.md` | `dl_resolver_inc.nss`, `dl_override_inc.nss`, `dl_slot_handoff_inc.nss`, `dl_area_inc.nss` | — | Полный legal adjudication pipeline |
 | Population respawn policy | Реализовано | Runtime | `docs/runtime/10_NPC_RESPAWN_MECHANICS.md` | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `docs/governance/18_REBUILD_RESET_CONTEXT.md` | `dl_area_inc.nss` | — | Экономика/торговля как макросистема |
-| NWN2 world/legal 3-layer model | Канон | World/Legal | `docs/canon/12A_WORLD_MODEL_CANON.md` | `README.md`, `docs/entry/12_MASTER_PLAN.md` | `—` | — | Фракции NWN2 как замена правовой модели |
+| NWN2 world/legal 3-layer model | Канон | World/Legal | `docs/canon/12A_WORLD_MODEL_CANON.md` | `README.md`, `docs/entry/01_PROJECT_OVERVIEW.md` | `—` | — | Фракции NWN2 как замена правовой модели |
 | LawProfile + law modes + enforcement semantics | Канон | World/Legal | `docs/canon/12A_WORLD_MODEL_CANON.md` | `docs/governance/18_REBUILD_RESET_CONTEXT.md`, `docs/runtime/03_OPERATIONS.md` | `—` | — | Простая reputation/faction реакция |
 | Citizenship / titles / authority grants / document validation | Канон | World/Legal | `docs/canon/12A_WORLD_MODEL_CANON.md` | `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md` | `—` | — | Только inventory ownership без правовых прав |
 | Crime/witness/alarm legal chain | Канон + Planned runtime delivery | World/Legal + Runtime | `docs/canon/12A_WORLD_MODEL_CANON.md` | `docs/governance/18_REBUILD_RESET_CONTEXT.md`, `docs/runtime/03_OPERATIONS.md` | partial hooks: `dl_resolver_inc.nss` (`al_legal_followup_pending`) _(legacy reference)_ | — | Уже полностью реализованный trial pipeline |
@@ -43,10 +43,10 @@
 | Stage I.3 reinforcement policy | Planned | Runtime/Operations | `docs/governance/18_REBUILD_RESET_CONTEXT.md` | `docs/runtime/03_OPERATIONS.md` | (target subsystem) city/react/legal hooks | — | Текущий Stage I.2 alarm FSM |
 | Stage I.3 surrender→arrest→case intake→trial→sentence | Planned | Runtime + Legal | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/runtime/03_OPERATIONS.md`, `docs/canon/12A_WORLD_MODEL_CANON.md`, `docs/governance/18_REBUILD_RESET_CONTEXT.md` | future from `dl_resolver_inc.nss` legal hook _(legacy reference)_ | DEC-2026-03-15-004 | Crime/alarm detection без legal handoff |
 | Stage I.3 QA smoke runbook | Draft (готов к активации) | QA/Operations | `docs/runtime/03_OPERATIONS.md` | `docs/governance/18_REBUILD_RESET_CONTEXT.md`, `docs/runtime/03_OPERATIONS.md` | `—` | — | Полный регрессионный тест-план |
-| Player property system | Канон (дизайн) | Property | `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md` | `docs/canon/12A_WORLD_MODEL_CANON.md`, `docs/entry/12_MASTER_PLAN.md` | `—` | — | Trade/city supply экономика |
-| World travel system | Канон (дизайн) | Travel | `docs/canon/12D_WORLD_TRAVEL_CANON.md` | `docs/entry/12_MASTER_PLAN.md`, `docs/runtime/03_OPERATIONS.md` | `—` | — | Простые ad-hoc телепорты |
-| Trade & city state macro-system | Канон (дизайн) | Trade/Economy | `docs/canon/12E_TRADE_AND_CITY_STATE_CANON.md` | `docs/entry/12_MASTER_PLAN.md`, `docs/governance/10_DECISIONS_LOG.md` | `—` | DEC-2026-03-14-002 | Розничная торговля как вся экономика |
-| Docs governance: index vs canonical volumes | Принято и активно | Documentation governance | `docs/entry/12_MASTER_PLAN.md` | `README.md`, `docs/governance/10_DECISIONS_LOG.md`, `docs/entry/00_PROJECT_LIBRARY.md` | `—` | DEC-2026-03-14-001, DEC-2026-03-14-003 | Новый «супер master-plan» поверх томов |
+| Player property system | Канон (дизайн) | Property | `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md` | `docs/canon/12A_WORLD_MODEL_CANON.md`, `docs/entry/01_PROJECT_OVERVIEW.md` | `—` | — | Trade/city supply экономика |
+| World travel system | Канон (дизайн) | Travel | `docs/canon/12D_WORLD_TRAVEL_CANON.md` | `docs/entry/01_PROJECT_OVERVIEW.md`, `docs/runtime/03_OPERATIONS.md` | `—` | — | Простые ad-hoc телепорты |
+| Trade & city state macro-system | Канон (дизайн) | Trade/Economy | `docs/canon/12E_TRADE_AND_CITY_STATE_CANON.md` | `docs/entry/01_PROJECT_OVERVIEW.md`, `docs/governance/10_DECISIONS_LOG.md` | `—` | DEC-2026-03-14-002 | Розничная торговля как вся экономика |
+| Docs governance: index vs canonical volumes | Принято и активно | Documentation governance | `docs/entry/01_PROJECT_OVERVIEW.md` | `README.md`, `docs/governance/10_DECISIONS_LOG.md`, `docs/entry/01_PROJECT_OVERVIEW.md` | `—` | DEC-2026-03-14-001, DEC-2026-03-14-003 | Новый «супер master-plan» поверх томов |
 
 ---
 
@@ -81,6 +81,6 @@
 
 ## 5) Синхронизация (операционный чек)
 
-- При изменении идеи обновлять эту карту и проверять `docs/entry/00_PROJECT_LIBRARY.md`.
+- При изменении идеи обновлять эту карту и проверять `docs/entry/01_PROJECT_OVERVIEW.md`.
 - Если change архитектурный — добавить DEC, затем проставить DEC-link в таблице.
 - Если идея меняет runtime состояние — синхронизировать `02/03/04/12B/18` по зоне ответственности.

@@ -35,11 +35,11 @@
 ### DEC-2026-03-14-001: Единый источник истины для master-пакета документации
 - **Дата:** 2026-03-14
 - **Статус:** accepted
-- **Контекст:** В master-пакете возникали пересечения между индексом (`12_MASTER_PLAN`), runtime-сводом (`12B`) и обзором (`README`), что затрудняло сопровождение.
-- **Решение:** Зафиксировать роль `12_MASTER_PLAN` как индексного документа; сводную runtime-нормативку держать в `12B`; `README` оставить обзорным.
+- **Контекст:** В master-пакете возникали пересечения между индексом (`01_PROJECT_OVERVIEW`), runtime-сводом (`12B`) и обзором (`README`), что затрудняло сопровождение.
+- **Решение:** Зафиксировать роль `01_PROJECT_OVERVIEW` как индексного документа; сводную runtime-нормативку держать в `12B`; `README` оставить обзорным.
 - **Обоснование:** Уменьшение логического дублирования и повышение предсказуемости правок.
 - **Последствия:** Любые изменения профильной нормативки сначала в тематических документах, затем синхронизация в `12B`.
-- **Ссылки:** `docs/entry/12_MASTER_PLAN.md`, `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `README.md`
+- **Ссылки:** `docs/entry/01_PROJECT_OVERVIEW.md`, `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `README.md`
 
 ### DEC-2026-03-14-002: Выделить торговлю и городское состояние в отдельный канонический том
 - **Дата:** 2026-03-14
@@ -48,16 +48,16 @@
 - **Решение:** Добавить отдельный канонический документ `docs/canon/12E_TRADE_AND_CITY_STATE_CANON.md` и включить его в индекс master-плана.
 - **Обоснование:** Устранение «серой зоны» в документации и фиксация агрегированной модели, совместимой с ограничениями NWN2 (без per-NPC экономической симуляции).
 - **Последствия:** Trade/городское состояние теперь имеют единый источник истины; последующие изменения в этой области должны вноситься в `12E` с синхронизацией ссылок в реестре и индексе.
-- **Ссылки:** `docs/canon/12E_TRADE_AND_CITY_STATE_CANON.md`, `docs/entry/12_MASTER_PLAN.md`, `docs/governance/16_IDEA_INVENTORY_AND_SYNC_MAP.md`
+- **Ссылки:** `docs/canon/12E_TRADE_AND_CITY_STATE_CANON.md`, `docs/entry/01_PROJECT_OVERVIEW.md`, `docs/governance/16_IDEA_INVENTORY_AND_SYNC_MAP.md`
 
 ### DEC-2026-03-14-003: Единая библиотека идей как navigation/memory слой без дублирования канона
 - **Дата:** 2026-03-14
 - **Статус:** accepted
 - **Контекст:** Карта идей (`16`) содержала полезный реестр, но не покрывала единый библиотечный каркас с domain index и унифицированной idea-card структурой.
-- **Решение:** Ввести `docs/entry/00_PROJECT_LIBRARY.md` как библиотечный навигатор и добавить supporting-слой в `docs/library/*` (domain index + template), сохранив `12A–12E` и профильные runtime-доки в роли source of truth.
+- **Решение:** Ввести `docs/entry/01_PROJECT_OVERVIEW.md` как библиотечный навигатор и добавить supporting-слой в `docs/library/*` (domain index + template), сохранив `12A–12E` и профильные runtime-доки в роли source of truth.
 - **Обоснование:** Это сохраняет уже принятые решения, снижает риск повторного проектирования и устраняет дубли за счёт routing-правил.
 - **Последствия:** Любая новая идея описывается через карточку/реестр и обязана ссылаться на единственный главный источник, runtime-связи и DEC-привязки.
-- **Ссылки:** `docs/entry/00_PROJECT_LIBRARY.md`, `docs/governance/16_IDEA_INVENTORY_AND_SYNC_MAP.md`, `docs/library/DOMAIN_INDEX.md`, `docs/library/IDEA_CARD_TEMPLATE.md`
+- **Ссылки:** `docs/entry/01_PROJECT_OVERVIEW.md`, `docs/governance/16_IDEA_INVENTORY_AND_SYNC_MAP.md`, `docs/library/DOMAIN_INDEX.md`, `docs/library/IDEA_CARD_TEMPLATE.md`
 
 
 ### DEC-2026-03-15-004: Расширение legal pipeline до судебного lifecycle

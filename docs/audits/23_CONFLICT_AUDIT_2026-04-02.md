@@ -23,16 +23,16 @@
 ### C-01 — Два «входа по умолчанию» для ежедневной работы
 
 - `README.md` позиционирует `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` как рабочую точку входа текущей фазы.
-- `docs/entry/12_MASTER_PLAN.md` одновременно остаётся базовым навигационным индексом после `17`.
+- `docs/entry/01_PROJECT_OVERVIEW.md` одновременно остаётся базовым навигационным индексом после `17`.
 
-Риск: новый участник может начать с `12_MASTER_PLAN.md` и пропустить, что для активной фазы нужно сначала открывать `21`.
+Риск: новый участник может начать с `01_PROJECT_OVERVIEW.md` и пропустить, что для активной фазы нужно сначала открывать `21`.
 
-Решение: унифицировать формулировку «для active development first-open = 21» во всех overview-файлах и оставить `12_MASTER_PLAN.md` как secondary index.
+Решение: унифицировать формулировку «для active development first-open = 21» во всех overview-файлах и оставить `01_PROJECT_OVERVIEW.md` как secondary index.
 
 ### C-02 — Формальный тезис «нет конфликтов» vs открытые conflict-resolution блоки
 
 - `README.md` содержит DoD-пункт «Нет конфликтов между обзорными документами и профильными канонами».
-- В `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`, `docs/entry/12_MASTER_PLAN.md`, `docs/governance/16_IDEA_INVENTORY_AND_SYNC_MAP.md`, `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md` есть явные секции про конфликт формулировок/разрешение конфликтов.
+- В `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`, `docs/entry/01_PROJECT_OVERVIEW.md`, `docs/governance/16_IDEA_INVENTORY_AND_SYNC_MAP.md`, `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md` есть явные секции про конфликт формулировок/разрешение конфликтов.
 
 Риск: тезис в README читается как «конфликтов вообще нет», хотя фактически есть открытые точки синхронизации и метод разрешения.
 
@@ -74,7 +74,7 @@
 ## 5) Минимальный план коррекции (без изменения механик)
 
 1. В `README.md` переформулировать DoD-пункт про конфликты (C-02).
-2. В `docs/entry/12_MASTER_PLAN.md` в разделе роли добавить однострочное правило: при active development первым открывать `21` (C-01).
+2. В `docs/entry/01_PROJECT_OVERVIEW.md` в разделе роли добавить однострочное правило: при active development первым открывать `21` (C-01).
 3. В `README.md` рядом с owner-decisions добавить ссылку на acceptance journal как единственный runtime-ready индикатор (C-03).
 4. В `docs/governance/16_IDEA_INVENTORY_AND_SYNC_MAP.md` заменить reset-дисклеймер на актуальную режимную оговорку (C-04).
 5. В `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md` обновить статусную строку под active development (C-05).
@@ -87,8 +87,8 @@
 
 | ID | Источник | Что проверялось | Статус | Комментарий |
 |---|---|---|---|---|
-| V-01 | `README.md` | Есть ли явная привязка active-фазы к control panel | pass | Есть, но требует унификации с `12_MASTER_PLAN` (см. C-01). |
-| V-02 | `docs/entry/12_MASTER_PLAN.md` | Не конкурирует ли индекс с operational entry-point | warn | Есть правило про `21`, но легко пропускается при чтении «после 17». |
+| V-01 | `README.md` | Есть ли явная привязка active-фазы к control panel | pass | Есть, но требует унификации с `01_PROJECT_OVERVIEW` (см. C-01). |
+| V-02 | `docs/entry/01_PROJECT_OVERVIEW.md` | Не конкурирует ли индекс с operational entry-point | warn | Есть правило про `21`, но легко пропускается при чтении «после 17». |
 | V-03 | `docs/governance/16_IDEA_INVENTORY_AND_SYNC_MAP.md` | Актуален ли mode-дисклеймер | fail | Дисклеймер указывает на reset/doc-only режим, что устарело (C-04). |
 | V-04 | `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md` | Соответствует ли статус текущей фазе | fail | Строка статуса остаётся `documentation/design mode` (C-05). |
 | V-05 | `docs/runtime/22_RUNTIME_TRUTH_AND_ACTIVITY_JOURNAL.md` | Подтверждён ли active runtime контур | pass | Файл явно фиксирует текущую реализацию и активный журнал. |

@@ -12,7 +12,7 @@
 Он:
 - не заменяет `README.md`;
 - не заменяет `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`;
-- не заменяет `docs/entry/12_MASTER_PLAN.md`;
+- не заменяет `docs/entry/01_PROJECT_OVERVIEW.md`;
 - не дублирует нормативную детализацию `12A–12E`, `13`, `14`.
 
 Если нужна общая картина проекта, открывается `17`, а не этот паспорт.
