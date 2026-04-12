@@ -37,8 +37,14 @@ void main()
     SetLocalString(oModule, "dl_smk_bs_10_dlg", GetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE));
     SetLocalString(oModule, "dl_smk_bs_10_srv", GetLocalString(oNpc, DL_L_NPC_SERVICE_MODE));
     SetLocalString(oModule, "dl_smk_bs_10_tag", GetLocalString(oNpc, DL_L_NPC_MAT_TAG));
-    SetLocalInt(oModule, "dl_smk_bs_10_act", GetLocalInt(oNpc, DL_L_NPC_ACTIVITY_ID));
-    SetLocalString(oModule, "dl_smk_bs_10_anim", GetLocalString(oNpc, DL_L_NPC_ANIM_SET));
+    SetLocalString(oModule, "dl_smk_bs_10_kind", GetLocalString(oNpc, DL_L_NPC_WORK_KIND));
+    SetLocalString(oModule, "dl_smk_bs_10_wst", GetLocalString(oNpc, DL_L_NPC_WORK_STATUS));
+    SetLocalString(oModule, "dl_smk_bs_10_wdiag", GetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC));
+
+    DL_ApplyDirectiveSkeleton(oNpc, DL_ResolveNpcDirectiveAtHour(oNpc, 11));
+    SetLocalString(oModule, "dl_smk_bs_11_kind", GetLocalString(oNpc, DL_L_NPC_WORK_KIND));
+    SetLocalString(oModule, "dl_smk_bs_11_wst", GetLocalString(oNpc, DL_L_NPC_WORK_STATUS));
+    SetLocalString(oModule, "dl_smk_bs_11_wdiag", GetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC));
 
     DL_ApplyDirectiveSkeleton(oNpc, DL_ResolveNpcDirectiveAtHour(oNpc, 21));
     SetLocalString(oModule, "dl_smk_bs_21_dlg", GetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE));
@@ -62,8 +68,12 @@ void main()
         GetLocalString(oModule, "dl_smk_bs_10_dlg") == DL_DIALOGUE_WORK &&
         GetLocalString(oModule, "dl_smk_bs_10_srv") == DL_SERVICE_AVAILABLE &&
         GetLocalString(oModule, "dl_smk_bs_10_tag") == DL_MAT_WORK &&
-        GetLocalInt(oModule, "dl_smk_bs_10_act") == DL_ARCH_ACT_NPC_FORGE &&
-        GetLocalString(oModule, "dl_smk_bs_10_anim") == DL_ARCH_ANIMS_FORGE &&
+        GetLocalString(oModule, "dl_smk_bs_10_kind") == DL_WORK_KIND_FORGE &&
+        GetLocalString(oModule, "dl_smk_bs_10_wst") == "missing_waypoints" &&
+        GetLocalString(oModule, "dl_smk_bs_10_wdiag") == "need_forge_and_craft_waypoints" &&
+        GetLocalString(oModule, "dl_smk_bs_11_kind") == DL_WORK_KIND_CRAFT &&
+        GetLocalString(oModule, "dl_smk_bs_11_wst") == "missing_waypoints" &&
+        GetLocalString(oModule, "dl_smk_bs_11_wdiag") == "need_forge_and_craft_waypoints" &&
         GetLocalInt(oModule, "dl_smk_bs_21") == DL_DIR_SLEEP &&
         GetLocalString(oModule, "dl_smk_bs_21_dlg") == DL_DIALOGUE_SLEEP &&
         GetLocalString(oModule, "dl_smk_bs_21_srv") == DL_SERVICE_OFF &&

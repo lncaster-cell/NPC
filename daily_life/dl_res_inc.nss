@@ -14,6 +14,10 @@ const string DL_L_NPC_SLEEP_PHASE = "dl_npc_sleep_phase";
 const string DL_L_NPC_SLEEP_STATUS = "dl_npc_sleep_status";
 const string DL_L_NPC_SLEEP_TARGET = "dl_npc_sleep_target";
 const string DL_L_NPC_SLEEP_DIAGNOSTIC = "dl_npc_sleep_diagnostic";
+const string DL_L_NPC_WORK_KIND = "dl_npc_work_kind";
+const string DL_L_NPC_WORK_TARGET = "dl_npc_work_target";
+const string DL_L_NPC_WORK_STATUS = "dl_npc_work_status";
+const string DL_L_NPC_WORK_DIAGNOSTIC = "dl_npc_work_diagnostic";
 const string DL_L_NPC_ACTIVITY_ID = "dl_npc_activity_id";
 const string DL_L_NPC_ANIM_SET = "dl_npc_anim_set";
 
@@ -48,6 +52,10 @@ const int DL_SLEEP_PHASE_ON_BED = 3;
 
 const float DL_SLEEP_APPROACH_RADIUS = 1.50;
 const float DL_SLEEP_BED_RADIUS = 1.10;
+const float DL_WORK_ANCHOR_RADIUS = 1.60;
+
+const string DL_WORK_KIND_FORGE = "forge";
+const string DL_WORK_KIND_CRAFT = "craft";
 
 int DL_NormalizeHour(int nHour)
 {
@@ -158,7 +166,33 @@ object DL_GetSleepWaypointByTag(string sTag)
     return oWp;
 }
 
+object DL_GetWorkWaypointByTag(string sTag)
+{
+    if (sTag == "")
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oWp = GetWaypointByTag(sTag);
+    if (!GetIsObjectValid(oWp))
+    {
+        return OBJECT_INVALID;
+    }
+
+    return oWp;
+}
+
 int DL_IsSleepWaypointInNpcArea(object oNpc, object oWp)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oWp))
+    {
+        return FALSE;
+    }
+
+    return GetArea(oWp) == GetArea(oNpc);
+}
+
+int DL_IsWorkWaypointInNpcArea(object oNpc, object oWp)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oWp))
     {
@@ -215,12 +249,56 @@ object DL_ResolveSleepBedWaypoint(object oNpc)
     return OBJECT_INVALID;
 }
 
+object DL_ResolveBlacksmithForgeWaypoint(object oNpc)
+{
+    string sNpcTag = GetTag(oNpc);
+    object oWp = DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_forge");
+    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    {
+        return oWp;
+    }
+
+    oWp = DL_GetWorkWaypointByTag("dl_work_forge");
+    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    {
+        return oWp;
+    }
+
+    return OBJECT_INVALID;
+}
+
+object DL_ResolveBlacksmithCraftWaypoint(object oNpc)
+{
+    string sNpcTag = GetTag(oNpc);
+    object oWp = DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_craft");
+    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    {
+        return oWp;
+    }
+
+    oWp = DL_GetWorkWaypointByTag("dl_work_craft");
+    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    {
+        return oWp;
+    }
+
+    return OBJECT_INVALID;
+}
+
 void DL_ClearSleepExecutionState(object oNpc)
 {
     DeleteLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+}
+
+void DL_ClearWorkExecutionState(object oNpc)
+{
+    DeleteLocalString(oNpc, DL_L_NPC_WORK_KIND);
+    DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
+    DeleteLocalString(oNpc, DL_L_NPC_WORK_STATUS);
+    DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
 }
 
 void DL_ClearActivityPresentation(object oNpc)
@@ -250,11 +328,28 @@ void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
 
     if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_BLACKSMITH)
     {
+        if (GetLocalString(oNpc, DL_L_NPC_WORK_KIND) == DL_WORK_KIND_CRAFT)
+        {
+            DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_CRAFT);
+            return;
+        }
+
         DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
         return;
     }
 
     DL_ClearActivityPresentation(oNpc);
+}
+
+string DL_ResolveBlacksmithWorkKindAtHour(int nHour)
+{
+    nHour = DL_NormalizeHour(nHour);
+    if ((nHour % 2) == 0)
+    {
+        return DL_WORK_KIND_FORGE;
+    }
+
+    return DL_WORK_KIND_CRAFT;
 }
 
 string DL_TrimAnimToken(string sToken)
@@ -329,6 +424,22 @@ void DL_PlaySleepAnimation(object oNpc)
     }
 
     PlayCustomAnimation(oNpc, sLoopAnim, TRUE);
+}
+
+void DL_PlayWorkAnimation(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    string sAnim = DL_GetFirstAnimToken(GetLocalString(oNpc, DL_L_NPC_ANIM_SET));
+    if (sAnim == "")
+    {
+        return;
+    }
+
+    PlayCustomAnimation(oNpc, sAnim, TRUE);
 }
 
 void DL_ExecuteSleepDirective(object oNpc)
@@ -414,6 +525,56 @@ void DL_ExecuteSleepDirective(object oNpc)
     SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "on_bed");
 }
 
+void DL_ExecuteWorkDirective(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) != DL_PROFILE_BLACKSMITH)
+    {
+        DL_ClearWorkExecutionState(oNpc);
+        return;
+    }
+
+    string sKind = DL_ResolveBlacksmithWorkKindAtHour(GetTimeHour());
+    object oForge = DL_ResolveBlacksmithForgeWaypoint(oNpc);
+    object oCraft = DL_ResolveBlacksmithCraftWaypoint(oNpc);
+
+    if (!GetIsObjectValid(oForge) || !GetIsObjectValid(oCraft))
+    {
+        SetLocalString(oNpc, DL_L_NPC_WORK_KIND, sKind);
+        SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "missing_waypoints");
+        SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_forge_and_craft_waypoints");
+        DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
+        DL_ClearActivityPresentation(oNpc);
+        return;
+    }
+
+    object oTarget = sKind == DL_WORK_KIND_CRAFT ? oCraft : oForge;
+    location lTarget = GetLocation(oTarget);
+
+    SetLocalString(oNpc, DL_L_NPC_WORK_KIND, sKind);
+    SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oTarget));
+    DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
+
+    if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
+    {
+        if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
+        {
+            SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "moving_to_anchor");
+            AssignCommand(oNpc, ClearAllActions(TRUE));
+            AssignCommand(oNpc, ActionMoveToLocation(lTarget, TRUE));
+        }
+        return;
+    }
+
+    SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
+    DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
+    DL_PlayWorkAnimation(oNpc);
+}
+
 void DL_SetInteractionModes(object oNpc, string sDialogue, string sService)
 {
     SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, sDialogue);
@@ -431,6 +592,7 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
 
     if (nDirective == DL_DIR_SLEEP)
     {
+        DL_ClearWorkExecutionState(oNpc);
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SLEEP);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SLEEP, DL_SERVICE_OFF);
         DL_ApplyArchiveActivityPresentation(oNpc, nDirective);
@@ -441,13 +603,14 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_WORK);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_AVAILABLE);
         DL_ClearSleepExecutionState(oNpc);
-        DL_ApplyArchiveActivityPresentation(oNpc, nDirective);
+        DL_ExecuteWorkDirective(oNpc);
     }
     else if (nDirective == DL_DIR_SOCIAL)
     {
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
         DL_ClearSleepExecutionState(oNpc);
+        DL_ClearWorkExecutionState(oNpc);
         DL_ClearActivityPresentation(oNpc);
     }
     else
@@ -455,6 +618,7 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_IDLE);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
         DL_ClearSleepExecutionState(oNpc);
+        DL_ClearWorkExecutionState(oNpc);
         DL_ClearActivityPresentation(oNpc);
     }
 
