@@ -27,5 +27,4 @@
 
 ## Legacy redirects (historical compatibility only)
 
-- `docs/entry/00_PROJECT_LIBRARY.md` — redirect/frozen.
-- `docs/entry/12_MASTER_PLAN.md` — redirect/frozen.
+- Единая legacy redirect entrypoint: `docs/entry/01_PROJECT_OVERVIEW.md`.

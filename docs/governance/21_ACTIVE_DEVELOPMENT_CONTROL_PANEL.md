@@ -33,7 +33,7 @@
 - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
 - `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
-- `docs/runtime/54_DAILY_LIFE_V2_EXECUTION_TASK_LIST_RU.md` (**только frozen redirect, не отдельный roadmap-source**)
+- `docs/entry/01_PROJECT_OVERVIEW.md` (**только frozen redirect, не отдельный roadmap-source**)
 
 Используются для уточнения acceptance-статуса и фактической текущей точки без расширения active doc set.
 

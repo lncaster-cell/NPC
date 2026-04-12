@@ -140,7 +140,7 @@
 ## 8) Связь с каноническими документами
 
 - Общий high-level канон: `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`.
-- Навигационный индекс: `docs/entry/12_MASTER_PLAN.md`.
+- Навигационный индекс: `docs/entry/01_PROJECT_OVERVIEW.md`.
 - Runtime-детализация: `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`.
 - Доменные каноны world-memory: `12A`, `12C`, `12D`, `12E`, `13`, `14`.
 
