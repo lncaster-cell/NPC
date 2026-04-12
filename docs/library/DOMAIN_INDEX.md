@@ -13,7 +13,7 @@
 | Домен | Primary source | Secondary links |
 |---|---|---|
 | Активная разработка Daily Life v2 | `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` | `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`, `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md` |
-| Unified digest (owner + agents) | `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md` | `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`, `docs/runtime/06_SYSTEM_INVARIANTS.md` |
+| Unified digest (owner + agents) | `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md` | `docs/runtime/43_DAILY_LIFE_UNIFIED_CONTOUR_DIGEST_RU.md`, `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`, `docs/runtime/06_SYSTEM_INVARIANTS.md` |
 | Runtime architecture | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/runtime/02_MECHANICS.md`, `docs/runtime/03_OPERATIONS.md`, `docs/runtime/04_CONTENT_CONTRACTS.md` |
 | World/legal canon | `docs/canon/12A_WORLD_MODEL_CANON.md` | `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`, `docs/governance/10_DECISIONS_LOG.md` |
 | Daily Life canon | `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md` | `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`, `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md` |
