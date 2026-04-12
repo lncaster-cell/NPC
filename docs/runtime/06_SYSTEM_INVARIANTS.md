@@ -1,7 +1,7 @@
 # Ambient Life v2 — System Invariants & Principles
 
 Дата синхронизации: 2026-04-01  
-Источник: `scripts/daily_life/*`, `docs/01..05`, `README.md`.  
+Источник: `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`, `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`, `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`, `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`, `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`.  
 Исключения аудита: `third party/*` и внутренний компилятор не анализируются и не изменяются.
 
 ## 1. Глобальные архитектурные инварианты
@@ -51,7 +51,7 @@
 
 ## 7. Инварианты разработки и аудита
 
-- Любые изменения `scripts/ambient_life/al_*` сопровождаются perf-проверкой S80/S100/S120.
+- Любые изменения `daily_life/*.nss` сопровождаются perf-проверкой S80/S100/S120.
 - Документация должна фиксировать:
   1) реализовано,
   2) запланировано,

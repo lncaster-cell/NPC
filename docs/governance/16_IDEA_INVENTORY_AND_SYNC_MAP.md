@@ -1,12 +1,16 @@
 # Ambient Life v2 — IDEA INVENTORY & SYNC MAP
 
-Дата: 2026-03-14
+Дата: 2026-04-12
 Статус: Active
 Назначение: единый инвентарь идей проекта с source of truth, статусами, runtime-привязкой и anti-duplication заметками.
 
 ---
 
-> ℹ️ Runtime-привязка в таблице синхронизирована с `scripts/daily_life/*` (проверка 2026-04-03). Для legacy-имен `al_*` используйте `docs/runtime/12B_DAILY_LIFE_V1_LEGACY_TO_RUNTIME_MAPPING.md`.
+> ℹ️ Runtime-привязка в таблице синхронизирована с `daily_life/*` (проверка 2026-04-12). Для legacy-имен `al_*` используйте `docs/runtime/12B_DAILY_LIFE_V1_LEGACY_TO_RUNTIME_MAPPING.md`.
+> 
+> Path-policy (дословно):
+> Канонический runtime workspace path: `daily_life/`.
+> Любые упоминания `scripts/daily_life/` считаются legacy и не используются для новых шагов.
 
 ---
 
@@ -24,7 +28,7 @@
 
 | Идея | Статус | Домен | Source of truth | Связанные документы | Связанные runtime-файлы | Связанные DEC | Не путать с |
 |---|---|---|---|---|---|---|---|
-| Area-centric orchestration + bounded event-driven runtime | Реализовано (база) | Runtime | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/runtime/06_SYSTEM_INVARIANTS.md`, `docs/runtime/02_MECHANICS.md`, `README.md` | `scripts/daily_life/dl_area_tick.nss`, `dl_area_inc.nss`, `dl_worker_inc.nss`, `dl_types_inc.nss` | DEC-2026-03-14-001 | Per-NPC heartbeat архитектура |
+| Area-centric orchestration + bounded event-driven runtime | Реализовано (база) | Runtime | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/runtime/06_SYSTEM_INVARIANTS.md`, `docs/runtime/02_MECHANICS.md`, `README.md` | `daily_life/dl_area_tick.nss`, `daily_life/dl_area_inc.nss`, `daily_life/dl_worker_inc.nss`, `daily_life/dl_types_inc.nss` | DEC-2026-03-14-001 | Per-NPC heartbeat архитектура |
 | Registry/cache/dispatch discipline | Реализовано | Runtime | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/governance/18_REBUILD_RESET_CONTEXT.md`, `docs/runtime/07_SCENARIOS_AND_ALGORITHMS.md` | `dl_worker_inc.nss`, `dl_util_inc.nss`, `dl_log_inc.nss` | DEC-2026-03-14-001 | Глобальный world-scan регистр |
 | Routine pipeline (route/transition/sleep/activity/schedule) | Реализовано (Stage I.2) | Runtime | `docs/runtime/02_MECHANICS.md` | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `docs/governance/18_REBUILD_RESET_CONTEXT.md` | `dl_schedule_inc.nss`, `dl_activity_inc.nss`, `dl_resolver_inc.nss`, `dl_resync_inc.nss`, `dl_anchor_inc.nss` | — | Reactive/crime контур |
 | Полная design-спецификация поведения NPC (state machine + recovery + bounded policy) | Канон (дизайн, специализированный том) | Runtime | `docs/canon/20_NPC_BEHAVIOR_SYSTEM_DESIGN_RU.md` | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `docs/canon/17_UNIFIED_GAME_DESIGN_BRIEF_RU.md`, `docs/entry/12_MASTER_PLAN.md` | `—` | — | Обзорный runtime summary без полного описания автомата |
@@ -34,10 +38,10 @@
 | NWN2 world/legal 3-layer model | Канон | World/Legal | `docs/canon/12A_WORLD_MODEL_CANON.md` | `README.md`, `docs/entry/12_MASTER_PLAN.md` | `—` | — | Фракции NWN2 как замена правовой модели |
 | LawProfile + law modes + enforcement semantics | Канон | World/Legal | `docs/canon/12A_WORLD_MODEL_CANON.md` | `docs/governance/18_REBUILD_RESET_CONTEXT.md`, `docs/runtime/03_OPERATIONS.md` | `—` | — | Простая reputation/faction реакция |
 | Citizenship / titles / authority grants / document validation | Канон | World/Legal | `docs/canon/12A_WORLD_MODEL_CANON.md` | `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md` | `—` | — | Только inventory ownership без правовых прав |
-| Crime/witness/alarm legal chain | Канон + Planned runtime delivery | World/Legal + Runtime | `docs/canon/12A_WORLD_MODEL_CANON.md` | `docs/governance/18_REBUILD_RESET_CONTEXT.md`, `docs/runtime/03_OPERATIONS.md` | partial hooks: `dl_resolver_inc.nss` (`al_legal_followup_pending`) | — | Уже полностью реализованный trial pipeline |
+| Crime/witness/alarm legal chain | Канон + Planned runtime delivery | World/Legal + Runtime | `docs/canon/12A_WORLD_MODEL_CANON.md` | `docs/governance/18_REBUILD_RESET_CONTEXT.md`, `docs/runtime/03_OPERATIONS.md` | partial hooks: `dl_resolver_inc.nss` (`al_legal_followup_pending`) _(legacy reference)_ | — | Уже полностью реализованный trial pipeline |
 | Court mechanics (evidence/hearing/verdict/sanctions) | Канон (дизайн) + Planned runtime delivery | World/Legal + Runtime | `docs/canon/12A_WORLD_MODEL_CANON.md` | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md`, `docs/runtime/03_OPERATIONS.md` | `—` | DEC-2026-03-15-004 | Только арест без процессуального продолжения |
 | Stage I.3 reinforcement policy | Planned | Runtime/Operations | `docs/governance/18_REBUILD_RESET_CONTEXT.md` | `docs/runtime/03_OPERATIONS.md` | (target subsystem) city/react/legal hooks | — | Текущий Stage I.2 alarm FSM |
-| Stage I.3 surrender→arrest→case intake→trial→sentence | Planned | Runtime + Legal | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/runtime/03_OPERATIONS.md`, `docs/canon/12A_WORLD_MODEL_CANON.md`, `docs/governance/18_REBUILD_RESET_CONTEXT.md` | future from `dl_resolver_inc.nss` legal hook | DEC-2026-03-15-004 | Crime/alarm detection без legal handoff |
+| Stage I.3 surrender→arrest→case intake→trial→sentence | Planned | Runtime + Legal | `docs/runtime/12B_RUNTIME_MASTER_PLAN.md` | `docs/runtime/03_OPERATIONS.md`, `docs/canon/12A_WORLD_MODEL_CANON.md`, `docs/governance/18_REBUILD_RESET_CONTEXT.md` | future from `dl_resolver_inc.nss` legal hook _(legacy reference)_ | DEC-2026-03-15-004 | Crime/alarm detection без legal handoff |
 | Stage I.3 QA smoke runbook | Draft (готов к активации) | QA/Operations | `docs/runtime/03_OPERATIONS.md` | `docs/governance/18_REBUILD_RESET_CONTEXT.md`, `docs/runtime/03_OPERATIONS.md` | `—` | — | Полный регрессионный тест-план |
 | Player property system | Канон (дизайн) | Property | `docs/canon/12C_PLAYER_PROPERTY_SYSTEM.md` | `docs/canon/12A_WORLD_MODEL_CANON.md`, `docs/entry/12_MASTER_PLAN.md` | `—` | — | Trade/city supply экономика |
 | World travel system | Канон (дизайн) | Travel | `docs/canon/12D_WORLD_TRAVEL_CANON.md` | `docs/entry/12_MASTER_PLAN.md`, `docs/runtime/03_OPERATIONS.md` | `—` | — | Простые ad-hoc телепорты |

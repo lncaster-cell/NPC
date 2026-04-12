@@ -17,6 +17,7 @@
 - Это **не равно** полному закрытию Milestone A.
 - Обязательный acceptance gate по **Scenario F** и **Scenario G** закрыт (`PASS/PASS`).
 - Текущая рабочая точка: сценарии A–E (первый целевой vertical slice — `BLACKSMITH` A/B как `WORK/SLEEP`).
+- **Текущий микро-фокус итерации:** не расширять vertical slice дальше, а **закрыть именно `SLEEP` directive scenario** как устойчивый execution-path, включая sleep behavior / sleep presentation / sleep animations без визуальной дёрготни и ложного state-advance.
 - Переход к Step 07+ по-прежнему не подтверждён до закрытия A–G целиком.
 
 ## 2) Active doc set (обязательный)
@@ -32,6 +33,7 @@
 - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
 - `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
 - `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
+- `docs/runtime/54_DAILY_LIFE_V2_EXECUTION_TASK_LIST_RU.md` (**только frozen redirect, не отдельный roadmap-source**)
 
 Используются для уточнения acceptance-статуса и фактической текущей точки без расширения active doc set.
 
