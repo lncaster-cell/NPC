@@ -42,7 +42,8 @@ const int DL_DIR_WORK = 2;
 const int DL_DIR_SOCIAL = 3;
 const int DL_SLEEP_PHASE_NONE = 0;
 const int DL_SLEEP_PHASE_MOVING = 1;
-const int DL_SLEEP_PHASE_ON_BED = 2;
+const int DL_SLEEP_PHASE_JUMPING = 2;
+const int DL_SLEEP_PHASE_ON_BED = 3;
 
 const float DL_SLEEP_APPROACH_RADIUS = 1.50;
 const float DL_SLEEP_BED_RADIUS = 1.10;
@@ -221,6 +222,80 @@ void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
     DL_ClearActivityPresentation(oNpc);
 }
 
+string DL_TrimAnimToken(string sToken)
+{
+    int nStart = 0;
+    int nEnd = GetStringLength(sToken);
+
+    while (nStart < nEnd && GetSubString(sToken, nStart, 1) == " ")
+    {
+        nStart = nStart + 1;
+    }
+
+    while (nEnd > nStart && GetSubString(sToken, nEnd - 1, 1) == " ")
+    {
+        nEnd = nEnd - 1;
+    }
+
+    return GetSubString(sToken, nStart, nEnd - nStart);
+}
+
+string DL_GetFirstAnimToken(string sAnimSet)
+{
+    int nComma = FindSubString(sAnimSet, ",");
+    if (nComma < 0)
+    {
+        return DL_TrimAnimToken(sAnimSet);
+    }
+
+    return DL_TrimAnimToken(GetSubString(sAnimSet, 0, nComma));
+}
+
+string DL_GetSecondAnimToken(string sAnimSet)
+{
+    int nComma = FindSubString(sAnimSet, ",");
+    if (nComma < 0)
+    {
+        return "";
+    }
+
+    string sTail = GetSubString(sAnimSet, nComma + 1, GetStringLength(sAnimSet) - (nComma + 1));
+    int nSecondComma = FindSubString(sTail, ",");
+    if (nSecondComma < 0)
+    {
+        return DL_TrimAnimToken(sTail);
+    }
+
+    return DL_TrimAnimToken(GetSubString(sTail, 0, nSecondComma));
+}
+
+void DL_PlaySleepAnimation(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    string sAnimSet = GetLocalString(oNpc, DL_L_NPC_ANIM_SET);
+    if (sAnimSet == "")
+    {
+        sAnimSet = DL_ARCH_ANIMS_SLEEP_BED;
+    }
+
+    string sLoopAnim = DL_GetSecondAnimToken(sAnimSet);
+    if (sLoopAnim == "")
+    {
+        sLoopAnim = DL_GetFirstAnimToken(sAnimSet);
+    }
+
+    if (sLoopAnim == "")
+    {
+        return;
+    }
+
+    PlayCustomAnimation(oNpc, sLoopAnim, TRUE);
+}
+
 void DL_ExecuteSleepDirective(object oNpc)
 {
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
@@ -228,29 +303,47 @@ void DL_ExecuteSleepDirective(object oNpc)
 
     if (!GetIsObjectValid(oApproach) || !GetIsObjectValid(oBed))
     {
+        SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_NONE);
         SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "missing_waypoints");
         DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
         return;
     }
 
-    SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, GetTag(oBed));
+    string sTargetTag = GetTag(oBed);
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, sTargetTag);
 
     location lApproach = GetLocation(oApproach);
     location lBed = GetLocation(oBed);
+    int nPhase = GetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
+    string sStatus = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
 
     if (GetDistanceBetweenLocations(GetLocation(oNpc), lApproach) > DL_SLEEP_APPROACH_RADIUS)
     {
-        SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_MOVING);
-        SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "moving_to_approach");
-        AssignCommand(oNpc, ClearAllActions(TRUE));
-        AssignCommand(oNpc, ActionMoveToLocation(lApproach, TRUE));
+        if (nPhase != DL_SLEEP_PHASE_MOVING || sStatus != "moving_to_approach")
+        {
+            SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_MOVING);
+            SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "moving_to_approach");
+            AssignCommand(oNpc, ClearAllActions(TRUE));
+            AssignCommand(oNpc, ActionMoveToLocation(lApproach, TRUE));
+        }
         return;
     }
 
     if (GetDistanceBetweenLocations(GetLocation(oNpc), lBed) > DL_SLEEP_BED_RADIUS)
     {
-        AssignCommand(oNpc, ClearAllActions(TRUE));
-        AssignCommand(oNpc, ActionJumpToLocation(lBed));
+        if (nPhase != DL_SLEEP_PHASE_JUMPING || sStatus != "jumping_to_bed")
+        {
+            SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_JUMPING);
+            SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "jumping_to_bed");
+            AssignCommand(oNpc, ClearAllActions(TRUE));
+            AssignCommand(oNpc, ActionJumpToLocation(lBed));
+        }
+        return;
+    }
+
+    if (nPhase != DL_SLEEP_PHASE_ON_BED || sStatus != "on_bed")
+    {
+        DL_PlaySleepAnimation(oNpc);
     }
 
     SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_ON_BED);
@@ -276,8 +369,8 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
     {
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SLEEP);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SLEEP, DL_SERVICE_OFF);
-        DL_ExecuteSleepDirective(oNpc);
         DL_ApplyArchiveActivityPresentation(oNpc, nDirective);
+        DL_ExecuteSleepDirective(oNpc);
     }
     else if (nDirective == DL_DIR_WORK)
     {
