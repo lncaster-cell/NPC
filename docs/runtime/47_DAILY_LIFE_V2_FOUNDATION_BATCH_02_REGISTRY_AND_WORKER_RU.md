@@ -13,7 +13,7 @@
 ## 2) Что добавлено
 
 ### 2.1 Registry layer
-Добавлен `scripts/daily_life/dl_v2_registry_inc.nss`.
+Добавлен `daily_life/dl_v2_registry_inc.nss`.
 
 Назначение:
 - определить, какой объект является runtime-candidate для Daily Life v2;
@@ -21,7 +21,7 @@
 - выставлять минимальные default-значения (`profile_id`, `state`) при регистрации.
 
 ### 2.2 Worker cursor layer
-Добавлен `scripts/daily_life/dl_v2_worker_inc.nss`.
+Добавлен `daily_life/dl_v2_worker_inc.nss`.
 
 Назначение:
 - получить worker budget и worker cursor для area;
@@ -30,7 +30,7 @@
 - продвигать cursor без resolver/materialization.
 
 ### 2.3 Smoke layer
-Добавлен `scripts/daily_life/dl2_smoke_step_04_registry_worker.nss`.
+Добавлен `daily_life/dl2_smoke_step_04_registry_worker.nss`.
 
 Назначение:
 - локально проверить регистрацию NPC;
@@ -63,3 +63,6 @@
 2. Привязать `dl_v2_bootstrap.nss` к реальному module load path.
 3. Ввести первый resolver helper без materialization.
 4. После этого вводить anchor policy helper и только потом materialization plan.
+---
+
+**Текущий canonical runtime path: `daily_life/`.**
