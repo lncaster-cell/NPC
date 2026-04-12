@@ -31,3 +31,4 @@ PR-чек-лист (docs):
 - Все документы вне active set считаются reference/legacy.
 - Они могут использоваться для исторического контекста, но не как источник новых обязательных требований.
 - Новые “digest”/“meta-index” документы не создаются.
+- `docs/runtime/54_DAILY_LIFE_V2_EXECUTION_TASK_LIST_RU.md` зафиксирован как **frozen redirect** и не используется как отдельный главный execution-план.

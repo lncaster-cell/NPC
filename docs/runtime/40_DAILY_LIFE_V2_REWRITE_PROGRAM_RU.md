@@ -120,3 +120,35 @@
 - Не делать массовый foundation-refactor ради красоты.
 - Не переносить logging из чата в другой канал в этой итерации.
 - Не возвращать legacy reference path.
+
+## 9. Backlog candidates (вынесено из бывшего roadmap-слоя `54_*`)
+
+Эти пункты **не являются активным execution-планом текущей итерации**.  
+Они сохранены как кандидаты на следующую декомпозицию **после** закрытия текущего фокуса (`BLACKSMITH A/B`, затем `C/D/E`, затем итоговый Milestone A verdict).
+
+- Anchor policy maturity:
+  - `directive -> anchor_group`;
+  - fallback на альтернативный anchor в группе.
+- Activity layer maturity:
+  - формальный переход `directive + anchor context -> activity`;
+  - отдельная эволюция activity-слоя без смешения с resolver.
+- Materialization maturity:
+  - разделение instant/local-walk/soft-hide path;
+  - controlled visual activation по tier (`WARM` prep, `HOT` full local runtime, `FROZEN` без фоновой жизни).
+- Dialogue/Service refresh:
+  - стабильный `directive -> dialogue mode`;
+  - `directive -> service_available` для service NPC.
+- Base/Fallback/Absence hardening:
+  - обработка `BASE_INVALID/BASE_LOST`;
+  - fallback chain до `IDLE_BASE/RETURN_BASE` и дальше до `UNASSIGNED/ABSENT`.
+- External override / resync / handoff:
+  - read-only override input shell;
+  - time/context/tier resync path;
+  - vacancy/role handoff shell (вне core resolver).
+- Worker/fairness/profiling:
+  - full fairness loop;
+  - минимальные profiling/observability counters (`trace`, degradation counters, binding integrity checks).
+- Acceptance expansion (post-current scope):
+  - owner-facing runbook расширенного покрытия;
+  - owner-run сценарии beyond текущего vertical slice (`sleep/work/tier/resync` в расширенном составе);
+  - единый PASS/FAIL протокол на расширенный scope.
