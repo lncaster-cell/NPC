@@ -1,7 +1,7 @@
 # 53 — Daily Life Current Execution Plan (RU)
 
 > Статус: **ACTIVE**  
-> Дата: **2026-04-11**  
+> Дата: **2026-04-12**  
 > Назначение: короткий рабочий план дальнейшей разработки Daily Life **от текущего фактического состояния**, без смешения с legacy-планами и без двусмысленности вокруг owner-run.
 
 ---
@@ -15,12 +15,12 @@
 - временное debug/logging остаётся в игровом чате;
 - active runtime workspace: `daily_life/`.
 
-Не подтверждено как acceptance целиком:
-- вертикальные сценарии A–E (`BLACKSMITH`, `GATE_POST`, `INNKEEPER`, `QUARANTINE`).
-
 Подтверждено как acceptance:
 - Scenario F = PASS (bounded area-enter resync закрыт);
 - Scenario G = PASS (`HOT/WARM` tier-переходы подтверждены на `Gotha Kuznica`/`Gotha`).
+
+Не подтверждено как acceptance целиком:
+- вертикальные сценарии A–E (`BLACKSMITH`, `GATE_POST`, `INNKEEPER`, `QUARANTINE`).
 
 ---
 
@@ -40,9 +40,9 @@
 
 ---
 
-## 3. Следующий реальный план работ
+## 3. Текущая рабочая итерация
 
-### Шаг 1 — Acceptance gate F/G закрыт
+### 3.1 Acceptance gate F/G закрыт
 Зафиксировано:
 - Scenario F = PASS;
 - Scenario G = PASS;
@@ -52,23 +52,23 @@
 Результат:
 - обязательный acceptance gate по F/G закрыт; возврат к этим шагам нужен только при регрессии.
 
-### Шаг 2 — Первый vertical slice: BLACKSMITH A/B (без Step 07+)
-Первый vertical slice по умолчанию:
+### 3.2 Активный первый vertical slice: BLACKSMITH A/B
+Текущий vertical slice:
 - `BLACKSMITH`
 - два состояния:
   - `WORK`
   - `SLEEP`
 
-Почему именно он:
-- уже есть базовый resolver/materialization skeleton;
-- сценарий хорошо наблюдаем в toolset;
-- он даёт проверку `directive -> dialogue/service -> point/materialization` на одном NPC.
+Зафиксировано в коде:
+- у `blacksmith` есть split `WORK/SLEEP`;
+- добавлены минимальные presentation/activity markers;
+- sleep execution/waypoint path уже существует в `daily_life/`.
 
-Результат:
-- первый end-to-end сценарий A/B.
+Практический смысл:
+- текущая итерация — не запуск нового broad step, а доведение первого end-to-end сценария `directive -> dialogue/service -> point/materialization` на одном NPC.
 
-### Шаг 3 — Только после этого расширять дальше
-Следующие кандидаты после blacksmith:
+### 3.3 Что идёт после BLACKSMITH A/B
+Следующие кандидаты после завершения BLACKSMITH A/B:
 1. `LAW / GATE_POST`
 2. `TRADE_SERVICE / INNKEEPER`
 3. `QUARANTINE` override
@@ -89,6 +89,6 @@
 
 Формула ближайшей итерации простая:
 
-`BLACKSMITH A/B -> затем C/D/E по согласованному порядку`
+`доделать BLACKSMITH A/B -> затем C/D/E по согласованному порядку`
 
 Всё остальное считается преждевременным расширением.
