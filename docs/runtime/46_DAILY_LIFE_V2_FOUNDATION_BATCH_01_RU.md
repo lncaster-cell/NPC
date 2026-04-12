@@ -17,7 +17,7 @@
 ## 2) Что добавлено
 
 ### 2.1 Contract layer
-Добавлен `scripts/daily_life/dl_v2_contract_inc.nss`.
+Добавлен `daily_life/dl_v2_contract_inc.nss`.
 
 Назначение:
 - собрать v2 locals и enum-like константы в одном include;
@@ -25,7 +25,7 @@
 - зафиксировать минимальный worker budget default.
 
 ### 2.2 Logging layer
-Добавлен `scripts/daily_life/dl_v2_log_inc.nss`.
+Добавлен `daily_life/dl_v2_log_inc.nss`.
 
 Назначение:
 - централизовать chat logging;
@@ -34,8 +34,8 @@
 
 ### 2.3 Module bootstrap layer
 Добавлены:
-- `scripts/daily_life/dl_v2_bootstrap_inc.nss`
-- `scripts/daily_life/dl_v2_bootstrap.nss`
+- `daily_life/dl_v2_bootstrap_inc.nss`
+- `daily_life/dl_v2_bootstrap.nss`
 
 Назначение:
 - инициализировать module contract;
@@ -43,7 +43,7 @@
 - нормализовать budget и debug/log flags.
 
 ### 2.4 Area layer
-Добавлен `scripts/daily_life/dl_v2_area_inc.nss`.
+Добавлен `daily_life/dl_v2_area_inc.nss`.
 
 Назначение:
 - получить/установить area tier;
@@ -52,8 +52,8 @@
 
 ### 2.5 Smoke layer
 Добавлены:
-- `scripts/daily_life/dl2_smoke_step_02_bootstrap_init.nss`
-- `scripts/daily_life/dl2_smoke_step_03_area_tier.nss`
+- `daily_life/dl2_smoke_step_02_bootstrap_init.nss`
+- `daily_life/dl2_smoke_step_03_area_tier.nss`
 
 Назначение:
 - локально проверять bootstrap contract init;
@@ -87,3 +87,6 @@
 3. Ввести NPC registration helper.
 4. Ввести registry/cursor helper для area worker.
 5. После этого переходить к первому resolver helper.
+---
+
+**Текущий canonical runtime path: `daily_life/`.**

@@ -21,7 +21,7 @@
 ## 3) Что добавлено
 
 ### 3.1 Work resolver include
-Добавлен `scripts/daily_life/dl_v2_work_resolver_inc.nss`.
+Добавлен `daily_life/dl_v2_work_resolver_inc.nss`.
 
 Назначение:
 - ввести минимальный `WORK` directive slice;
@@ -32,7 +32,7 @@
   - иначе `UNASSIGNED`
 
 ### 3.2 Smoke check
-Добавлен `scripts/daily_life/dl2_smoke_step_06_work_resolver.nss`.
+Добавлен `daily_life/dl2_smoke_step_06_work_resolver.nss`.
 
 Проверяет кейсы:
 - `07:00` -> `UNASSIGNED`
@@ -59,3 +59,6 @@
 1. добавить `IDLE_BASE` как следующую owner-approved директиву;
 2. добавить template-aware resolver shell;
 3. перейти к anchor policy только после минимального набора директив.
+---
+
+**Текущий canonical runtime path: `daily_life/`.**
