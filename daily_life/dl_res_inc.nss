@@ -1,5 +1,7 @@
+#include "dl_activity_archive_anim_inc"
+
 // Step 05+: resolver/materialization skeleton.
-// Scope: EARLY_WORKER sleep window + basic BLACKSMITH A/B window split.
+// Scope: EARLY_WORKER sleep window + basic BLACKSMITH WORK/SLEEP window split.
 
 const string DL_L_NPC_DIRECTIVE = "dl_npc_directive";
 const string DL_L_NPC_MAT_REQ = "dl_npc_mat_req";
@@ -11,6 +13,8 @@ const string DL_L_NPC_STATE = "dl_state";
 const string DL_L_NPC_SLEEP_PHASE = "dl_npc_sleep_phase";
 const string DL_L_NPC_SLEEP_STATUS = "dl_npc_sleep_status";
 const string DL_L_NPC_SLEEP_TARGET = "dl_npc_sleep_target";
+const string DL_L_NPC_ACTIVITY_ID = "dl_npc_activity_id";
+const string DL_L_NPC_ANIM_SET = "dl_npc_anim_set";
 
 const string DL_PROFILE_EARLY_WORKER = "early_worker";
 const string DL_PROFILE_BLACKSMITH = "blacksmith";
@@ -93,7 +97,7 @@ int DL_ResolveNpcDirectiveAtHour(object oNpc, int nHour)
         {
             return DL_DIR_WORK;
         }
-        return DL_DIR_SOCIAL;
+        return DL_DIR_SLEEP;
     }
 
     return DL_DIR_NONE;
@@ -183,6 +187,40 @@ void DL_ClearSleepExecutionState(object oNpc)
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
 }
 
+void DL_ClearActivityPresentation(object oNpc)
+{
+    DeleteLocalInt(oNpc, DL_L_NPC_ACTIVITY_ID);
+    DeleteLocalString(oNpc, DL_L_NPC_ANIM_SET);
+}
+
+void DL_SetActivityPresentation(object oNpc, int nActivityId, string sAnimSet)
+{
+    SetLocalInt(oNpc, DL_L_NPC_ACTIVITY_ID, nActivityId);
+    SetLocalString(oNpc, DL_L_NPC_ANIM_SET, sAnimSet);
+}
+
+void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    if (nDirective == DL_DIR_SLEEP)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_SLEEP_BED, DL_ARCH_ANIMS_SLEEP_BED);
+        return;
+    }
+
+    if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_BLACKSMITH)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
+        return;
+    }
+
+    DL_ClearActivityPresentation(oNpc);
+}
+
 void DL_ExecuteSleepDirective(object oNpc)
 {
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
@@ -239,24 +277,28 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SLEEP);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SLEEP, DL_SERVICE_OFF);
         DL_ExecuteSleepDirective(oNpc);
+        DL_ApplyArchiveActivityPresentation(oNpc, nDirective);
     }
     else if (nDirective == DL_DIR_WORK)
     {
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_WORK);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_AVAILABLE);
         DL_ClearSleepExecutionState(oNpc);
+        DL_ApplyArchiveActivityPresentation(oNpc, nDirective);
     }
     else if (nDirective == DL_DIR_SOCIAL)
     {
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
         DL_ClearSleepExecutionState(oNpc);
+        DL_ClearActivityPresentation(oNpc);
     }
     else
     {
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_IDLE);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
         DL_ClearSleepExecutionState(oNpc);
+        DL_ClearActivityPresentation(oNpc);
     }
 
     DL_ApplyMaterializationSkeleton(oNpc, nDirective);
