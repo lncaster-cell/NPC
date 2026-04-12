@@ -62,12 +62,25 @@
 Зафиксировано в коде:
 - у `blacksmith` есть split `WORK/SLEEP`;
 - добавлены минимальные presentation/activity markers;
-- sleep execution/waypoint path уже существует в `daily_life/`.
+- sleep execution/waypoint path уже существует в `daily_life/`;
+- sleep animation refs уже добавлены в текущий runtime slice.
 
 Практический смысл:
 - текущая итерация — не запуск нового broad step, а доведение первого end-to-end сценария `directive -> dialogue/service -> point/materialization` на одном NPC.
 
-### 3.3 Что идёт после BLACKSMITH A/B
+### 3.3 Текущий стоп-поинт внутри BLACKSMITH A/B
+Текущий зафиксированный фокус:
+- не расширять slice дальше в новые vertical scenarios;
+- **закрыть именно `SLEEP` directive scenario**;
+- довести sleep execution / sleep presentation / sleep animations до устойчивого поведения в живой сцене;
+- убрать ситуацию, когда локалы показывают sleep-state раньше фактического достижения bed/target поведения;
+- подтвердить owner-run’ом, что sleep path не даёт визуальной дёрготни и не разваливается на heartbeat/reissue path.
+
+Иными словами:
+- sleep animations уже добавлены;
+- текущая незавершённая часть — сделать sleep scenario надёжным, а не просто «размеченным локалами».
+
+### 3.4 Что идёт после BLACKSMITH A/B
 Следующие кандидаты после завершения BLACKSMITH A/B:
 1. `LAW / GATE_POST`
 2. `TRADE_SERVICE / INNKEEPER`
@@ -89,6 +102,6 @@
 
 Формула ближайшей итерации простая:
 
-`доделать BLACKSMITH A/B -> затем C/D/E по согласованному порядку`
+`закрыть sleep scenario внутри BLACKSMITH A/B -> затем доделать slice -> потом C/D/E по согласованному порядку`
 
 Всё остальное считается преждевременным расширением.
