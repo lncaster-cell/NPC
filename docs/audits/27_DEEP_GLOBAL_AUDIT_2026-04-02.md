@@ -8,6 +8,8 @@ Scope: весь репозиторий (`README.md`, `docs/**`, `scripts/daily_l
 
 ## 1) Цель и метод
 
+### Исторический срез на дату аудита (2026-04-02)
+
 Цель: дать «сквозной» аудит состояния проекта в режиме active development и выявить узкие места, которые создают риск ложной навигации, неверной имплементации и drift между каноном и runtime.
 
 Проверки (факт):
@@ -21,6 +23,8 @@ Scope: весь репозиторий (`README.md`, `docs/**`, `scripts/daily_l
 ---
 
 ## 2) Ключевой вердикт
+
+### Исторический срез на дату аудита (2026-04-02)
 
 Критических блокеров выполнения Milestone A в коде `scripts/daily_life` не обнаружено (include-цепочки валидны, явных merge-артефактов нет).  
 Главный риск находится в **документационном слое**: значимая часть SoT/overview всё ещё ссылается на legacy runtime-путь `scripts/ambient_life/*`, что в текущем репозитории отсутствует.
@@ -79,9 +83,11 @@ Scope: весь репозиторий (`README.md`, `docs/**`, `scripts/daily_l
 
 ## 4) Технические проверки runtime-кода
 
+### Исторический срез на дату аудита (2026-04-02)
+
 ### T-01: include-целостность `scripts/daily_life`
 
-Проверено 21 `.nss` файл в `scripts/daily_life`.  
+Проверено **21** `.nss` файл в `scripts/daily_life` *(as-of 2026-04-02)*.  
 Результат: **0 missing include**.
 
 Вывод: локальная структурная целостность include-графа в текущем runtime-контуре соблюдена.
@@ -99,7 +105,9 @@ Scope: весь репозиторий (`README.md`, `docs/**`, `scripts/daily_l
 
 ## 5) Приоритетный план закрытия
 
-1. **P1 (обязательно):** закрыть legacy drift (`ambient_life -> daily_life`) в `12B_RUNTIME_MASTER_PLAN`, `07_SCENARIOS_AND_ALGORITHMS`, `10_NPC_RESPAWN_MECHANICS`, `06_SYSTEM_INVARIANTS`, `README`-связках.
+### Актуально на текущий момент (2026-04-12)
+
+1. **P1 (обязательно):** закрыть legacy drift (`ambient_life -> daily_life`) в `12B_RUNTIME_MASTER_PLAN`, `07_SCENARIOS_AND_ALGORITHMS`, `10_NPC_RESPAWN_MECHANICS`, `06_SYSTEM_INVARIANTS`, `README`-связках с каноническим runtime-контуром `daily_life/*`.
 2. **P2:** обновить режимный статус `docs/architecture/02_OPEN_DESIGN_QUESTIONS.md`.
 3. **P3:** нормализовать шаблонные DEC-записи для чистоты decision register.
 4. **P4:** после правок провести короткий re-audit теми же командами + spot-check ссылок.
