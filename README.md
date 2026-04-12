@@ -42,3 +42,63 @@
 Следующие PR должны быть code-first:
 - минимум 1 изменение в `daily_life/*.nss`,
 - документация правится только как короткая синхронизация в active doc set.
+
+## Daily Life: доступные activity-анимации и игровые константы (как вызывать)
+
+Ниже — фактически доступный в текущем runtime (`daily_life/`) reference-слой activity/animation из `dl_activity_archive_anim_inc.nss`.
+
+### 1) Константы activity ID
+
+```nss
+DL_ARCH_ACT_NPC_MIDNIGHT_BED = 4
+DL_ARCH_ACT_NPC_SLEEP_BED    = 5
+DL_ARCH_ACT_NPC_FORGE        = 15
+DL_ARCH_ACT_NPC_MIDNIGHT_90  = 31
+DL_ARCH_ACT_NPC_SLEEP_90     = 32
+```
+
+### 2) Константы animation set
+
+```nss
+DL_ARCH_ANIMS_FORGE     = "craft01, dustoff, forge01"
+DL_ARCH_ANIMS_SLEEP_BED = "laydownB, proneB"
+```
+
+### 3) Как вызывать в игре (runtime API)
+
+Базовая установка presentation на NPC:
+
+```nss
+DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
+DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_SLEEP_BED, DL_ARCH_ANIMS_SLEEP_BED);
+```
+
+Автоматический выбор по директиве (рекомендуемый путь):
+
+```nss
+// Проставляет activity/anims внутри resolver-пайплайна:
+DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);  // blacksmith -> forge
+DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_SLEEP); // sleep -> sleep_bed
+```
+
+Полный runtime-вход (основной вызов):
+
+```nss
+// 1) Определить директиву по времени/профилю:
+int nDirective = DL_ResolveNpcDirective(oNpc);
+
+// 2) Применить состояние NPC, interaction modes и activity-анимации:
+DL_ApplyDirectiveSkeleton(oNpc, nDirective);
+```
+
+Прямой запуск sleep-loop анимации:
+
+```nss
+DL_PlaySleepAnimation(oNpc); // Берёт 2-й токен из DL_L_NPC_ANIM_SET, fallback на 1-й.
+```
+
+### 4) Что реально используется сейчас в skeleton
+
+- `DL_ARCH_ACT_NPC_FORGE` + `DL_ARCH_ANIMS_FORGE` для `DL_DIR_WORK` (только профиль `blacksmith`).
+- `DL_ARCH_ACT_NPC_SLEEP_BED` + `DL_ARCH_ANIMS_SLEEP_BED` для `DL_DIR_SLEEP`.
+- `DL_ARCH_ACT_NPC_MIDNIGHT_BED`, `DL_ARCH_ACT_NPC_MIDNIGHT_90`, `DL_ARCH_ACT_NPC_SLEEP_90` присутствуют как доступные ID-константы reference-слоя, но в текущем skeleton напрямую не назначаются.
