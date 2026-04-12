@@ -697,14 +697,24 @@ void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
         return;
     }
 
-    if (!DL_IsRuntimeEnabled())
+    int nEventKind = GetLocalInt(oNpc, DL_L_NPC_EVENT_KIND);
+    if (nEventKind != DL_NPC_EVENT_SPAWN && nEventKind != DL_NPC_EVENT_DEATH)
     {
         return;
     }
 
-    int nEventKind = GetLocalInt(oNpc, DL_L_NPC_EVENT_KIND);
-    if (nEventKind != DL_NPC_EVENT_SPAWN && nEventKind != DL_NPC_EVENT_DEATH)
+    // Death cleanup is an invariant: runtime state must be cleaned even if runtime is disabled.
+    if (nEventKind == DL_NPC_EVENT_DEATH)
     {
+        DL_CleanupNpcRuntimeState(oNpc);
+        if (!DL_IsRuntimeEnabled())
+        {
+            return;
+        }
+    }
+    else if (!DL_IsRuntimeEnabled())
+    {
+        // Spawn processing remains runtime-gated by design.
         return;
     }
 
@@ -723,8 +733,4 @@ void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
         return;
     }
 
-    if (nEventKind == DL_NPC_EVENT_DEATH)
-    {
-        DL_CleanupNpcRuntimeState(oNpc);
-    }
 }
