@@ -24,7 +24,7 @@
 - в новых документах путь указывается только как `daily_life/`.
 
 PR-чек-лист (docs):
-- [ ] Нет новых вхождений `scripts/ambient_life` в active/template документах.
+- [ ] Нет новых вхождений `scripts/daily_life/` в active/template документах.
 
 ## 3) Остальные документы
 
