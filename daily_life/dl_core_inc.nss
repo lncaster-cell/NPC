@@ -65,7 +65,6 @@ const int DL_WORKER_BUDGET_MIN = 1;
 const int DL_WORKER_BUDGET_WARM = 2;
 const int DL_WORKER_BUDGET_HOT = 4;
 const int DL_WORKER_BUDGET_MAX = 12;
-const int DL_WORKER_SCAN_CAP = 128;
 
 int DL_IsRuntimeEnabled()
 {
@@ -514,53 +513,51 @@ void DL_RunAreaEnterResyncTick(object oArea)
         nCursor = 0;
     }
 
-    int nTouched = 0;
-    int nScanned = 0;
-    int nIndex = 0;
+    int nNpcProcessed = 0;
+    int nNpcSeen = 0;
     object oObj = GetFirstObjectInArea(oArea);
 
-    while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
+    while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
     {
         if (DL_IsActivePipelineNpc(oObj))
         {
-            if (nIndex >= nCursor)
+            if (nNpcSeen >= nCursor)
             {
                 DL_RequestResync(oObj, DL_RESYNC_AREA_ENTER);
                 DL_ProcessResync(oObj);
-                nTouched = nTouched + 1;
+                nNpcProcessed = nNpcProcessed + 1;
             }
-            nIndex = nIndex + 1;
+            nNpcSeen = nNpcSeen + 1;
         }
+
         oObj = GetNextObjectInArea(oArea);
-        nScanned = nScanned + 1;
     }
 
-    if (nTouched < nBudget && nCursor > 0)
+    if (nNpcProcessed < nBudget && nCursor > 0)
     {
         oObj = GetFirstObjectInArea(oArea);
-        nScanned = 0;
-        nIndex = 0;
+        int nWrapSeen = 0;
 
-        while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
+        while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
         {
             if (DL_IsActivePipelineNpc(oObj))
             {
-                if (nIndex < nCursor)
+                if (nWrapSeen < nCursor)
                 {
                     DL_RequestResync(oObj, DL_RESYNC_AREA_ENTER);
                     DL_ProcessResync(oObj);
-                    nTouched = nTouched + 1;
+                    nNpcProcessed = nNpcProcessed + 1;
                 }
-                nIndex = nIndex + 1;
+                nWrapSeen = nWrapSeen + 1;
             }
+
             oObj = GetNextObjectInArea(oArea);
-            nScanned = nScanned + 1;
         }
     }
 
-    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_TOUCHED, nTouched);
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_TOUCHED, nNpcProcessed);
 
-    if (nIndex <= 0)
+    if (nNpcSeen <= 0)
     {
         SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
         SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
@@ -568,7 +565,7 @@ void DL_RunAreaEnterResyncTick(object oArea)
         return;
     }
 
-    int nNextCursor = (nCursor + nTouched) % nIndex;
+    int nNextCursor = (nCursor + nNpcProcessed) % nNpcSeen;
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, nNextCursor);
 
     if (nNextCursor == 0)
@@ -600,55 +597,53 @@ void DL_RunAreaWorkerTick(object oArea)
 
     int nBudget = DL_GetAreaWorkerBudget(oArea);
     int nCursor = DL_GetAreaWorkerCursor(oArea);
-    int nTouched = 0;
-    int nScanned = 0;
-    int nIndex = 0;
+    int nNpcProcessed = 0;
+    int nNpcSeen = 0;
     object oObj = GetFirstObjectInArea(oArea);
 
-    while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
+    while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
     {
         if (DL_IsActivePipelineNpc(oObj))
         {
-            if (nIndex >= nCursor)
+            if (nNpcSeen >= nCursor)
             {
                 DL_WorkerTouchNpc(oObj);
-                nTouched = nTouched + 1;
+                nNpcProcessed = nNpcProcessed + 1;
             }
-            nIndex = nIndex + 1;
+            nNpcSeen = nNpcSeen + 1;
         }
+
         oObj = GetNextObjectInArea(oArea);
-        nScanned = nScanned + 1;
     }
 
-    if (nTouched < nBudget && nCursor > 0)
+    if (nNpcProcessed < nBudget && nCursor > 0)
     {
         oObj = GetFirstObjectInArea(oArea);
-        nScanned = 0;
-        nIndex = 0;
+        int nWrapSeen = 0;
 
-        while (GetIsObjectValid(oObj) && nTouched < nBudget && nScanned < DL_WORKER_SCAN_CAP)
+        while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
         {
             if (DL_IsActivePipelineNpc(oObj))
             {
-                if (nIndex < nCursor)
+                if (nWrapSeen < nCursor)
                 {
                     DL_WorkerTouchNpc(oObj);
-                    nTouched = nTouched + 1;
+                    nNpcProcessed = nNpcProcessed + 1;
                 }
-                nIndex = nIndex + 1;
+                nWrapSeen = nWrapSeen + 1;
             }
+
             oObj = GetNextObjectInArea(oArea);
-            nScanned = nScanned + 1;
         }
     }
 
-    if (nIndex <= 0)
+    if (nNpcSeen <= 0)
     {
         DL_SetAreaWorkerCursor(oArea, 0);
     }
     else
     {
-        DL_SetAreaWorkerCursor(oArea, (nCursor + nTouched) % nIndex);
+        DL_SetAreaWorkerCursor(oArea, (nCursor + nNpcProcessed) % nNpcSeen);
     }
 
     SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK) + 1);
