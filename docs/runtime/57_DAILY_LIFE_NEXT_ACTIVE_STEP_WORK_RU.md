@@ -17,6 +17,7 @@
 - проверить и довести `WORK`-поведение у `blacksmith`;
 - подтвердить, что в рабочее окно применяется `WORK` directive;
 - подтвердить, что ставятся ожидаемые work-state / dialogue / service / activity / animation markers;
+- зафиксировать anchor-требование для кузнеца: обязательная пара рабочих точек `forge + craft`;
 - при необходимости зафиксировать статус `WORK` как текущий owner-confirmed результат.
 
 ## 3. Что не входит в этот шаг
@@ -33,3 +34,11 @@
 - `SLEEP = temporarily ready`
 - `следующий активный шаг = WORK`
 - после фиксации результата по `WORK` можно считать вопрос о закрытии первого `BLACKSMITH` slice
+
+## 5. Минимальный anchor contract для кузнеца (добавлено)
+
+Для `BLACKSMITH WORK` в текущем runtime slice требуется **минимум два waypoint** в той же area, что и NPC:
+- `forge` точка: `dl_work_<npc_tag>_forge` или fallback `dl_work_forge`;
+- `craft` точка: `dl_work_<npc_tag>_craft` или fallback `dl_work_craft`.
+
+Если хотя бы одной точки нет, `WORK` остаётся активной директивой, но execution помечается статусом `missing_waypoints` и диагностикой `need_forge_and_craft_waypoints`.
