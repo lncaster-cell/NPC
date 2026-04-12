@@ -1,4 +1,4 @@
-# 44 — Daily Life v2 Execution Task List (RU)
+# 54 — Daily Life v2 Execution Task List (RU)
 
 > Дата: 2026-04-09  
 > Статус: owner-facing execution plan  
