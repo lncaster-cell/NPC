@@ -1,7 +1,8 @@
 # 56 — Daily Life Sleep Scenario Temporary Status (RU)
 
 > Дата: 2026-04-12  
-> Статус: **temporary fixed status**
+> Статус: **archived (superseded)**  
+> Superseded by: `docs/runtime/55_DAILY_LIFE_SLEEP_SCENARIO_OWNER_STATUS_RU.md`
 
 ## Что зафиксировано
 
