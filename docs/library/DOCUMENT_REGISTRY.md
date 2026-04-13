@@ -1,6 +1,6 @@
 # Document Registry — Ambient Life v2
 
-Дата: 2026-04-11
+Дата: 2026-04-13  
 Статус: active
 
 ## 1) Active documentation (strict)

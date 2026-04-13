@@ -1,8 +1,14 @@
 # PysukSystems (NPC) — README
 
-> Обновлено: **2026-04-11**.
+> Обновлено: **2026-04-13**.
 
 Цель текущего этапа: прекратить рост мета-документации и развивать runtime-код в `daily_life/`.
+
+## Быстрый старт по документации
+
+1. Начните с `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`.
+2. Затем проверьте инварианты в `docs/runtime/06_SYSTEM_INVARIANTS.md`.
+3. Для текущего дизайна и статуса исполнения используйте документы из active set (ниже).
 
 ## ACTIVE DOC SET (только реально существующие файлы)
 
@@ -18,7 +24,6 @@
 - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
 - `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
 - `docs/runtime/55_DAILY_LIFE_SLEEP_SCENARIO_OWNER_STATUS_RU.md` *(sleep-status source of truth; supersedes archived temporary status)*
-- `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
 
 ## Канонический workspace path
 
