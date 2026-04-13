@@ -575,6 +575,57 @@ void DL_PlayWorkAnimation(object oNpc)
     PlayCustomAnimation(oNpc, sAnim, TRUE);
 }
 
+void DL_SetWorkMissingState(object oNpc, string sKind, string sDiagnostic)
+{
+    SetLocalString(oNpc, DL_L_NPC_WORK_KIND, sKind);
+    SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "missing_waypoints");
+    SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, sDiagnostic);
+    DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
+    DL_ClearActivityPresentation(oNpc);
+    DL_ClearTransitionExecutionState(oNpc);
+}
+
+void DL_SetWorkTargetState(object oNpc, string sKind, object oTarget)
+{
+    SetLocalString(oNpc, DL_L_NPC_WORK_KIND, sKind);
+    SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oTarget));
+    DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
+}
+
+int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
+    {
+        return FALSE;
+    }
+
+    if (DL_WaypointHasTransition(oTarget))
+    {
+        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oTarget))
+        {
+            return TRUE;
+        }
+    }
+
+    location lTarget = GetLocation(oTarget);
+    if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
+    {
+        if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
+        {
+            SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "moving_to_anchor");
+            AssignCommand(oNpc, ClearAllActions(TRUE));
+            AssignCommand(oNpc, ActionMoveToLocation(lTarget, TRUE));
+        }
+        return TRUE;
+    }
+
+    DL_ClearTransitionExecutionState(oNpc);
+    SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
+    DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
+    DL_PlayWorkAnimation(oNpc);
+    return TRUE;
+}
+
 void DL_ExecuteSleepDirective(object oNpc)
 {
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
@@ -699,46 +750,13 @@ void DL_ExecuteWorkDirective(object oNpc)
 
         if (!GetIsObjectValid(oForge) || !GetIsObjectValid(oCraft))
         {
-            SetLocalString(oNpc, DL_L_NPC_WORK_KIND, sKind);
-            SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "missing_waypoints");
-            SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_forge_and_craft_waypoints");
-            DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
-            DL_ClearActivityPresentation(oNpc);
-            DL_ClearTransitionExecutionState(oNpc);
+            DL_SetWorkMissingState(oNpc, sKind, "need_forge_and_craft_waypoints");
             return;
         }
 
         object oTarget = sKind == DL_WORK_KIND_CRAFT ? oCraft : oForge;
-
-        SetLocalString(oNpc, DL_L_NPC_WORK_KIND, sKind);
-        SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oTarget));
-        DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
-
-        if (DL_WaypointHasTransition(oTarget))
-        {
-            if (DL_TryExecuteTransitionAtWaypoint(oNpc, oTarget))
-            {
-                return;
-            }
-        }
-
-        location lTarget = GetLocation(oTarget);
-
-        if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
-        {
-            if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
-            {
-                SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "moving_to_anchor");
-                AssignCommand(oNpc, ClearAllActions(TRUE));
-                AssignCommand(oNpc, ActionMoveToLocation(lTarget, TRUE));
-            }
-            return;
-        }
-
-        DL_ClearTransitionExecutionState(oNpc);
-        SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
-        DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
-        DL_PlayWorkAnimation(oNpc);
+        DL_SetWorkTargetState(oNpc, sKind, oTarget);
+        DL_ProgressWorkAtTarget(oNpc, oTarget);
         return;
     }
 
@@ -748,44 +766,12 @@ void DL_ExecuteWorkDirective(object oNpc)
 
         if (!GetIsObjectValid(oPost))
         {
-            SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_POST);
-            SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "missing_waypoints");
-            SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_post_waypoint");
-            DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
-            DL_ClearActivityPresentation(oNpc);
-            DL_ClearTransitionExecutionState(oNpc);
+            DL_SetWorkMissingState(oNpc, DL_WORK_KIND_POST, "need_post_waypoint");
             return;
         }
 
-        SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_POST);
-        SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oPost));
-        DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
-
-        if (DL_WaypointHasTransition(oPost))
-        {
-            if (DL_TryExecuteTransitionAtWaypoint(oNpc, oPost))
-            {
-                return;
-            }
-        }
-
-        location lTarget = GetLocation(oPost);
-
-        if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
-        {
-            if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
-            {
-                SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "moving_to_anchor");
-                AssignCommand(oNpc, ClearAllActions(TRUE));
-                AssignCommand(oNpc, ActionMoveToLocation(lTarget, TRUE));
-            }
-            return;
-        }
-
-        DL_ClearTransitionExecutionState(oNpc);
-        SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
-        DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
-        DL_PlayWorkAnimation(oNpc);
+        DL_SetWorkTargetState(oNpc, DL_WORK_KIND_POST, oPost);
+        DL_ProgressWorkAtTarget(oNpc, oPost);
         return;
     }
 
@@ -793,44 +779,12 @@ void DL_ExecuteWorkDirective(object oNpc)
 
     if (!GetIsObjectValid(oTrade))
     {
-        SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_TRADE);
-        SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "missing_waypoints");
-        SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_trade_waypoint");
-        DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
-        DL_ClearActivityPresentation(oNpc);
-        DL_ClearTransitionExecutionState(oNpc);
+        DL_SetWorkMissingState(oNpc, DL_WORK_KIND_TRADE, "need_trade_waypoint");
         return;
     }
 
-    SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_TRADE);
-    SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oTrade));
-    DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
-
-    if (DL_WaypointHasTransition(oTrade))
-    {
-        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oTrade))
-        {
-            return;
-        }
-    }
-
-    location lTarget = GetLocation(oTrade);
-
-    if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
-    {
-        if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
-        {
-            SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "moving_to_anchor");
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionMoveToLocation(lTarget, TRUE));
-        }
-        return;
-    }
-
-    DL_ClearTransitionExecutionState(oNpc);
-    SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
-    DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
-    DL_PlayWorkAnimation(oNpc);
+    DL_SetWorkTargetState(oNpc, DL_WORK_KIND_TRADE, oTrade);
+    DL_ProgressWorkAtTarget(oNpc, oTrade);
 }
 
 void DL_SetInteractionModes(object oNpc, string sDialogue, string sService)
