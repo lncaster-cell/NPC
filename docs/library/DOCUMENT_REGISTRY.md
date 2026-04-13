@@ -9,6 +9,8 @@
 1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
 3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+4. `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
+5. `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
 
 ## 2) Workspace path policy
 
@@ -23,7 +25,7 @@
 
 PR-чек-лист (docs):
 - [ ] Нет новых вхождений `scripts/daily_life/` в active/template документах.
-- [ ] Несуществующие ссылки в active-доках запрещены.
+- [ ] Этот документ не дублирует существующий статус.
 
 ## 3) Остальные документы
 

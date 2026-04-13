@@ -10,6 +10,8 @@
 1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
 3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
+4. `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
+5. `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
 
 Важно: это **основной маршрут**, но не запрет на использование операционных reference-документов текущего этапа.
 Для уточнения acceptance-статуса и фактической рабочей точки также используются:
@@ -35,6 +37,7 @@
 ### PR-чек-лист для docs
 
 - [ ] Нет новых вхождений `scripts/daily_life/` в active/template документах.
+- [ ] Этот документ не дублирует существующий статус.
 
 ## Практическое правило на следующий шаг
 
