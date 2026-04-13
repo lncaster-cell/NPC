@@ -5,17 +5,16 @@
 >
 > ✅ Актуальный канон legal/world-модели: `docs/canon/12A_WORLD_MODEL_CANON.md`.
 >
-> 📚 Полная историческая версия legacy-драфта сохранена в: `docs/archive/legal_system_design_legacy.md`.
+> 📚 Историческая версия legacy-драфта удалена из рабочего дерева и доступна через git history.
 
 ## Что изменено и почему
 
 Ранее в этом файле находился большой исторический draft. Чтобы убрать риск случайного использования устаревших правил как активного канона, рабочая точка `docs/research/legal_system_design.md` оставлена только как redirect.
 
-При этом содержимое **не удалено из репозитория**: оно перенесено в архивный файл `docs/archive/legal_system_design_legacy.md` для справки и исторического контекста.
+Историческое содержимое удалено из рабочего дерева в рамках cleanup и восстанавливается через `git log -- docs/research/legal_system_design.md`.
 
 ## Как использовать сейчас
 
 1. Для актуальных правок legal-домена используйте `docs/canon/12A_WORLD_MODEL_CANON.md`.
-2. Для фиксации статусов/решений смотрите `docs/governance/10_DECISIONS_LOG.md` (в т.ч. DEC-2026-03-15-005).
-3. Для навигации по активной фазе используйте `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`.
-4. Для исторических сравнений/идей используйте `docs/archive/legal_system_design_legacy.md`.
+2. Для рабочей навигации используйте `README.md` и `docs/library/DOCUMENT_REGISTRY.md`.
+3. Для исторических сравнений/идей используйте git history этого файла.

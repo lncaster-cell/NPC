@@ -16,13 +16,12 @@
 
 ## 2) Исторические документы
 
-- `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` — legacy-pointer.
-- Исторический полный текст legacy-версии восстанавливается через git-history по этому пути.
+- Legacy-версия ruleset удалена из рабочего дерева; исторический текст доступен только через git history.
 
 ## 3) Sleep-status source of truth
 
 - Канонический статус-документ: `docs/runtime/55_DAILY_LIFE_SLEEP_SCENARIO_OWNER_STATUS_RU.md`.
-- Архивированный заменённый документ: `docs/archive/56_DAILY_LIFE_SLEEP_SCENARIO_TEMP_STATUS_RU.md`.
+- Ранее использовавшийся TEMP-документ удалён из рабочего дерева (доступен через git history).
 
 ## 4) Правило против расхождений
 

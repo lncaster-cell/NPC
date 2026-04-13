@@ -18,12 +18,11 @@
 4. `docs/runtime/12B_DAILY_LIFE_V1_RUNTIME_PIPELINE.md`
 5. `docs/runtime/12B_DAILY_LIFE_V1_DATA_CONTRACTS.md`
 6. `docs/runtime/12B_DAILY_LIFE_V1_RULESET_REV1.md`
-7. `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md`
-8. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
+7. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 
 Нормативное правило:
 - `docs/runtime/12B_DAILY_LIFE_V1_RULESET_REV1.md` считается каноническим ruleset-документом для v1.
-- `docs/archive/12B_DAILY_LIFE_V1_RULESET_legacy_2026-03-20.md` — legacy-pointer на ранний черновик; использовать только для исторического контекста, не как source-of-truth.
+- Ранний legacy-черновик удалён из рабочего дерева; для исторического контекста используйте git history.
 
 ---
 

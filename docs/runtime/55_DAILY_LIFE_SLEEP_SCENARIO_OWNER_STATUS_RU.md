@@ -2,7 +2,7 @@
 
 > Дата: 2026-04-12  
 > Статус: **owner-confirmed PASS**  
-> Supersedes: `docs/archive/56_DAILY_LIFE_SLEEP_SCENARIO_TEMP_STATUS_RU.md`
+> Supersedes: удалённый TEMP-статус (доступен только через git history)
 
 ## 1. Что зафиксировано
 
@@ -23,9 +23,8 @@
 Эта запись фиксирует статус по прямому подтверждению владельца.
 
 Она не подменяет последующую синхронизацию:
-- `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
 - `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
-- при необходимости `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
+- `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
 
 ## 4. Практический смысл
 
