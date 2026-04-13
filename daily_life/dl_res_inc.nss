@@ -309,112 +309,99 @@ int DL_IsSleepWaypointTagInvalidArea(object oNpc, string sTag)
     return !GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
 }
 
+object DL_ResolveNpcWaypointWithFallbackTag(
+    object oNpc,
+    string sCacheLocal,
+    string sPersonalPrefix,
+    string sPersonalSuffix,
+    string sFallbackTag
+)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return OBJECT_INVALID;
+    }
+
+    string sNpcTag = GetTag(oNpc);
+    object oWp = DL_ResolveEffectiveWaypointForNpc(
+        oNpc,
+        DL_GetNpcCachedWaypointByTag(oNpc, sCacheLocal, sPersonalPrefix + sNpcTag + sPersonalSuffix)
+    );
+    if (GetIsObjectValid(oWp))
+    {
+        return oWp;
+    }
+
+    return DL_ResolveEffectiveWaypointForNpc(
+        oNpc,
+        DL_GetNpcCachedWaypointByTag(oNpc, sCacheLocal, sFallbackTag)
+    );
+}
+
 object DL_ResolveSleepApproachWaypoint(object oNpc)
 {
-    string sNpcTag = GetTag(oNpc);
-    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_SLEEP_APPROACH, "dl_sleep_" + sNpcTag + "_approach"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_SLEEP_APPROACH, "dl_sleep_approach"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    return OBJECT_INVALID;
+    return DL_ResolveNpcWaypointWithFallbackTag(
+        oNpc,
+        DL_L_NPC_CACHE_SLEEP_APPROACH,
+        "dl_sleep_",
+        "_approach",
+        "dl_sleep_approach"
+    );
 }
 
 object DL_ResolveSleepBedWaypoint(object oNpc)
 {
-    string sNpcTag = GetTag(oNpc);
-    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_SLEEP_BED, "dl_sleep_" + sNpcTag + "_bed"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_SLEEP_BED, "dl_sleep_bed"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    return OBJECT_INVALID;
+    return DL_ResolveNpcWaypointWithFallbackTag(
+        oNpc,
+        DL_L_NPC_CACHE_SLEEP_BED,
+        "dl_sleep_",
+        "_bed",
+        "dl_sleep_bed"
+    );
 }
 
 object DL_ResolveBlacksmithForgeWaypoint(object oNpc)
 {
-    string sNpcTag = GetTag(oNpc);
-    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_WORK_FORGE, "dl_work_" + sNpcTag + "_forge"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_WORK_FORGE, "dl_work_forge"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    return OBJECT_INVALID;
+    return DL_ResolveNpcWaypointWithFallbackTag(
+        oNpc,
+        DL_L_NPC_CACHE_WORK_FORGE,
+        "dl_work_",
+        "_forge",
+        "dl_work_forge"
+    );
 }
 
 object DL_ResolveBlacksmithCraftWaypoint(object oNpc)
 {
-    string sNpcTag = GetTag(oNpc);
-    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_WORK_CRAFT, "dl_work_" + sNpcTag + "_craft"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_WORK_CRAFT, "dl_work_craft"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    return OBJECT_INVALID;
+    return DL_ResolveNpcWaypointWithFallbackTag(
+        oNpc,
+        DL_L_NPC_CACHE_WORK_CRAFT,
+        "dl_work_",
+        "_craft",
+        "dl_work_craft"
+    );
 }
 
 object DL_ResolveGatePostWaypoint(object oNpc)
 {
-    string sNpcTag = GetTag(oNpc);
-    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_WORK_POST, "dl_work_" + sNpcTag + "_post"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_WORK_POST, "dl_work_post"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    return OBJECT_INVALID;
+    return DL_ResolveNpcWaypointWithFallbackTag(
+        oNpc,
+        DL_L_NPC_CACHE_WORK_POST,
+        "dl_work_",
+        "_post",
+        "dl_work_post"
+    );
 }
 
 object DL_ResolveTraderWaypoint(object oNpc)
 {
-    string sNpcTag = GetTag(oNpc);
-    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_WORK_TRADE, "dl_work_" + sNpcTag + "_trade"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetNpcCachedWaypointByTag(oNpc, DL_L_NPC_CACHE_WORK_TRADE, "dl_work_trade"));
-    if (GetIsObjectValid(oWp))
-    {
-        return oWp;
-    }
-
-    return OBJECT_INVALID;
+    return DL_ResolveNpcWaypointWithFallbackTag(
+        oNpc,
+        DL_L_NPC_CACHE_WORK_TRADE,
+        "dl_work_",
+        "_trade",
+        "dl_work_trade"
+    );
 }
 
 void DL_ClearSleepExecutionState(object oNpc)
