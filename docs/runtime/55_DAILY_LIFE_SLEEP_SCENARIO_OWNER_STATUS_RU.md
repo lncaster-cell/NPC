@@ -1,7 +1,8 @@
 # 55 — Daily Life Sleep Scenario Owner Status (RU)
 
 > Дата: 2026-04-12  
-> Статус: **owner-confirmed PASS**
+> Статус: **owner-confirmed PASS**  
+> Supersedes: `docs/archive/56_DAILY_LIFE_SLEEP_SCENARIO_TEMP_STATUS_RU.md`
 
 ## 1. Что зафиксировано
 
