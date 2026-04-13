@@ -6,6 +6,7 @@ const string DL_L_NPC_BLOCKED_BUSY = "dl_npc_blocked_busy";
 
 const int DL_NPC_EVENT_BLOCKED = 3;
 const float DL_BLOCKED_OPEN_COOLDOWN = 1.5;
+const float DL_BLOCKED_REISSUE_DELAY = 1.0;
 
 void DL_ClearNpcBlockedSignal(object oNpc)
 {
@@ -14,9 +15,37 @@ void DL_ClearNpcBlockedSignal(object oNpc)
     DeleteLocalInt(oNpc, DL_L_NPC_BLOCKED_TYPE);
 }
 
-void DL_ClearNpcBlockedBusySelf()
+void DL_ClearNpcBlockedBusy(object oNpc)
 {
-    DeleteLocalInt(OBJECT_SELF, DL_L_NPC_BLOCKED_BUSY);
+    DeleteLocalInt(oNpc, DL_L_NPC_BLOCKED_BUSY);
+}
+
+void DL_ReissueNpcDirectiveAfterBlocked(object oNpc)
+{
+    if (!DL_IsActivePipelineNpc(oNpc))
+    {
+        return;
+    }
+
+    if (!DL_IsRuntimeEnabled())
+    {
+        return;
+    }
+
+    int nDirective = GetLocalInt(oNpc, DL_L_NPC_DIRECTIVE);
+    if (nDirective == DL_DIR_WORK)
+    {
+        DL_ClearWorkExecutionState(oNpc);
+        DL_ApplyDirectiveSkeleton(oNpc, nDirective);
+        return;
+    }
+
+    if (nDirective == DL_DIR_SLEEP)
+    {
+        DL_ClearSleepExecutionState(oNpc);
+        DL_ApplyDirectiveSkeleton(oNpc, nDirective);
+        return;
+    }
 }
 
 void DL_RequestNpcBlockedSignal(object oNpc, object oBlocker)
@@ -100,5 +129,6 @@ void DL_HandleNpcBlocked(object oNpc)
     DL_ClearNpcBlockedSignal(oNpc);
 
     AssignCommand(oNpc, ActionOpenDoor(oBlocker));
-    DelayCommand(DL_BLOCKED_OPEN_COOLDOWN, DL_ClearNpcBlockedBusySelf());
+    DelayCommand(DL_BLOCKED_REISSUE_DELAY, DL_ReissueNpcDirectiveAfterBlocked(oNpc));
+    DelayCommand(DL_BLOCKED_OPEN_COOLDOWN, DL_ClearNpcBlockedBusy(oNpc));
 }
