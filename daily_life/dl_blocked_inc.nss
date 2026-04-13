@@ -5,8 +5,8 @@ const string DL_L_NPC_BLOCKED_DIAGNOSTIC = "dl_npc_blocked_diagnostic";
 const string DL_L_NPC_BLOCKED_BUSY = "dl_npc_blocked_busy";
 
 const int DL_NPC_EVENT_BLOCKED = 3;
-const float DL_BLOCKED_OPEN_COOLDOWN = 1.5;
-const float DL_BLOCKED_REISSUE_DELAY = 1.0;
+const float DL_BLOCKED_OPEN_COOLDOWN = 3.0;
+const float DL_BLOCKED_REISSUE_DELAY = 2.2;
 
 void DL_ClearNpcBlockedSignal(object oNpc)
 {
@@ -128,7 +128,7 @@ void DL_HandleNpcBlocked(object oNpc)
     SetLocalString(oNpc, DL_L_NPC_BLOCKED_DIAGNOSTIC, "opening_blocking_door");
     DL_ClearNpcBlockedSignal(oNpc);
 
-    AssignCommand(oNpc, ActionOpenDoor(oBlocker));
+    AssignCommand(oNpc, DoDoorAction(oBlocker, DOOR_ACTION_OPEN));
     DelayCommand(DL_BLOCKED_REISSUE_DELAY, DL_ReissueNpcDirectiveAfterBlocked(oNpc));
     DelayCommand(DL_BLOCKED_OPEN_COOLDOWN, DL_ClearNpcBlockedBusy(oNpc));
 }
