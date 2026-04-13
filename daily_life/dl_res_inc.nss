@@ -1,7 +1,7 @@
 #include "dl_activity_archive_anim_inc"
 
 // Step 05+: resolver/materialization skeleton.
-// Scope: EARLY_WORKER sleep window + basic BLACKSMITH/GATE_POST WORK/SLEEP window split.
+// Scope: EARLY_WORKER sleep window + basic BLACKSMITH/GATE_POST/TRADER WORK/SLEEP window split.
 
 const string DL_L_NPC_DIRECTIVE = "dl_npc_directive";
 const string DL_L_NPC_MAT_REQ = "dl_npc_mat_req";
@@ -25,6 +25,7 @@ const string DL_L_NPC_ANIM_SET = "dl_npc_anim_set";
 const string DL_PROFILE_EARLY_WORKER = "early_worker";
 const string DL_PROFILE_BLACKSMITH = "blacksmith";
 const string DL_PROFILE_GATE_POST = "gate_post";
+const string DL_PROFILE_TRADER = "trader";
 
 const string DL_STATE_IDLE = "idle";
 const string DL_STATE_SLEEP = "sleep";
@@ -61,6 +62,7 @@ const int DL_GUARD_SHIFT_HOURS = 9;
 const string DL_WORK_KIND_FORGE = "forge";
 const string DL_WORK_KIND_CRAFT = "craft";
 const string DL_WORK_KIND_POST = "post";
+const string DL_WORK_KIND_TRADE = "trade";
 
 int DL_NormalizeHour(int nHour)
 {
@@ -82,6 +84,12 @@ int DL_IsEarlyWorkerSleepHour(int nHour)
 }
 
 int DL_IsBlacksmithWorkHour(int nHour)
+{
+    nHour = DL_NormalizeHour(nHour);
+    return nHour >= 8 && nHour < 18;
+}
+
+int DL_IsTraderWorkHour(int nHour)
 {
     nHour = DL_NormalizeHour(nHour);
     return nHour >= 8 && nHour < 18;
@@ -136,6 +144,15 @@ int DL_ResolveNpcDirectiveAtHour(object oNpc, int nHour)
     else if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
     {
         if (DL_IsGatePostWorkHour(oNpc, nHour))
+        {
+            return DL_DIR_WORK;
+        }
+
+        return DL_DIR_SLEEP;
+    }
+    else if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_TRADER)
+    {
+        if (DL_IsTraderWorkHour(nHour))
         {
             return DL_DIR_WORK;
         }
@@ -336,6 +353,24 @@ object DL_ResolveGatePostWaypoint(object oNpc)
     return OBJECT_INVALID;
 }
 
+object DL_ResolveTraderWaypoint(object oNpc)
+{
+    string sNpcTag = GetTag(oNpc);
+    object oWp = DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_trade");
+    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    {
+        return oWp;
+    }
+
+    oWp = DL_GetWorkWaypointByTag("dl_work_trade");
+    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    {
+        return oWp;
+    }
+
+    return OBJECT_INVALID;
+}
+
 void DL_ClearSleepExecutionState(object oNpc)
 {
     DeleteLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
@@ -392,6 +427,12 @@ void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
     if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
     {
         DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_GUARD, DL_ARCH_ANIMS_GUARD);
+        return;
+    }
+
+    if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_TRADER)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_MERCHANT_MULTI, DL_ARCH_ANIMS_TRADE);
         return;
     }
 
@@ -591,7 +632,7 @@ void DL_ExecuteWorkDirective(object oNpc)
 
     string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
 
-    if (sProfile != DL_PROFILE_BLACKSMITH && sProfile != DL_PROFILE_GATE_POST)
+    if (sProfile != DL_PROFILE_BLACKSMITH && sProfile != DL_PROFILE_GATE_POST && sProfile != DL_PROFILE_TRADER)
     {
         DL_ClearWorkExecutionState(oNpc);
         return;
@@ -637,22 +678,59 @@ void DL_ExecuteWorkDirective(object oNpc)
         return;
     }
 
-    object oPost = DL_ResolveGatePostWaypoint(oNpc);
-
-    if (!GetIsObjectValid(oPost))
+    if (sProfile == DL_PROFILE_GATE_POST)
     {
+        object oPost = DL_ResolveGatePostWaypoint(oNpc);
+
+        if (!GetIsObjectValid(oPost))
+        {
+            SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_POST);
+            SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "missing_waypoints");
+            SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_post_waypoint");
+            DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
+            DL_ClearActivityPresentation(oNpc);
+            return;
+        }
+
+        location lTarget = GetLocation(oPost);
+
         SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_POST);
+        SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oPost));
+        DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
+
+        if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
+        {
+            if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
+            {
+                SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "moving_to_anchor");
+                AssignCommand(oNpc, ClearAllActions(TRUE));
+                AssignCommand(oNpc, ActionMoveToLocation(lTarget, TRUE));
+            }
+            return;
+        }
+
+        SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
+        DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
+        DL_PlayWorkAnimation(oNpc);
+        return;
+    }
+
+    object oTrade = DL_ResolveTraderWaypoint(oNpc);
+
+    if (!GetIsObjectValid(oTrade))
+    {
+        SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_TRADE);
         SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "missing_waypoints");
-        SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_post_waypoint");
+        SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_trade_waypoint");
         DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
         DL_ClearActivityPresentation(oNpc);
         return;
     }
 
-    location lTarget = GetLocation(oPost);
+    location lTarget = GetLocation(oTrade);
 
-    SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_POST);
-    SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oPost));
+    SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_TRADE);
+    SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oTrade));
     DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
 
     if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
@@ -698,13 +776,13 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
     {
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_WORK);
 
-        if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_BLACKSMITH)
+        if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
         {
-            DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_AVAILABLE);
+            DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_OFF);
         }
         else
         {
-            DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_OFF);
+            DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_AVAILABLE);
         }
 
         DL_ClearSleepExecutionState(oNpc);
