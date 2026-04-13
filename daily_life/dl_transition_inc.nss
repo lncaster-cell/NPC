@@ -3,6 +3,8 @@
 // 1) simple mode: entry waypoint stores explicit exit tag in `dl_transition_exit_tag`
 // 2) legacy mode: entry waypoint stores `dl_transition_kind` + `dl_transition_id`
 // Entry waypoint tag can stay arbitrary in both cases.
+// Bidirectional 2-waypoint same-area portal pairs are supported when each waypoint
+// points to the other via `dl_transition_exit_tag`.
 
 const string DL_L_WP_TRANSITION_KIND = "dl_transition_kind";
 const string DL_L_WP_TRANSITION_ID = "dl_transition_id";
@@ -144,6 +146,22 @@ object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
     return DL_ResolveTransitionExitWaypoint(DL_GetWaypointTransitionKind(oEntryWp), DL_GetWaypointTransitionId(oEntryWp));
 }
 
+int DL_IsBidirectionalTransitionPair(object oWpA, object oWpB)
+{
+    if (!GetIsObjectValid(oWpA) || !GetIsObjectValid(oWpB))
+    {
+        return FALSE;
+    }
+
+    object oBack = DL_ResolveTransitionExitWaypointFromEntry(oWpB);
+    if (!GetIsObjectValid(oBack))
+    {
+        return FALSE;
+    }
+
+    return GetTag(oBack) == GetTag(oWpA);
+}
+
 object DL_ResolveTransitionDriverObject(object oEntryWp)
 {
     string sDriverTag = DL_GetWaypointTransitionDriverTag(oEntryWp);
@@ -177,17 +195,17 @@ void DL_JumpNpcToTransitionExit(object oNpc, location lExit)
     AssignCommand(oNpc, ActionJumpToLocation(lExit));
 }
 
-int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oEntryWp)
+int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oTargetWp)
 {
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oEntryWp))
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTargetWp))
     {
         return FALSE;
     }
 
-    string sKind = DL_GetWaypointTransitionKind(oEntryWp);
-    string sTransitionId = DL_GetWaypointTransitionId(oEntryWp);
-    string sExitTag = DL_GetWaypointTransitionExitTag(oEntryWp);
-    string sDriver = DL_GetWaypointTransitionDriver(oEntryWp);
+    string sKind = DL_GetWaypointTransitionKind(oTargetWp);
+    string sTransitionId = DL_GetWaypointTransitionId(oTargetWp);
+    string sExitTag = DL_GetWaypointTransitionExitTag(oTargetWp);
+    string sDriver = DL_GetWaypointTransitionDriver(oTargetWp);
 
     if (sExitTag == "" && sKind == "" && sTransitionId == "")
     {
@@ -197,7 +215,7 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oEntryWp)
 
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_KIND, sKind);
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_ID, sTransitionId);
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET, GetTag(oEntryWp));
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET, GetTag(oTargetWp));
 
     if (sExitTag == "" && (sKind == "" || sTransitionId == ""))
     {
@@ -206,19 +224,43 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oEntryWp)
         return TRUE;
     }
 
-    if (GetDistanceBetweenLocations(GetLocation(oNpc), GetLocation(oEntryWp)) > DL_TRANSITION_ENTRY_RADIUS)
+    object oActualEntry = oTargetWp;
+    object oPairedWp = DL_ResolveTransitionExitWaypointFromEntry(oTargetWp);
+
+    if (GetIsObjectValid(oPairedWp) &&
+        GetArea(oPairedWp) == GetArea(oNpc) &&
+        GetArea(oTargetWp) == GetArea(oNpc) &&
+        DL_IsBidirectionalTransitionPair(oTargetWp, oPairedWp))
+    {
+        float fTargetDist = GetDistanceBetweenLocations(GetLocation(oNpc), GetLocation(oTargetWp));
+        float fPairedDist = GetDistanceBetweenLocations(GetLocation(oNpc), GetLocation(oPairedWp));
+
+        if (fTargetDist <= DL_TRANSITION_ENTRY_RADIUS)
+        {
+            DL_ClearTransitionExecutionState(oNpc);
+            return FALSE;
+        }
+
+        if (fPairedDist < fTargetDist)
+        {
+            oActualEntry = oPairedWp;
+            sDriver = DL_GetWaypointTransitionDriver(oActualEntry);
+        }
+    }
+
+    if (GetDistanceBetweenLocations(GetLocation(oNpc), GetLocation(oActualEntry)) > DL_TRANSITION_ENTRY_RADIUS)
     {
         if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
         {
             SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "moving_to_entry");
             SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "moving_to_transition_entry");
             AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionMoveToLocation(GetLocation(oEntryWp), TRUE));
+            AssignCommand(oNpc, ActionMoveToLocation(GetLocation(oActualEntry), TRUE));
         }
         return TRUE;
     }
 
-    object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oEntryWp);
+    object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oActualEntry);
     if (!GetIsObjectValid(oExitWp))
     {
         SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "exit_missing");
@@ -238,7 +280,7 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oEntryWp)
 
     if (sDriver == DL_TRANSITION_DRIVER_DOOR)
     {
-        object oDoor = DL_ResolveTransitionDriverObject(oEntryWp);
+        object oDoor = DL_ResolveTransitionDriverObject(oActualEntry);
         if (!GetIsObjectValid(oDoor) || GetObjectType(oDoor) != OBJECT_TYPE_DOOR)
         {
             SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "driver_missing");
