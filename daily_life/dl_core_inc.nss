@@ -380,7 +380,7 @@ void DL_BootstrapAreaTier(object oArea)
     }
 
     int nTier = DL_GetAreaTier(oArea);
-    if (DL_AreaHasPlayer(oArea))
+    if (nTier != DL_TIER_HOT && DL_AreaHasPlayer(oArea))
     {
         nTier = DL_TIER_HOT;
     }
