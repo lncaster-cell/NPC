@@ -97,6 +97,95 @@ void DL_LogRuntime(string sLog)
     PrintString(sLog);
 }
 
+string DL_GetDirectiveLabel(int nDirective)
+{
+    if (nDirective == DL_DIR_SLEEP)
+    {
+        return "sleep";
+    }
+    if (nDirective == DL_DIR_WORK)
+    {
+        return "work";
+    }
+    if (nDirective == DL_DIR_SOCIAL)
+    {
+        return "social";
+    }
+    return "none";
+}
+
+string DL_GetNpcProblemSummary(object oNpc)
+{
+    string sTransitionDiag = GetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC);
+    if (sTransitionDiag != "")
+    {
+        return "transition:" + sTransitionDiag;
+    }
+
+    string sSleepDiag = GetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+    if (sSleepDiag != "")
+    {
+        return "sleep:" + sSleepDiag;
+    }
+
+    string sWorkDiag = GetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
+    if (sWorkDiag != "")
+    {
+        return "work:" + sWorkDiag;
+    }
+
+    string sBlockedDiag = GetLocalString(oNpc, DL_L_NPC_BLOCKED_DIAGNOSTIC);
+    if (sBlockedDiag != "")
+    {
+        return "blocked:" + sBlockedDiag;
+    }
+
+    string sTransitionStatus = GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS);
+    if (sTransitionStatus != "" && sTransitionStatus != "transitioning")
+    {
+        return "transition_status:" + sTransitionStatus;
+    }
+
+    string sSleepStatus = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
+    if (sSleepStatus != "" && sSleepStatus != "on_bed")
+    {
+        return "sleep_status:" + sSleepStatus;
+    }
+
+    string sWorkStatus = GetLocalString(oNpc, DL_L_NPC_WORK_STATUS);
+    if (sWorkStatus != "" && sWorkStatus != "on_anchor")
+    {
+        return "work_status:" + sWorkStatus;
+    }
+
+    return "ok";
+}
+
+void DL_LogNpcDiagnostic(object oNpc, string sSource)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    string sProblem = DL_GetNpcProblemSummary(oNpc);
+    string sLog = "[DL][NPC] src=" + sSource +
+                  " npc=" + GetName(oNpc) +
+                  " hour=" + IntToString(GetTimeHour()) +
+                  " profile=" + GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) +
+                  " directive=" + DL_GetDirectiveLabel(GetLocalInt(oNpc, DL_L_NPC_DIRECTIVE)) +
+                  " state=" + GetLocalString(oNpc, DL_L_NPC_STATE) +
+                  " problem=" + sProblem +
+                  " sleep_status=" + GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS) +
+                  " sleep_target=" + GetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET) +
+                  " work_status=" + GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) +
+                  " work_target=" + GetLocalString(oNpc, DL_L_NPC_WORK_TARGET) +
+                  " transition_status=" + GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) +
+                  " transition_target=" + GetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET);
+
+    DL_LogRuntime(sLog);
+}
+
 void DL_InitModuleContract()
 {
     object oModule = GetModule();
@@ -434,6 +523,7 @@ void DL_ProcessResync(object oNpc)
     {
         int nDirective = DL_ResolveNpcDirective(oNpc);
         DL_ApplyDirectiveSkeleton(oNpc, nDirective);
+        DL_LogNpcDiagnostic(oNpc, "resync");
     }
 
     SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, FALSE);
@@ -477,6 +567,11 @@ void DL_WorkerTouchNpc(object oNpc)
 
     int nDirective = DL_ResolveNpcDirective(oNpc);
     DL_ApplyDirectiveSkeleton(oNpc, nDirective);
+
+    if (DL_GetNpcProblemSummary(oNpc) != "ok")
+    {
+        DL_LogNpcDiagnostic(oNpc, "worker");
+    }
 }
 
 void DL_RunAreaEnterResyncTick(object oArea)
