@@ -5,12 +5,10 @@
 
 ## 1) Active documentation (strict)
 
-Единственный активный набор документации (5 файлов):
+Единственный активный набор документации (только реально существующие файлы):
 1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
 3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
-4. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
-5. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
 
 ## 2) Workspace path policy
 
@@ -25,6 +23,7 @@
 
 PR-чек-лист (docs):
 - [ ] Нет новых вхождений `scripts/daily_life/` в active/template документах.
+- [ ] Несуществующие ссылки в active-доках запрещены.
 
 ## 3) Остальные документы
 
