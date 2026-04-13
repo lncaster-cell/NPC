@@ -21,6 +21,7 @@ const string DL_L_MODULE_DEATH_COUNT = "dl_module_death_count";
 const string DL_L_NPC_RESYNC_PENDING = "dl_npc_resync_pending";
 const string DL_L_NPC_RESYNC_REASON = "dl_npc_resync_reason";
 const string DL_L_NPC_BLOCKED_DIAGNOSTIC = "dl_npc_blocked_diagnostic";
+const string DL_L_NPC_DIAG_LAST_SIG = "dl_npc_diag_last_sig";
 
 const string DL_L_MODULE_RESYNC_REQ = "dl_module_resync_req";
 const string DL_L_MODULE_CLEANUP_CNT = "dl_module_cleanup_cnt";
@@ -185,6 +186,36 @@ void DL_LogNpcDiagnostic(object oNpc, string sSource)
                   " transition_target=" + GetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET);
 
     DL_LogRuntime(sLog);
+}
+
+string DL_GetNpcDiagnosticSignature(object oNpc)
+{
+    return DL_GetDirectiveLabel(GetLocalInt(oNpc, DL_L_NPC_DIRECTIVE)) + "|" +
+           GetLocalString(oNpc, DL_L_NPC_STATE) + "|" +
+           DL_GetNpcProblemSummary(oNpc) + "|" +
+           GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS) + "|" +
+           GetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET) + "|" +
+           GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) + "|" +
+           GetLocalString(oNpc, DL_L_NPC_WORK_TARGET) + "|" +
+           GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) + "|" +
+           GetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET);
+}
+
+void DL_MaybeLogNpcDiagnostic(object oNpc, string sSource, int bForce)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    string sSignature = DL_GetNpcDiagnosticSignature(oNpc);
+    if (!bForce && GetLocalString(oNpc, DL_L_NPC_DIAG_LAST_SIG) == sSignature)
+    {
+        return;
+    }
+
+    SetLocalString(oNpc, DL_L_NPC_DIAG_LAST_SIG, sSignature);
+    DL_LogNpcDiagnostic(oNpc, sSource);
 }
 
 void DL_InitModuleContract()
@@ -500,6 +531,7 @@ void DL_UnregisterNpc(object oNpc)
     }
 
     DeleteLocalObject(oNpc, DL_L_NPC_REG_AREA);
+    DeleteLocalString(oNpc, DL_L_NPC_DIAG_LAST_SIG);
 }
 
 void DL_ProcessResync(object oNpc)
@@ -524,7 +556,7 @@ void DL_ProcessResync(object oNpc)
     {
         int nDirective = DL_ResolveNpcDirective(oNpc);
         DL_ApplyDirectiveSkeleton(oNpc, nDirective);
-        DL_LogNpcDiagnostic(oNpc, "resync");
+        DL_MaybeLogNpcDiagnostic(oNpc, "resync", TRUE);
     }
 
     SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, FALSE);
@@ -571,7 +603,11 @@ void DL_WorkerTouchNpc(object oNpc)
 
     if (DL_GetNpcProblemSummary(oNpc) != "ok")
     {
-        DL_LogNpcDiagnostic(oNpc, "worker");
+        DL_MaybeLogNpcDiagnostic(oNpc, "worker", FALSE);
+    }
+    else
+    {
+        DeleteLocalString(oNpc, DL_L_NPC_DIAG_LAST_SIG);
     }
 }
 
