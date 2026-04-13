@@ -24,9 +24,9 @@
 ### 1.2 Tier lifecycle
 - `OnEnter` игрока: зона переводится в `HOT`, запускается area resync.
 - `OnExit` игрока:
-  - если после исключения выходящего игрока в зоне ещё есть игроки -> зона переводится в `WARM`;
-  - если игроков нет -> зона переводится в `FROZEN`.
-- Практический эффект в текущей реализации: `WARM` даёт ограниченный рабочий цикл, `FROZEN` отключает dispatch.
+  - если после выхода игрока в зоне не осталось игроков -> зона переводится в `WARM`;
+  - если игроки в зоне остаются -> tier удерживается через `DL_BootstrapAreaTier` (не понижается ниже `WARM`).
+- Практический эффект в текущей реализации: `HOT/WARM` выполняют bounded worker dispatch, `FROZEN` существует как tier-константа и stop-mode, но не выставляется автоматически через `OnExit` в текущем baseline.
 
 ### 1.3 Какие NPC реально попадают в обработку
 - NPC должен быть Daily Life NPC (`dl_npc_family` из first playable slice) **или** пройти bootstrap через NPC hook layer (например, через staged slot profile / `dl_function_slot_id`).
@@ -73,6 +73,7 @@
 | 2026-04-07 | Resolver semantic helper cleanup | Убрать repeated semantic checks для групп schedule windows и directive states | В `dl_resolver_inc` добавлены `DL_IsSocialScheduleWindow`, `DL_IsDutyScheduleWindow`, `DL_IsDutyDirective`, `DL_IsWorkOrServiceDirective`, `DL_IsUnavailableDirective`; compile-safe path синхронизирован через `dl_all_inc` | done |
 | 2026-04-07 | Materialize unavailable-state cleanup | Убрать repeated unavailable interaction/plot state path в materialization fallback branches | В `dl_materialize_inc` добавлен `DL_ApplyUnavailableInteractionState`; через него сведены `ABSENT/UNASSIGNED` fallback branches | done |
 | 2026-04-07 | Event-driven NPC lifecycle hardening | Централизовать `OnSpawn/OnDeath` через единый dispatcher path и снизить риск split-behavior между hooks | `dl_npc_onspawn` и `dl_npc_ondeath` переведены на `DL_SignalNpcUserDefined` (`DL_UD_BOOTSTRAP`/`DL_UD_CLEANUP`) с исполнением через `dl_npc_onud` | done |
+| 2026-04-13 | Синхронизация Runtime Truth с фактическим tier lifecycle | Убрать расхождение в журнале: `OnExit` ошибочно описывался как путь к `FROZEN` | Раздел `1.2` обновлён по коду `dl_core_inc`: `OnExit` при пустой зоне ставит `WARM`; `FROZEN` остаётся константой/stop-mode без авто-перехода через `OnExit` | done |
 
 ---
 
