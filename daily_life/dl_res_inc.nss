@@ -1,4 +1,5 @@
 #include "dl_activity_archive_anim_inc"
+#include "dl_transition_inc"
 
 // Step 05+: resolver/materialization skeleton.
 // Scope: EARLY_WORKER sleep window + basic BLACKSMITH/GATE_POST/TRADER WORK/SLEEP window split.
@@ -232,24 +233,38 @@ object DL_GetWorkWaypointByTag(string sTag)
     return oWp;
 }
 
-int DL_IsSleepWaypointInNpcArea(object oNpc, object oWp)
+object DL_ResolveEffectiveWaypointForNpc(object oNpc, object oWp)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oWp))
     {
-        return FALSE;
+        return OBJECT_INVALID;
     }
 
-    return GetArea(oWp) == GetArea(oNpc);
+    if (GetArea(oWp) == GetArea(oNpc))
+    {
+        return oWp;
+    }
+
+    if (DL_WaypointHasTransition(oWp))
+    {
+        object oExitWp = DL_ResolveTransitionExitWaypoint(DL_GetWaypointTransitionKind(oWp), DL_GetWaypointTransitionId(oWp));
+        if (GetIsObjectValid(oExitWp) && GetArea(oExitWp) == GetArea(oNpc))
+        {
+            return oExitWp;
+        }
+    }
+
+    return OBJECT_INVALID;
+}
+
+int DL_IsSleepWaypointInNpcArea(object oNpc, object oWp)
+{
+    return GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
 }
 
 int DL_IsWorkWaypointInNpcArea(object oNpc, object oWp)
 {
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oWp))
-    {
-        return FALSE;
-    }
-
-    return GetArea(oWp) == GetArea(oNpc);
+    return GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
 }
 
 int DL_IsSleepWaypointTagInvalidArea(object oNpc, string sTag)
@@ -260,20 +275,20 @@ int DL_IsSleepWaypointTagInvalidArea(object oNpc, string sTag)
         return FALSE;
     }
 
-    return !DL_IsSleepWaypointInNpcArea(oNpc, oWp);
+    return !GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
 }
 
 object DL_ResolveSleepApproachWaypoint(object oNpc)
 {
     string sNpcTag = GetTag(oNpc);
-    object oWp = DL_GetSleepWaypointByTag("dl_sleep_" + sNpcTag + "_approach");
-    if (DL_IsSleepWaypointInNpcArea(oNpc, oWp))
+    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetSleepWaypointByTag("dl_sleep_" + sNpcTag + "_approach"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
 
-    oWp = DL_GetSleepWaypointByTag("dl_sleep_approach");
-    if (DL_IsSleepWaypointInNpcArea(oNpc, oWp))
+    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetSleepWaypointByTag("dl_sleep_approach"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
@@ -284,14 +299,14 @@ object DL_ResolveSleepApproachWaypoint(object oNpc)
 object DL_ResolveSleepBedWaypoint(object oNpc)
 {
     string sNpcTag = GetTag(oNpc);
-    object oWp = DL_GetSleepWaypointByTag("dl_sleep_" + sNpcTag + "_bed");
-    if (DL_IsSleepWaypointInNpcArea(oNpc, oWp))
+    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetSleepWaypointByTag("dl_sleep_" + sNpcTag + "_bed"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
 
-    oWp = DL_GetSleepWaypointByTag("dl_sleep_bed");
-    if (DL_IsSleepWaypointInNpcArea(oNpc, oWp))
+    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetSleepWaypointByTag("dl_sleep_bed"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
@@ -302,14 +317,14 @@ object DL_ResolveSleepBedWaypoint(object oNpc)
 object DL_ResolveBlacksmithForgeWaypoint(object oNpc)
 {
     string sNpcTag = GetTag(oNpc);
-    object oWp = DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_forge");
-    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_forge"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
 
-    oWp = DL_GetWorkWaypointByTag("dl_work_forge");
-    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetWorkWaypointByTag("dl_work_forge"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
@@ -320,14 +335,14 @@ object DL_ResolveBlacksmithForgeWaypoint(object oNpc)
 object DL_ResolveBlacksmithCraftWaypoint(object oNpc)
 {
     string sNpcTag = GetTag(oNpc);
-    object oWp = DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_craft");
-    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_craft"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
 
-    oWp = DL_GetWorkWaypointByTag("dl_work_craft");
-    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetWorkWaypointByTag("dl_work_craft"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
@@ -338,14 +353,14 @@ object DL_ResolveBlacksmithCraftWaypoint(object oNpc)
 object DL_ResolveGatePostWaypoint(object oNpc)
 {
     string sNpcTag = GetTag(oNpc);
-    object oWp = DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_post");
-    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_post"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
 
-    oWp = DL_GetWorkWaypointByTag("dl_work_post");
-    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetWorkWaypointByTag("dl_work_post"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
@@ -356,14 +371,14 @@ object DL_ResolveGatePostWaypoint(object oNpc)
 object DL_ResolveTraderWaypoint(object oNpc)
 {
     string sNpcTag = GetTag(oNpc);
-    object oWp = DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_trade");
-    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    object oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetWorkWaypointByTag("dl_work_" + sNpcTag + "_trade"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
 
-    oWp = DL_GetWorkWaypointByTag("dl_work_trade");
-    if (DL_IsWorkWaypointInNpcArea(oNpc, oWp))
+    oWp = DL_ResolveEffectiveWaypointForNpc(oNpc, DL_GetWorkWaypointByTag("dl_work_trade"));
+    if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
@@ -377,6 +392,7 @@ void DL_ClearSleepExecutionState(object oNpc)
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+    DL_ClearTransitionExecutionState(oNpc);
 }
 
 void DL_ClearWorkExecutionState(object oNpc)
@@ -385,6 +401,7 @@ void DL_ClearWorkExecutionState(object oNpc)
     DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
     DeleteLocalString(oNpc, DL_L_NPC_WORK_STATUS);
     DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
+    DL_ClearTransitionExecutionState(oNpc);
 }
 
 void DL_ClearActivityPresentation(object oNpc)
@@ -570,11 +587,20 @@ void DL_ExecuteSleepDirective(object oNpc)
             DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
         }
         DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
+        DL_ClearTransitionExecutionState(oNpc);
         return;
     }
 
     SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, GetTag(oBed));
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+
+    if (DL_WaypointHasTransition(oApproach))
+    {
+        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oApproach))
+        {
+            return;
+        }
+    }
 
     location lApproach = GetLocation(oApproach);
     location lBed = GetLocation(oBed);
@@ -602,6 +628,14 @@ void DL_ExecuteSleepDirective(object oNpc)
         sStatus = "approach_reached";
     }
 
+    if (DL_WaypointHasTransition(oBed))
+    {
+        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oBed))
+        {
+            return;
+        }
+    }
+
     if (GetDistanceBetweenLocations(GetLocation(oNpc), lBed) > DL_SLEEP_BED_RADIUS)
     {
         if (nPhase != DL_SLEEP_PHASE_JUMPING || sStatus != "jumping_to_bed")
@@ -619,6 +653,7 @@ void DL_ExecuteSleepDirective(object oNpc)
         DL_PlaySleepAnimation(oNpc);
     }
 
+    DL_ClearTransitionExecutionState(oNpc);
     SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_ON_BED);
     SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "on_bed");
 }
@@ -651,15 +686,25 @@ void DL_ExecuteWorkDirective(object oNpc)
             SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_forge_and_craft_waypoints");
             DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
             DL_ClearActivityPresentation(oNpc);
+            DL_ClearTransitionExecutionState(oNpc);
             return;
         }
 
         object oTarget = sKind == DL_WORK_KIND_CRAFT ? oCraft : oForge;
-        location lTarget = GetLocation(oTarget);
 
         SetLocalString(oNpc, DL_L_NPC_WORK_KIND, sKind);
         SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oTarget));
         DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
+
+        if (DL_WaypointHasTransition(oTarget))
+        {
+            if (DL_TryExecuteTransitionAtWaypoint(oNpc, oTarget))
+            {
+                return;
+            }
+        }
+
+        location lTarget = GetLocation(oTarget);
 
         if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
         {
@@ -672,6 +717,7 @@ void DL_ExecuteWorkDirective(object oNpc)
             return;
         }
 
+        DL_ClearTransitionExecutionState(oNpc);
         SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
         DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
         DL_PlayWorkAnimation(oNpc);
@@ -689,14 +735,23 @@ void DL_ExecuteWorkDirective(object oNpc)
             SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_post_waypoint");
             DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
             DL_ClearActivityPresentation(oNpc);
+            DL_ClearTransitionExecutionState(oNpc);
             return;
         }
-
-        location lTarget = GetLocation(oPost);
 
         SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_POST);
         SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oPost));
         DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
+
+        if (DL_WaypointHasTransition(oPost))
+        {
+            if (DL_TryExecuteTransitionAtWaypoint(oNpc, oPost))
+            {
+                return;
+            }
+        }
+
+        location lTarget = GetLocation(oPost);
 
         if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
         {
@@ -709,6 +764,7 @@ void DL_ExecuteWorkDirective(object oNpc)
             return;
         }
 
+        DL_ClearTransitionExecutionState(oNpc);
         SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
         DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
         DL_PlayWorkAnimation(oNpc);
@@ -724,14 +780,23 @@ void DL_ExecuteWorkDirective(object oNpc)
         SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, "need_trade_waypoint");
         DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
         DL_ClearActivityPresentation(oNpc);
+        DL_ClearTransitionExecutionState(oNpc);
         return;
     }
-
-    location lTarget = GetLocation(oTrade);
 
     SetLocalString(oNpc, DL_L_NPC_WORK_KIND, DL_WORK_KIND_TRADE);
     SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oTrade));
     DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
+
+    if (DL_WaypointHasTransition(oTrade))
+    {
+        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oTrade))
+        {
+            return;
+        }
+    }
+
+    location lTarget = GetLocation(oTrade);
 
     if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
     {
@@ -744,6 +809,7 @@ void DL_ExecuteWorkDirective(object oNpc)
         return;
     }
 
+    DL_ClearTransitionExecutionState(oNpc);
     SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
     DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
     DL_PlayWorkAnimation(oNpc);
