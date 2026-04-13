@@ -1,10 +1,12 @@
 // Daily Life interzone transition helper layer.
-// Route-side configuration uses a single entry waypoint in the source area.
-// The entry waypoint carries transition metadata and optional door/trigger driver.
-// Exit waypoint remains a shared landing point in the destination context.
+// Backward compatible modes:
+// 1) simple mode: entry waypoint stores explicit exit tag in `dl_transition_exit_tag`
+// 2) legacy mode: entry waypoint stores `dl_transition_kind` + `dl_transition_id`
+// Entry waypoint tag can stay arbitrary in both cases.
 
 const string DL_L_WP_TRANSITION_KIND = "dl_transition_kind";
 const string DL_L_WP_TRANSITION_ID = "dl_transition_id";
+const string DL_L_WP_TRANSITION_EXIT_TAG = "dl_transition_exit_tag";
 const string DL_L_WP_TRANSITION_DRIVER = "dl_transition_driver";
 const string DL_L_WP_TRANSITION_DRIVER_TAG = "dl_transition_driver_tag";
 
@@ -60,6 +62,16 @@ string DL_GetWaypointTransitionId(object oWp)
     return GetLocalString(oWp, DL_L_WP_TRANSITION_ID);
 }
 
+string DL_GetWaypointTransitionExitTag(object oWp)
+{
+    if (!GetIsObjectValid(oWp))
+    {
+        return "";
+    }
+
+    return GetLocalString(oWp, DL_L_WP_TRANSITION_EXIT_TAG);
+}
+
 string DL_GetWaypointTransitionDriver(object oWp)
 {
     if (!GetIsObjectValid(oWp))
@@ -96,7 +108,9 @@ int DL_WaypointHasTransition(object oWp)
         return FALSE;
     }
 
-    return DL_GetWaypointTransitionKind(oWp) != "" || DL_GetWaypointTransitionId(oWp) != "";
+    return DL_GetWaypointTransitionExitTag(oWp) != "" ||
+           DL_GetWaypointTransitionKind(oWp) != "" ||
+           DL_GetWaypointTransitionId(oWp) != "";
 }
 
 object DL_ResolveTransitionExitWaypoint(string sKind, string sTransitionId)
@@ -112,6 +126,22 @@ object DL_ResolveTransitionExitWaypoint(string sKind, string sTransitionId)
     }
 
     return OBJECT_INVALID;
+}
+
+object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
+{
+    if (!GetIsObjectValid(oEntryWp))
+    {
+        return OBJECT_INVALID;
+    }
+
+    string sExitTag = DL_GetWaypointTransitionExitTag(oEntryWp);
+    if (sExitTag != "")
+    {
+        return DL_GetTransitionWaypointByTag(sExitTag);
+    }
+
+    return DL_ResolveTransitionExitWaypoint(DL_GetWaypointTransitionKind(oEntryWp), DL_GetWaypointTransitionId(oEntryWp));
 }
 
 object DL_ResolveTransitionDriverObject(object oEntryWp)
@@ -156,9 +186,10 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oEntryWp)
 
     string sKind = DL_GetWaypointTransitionKind(oEntryWp);
     string sTransitionId = DL_GetWaypointTransitionId(oEntryWp);
+    string sExitTag = DL_GetWaypointTransitionExitTag(oEntryWp);
     string sDriver = DL_GetWaypointTransitionDriver(oEntryWp);
 
-    if (sKind == "" && sTransitionId == "")
+    if (sExitTag == "" && sKind == "" && sTransitionId == "")
     {
         DL_ClearTransitionExecutionState(oNpc);
         return FALSE;
@@ -168,10 +199,10 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oEntryWp)
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_ID, sTransitionId);
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET, GetTag(oEntryWp));
 
-    if (sKind == "" || sTransitionId == "")
+    if (sExitTag == "" && (sKind == "" || sTransitionId == ""))
     {
         SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "metadata_missing");
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_transition_kind_and_id_on_entry_waypoint");
+        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_transition_exit_tag_or_kind_id_on_entry_waypoint");
         return TRUE;
     }
 
@@ -187,11 +218,11 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oEntryWp)
         return TRUE;
     }
 
-    object oExitWp = DL_ResolveTransitionExitWaypoint(sKind, sTransitionId);
+    object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oEntryWp);
     if (!GetIsObjectValid(oExitWp))
     {
         SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "exit_missing");
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_transition_exit_waypoint");
+        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_valid_transition_exit_waypoint");
         return TRUE;
     }
 

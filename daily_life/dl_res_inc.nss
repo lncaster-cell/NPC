@@ -247,7 +247,7 @@ object DL_ResolveEffectiveWaypointForNpc(object oNpc, object oWp)
 
     if (DL_WaypointHasTransition(oWp))
     {
-        object oExitWp = DL_ResolveTransitionExitWaypoint(DL_GetWaypointTransitionKind(oWp), DL_GetWaypointTransitionId(oWp));
+        object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oWp);
         if (GetIsObjectValid(oExitWp) && GetArea(oExitWp) == GetArea(oNpc))
         {
             return oExitWp;
