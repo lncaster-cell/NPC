@@ -102,3 +102,67 @@ DL_PlaySleepAnimation(oNpc); // Берёт 2-й токен из DL_L_NPC_ANIM_SE
 - `DL_ARCH_ACT_NPC_FORGE` + `DL_ARCH_ANIMS_FORGE` для `DL_DIR_WORK` (только профиль `blacksmith`).
 - `DL_ARCH_ACT_NPC_SLEEP_BED` + `DL_ARCH_ANIMS_SLEEP_BED` для `DL_DIR_SLEEP`.
 - `DL_ARCH_ACT_NPC_MIDNIGHT_BED`, `DL_ARCH_ACT_NPC_MIDNIGHT_90`, `DL_ARCH_ACT_NPC_SLEEP_90` присутствуют как доступные ID-константы reference-слоя, но в текущем skeleton напрямую не назначаются.
+
+### 5) Полная таблица доступных animation tokens (archive reference)
+
+> Источник: `docs/archive/ambientlivev2-stable/scripts/al_acts_inc.nss` (`AL_GetLocateWrapperCustomAnims`, `AL_GetActivityCustomAnims`).
+
+| Animation token | Краткое описание |
+|---|---|
+| `*1attack01` | Базовая атака (анимация удара №1). |
+| `bored` | Скучающая стойка/жест. |
+| `bow` | Поклон. |
+| `chuckle` | Небольшой смешок. |
+| `clapping` | Аплодисменты. |
+| `cooking01` | Готовка, вариант 1. |
+| `cooking02` | Готовка, вариант 2. |
+| `craft01` | Ремесленное действие/крафт. |
+| `curtsey` | Реверанс. |
+| `dance01` | Танец, вариант 1. |
+| `dance02` | Танец, вариант 2. |
+| `disablefront` | Работа с механизмом/ловушкой спереди. |
+| `disableground` | Работа с объектом/ловушкой у земли. |
+| `dustoff` | Смахнуть пыль/очистить руки. |
+| `flirt` | Флиртующий жест. |
+| `forge01` | Ковка, вариант 1. |
+| `forge02` | Ковка, вариант 2. |
+| `getground` | Поднять предмет с земли. |
+| `gettable` | Взять предмет со стола/поверхности. |
+| `intimidate` | Угрожающая/запугивающая подача. |
+| `kneeldown` | Встать на колено (фаза опускания). |
+| `kneelidle` | Поза на коленях (idle). |
+| `kneeltalk` | Разговор в позе на коленях. |
+| `kneelup` | Подъём с колен. |
+| `laydownB` | Лечь (вариант B). |
+| `lookleft` | Посмотреть влево. |
+| `lookright` | Посмотреть вправо. |
+| `meditate` | Медитация. |
+| `nodno` | Жест «нет». |
+| `nodyes` | Жест «да». |
+| `openlock` | Взлом/открытие замка. |
+| `playdrum` | Игра на барабане. |
+| `playflute` | Игра на флейте. |
+| `playguitar` | Игра на гитаре/лютне. |
+| `proneB` | Положение лёжа (вариант B). |
+| `scratchhead` | Почесать голову (озадаченность). |
+| `shrug` | Пожимание плечами. |
+| `sigh` | Вздох. |
+| `sitdrink` | Сидя: пить. |
+| `siteat` | Сидя: есть. |
+| `sitfidget` | Сидя: ёрзать/смена позы. |
+| `sitidle` | Сидя: спокойный idle. |
+| `sitread` | Сидя: чтение. |
+| `sittalk` | Сидя: разговор (базовый). |
+| `sittalk01` | Сидя: разговор, вариант 1. |
+| `sittalk02` | Сидя: разговор, вариант 2. |
+| `sitteat` | Сидя: приём пищи (альтернативный токен). |
+| `sleightofhand` | Ловкость рук/карманные манипуляции. |
+| `sneak` | Скрытное передвижение/крадущаяся поза. |
+| `talk01` | Разговор, вариант 1. |
+| `talk02` | Разговор, вариант 2. |
+| `talklaugh` | Разговор со смехом. |
+| `talksad` | Печальная манера речи. |
+| `talkshout` | Крик/повышенный тон в разговоре. |
+| `tired` | Уставшая поза/жест. |
+| `victory` | Жест победы/триумфа. |
+| `yawn` | Зевок. |
