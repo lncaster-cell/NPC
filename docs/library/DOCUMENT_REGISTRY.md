@@ -5,7 +5,7 @@
 
 ## 1) Active documentation (strict)
 
-Единственный активный набор документации (5 файлов):
+Единственный активный набор документации (только реально существующие файлы):
 1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
 2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
 3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`

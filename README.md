@@ -4,7 +4,7 @@
 
 Цель текущего этапа: прекратить рост мета-документации и развивать runtime-код в `daily_life/`.
 
-## ACTIVE DOC SET (только 5 файлов)
+## ACTIVE DOC SET (только реально существующие файлы)
 
 Основной канонический маршрут:
 1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
@@ -17,6 +17,7 @@
 Для уточнения acceptance-статуса и фактической рабочей точки также используются:
 - `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
 - `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
+- `docs/runtime/55_DAILY_LIFE_SLEEP_SCENARIO_OWNER_STATUS_RU.md` *(sleep-status source of truth; supersedes archived temporary status)*
 - `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
 
 ## Канонический workspace path
