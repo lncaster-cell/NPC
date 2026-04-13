@@ -74,6 +74,7 @@
 | 2026-04-07 | Materialize unavailable-state cleanup | Убрать repeated unavailable interaction/plot state path в materialization fallback branches | В `dl_materialize_inc` добавлен `DL_ApplyUnavailableInteractionState`; через него сведены `ABSENT/UNASSIGNED` fallback branches | done |
 | 2026-04-07 | Event-driven NPC lifecycle hardening | Централизовать `OnSpawn/OnDeath` через единый dispatcher path и снизить риск split-behavior между hooks | `dl_npc_onspawn` и `dl_npc_ondeath` переведены на `DL_SignalNpcUserDefined` (`DL_UD_BOOTSTRAP`/`DL_UD_CLEANUP`) с исполнением через `dl_npc_onud` | done |
 | 2026-04-13 | Синхронизация Runtime Truth с фактическим tier lifecycle | Убрать расхождение в журнале: `OnExit` ошибочно описывался как путь к `FROZEN` | Раздел `1.2` обновлён по коду `dl_core_inc`: `OnExit` при пустой зоне ставит `WARM`; `FROZEN` остаётся константой/stop-mode без авто-перехода через `OnExit` | done |
+| 2026-04-13 | Фиксация owner acceptance по Sleep/Work/межзоновым переходам | Зафиксировать подтверждённые PASS-сценарии в целевом журнале приёмки | Добавлен `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md` с run `dlv1-accept-20260413-owner-01` и статусами `PASS` по Sleep, Work (кузнец/стражник) и inter-zone transitions | done |
 
 ---
 
