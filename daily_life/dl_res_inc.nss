@@ -55,6 +55,8 @@ const string DL_L_NPC_WAKE_HOUR = "dl_wake_hour";
 const string DL_L_NPC_SLEEP_HOURS = "dl_sleep_hours";
 const string DL_L_NPC_SHIFT_START = "dl_shift_start";
 const string DL_L_NPC_SHIFT_LENGTH = "dl_shift_length";
+const string DL_L_NPC_DIAG_LAST_KEY = "dl_diag_last_key";
+const string DL_L_NPC_DIAG_LAST_MINUTE = "dl_diag_last_minute";
 
 const string DL_PROFILE_EARLY_WORKER = "early_worker";
 const string DL_PROFILE_BLACKSMITH = "blacksmith";
@@ -140,6 +142,12 @@ int DL_GetNowMinuteOfDay()
     return (GetTimeHour() * 60) + GetTimeMinute();
 }
 
+int DL_GetAbsoluteMinute()
+{
+    int nDays = (GetCalendarYear() * 12 * 28) + (GetCalendarMonth() * 28) + GetCalendarDay();
+    return (nDays * 1440) + DL_GetNowMinuteOfDay();
+}
+
 int DL_ClampInt(int nValue, int nMin, int nMax)
 {
     if (nValue < nMin)
@@ -161,6 +169,26 @@ void DL_LogChat(string sMessage)
         SendMessageToPC(oPc, "[DL] " + sMessage);
         oPc = GetNextPC();
     }
+}
+
+void DL_LogMarkupIssueOnce(object oNpc, string sKey, string sMessage)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    int nNowAbsMin = DL_GetAbsoluteMinute();
+    string sLastKey = GetLocalString(oNpc, DL_L_NPC_DIAG_LAST_KEY);
+    int nLastMin = GetLocalInt(oNpc, DL_L_NPC_DIAG_LAST_MINUTE);
+    if (sLastKey == sKey && (nNowAbsMin - nLastMin) < 30)
+    {
+        return;
+    }
+
+    SetLocalString(oNpc, DL_L_NPC_DIAG_LAST_KEY, sKey);
+    SetLocalInt(oNpc, DL_L_NPC_DIAG_LAST_MINUTE, nNowAbsMin);
+    DL_LogChat(sMessage);
 }
 
 int DL_GetAlphaNumCharValue(string sChar)
@@ -213,8 +241,8 @@ int DL_MinuteInWindow(int nMinute, int nStart, int nDuration)
 
 int DL_GetWeekendType()
 {
-    int nDay = GetCalendarDay();
-    int nDow = nDay % 7; // 0=Sunday, 6=Saturday in runtime convention
+    int nAbsoluteDay = (GetCalendarYear() * 12 * 28) + (GetCalendarMonth() * 28) + GetCalendarDay();
+    int nDow = nAbsoluteDay % 7; // 0=Sunday, 6=Saturday in runtime convention
     if (nDow == 0)
     {
         return 2;
@@ -228,7 +256,12 @@ int DL_GetWeekendType()
 
 int DL_GetNpcSleepHours(object oNpc)
 {
-    return DL_ClampInt(GetLocalInt(oNpc, DL_L_NPC_SLEEP_HOURS), 7, 10);
+    int nHours = GetLocalInt(oNpc, DL_L_NPC_SLEEP_HOURS);
+    if (nHours <= 0)
+    {
+        nHours = 8;
+    }
+    return DL_ClampInt(nHours, 7, 10);
 }
 
 int DL_GetNpcWakeHour(object oNpc)
@@ -244,9 +277,18 @@ int DL_GetNpcWakeHour(object oNpc)
 int DL_GetNpcShiftStart(object oNpc)
 {
     int nStart = GetLocalInt(oNpc, DL_L_NPC_SHIFT_START);
-    if (nStart == 0 && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
+    if (nStart == 0)
     {
-        nStart = GetLocalInt(oNpc, DL_L_NPC_GUARD_SHIFT_START);
+        nStart = 8;
+    }
+
+    if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
+    {
+        int nLegacyGuardStart = GetLocalInt(oNpc, DL_L_NPC_GUARD_SHIFT_START);
+        if (nLegacyGuardStart > 0 && nLegacyGuardStart <= 23)
+        {
+            nStart = nLegacyGuardStart;
+        }
     }
     if (nStart < 0 || nStart > 23)
     {
@@ -324,14 +366,14 @@ int DL_IsGatePostWorkHour(object oNpc, int nHour)
     return DL_IsHourInShiftWindow(nHour, GetLocalInt(oNpc, DL_L_NPC_GUARD_SHIFT_START), DL_GUARD_SHIFT_HOURS);
 }
 
-int DL_ResolveNpcDirectiveAtHour(object oNpc, int nHour)
+int DL_ResolveNpcDirectiveAtMinute(object oNpc, int nNow)
 {
     if (!GetIsObjectValid(oNpc))
     {
         return DL_DIR_NONE;
     }
 
-    int nNow = DL_NormalizeMinuteOfDay(nHour * 60);
+    nNow = DL_NormalizeMinuteOfDay(nNow);
     int nWake = DL_GetNpcWakeHour(oNpc);
     int nSleepHours = DL_GetNpcSleepHours(oNpc);
     int nSleepStart = DL_NormalizeMinuteOfDay((nWake * 60) - (nSleepHours * 60));
@@ -369,6 +411,7 @@ int DL_ResolveNpcDirectiveAtHour(object oNpc, int nHour)
         return DL_DIR_MEAL;
     }
 
+    int bInWorkWindow = nShiftLen > 0 && DL_MinuteInWindow(nNow, nShiftStart, nShiftLen * 60);
     if (bWeekend && GetLocalString(oNpc, DL_L_NPC_WEEKEND_MODE) == DL_WEEKEND_MODE_OFF_PUBLIC)
     {
         if (DL_MinuteInWindow(nNow, nSocialStart, 75))
@@ -382,12 +425,12 @@ int DL_ResolveNpcDirectiveAtHour(object oNpc, int nHour)
         return DL_DIR_NONE;
     }
 
-    if (DL_MinuteInWindow(nNow, nSocialStart, 75))
+    if (!bInWorkWindow && DL_MinuteInWindow(nNow, nSocialStart, 75))
     {
         return DL_DIR_SOCIAL;
     }
 
-    if (DL_MinuteInWindow(nNow, nPublicStart, 90) || DL_MinuteInWindow(nNow, nPublicLate, 75))
+    if (!bInWorkWindow && (DL_MinuteInWindow(nNow, nPublicStart, 90) || DL_MinuteInWindow(nNow, nPublicLate, 75)))
     {
         return DL_DIR_PUBLIC;
     }
@@ -402,7 +445,7 @@ int DL_ResolveNpcDirectiveAtHour(object oNpc, int nHour)
 
 int DL_ResolveNpcDirective(object oNpc)
 {
-    return DL_ResolveNpcDirectiveAtHour(oNpc, GetTimeHour());
+    return DL_ResolveNpcDirectiveAtMinute(oNpc, DL_GetNowMinuteOfDay());
 }
 
 void DL_ApplyMaterializationSkeleton(object oNpc, int nDirective)
@@ -549,7 +592,11 @@ object DL_GetNpcAreaByTagCached(object oNpc, string sAreaTagLocal, string sAreaC
     object oArea = GetObjectByTag(sAreaTag);
     if (!GetIsObjectValid(oArea) || GetObjectType(oArea) != OBJECT_TYPE_AREA)
     {
-        DL_LogChat("NPC " + GetTag(oNpc) + ": area tag '" + sAreaTag + "' is invalid for local '" + sAreaTagLocal + "'.");
+        DL_LogMarkupIssueOnce(
+            oNpc,
+            "invalid_area_" + sAreaTagLocal + "_" + sAreaTag,
+            "NPC " + GetTag(oNpc) + ": area tag '" + sAreaTag + "' is invalid for local '" + sAreaTagLocal + "'."
+        );
         return OBJECT_INVALID;
     }
 
@@ -569,7 +616,11 @@ object DL_GetAreaAnchorWaypoint(object oNpc, object oArea, string sAnchorLocal, 
     {
         if (bRequired)
         {
-            DL_LogChat("Area " + GetTag(oArea) + " misses required anchor '" + sAnchorLocal + "' for NPC " + GetTag(oNpc) + ".");
+            DL_LogMarkupIssueOnce(
+                oNpc,
+                "missing_anchor_" + GetTag(oArea) + "_" + sAnchorLocal,
+                "Area " + GetTag(oArea) + " misses required anchor '" + sAnchorLocal + "' for NPC " + GetTag(oNpc) + "."
+            );
         }
         return OBJECT_INVALID;
     }
@@ -577,7 +628,11 @@ object DL_GetAreaAnchorWaypoint(object oNpc, object oArea, string sAnchorLocal, 
     object oWp = DL_GetNpcCachedWaypointByTag(oNpc, sCacheLocal, sWpTag);
     if (!GetIsObjectValid(oWp))
     {
-        DL_LogChat("Area " + GetTag(oArea) + " anchor '" + sAnchorLocal + "' points to missing waypoint '" + sWpTag + "'.");
+        DL_LogMarkupIssueOnce(
+            oNpc,
+            "missing_wp_" + GetTag(oArea) + "_" + sAnchorLocal + "_" + sWpTag,
+            "Area " + GetTag(oArea) + " anchor '" + sAnchorLocal + "' points to missing waypoint '" + sWpTag + "'."
+        );
         return OBJECT_INVALID;
     }
     return oWp;
@@ -588,7 +643,11 @@ object DL_GetHomeArea(object oNpc)
     object oHome = DL_GetNpcAreaByTagCached(oNpc, DL_L_NPC_HOME_AREA_TAG, DL_L_NPC_CACHE_HOME_AREA);
     if (!GetIsObjectValid(oHome))
     {
-        DL_LogChat("NPC " + GetTag(oNpc) + " has no valid home area (dl_home_area_tag).");
+        DL_LogMarkupIssueOnce(
+            oNpc,
+            "missing_home_area",
+            "NPC " + GetTag(oNpc) + " has no valid home area (dl_home_area_tag)."
+        );
     }
     return oHome;
 }
@@ -1077,7 +1136,11 @@ object DL_ResolvePublicWaypoint(object oNpc)
     }
     if (!GetIsObjectValid(oArea))
     {
-        DL_LogChat("NPC " + GetTag(oNpc) + " has no public/social area for PUBLIC directive.");
+        DL_LogMarkupIssueOnce(
+            oNpc,
+            "missing_public_area",
+            "NPC " + GetTag(oNpc) + " has no public/social area for PUBLIC directive."
+        );
         return OBJECT_INVALID;
     }
     return DL_GetAreaAnchorWaypoint(oNpc, oArea, "dl_anchor_public", DL_L_NPC_CACHE_PUBLIC, TRUE);
@@ -1282,12 +1345,21 @@ void DL_ExecuteSocialDirective(object oNpc)
         return;
     }
 
-    string sAnim = "talk01";
-    if ((DL_GetTagDeterministicOffset(GetTag(oNpc), 100, 0) % 2) == 0)
+    int bMeOnAnchor = GetDistanceBetween(oNpc, oMe) <= DL_WORK_ANCHOR_RADIUS;
+    int bPartnerOnAnchor = GetDistanceBetween(oPartner, oPartnerWp) <= DL_WORK_ANCHOR_RADIUS;
+    string sAnim = "";
+    string sStatus = "moving_social_pair";
+    if (bMeOnAnchor && bPartnerOnAnchor)
     {
-        sAnim = "talk02";
+        sStatus = "on_social_anchor";
+        sAnim = "talk01";
+        if ((DL_GetTagDeterministicOffset(GetTag(oNpc), 100, 0) % 2) == 0)
+        {
+            sAnim = "talk02";
+        }
     }
-    DL_ProgressFocusAtTarget(oNpc, oMe, "on_social_anchor", sAnim);
+
+    DL_ProgressFocusAtTarget(oNpc, oMe, sStatus, sAnim);
 }
 
 void DL_SetInteractionModes(object oNpc, string sDialogue, string sService)
