@@ -290,14 +290,16 @@ int DL_IsActivePipelineNpc(object oNpc)
 
 int DL_AreaHasPlayer(object oArea)
 {
-    object oObj = GetFirstObjectInArea(oArea);
+    // NWN:EE optimization path:
+    // filter loop to creatures only to avoid scanning placeables/items/doors every heartbeat tick.
+    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
     while (GetIsObjectValid(oObj))
     {
         if (GetIsPC(oObj) && !GetIsDM(oObj))
         {
             return TRUE;
         }
-        oObj = GetNextObjectInArea(oArea);
+        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
     }
     return FALSE;
 }
@@ -647,7 +649,7 @@ void DL_RunAreaEnterResyncTick(object oArea)
 
     int nNpcProcessed = 0;
     int nNpcSeen = 0;
-    object oObj = GetFirstObjectInArea(oArea);
+    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
 
     while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
     {
@@ -662,12 +664,12 @@ void DL_RunAreaEnterResyncTick(object oArea)
             nNpcSeen = nNpcSeen + 1;
         }
 
-        oObj = GetNextObjectInArea(oArea);
+        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
     }
 
     if (nNpcProcessed < nBudget && nCursor > 0)
     {
-        oObj = GetFirstObjectInArea(oArea);
+        oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
         int nWrapSeen = 0;
 
         while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
@@ -683,7 +685,7 @@ void DL_RunAreaEnterResyncTick(object oArea)
                 nWrapSeen = nWrapSeen + 1;
             }
 
-            oObj = GetNextObjectInArea(oArea);
+            oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
         }
     }
 
@@ -731,7 +733,7 @@ void DL_RunAreaWorkerTick(object oArea)
     int nCursor = DL_GetAreaWorkerCursor(oArea);
     int nNpcProcessed = 0;
     int nNpcSeen = 0;
-    object oObj = GetFirstObjectInArea(oArea);
+    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
 
     while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
     {
@@ -745,12 +747,12 @@ void DL_RunAreaWorkerTick(object oArea)
             nNpcSeen = nNpcSeen + 1;
         }
 
-        oObj = GetNextObjectInArea(oArea);
+        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
     }
 
     if (nNpcProcessed < nBudget && nCursor > 0)
     {
-        oObj = GetFirstObjectInArea(oArea);
+        oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
         int nWrapSeen = 0;
 
         while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
@@ -765,7 +767,7 @@ void DL_RunAreaWorkerTick(object oArea)
                 nWrapSeen = nWrapSeen + 1;
             }
 
-            oObj = GetNextObjectInArea(oArea);
+            oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
         }
     }
 
