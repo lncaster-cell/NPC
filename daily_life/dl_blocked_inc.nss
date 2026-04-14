@@ -3,7 +3,6 @@ const string DL_L_NPC_BLOCKED_TAG = "dl_npc_blocked_tag";
 const string DL_L_NPC_BLOCKED_TYPE = "dl_npc_blocked_type";
 const string DL_L_NPC_BLOCKED_BUSY = "dl_npc_blocked_busy";
 
-const int DL_NPC_EVENT_BLOCKED = 3;
 const float DL_BLOCKED_OPEN_COOLDOWN = 3.0;
 const float DL_BLOCKED_REISSUE_DELAY = 2.2;
 

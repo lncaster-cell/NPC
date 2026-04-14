@@ -62,6 +62,7 @@ const string DL_L_MODULE_WORKER_TICKS = "dl_module_worker_ticks";
 const int DL_NPC_EVENT_NONE = 0;
 const int DL_NPC_EVENT_SPAWN = 1;
 const int DL_NPC_EVENT_DEATH = 2;
+const int DL_NPC_EVENT_BLOCKED = 3;
 
 // 3000+ range chosen for project-defined user events (avoid BioWare 1000..1011, 1510, 1511).
 const int DL_UD_PIPELINE_NPC_EVENT = 3001;
@@ -901,6 +902,11 @@ void DL_RecordNpcLifecycleEvent(object oNpc, int nEventKind)
     }
 }
 
+int DL_IsNpcLifecycleEventKind(int nEventKind)
+{
+    return nEventKind == DL_NPC_EVENT_SPAWN || nEventKind == DL_NPC_EVENT_DEATH;
+}
+
 void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
 {
     if (nUserDefined != DL_UD_PIPELINE_NPC_EVENT)
@@ -914,7 +920,7 @@ void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
     }
 
     int nEventKind = GetLocalInt(oNpc, DL_L_NPC_EVENT_KIND);
-    if (nEventKind != DL_NPC_EVENT_SPAWN && nEventKind != DL_NPC_EVENT_DEATH)
+    if (!DL_IsNpcLifecycleEventKind(nEventKind))
     {
         return;
     }
