@@ -2,7 +2,7 @@
 #include "dl_transition_inc"
 
 // Step 05+: resolver/materialization skeleton.
-// Scope: EARLY_WORKER sleep window + basic BLACKSMITH/GATE_POST/TRADER WORK/SLEEP window split.
+// Scope: basic BLACKSMITH/GATE_POST/TRADER WORK/SLEEP window split.
 
 const string DL_L_NPC_DIRECTIVE = "dl_npc_directive";
 const string DL_L_NPC_MAT_REQ = "dl_npc_mat_req";
@@ -64,7 +64,6 @@ const string DL_L_NPC_CHAT_STUCK_SIG = "dl_chat_stuck_sig";
 const string DL_L_NPC_CHAT_STUCK_SINCE = "dl_chat_stuck_since";
 const string DL_L_NPC_CHAT_STUCK_LAST_LOG = "dl_chat_stuck_last_log";
 
-const string DL_PROFILE_EARLY_WORKER = "early_worker";
 const string DL_PROFILE_BLACKSMITH = "blacksmith";
 const string DL_PROFILE_GATE_POST = "gate_post";
 const string DL_PROFILE_TRADER = "trader";
@@ -104,8 +103,6 @@ const int DL_SLEEP_PHASE_ON_BED = 3;
 const float DL_SLEEP_APPROACH_RADIUS = 1.50;
 const float DL_SLEEP_BED_RADIUS = 1.10;
 const float DL_WORK_ANCHOR_RADIUS = 1.60;
-
-const int DL_GUARD_SHIFT_HOURS = 9;
 
 const string DL_WORK_KIND_FORGE = "forge";
 const string DL_WORK_KIND_CRAFT = "craft";
