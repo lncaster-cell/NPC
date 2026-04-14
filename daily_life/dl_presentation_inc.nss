@@ -188,21 +188,26 @@ void DL_PlayWorkAnimation(object oNpc)
     }
     if (sProfile == DL_PROFILE_DOMESTIC_WORKER)
     {
+        string sKindDomestic = GetLocalString(oNpc, DL_L_NPC_WORK_KIND);
         int nTickDomestic = (GetTimeHour() * 60 + GetTimeMinute()) / 5;
-        int nPhaseDomestic = (nTickDomestic + DL_GetTagDeterministicOffset(GetTag(oNpc), 97, 0)) % 12;
-        string sDomesticAnim = "craft01";
+        int nPhaseDomestic = (nTickDomestic + DL_GetTagDeterministicOffset(GetTag(oNpc), 97, 0)) % 10;
+        string sDomesticAnim = "cooking01";
 
         if (nPhaseDomestic == 0)
         {
             sDomesticAnim = "dustoff";
         }
-        else if (nPhaseDomestic <= 3)
-        {
-            sDomesticAnim = (nPhaseDomestic % 2) == 0 ? "cooking01" : "cooking02";
-        }
-        else if (nPhaseDomestic <= 6)
+        else if (sKindDomestic == DL_WORK_KIND_FETCH)
         {
             sDomesticAnim = (nPhaseDomestic % 2) == 0 ? "gettable" : "getground";
+        }
+        else if (sKindDomestic == DL_WORK_KIND_CRAFT)
+        {
+            sDomesticAnim = (nPhaseDomestic % 4) == 0 ? "cooking02" : "craft01";
+        }
+        else
+        {
+            sDomesticAnim = (nPhaseDomestic % 3) == 0 ? "cooking02" : "cooking01";
         }
 
         PlayCustomAnimation(oNpc, sDomesticAnim, TRUE);
