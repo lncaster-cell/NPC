@@ -36,6 +36,7 @@ const string DL_L_AREA_PASS_LAST_SEEN = "dl_area_pass_last_seen";
 const string DL_L_MODULE_NPC_BUDGET_PER_MINUTE = "dl_module_npc_budget_per_minute";
 const string DL_L_MODULE_NPC_BUDGET_MINUTE_KEY = "dl_module_npc_budget_minute_key";
 const string DL_L_MODULE_NPC_BUDGET_LEFT = "dl_module_npc_budget_left";
+const string DL_L_MODULE_NPC_BUDGET_WINDOW_INIT = "dl_module_npc_budget_window_init";
 
 const int DL_MODULE_NPC_BUDGET_MIN = 1;
 const int DL_MODULE_NPC_BUDGET_DEFAULT = 24;
@@ -211,11 +212,12 @@ void DL_EnsureModuleNpcBudgetWindow()
     object oModule = GetModule();
     int nNowKey = DL_GetCurrentMinuteKey();
     int nStoredKey = GetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_MINUTE_KEY);
-    if (nNowKey == nStoredKey)
+    if (GetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_WINDOW_INIT) == TRUE && nNowKey == nStoredKey)
     {
         return;
     }
 
+    SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_WINDOW_INIT, TRUE);
     SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_MINUTE_KEY, nNowKey);
     SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_LEFT, DL_GetModuleNpcBudgetPerMinute());
 }

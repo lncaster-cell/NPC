@@ -145,6 +145,9 @@ void DL_RunAreaEnterResyncTick(object oArea)
     nBudget = DL_ConsumeModuleNpcBudget(nBudget);
     if (nBudget <= 0)
     {
+        SetLocalInt(oArea, DL_L_AREA_RESYNC_LAST_PROCESSED, 0);
+        object oModuleNoBudget = GetModule();
+        SetLocalInt(oModuleNoBudget, DL_L_MODULE_RESYNC_LAST_PROCESSED, 0);
         return;
     }
 
@@ -201,7 +204,11 @@ void DL_RunAreaWorkerTick(object oArea)
     nBudget = DL_ConsumeModuleNpcBudget(nBudget);
     if (nBudget <= 0)
     {
+        SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK) + 1);
+        object oModuleNoBudget = GetModule();
+        SetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_TICKS, GetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_TICKS) + 1);
         SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, 0);
+        SetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_LAST_PROCESSED, 0);
         return;
     }
 
