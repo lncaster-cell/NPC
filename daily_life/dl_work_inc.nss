@@ -82,34 +82,54 @@ object DL_ResolveDomesticWorkerWaypoint(object oNpc)
         return OBJECT_INVALID;
     }
 
+    return DL_GetAreaAnchorWaypoint(oNpc, oHome, "dl_anchor_work_primary", DL_L_NPC_CACHE_WORK_PRIMARY, FALSE);
+}
+
+object DL_ResolveDomesticWorkerSecondaryWaypoint(object oNpc)
+{
+    object oHome = DL_GetHomeArea(oNpc);
+    if (!GetIsObjectValid(oHome))
+    {
+        return OBJECT_INVALID;
+    }
+
+    return DL_GetAreaAnchorWaypoint(oNpc, oHome, "dl_anchor_work_secondary", DL_L_NPC_CACHE_WORK_SECONDARY, FALSE);
+}
+
+object DL_ResolveDomesticWorkerFetchWaypoint(object oNpc)
+{
+    object oHome = DL_GetHomeArea(oNpc);
+    if (!GetIsObjectValid(oHome))
+    {
+        return OBJECT_INVALID;
+    }
+
+    return DL_GetAreaAnchorWaypoint(oNpc, oHome, "dl_anchor_work_fetch", DL_L_NPC_CACHE_WORK_FETCH, FALSE);
+}
+
+string DL_ResolveDomesticWorkerWorkKind(object oNpc, int bHasFetch)
+{
     int nTick = (GetTimeHour() * 60 + GetTimeMinute()) / 10;
-    int nPhase = (nTick + DL_GetTagDeterministicOffset(GetTag(oNpc), 101, 0)) % 5;
-    int nSlot = DL_GetNpcHomeSlot(oNpc);
+    int nPhase = (nTick + DL_GetTagDeterministicOffset(GetTag(oNpc), 101, 0)) % 10;
 
-    if (nPhase == 0)
+    // Primary chores (cooking) are dominant.
+    if (nPhase <= 5)
     {
-        object oMeal = DL_GetAreaAnchorWaypoint(oNpc, oHome, "dl_anchor_meal", DL_L_NPC_CACHE_MEAL, FALSE);
-        if (GetIsObjectValid(oMeal))
-        {
-            return oMeal;
-        }
-    }
-    else if (nPhase == 1)
-    {
-        object oPublic = DL_GetAreaAnchorWaypoint(oNpc, oHome, "dl_anchor_public", DL_L_NPC_CACHE_PUBLIC, FALSE);
-        if (GetIsObjectValid(oPublic))
-        {
-            return oPublic;
-        }
+        return DL_WORK_KIND_DOMESTIC;
     }
 
-    return DL_GetAreaAnchorWaypoint(
-        oNpc,
-        oHome,
-        "dl_anchor_sleep_approach_" + IntToString(nSlot),
-        DL_L_NPC_CACHE_SLEEP_APPROACH,
-        TRUE
-    );
+    // Secondary chores (crafting/maintenance) are regular.
+    if (nPhase <= 8)
+    {
+        return DL_WORK_KIND_CRAFT;
+    }
+
+    if (bHasFetch)
+    {
+        return DL_WORK_KIND_FETCH;
+    }
+
+    return DL_WORK_KIND_CRAFT;
 }
 void DL_ClearWorkExecutionState(object oNpc)
 {
@@ -268,18 +288,33 @@ void DL_ExecuteWorkDirective(object oNpc)
 
     if (sProfile == DL_PROFILE_DOMESTIC_WORKER)
     {
-        object oHomeWork = DL_ResolveDomesticWorkerWaypoint(oNpc);
-        if (!GetIsObjectValid(oHomeWork))
+        object oPrimary = DL_ResolveDomesticWorkerWaypoint(oNpc);
+        object oSecondary = DL_ResolveDomesticWorkerSecondaryWaypoint(oNpc);
+        object oFetch = DL_ResolveDomesticWorkerFetchWaypoint(oNpc);
+        int bHasFetch = GetIsObjectValid(oFetch);
+
+        if (!GetIsObjectValid(oPrimary) || !GetIsObjectValid(oSecondary))
         {
             DL_SetWorkMissingState(oNpc, DL_WORK_KIND_DOMESTIC, "need_home_domestic_anchors");
             return;
         }
 
-        DL_SetWorkTargetState(oNpc, DL_WORK_KIND_DOMESTIC, oHomeWork);
+        string sKind = DL_ResolveDomesticWorkerWorkKind(oNpc, bHasFetch);
+        object oHomeWork = oPrimary;
+        if (sKind == DL_WORK_KIND_CRAFT)
+        {
+            oHomeWork = oSecondary;
+        }
+        else if (sKind == DL_WORK_KIND_FETCH)
+        {
+            oHomeWork = oFetch;
+        }
+
+        DL_SetWorkTargetState(oNpc, sKind, oHomeWork);
         DL_LogChatDebugEvent(
             oNpc,
             "target_work",
-            "target dir=WORK area=" + GetTag(GetArea(oHomeWork)) + " anchor=" + GetTag(oHomeWork) + " kind=" + DL_WORK_KIND_DOMESTIC
+            "target dir=WORK area=" + GetTag(GetArea(oHomeWork)) + " anchor=" + GetTag(oHomeWork) + " kind=" + sKind
         );
         DL_ProgressWorkAtTarget(oNpc, oHomeWork);
         return;
