@@ -115,99 +115,49 @@
 3. Довести интеграционные handoff-точки с city/legal/clan/property/trade/travel.
 4. Сохранять производительность через bounded execution и наблюдаемость.
 
-
 ---
 
-## 7) Daily Life vNext — каноническое состояние runtime (после schedule-driven обновления)
+## 7) Runtime Truth / Activity Journal (Daily Life)
 
-### 7.1 Canonical model (что считается каноном)
+### 2026-04-14 — фиксация текущего runtime-состояния Daily Life (по `main`)
 
-#### 7.1.1 Модель локаций NPC (area bindings)
+#### Что внедрено (уже влито в `main`)
 
-Каноническая модель Daily Life использует **area-привязки NPC** по ролям:
-- `home`
-- `work`
-- `meal`
-- `social`
-- `public`
+- **Minute-based directive resolution**: директива рассчитывается поминутно (`DL_ResolveNpcDirectiveAtMinute`) с оконной логикой сна/еды/работы/social/public.
+- В runtime-контуре директив уже используются **`MEAL`**, **`SOCIAL`**, **`PUBLIC`** (помимо `SLEEP`/`WORK`) как materialization и execution-состояния.
+- На NPC используются area-теги: **`home/work/meal/social/public`** (`dl_home_area_tag`, `dl_work_area_tag`, `dl_meal_area_tag`, `dl_social_area_tag`, `dl_public_area_tag`).
+- Для area-based навигации применяются **`dl_anchor_*` area-local anchors** (sleep/work/meal/social/public) как первичные точки назначения.
+- Внедрена **weekend-логика** (в т.ч. `off_public` и `reduced_work`, с weekend-ветвлением в директивном резолвере).
+- Влиты runtime-диагностика и анти-спам логирования: сигнатурный дедуп диагностик NPC (повторяющиеся состояния не спамят лог каждый тик).
 
-Источник этих привязок на NPC — локальные строки:
-- `dl_home_area_tag`
-- `dl_work_area_tag`
-- `dl_meal_area_tag`
-- `dl_social_area_tag`
-- `dl_public_area_tag`
+#### Что подтверждено как текущая runtime truth
 
-#### 7.1.2 Модель якорей (area-local anchors)
+- Текущая Daily Life модель считается **schedule-driven/area-driven runtime-моделью**; старая legacy-разметка больше не трактуется как канонический baseline.
+- **NPC location model = area-based** (через area tag locals на NPC и area anchor locals на area).
+- **Area anchors — source of truth** для целевых точек Daily Life в area-контексте.
+- **Legacy waypoint fallback** существует как совместимость/страховка для части профилей, но **не является целевой моделью развития**.
 
-Канонические якоря поведения задаются как area-local waypoint anchors:
-- `dl_anchor_sleep_approach`
-- `dl_anchor_sleep_bed`
-- `dl_anchor_meal`
-- `dl_anchor_work_primary`
-- `dl_anchor_work_secondary`
-- `dl_anchor_social_a`
-- `dl_anchor_social_b`
-- `dl_anchor_public`
+#### Что ещё не подтверждено owner-run тестом (open runtime validation)
 
-**Source of truth для якорей: area locals / area-local anchor waypoints.**
-Legacy-разметка waypoint’ами вне этой модели больше не считается каноном.
+- Кузнец в будни (полный цикл WORK/MEAL/SOCIAL/PUBLIC/SLEEP).
+- Кузнец в выходные (влияние weekend mode на поведение).
+- NPC без `work` area-тега (ожидаемый graceful fallback/idle-public-path, без деградации контура).
+- Торговец с `reduced_work` (корректное сокращение смены в weekend-режиме).
+- Успешный social pair сценарий (оба NPC доходят/держат social anchor).
+- Fallback из SOCIAL в PUBLIC при несостоявшейся паре.
+- Поведение при missing anchor (диагностика + безопасное поведение без «залипания»).
+- Практическая полезность chat debug в реальном owner-run (достаточность сигналов, отсутствие лишнего шума).
 
-#### 7.1.3 Модель директив
+#### Known risks (текущее честное состояние)
 
-Канонический набор директив runtime:
-- `SLEEP`
-- `WORK`
-- `MEAL`
-- `SOCIAL`
-- `PUBLIC`
-- `NONE`
+- Часть weekend/public поведения всё ещё требует owner validation в живом прогоне.
+- SOCIAL/PUBLIC сцены пока уровня **v1 richness** (функционально есть, но глубина сценариев ограничена).
+- Корректность area-driven модели критически зависит от полноты и правильности area markup.
+- Финальная уверенность по качеству Daily Life требует **in-game owner run**, а не только code inspection.
 
-Расписание (schedule-driven) считается от персональных параметров:
-- `wake_hour`
-- `sleep_hours`
-- `shift_start`
-- `shift_length`
-- weekend-mode
+#### Что тестировать следующим (owner run next steps)
 
-#### 7.1.4 Weekend model
-
-Минимально поддерживаемые режимы выходных:
-- `off_public`
-- `reduced_work`
-
-Правило профилей:
-- кузнецоподобные NPC могут по выходным не работать (уходить в public/social контур);
-- торговецоподобные NPC могут работать по сокращенному окну.
-
-#### 7.1.5 Meal model
-
-Каноническая meal-модель:
-- breakfast → `home`
-- lunch → `meal -> work -> home`
-- dinner → `home`
-
-#### 7.1.6 Social/Public model
-
-Каноническая social/public-модель:
-- `SOCIAL` — парная сцена с partner и слотами `social_a/social_b`;
-- если `SOCIAL` не собрался, допустим fallback в `PUBLIC`;
-- `PUBLIC` — самостоятельная директива городского присутствия (площадь, проповеди, музыканты, глашатай и т.п.).
-
-### 7.2 Implemented (что уже реализовано в коде)
-
-На текущем `main` реализовано:
-- minute-based scheduling в runtime-цикле;
-- новый набор директив (`SLEEP/WORK/MEAL/SOCIAL/PUBLIC/NONE`);
-- area-driven anchors и area-tag bindings для целевых зон;
-- weekend modes (`off_public`, `reduced_work`);
-- базовые meal/social/public flow;
-- диагностические состояния и debug-поля runtime (chat/debug/diagnostic locals и служебные статусы).
-
-### 7.3 Pending / known risks (что еще незавершено)
-
-Открытые пункты и риски на текущем этапе:
-- не все игровые сценарии прогнаны ручной валидацией end-to-end;
-- weekend/public behavior требует дальнейшей owner-validation по UX и балансу;
-- social/public richness пока уровня v1 (базовые сцены, ограниченная вариативность);
-- часть поведения остается intentionally basic до следующего витка полировки.
+1. Прогон «кузнец будни» и «кузнец выходные» в одном и том же area-наборе, с включённым chat-log и фиксацией директив по времени.
+2. Проверка trader `reduced_work` на субботе/воскресенье (факт сокращения смены + корректный выход в public/social окна).
+3. Негативные кейсы markup: NPC без `work`, area без `dl_anchor_public`, area с битым anchor waypoint tag.
+4. SOCIAL pair matrix: валидный партнёр, невалидный партнёр, партнёр вне area — с проверкой, что fallback в PUBLIC стабилен.
