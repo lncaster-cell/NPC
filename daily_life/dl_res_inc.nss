@@ -639,7 +639,7 @@ int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
     }
 
     location lTarget = GetLocation(oTarget);
-    if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
+    if (GetDistanceBetween(oNpc, oTarget) > DL_WORK_ANCHOR_RADIUS)
     {
         if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
         {
@@ -695,7 +695,7 @@ void DL_ExecuteSleepDirective(object oNpc)
     string sStatus = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
     int bCommittedToBed = nPhase == DL_SLEEP_PHASE_JUMPING || nPhase == DL_SLEEP_PHASE_ON_BED;
 
-    if (!bCommittedToBed && GetDistanceBetweenLocations(GetLocation(oNpc), lApproach) > DL_SLEEP_APPROACH_RADIUS)
+    if (!bCommittedToBed && GetDistanceBetween(oNpc, oApproach) > DL_SLEEP_APPROACH_RADIUS)
     {
         if (nPhase != DL_SLEEP_PHASE_MOVING || sStatus != "moving_to_approach")
         {
@@ -722,7 +722,7 @@ void DL_ExecuteSleepDirective(object oNpc)
         }
     }
 
-    if (GetDistanceBetweenLocations(GetLocation(oNpc), lBed) > DL_SLEEP_BED_RADIUS)
+    if (GetDistanceBetween(oNpc, oBed) > DL_SLEEP_BED_RADIUS)
     {
         if (nPhase != DL_SLEEP_PHASE_JUMPING || sStatus != "jumping_to_bed")
         {
