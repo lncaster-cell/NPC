@@ -49,7 +49,15 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         nNpcRegistered = 0;
     }
 
-    if (nNpcRegistered > 0 && nCursor >= nNpcRegistered)
+    // Registry fast-exit: if no active NPCs are registered for this area,
+    // do not run creature scans.
+    if (nNpcRegistered == 0)
+    {
+        SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, 0);
+        return 0;
+    }
+
+    if (nCursor >= nNpcRegistered)
     {
         nCursor = nCursor % nNpcRegistered;
     }
@@ -103,15 +111,8 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         }
     }
 
-    if (nNpcRegistered > 0)
-    {
-        // Registry-backed source of truth: cheaper than full creature scans each tick.
-        SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcRegistered);
-    }
-    else
-    {
-        SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcSeen);
-    }
+    // Registry-backed source of truth: cheaper than full creature scans each tick.
+    SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcRegistered);
     return nNpcProcessed;
 }
 
