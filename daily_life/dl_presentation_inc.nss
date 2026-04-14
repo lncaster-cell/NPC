@@ -1,0 +1,151 @@
+void DL_ClearActivityPresentation(object oNpc)
+{
+    DeleteLocalInt(oNpc, DL_L_NPC_ACTIVITY_ID);
+    DeleteLocalString(oNpc, DL_L_NPC_ANIM_SET);
+}
+void DL_SetActivityPresentation(object oNpc, int nActivityId, string sAnimSet)
+{
+    SetLocalInt(oNpc, DL_L_NPC_ACTIVITY_ID, nActivityId);
+    SetLocalString(oNpc, DL_L_NPC_ANIM_SET, sAnimSet);
+}
+int DL_TryApplyWorkActivityPresentation(object oNpc, string sProfile, string sWorkKind)
+{
+    if (sProfile == DL_PROFILE_BLACKSMITH)
+    {
+        if (sWorkKind == DL_WORK_KIND_CRAFT)
+        {
+            DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_CRAFT);
+            return TRUE;
+        }
+
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
+        return TRUE;
+    }
+
+    if (sProfile == DL_PROFILE_GATE_POST)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_GUARD, DL_ARCH_ANIMS_GUARD);
+        return TRUE;
+    }
+
+    if (sProfile == DL_PROFILE_TRADER)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_MERCHANT_MULTI, DL_ARCH_ANIMS_TRADE);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    if (nDirective == DL_DIR_SLEEP)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_SLEEP_BED, DL_ARCH_ANIMS_SLEEP_BED);
+        return;
+    }
+
+    if (nDirective != DL_DIR_WORK)
+    {
+        DL_ClearActivityPresentation(oNpc);
+        return;
+    }
+
+    string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
+    string sWorkKind = GetLocalString(oNpc, DL_L_NPC_WORK_KIND);
+    if (DL_TryApplyWorkActivityPresentation(oNpc, sProfile, sWorkKind))
+    {
+        return;
+    }
+
+    DL_ClearActivityPresentation(oNpc);
+}
+string DL_TrimAnimToken(string sToken)
+{
+    int nStart = 0;
+    int nEnd = GetStringLength(sToken);
+
+    while (nStart < nEnd && GetSubString(sToken, nStart, 1) == " ")
+    {
+        nStart = nStart + 1;
+    }
+
+    while (nEnd > nStart && GetSubString(sToken, nEnd - 1, 1) == " ")
+    {
+        nEnd = nEnd - 1;
+    }
+
+    return GetSubString(sToken, nStart, nEnd - nStart);
+}
+string DL_GetFirstAnimToken(string sAnimSet)
+{
+    int nComma = FindSubString(sAnimSet, ",");
+    if (nComma < 0)
+    {
+        return DL_TrimAnimToken(sAnimSet);
+    }
+
+    return DL_TrimAnimToken(GetSubString(sAnimSet, 0, nComma));
+}
+string DL_GetSecondAnimToken(string sAnimSet)
+{
+    int nComma = FindSubString(sAnimSet, ",");
+    if (nComma < 0)
+    {
+        return "";
+    }
+
+    string sTail = GetSubString(sAnimSet, nComma + 1, GetStringLength(sAnimSet) - (nComma + 1));
+    int nSecondComma = FindSubString(sTail, ",");
+    if (nSecondComma < 0)
+    {
+        return DL_TrimAnimToken(sTail);
+    }
+
+    return DL_TrimAnimToken(GetSubString(sTail, 0, nSecondComma));
+}
+void DL_PlaySleepAnimation(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    string sAnimSet = GetLocalString(oNpc, DL_L_NPC_ANIM_SET);
+    if (sAnimSet == "")
+    {
+        sAnimSet = DL_ARCH_ANIMS_SLEEP_BED;
+    }
+
+    string sLoopAnim = DL_GetSecondAnimToken(sAnimSet);
+    if (sLoopAnim == "")
+    {
+        sLoopAnim = DL_GetFirstAnimToken(sAnimSet);
+    }
+
+    if (sLoopAnim == "")
+    {
+        return;
+    }
+
+    PlayCustomAnimation(oNpc, sLoopAnim, TRUE);
+}
+void DL_PlayWorkAnimation(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    string sAnim = DL_GetFirstAnimToken(GetLocalString(oNpc, DL_L_NPC_ANIM_SET));
+    if (sAnim == "")
+    {
+        return;
+    }
+
+    PlayCustomAnimation(oNpc, sAnim, TRUE);
+}
