@@ -225,22 +225,6 @@ object DL_GetSleepWaypointByTag(string sTag)
     return oWp;
 }
 
-object DL_GetWorkWaypointByTag(string sTag)
-{
-    if (sTag == "")
-    {
-        return OBJECT_INVALID;
-    }
-
-    object oWp = GetWaypointByTag(sTag);
-    if (!GetIsObjectValid(oWp))
-    {
-        return OBJECT_INVALID;
-    }
-
-    return oWp;
-}
-
 object DL_GetNpcCachedWaypointByTag(object oNpc, string sCacheLocal, string sTag)
 {
     if (!GetIsObjectValid(oNpc) || sTag == "")
@@ -592,6 +576,28 @@ void DL_SetWorkTargetState(object oNpc, string sKind, object oTarget)
     DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
 }
 
+void DL_SetSleepMissingState(object oNpc, int bInvalidArea)
+{
+    SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_NONE);
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "missing_waypoints");
+    if (bInvalidArea)
+    {
+        SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_target_invalid_area");
+    }
+    else
+    {
+        DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+    }
+    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
+    DL_ClearTransitionExecutionState(oNpc);
+}
+
+void DL_SetSleepTargetState(object oNpc, object oBed)
+{
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, GetTag(oBed));
+    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+}
+
 int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
@@ -645,23 +651,11 @@ void DL_ExecuteSleepDirective(object oNpc)
 
     if (!GetIsObjectValid(oApproach) || !GetIsObjectValid(oBed))
     {
-        SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_NONE);
-        SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "missing_waypoints");
-        if (bInvalidArea)
-        {
-            SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_target_invalid_area");
-        }
-        else
-        {
-            DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
-        }
-        DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
-        DL_ClearTransitionExecutionState(oNpc);
+        DL_SetSleepMissingState(oNpc, bInvalidArea);
         return;
     }
 
-    SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, GetTag(oBed));
-    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+    DL_SetSleepTargetState(oNpc, oBed);
 
     if (DL_WaypointHasTransition(oApproach))
     {
@@ -793,6 +787,24 @@ void DL_SetInteractionModes(object oNpc, string sDialogue, string sService)
     SetLocalString(oNpc, DL_L_NPC_SERVICE_MODE, sService);
 }
 
+int DL_IsProfileServiceAvailable(string sProfile)
+{
+    return sProfile != DL_PROFILE_GATE_POST;
+}
+
+void DL_ApplyIdleLikeDirectiveState(object oNpc, int bSocial)
+{
+    SetLocalString(oNpc, DL_L_NPC_STATE, bSocial ? DL_STATE_SOCIAL : DL_STATE_IDLE);
+    DL_SetInteractionModes(
+        oNpc,
+        bSocial ? DL_DIALOGUE_SOCIAL : DL_DIALOGUE_IDLE,
+        DL_SERVICE_OFF
+    );
+    DL_ClearSleepExecutionState(oNpc);
+    DL_ClearWorkExecutionState(oNpc);
+    DL_ClearActivityPresentation(oNpc);
+}
+
 void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
 {
     if (!GetIsObjectValid(oNpc))
@@ -813,34 +825,23 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
     else if (nDirective == DL_DIR_WORK)
     {
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_WORK);
-
-        if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
-        {
-            DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_OFF);
-        }
-        else
-        {
-            DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_AVAILABLE);
-        }
+        string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
+        DL_SetInteractionModes(
+            oNpc,
+            DL_DIALOGUE_WORK,
+            DL_IsProfileServiceAvailable(sProfile) ? DL_SERVICE_AVAILABLE : DL_SERVICE_OFF
+        );
 
         DL_ClearSleepExecutionState(oNpc);
         DL_ExecuteWorkDirective(oNpc);
     }
     else if (nDirective == DL_DIR_SOCIAL)
     {
-        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
-        DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
-        DL_ClearSleepExecutionState(oNpc);
-        DL_ClearWorkExecutionState(oNpc);
-        DL_ClearActivityPresentation(oNpc);
+        DL_ApplyIdleLikeDirectiveState(oNpc, TRUE);
     }
     else
     {
-        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_IDLE);
-        DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
-        DL_ClearSleepExecutionState(oNpc);
-        DL_ClearWorkExecutionState(oNpc);
-        DL_ClearActivityPresentation(oNpc);
+        DL_ApplyIdleLikeDirectiveState(oNpc, FALSE);
     }
 
     DL_ApplyMaterializationSkeleton(oNpc, nDirective);
