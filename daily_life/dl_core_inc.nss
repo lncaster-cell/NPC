@@ -44,6 +44,8 @@ const int DL_TIER_HOT = 2;
 
 const string DL_L_AREA_WORKER_CURSOR = "dl_worker_cursor";
 const string DL_L_AREA_WORKER_BUDGET = "dl_worker_budget";
+const string DL_L_AREA_PLAYER_COUNT = "dl_area_player_count";
+const string DL_L_AREA_PLAYER_COUNT_INIT = "dl_area_player_count_init";
 const string DL_L_AREA_ENTER_RESYNC_PENDING = "dl_area_enter_resync_pending";
 const string DL_L_AREA_ENTER_RESYNC_CURSOR = "dl_area_enter_resync_cursor";
 const string DL_L_AREA_ENTER_RESYNC_TOUCHED = "dl_area_enter_resync_touched";
@@ -304,6 +306,53 @@ int DL_AreaHasPlayer(object oArea)
     return FALSE;
 }
 
+int DL_CountPlayersInArea(object oArea)
+{
+    int nCount = 0;
+    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
+    while (GetIsObjectValid(oObj))
+    {
+        if (GetIsPC(oObj) && !GetIsDM(oObj))
+        {
+            nCount = nCount + 1;
+        }
+        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
+    }
+    return nCount;
+}
+
+int DL_GetAreaPlayerCount(object oArea)
+{
+    int nCount = GetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT);
+    if (nCount < 0)
+    {
+        nCount = 0;
+        SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT, nCount);
+    }
+    return nCount;
+}
+
+void DL_AdjustAreaPlayerCount(object oArea, int nDelta)
+{
+    int nCount = DL_GetAreaPlayerCount(oArea) + nDelta;
+    if (nCount < 0)
+    {
+        nCount = 0;
+    }
+    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT, nCount);
+}
+
+void DL_EnsureAreaPlayerCountSeeded(object oArea)
+{
+    if (GetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_INIT) == TRUE)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT, DL_CountPlayersInArea(oArea));
+    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_INIT, TRUE);
+}
+
 int DL_GetAreaTier(object oArea)
 {
     int nTier = GetLocalInt(oArea, DL_L_AREA_TIER);
@@ -381,8 +430,10 @@ void DL_BootstrapAreaTier(object oArea)
         return;
     }
 
+    DL_EnsureAreaPlayerCountSeeded(oArea);
+
     int nTier = DL_GetAreaTier(oArea);
-    if (nTier != DL_TIER_HOT && DL_AreaHasPlayer(oArea))
+    if (nTier != DL_TIER_HOT && DL_GetAreaPlayerCount(oArea) > 0)
     {
         nTier = DL_TIER_HOT;
     }
@@ -412,6 +463,8 @@ void DL_OnAreaEnterBootstrap(object oArea, object oEnter)
 
     if (GetIsPC(oEnter) && !GetIsDM(oEnter))
     {
+        DL_EnsureAreaPlayerCountSeeded(oArea);
+        DL_AdjustAreaPlayerCount(oArea, 1);
         DL_SetAreaTier(oArea, DL_TIER_HOT);
         SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, TRUE);
         return;
@@ -427,9 +480,14 @@ void DL_OnAreaExitBootstrap(object oArea, object oExit)
         return;
     }
 
-    if (GetIsPC(oExit) && !GetIsDM(oExit) && !DL_AreaHasPlayer(oArea))
+    if (GetIsPC(oExit) && !GetIsDM(oExit))
     {
-        DL_SetAreaTier(oArea, DL_TIER_WARM);
+        DL_EnsureAreaPlayerCountSeeded(oArea);
+        DL_AdjustAreaPlayerCount(oArea, -1);
+        if (DL_GetAreaPlayerCount(oArea) <= 0)
+        {
+            DL_SetAreaTier(oArea, DL_TIER_WARM);
+        }
         return;
     }
 
