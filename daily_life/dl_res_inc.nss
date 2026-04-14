@@ -209,22 +209,6 @@ void DL_ApplyMaterializationSkeleton(object oNpc, int nDirective)
     DeleteLocalString(oNpc, DL_L_NPC_MAT_TAG);
 }
 
-object DL_GetSleepWaypointByTag(string sTag)
-{
-    if (sTag == "")
-    {
-        return OBJECT_INVALID;
-    }
-
-    object oWp = GetWaypointByTag(sTag);
-    if (!GetIsObjectValid(oWp))
-    {
-        return OBJECT_INVALID;
-    }
-
-    return oWp;
-}
-
 object DL_GetNpcCachedWaypointByTag(object oNpc, string sCacheLocal, string sTag)
 {
     if (!GetIsObjectValid(oNpc) || sTag == "")
@@ -270,22 +254,6 @@ object DL_ResolveEffectiveWaypointForNpc(object oNpc, object oWp)
     }
 
     return OBJECT_INVALID;
-}
-
-int DL_IsSleepWaypointInNpcArea(object oNpc, object oWp)
-{
-    return GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
-}
-
-int DL_IsSleepWaypointTagInvalidArea(object oNpc, string sTag)
-{
-    object oWp = DL_GetSleepWaypointByTag(sTag);
-    if (!GetIsObjectValid(oWp))
-    {
-        return FALSE;
-    }
-
-    return !GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
 }
 
 object DL_ResolveNpcWaypointWithFallbackTag(
@@ -660,22 +628,10 @@ void DL_ExecuteSleepDirective(object oNpc)
 {
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
     object oBed = DL_ResolveSleepBedWaypoint(oNpc);
-    int bInvalidArea = FALSE;
-
-    if (GetIsObjectValid(oApproach) && !DL_IsSleepWaypointInNpcArea(oNpc, oApproach))
-    {
-        oApproach = OBJECT_INVALID;
-        bInvalidArea = TRUE;
-    }
-    if (GetIsObjectValid(oBed) && !DL_IsSleepWaypointInNpcArea(oNpc, oBed))
-    {
-        oBed = OBJECT_INVALID;
-        bInvalidArea = TRUE;
-    }
 
     if (!GetIsObjectValid(oApproach) || !GetIsObjectValid(oBed))
     {
-        DL_SetSleepMissingState(oNpc, bInvalidArea);
+        DL_SetSleepMissingState(oNpc, FALSE);
         return;
     }
 
