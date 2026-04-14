@@ -332,14 +332,11 @@ int DL_GetAreaPlayerCount(object oArea)
     return nCount;
 }
 
-void DL_AdjustAreaPlayerCount(object oArea, int nDelta)
+void DL_RefreshAreaPlayerCount(object oArea)
 {
-    int nCount = DL_GetAreaPlayerCount(oArea) + nDelta;
-    if (nCount < 0)
-    {
-        nCount = 0;
-    }
+    int nCount = DL_CountPlayersInArea(oArea);
     SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT, nCount);
+    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_INIT, TRUE);
 }
 
 void DL_EnsureAreaPlayerCountSeeded(object oArea)
@@ -349,8 +346,7 @@ void DL_EnsureAreaPlayerCountSeeded(object oArea)
         return;
     }
 
-    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT, DL_CountPlayersInArea(oArea));
-    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_INIT, TRUE);
+    DL_RefreshAreaPlayerCount(oArea);
 }
 
 int DL_GetAreaTier(object oArea)
@@ -463,8 +459,8 @@ void DL_OnAreaEnterBootstrap(object oArea, object oEnter)
 
     if (GetIsPC(oEnter) && !GetIsDM(oEnter))
     {
-        DL_EnsureAreaPlayerCountSeeded(oArea);
-        DL_AdjustAreaPlayerCount(oArea, 1);
+        // Runtime-safe refresh: OnEnter timing differs by engine/version; recompute exact count.
+        DL_RefreshAreaPlayerCount(oArea);
         DL_SetAreaTier(oArea, DL_TIER_HOT);
         SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, TRUE);
         return;
@@ -482,8 +478,8 @@ void DL_OnAreaExitBootstrap(object oArea, object oExit)
 
     if (GetIsPC(oExit) && !GetIsDM(oExit))
     {
-        DL_EnsureAreaPlayerCountSeeded(oArea);
-        DL_AdjustAreaPlayerCount(oArea, -1);
+        // Runtime-safe refresh: avoid counter drift from event ordering edge-cases.
+        DL_RefreshAreaPlayerCount(oArea);
         if (DL_GetAreaPlayerCount(oArea) <= 0)
         {
             DL_SetAreaTier(oArea, DL_TIER_WARM);
