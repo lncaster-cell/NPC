@@ -273,7 +273,8 @@
   - добавлен fast-path раннего выхода из area-обхода после выполнения бюджета в логическом окне `cursor + budget`;
   - `DL_L_AREA_REG_COUNT` используется как registry-backed источник размера активного набора NPC для вычисления `pass_last_seen`, чтобы не требовать полного досканирования area каждый тик.
 - Дополнительно усилен registry-first подход:
-  - если `DL_L_AREA_REG_COUNT == 0`, pass завершается без вызовов `GetFirstObjectInArea`/`GetNextObjectInArea`;
+  - если `DL_L_AREA_REG_COUNT == 0`, включается throttled bounded registry-reconcile (редкий и лимитированный scan), чтобы восстановиться после пропущенных lifecycle/register событий;
+  - при успешном reconcile worker возвращается к registry-driven pass без полного area-scan;
   - `pass_last_seen` фиксируется из реестра (`DL_L_AREA_REG_COUNT`) как стабильный размер логического окна round-robin, без перехода к scan-derived значению.
 - Это следует практикам NWN Lexicon:
   - избегать частых полных area-обходов (`GetFirstObjectInArea` / `GetNextObjectInArea`);
