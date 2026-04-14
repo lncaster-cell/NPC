@@ -1,9 +1,37 @@
+const string DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ = "dl_cache_social_partner_obj";
+
 void DL_ClearFocusExecutionState(object oNpc)
 {
     DeleteLocalString(oNpc, DL_L_NPC_FOCUS_STATUS);
     DeleteLocalString(oNpc, DL_L_NPC_FOCUS_TARGET);
     DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
     DL_ClearTransitionExecutionState(oNpc);
+}
+object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
+{
+    if (!GetIsObjectValid(oNpc) || sPartnerTag == "")
+    {
+        DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+        return OBJECT_INVALID;
+    }
+
+    object oCached = GetLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+    if (GetIsObjectValid(oCached) &&
+        GetTag(oCached) == sPartnerTag &&
+        DL_IsActivePipelineNpc(oCached))
+    {
+        return oCached;
+    }
+
+    object oPartner = GetObjectByTag(sPartnerTag);
+    if (!DL_IsActivePipelineNpc(oPartner))
+    {
+        DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+        return OBJECT_INVALID;
+    }
+
+    SetLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ, oPartner);
+    return oPartner;
 }
 int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus, string sAnim)
 {
@@ -198,7 +226,7 @@ void DL_ExecuteSocialDirective(object oNpc)
         return;
     }
 
-    object oPartner = GetObjectByTag(sPartnerTag);
+    object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
     if (!GetIsObjectValid(oPartner) || GetLocalInt(oPartner, DL_L_NPC_DIRECTIVE) != DL_DIR_SOCIAL)
     {
         DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_not_social");
