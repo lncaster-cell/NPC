@@ -1,5 +1,9 @@
 const string DL_L_MODULE_WORKER_SEQ = "dl_module_worker_seq";
 const string DL_L_MODULE_WORKER_TICKS = "dl_module_worker_ticks";
+const string DL_L_MODULE_WORKER_LAST_PROCESSED = "dl_module_worker_last_processed";
+const string DL_L_MODULE_RESYNC_LAST_PROCESSED = "dl_module_resync_last_processed";
+const string DL_L_AREA_WORKER_LAST_PROCESSED = "dl_area_worker_last_processed";
+const string DL_L_AREA_RESYNC_LAST_PROCESSED = "dl_area_resync_last_processed";
 
 const int DL_AREA_PASS_MODE_WORKER = 1;
 const int DL_AREA_PASS_MODE_RESYNC = 2;
@@ -124,10 +128,14 @@ void DL_RunAreaEnterResyncTick(object oArea)
         return;
     }
 
-    int nBudget = DL_GetAreaWorkerBudget(oArea);
-    if (nBudget < DL_WORKER_BUDGET_MIN)
+    int nBudget = DL_GetAreaResyncBudget(oArea);
+    nBudget = DL_ConsumeModuleNpcBudget(nBudget);
+    if (nBudget <= 0)
     {
-        nBudget = DL_WORKER_BUDGET_MIN;
+        SetLocalInt(oArea, DL_L_AREA_RESYNC_LAST_PROCESSED, 0);
+        object oModuleNoBudget = GetModule();
+        SetLocalInt(oModuleNoBudget, DL_L_MODULE_RESYNC_LAST_PROCESSED, 0);
+        return;
     }
 
     int nCursor = GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR);
@@ -135,6 +143,9 @@ void DL_RunAreaEnterResyncTick(object oArea)
     int nNpcSeen = GetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN);
 
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_TOUCHED, nNpcProcessed);
+    SetLocalInt(oArea, DL_L_AREA_RESYNC_LAST_PROCESSED, nNpcProcessed);
+    object oModule = GetModule();
+    SetLocalInt(oModule, DL_L_MODULE_RESYNC_LAST_PROCESSED, nNpcProcessed);
 
     if (nNpcSeen <= 0)
     {
@@ -176,6 +187,17 @@ void DL_RunAreaWorkerTick(object oArea)
     DL_RunAreaEnterResyncTick(oArea);
 
     int nBudget = DL_GetAreaWorkerBudget(oArea);
+    nBudget = DL_ConsumeModuleNpcBudget(nBudget);
+    if (nBudget <= 0)
+    {
+        SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK) + 1);
+        object oModuleNoBudget = GetModule();
+        SetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_TICKS, GetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_TICKS) + 1);
+        SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, 0);
+        SetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_LAST_PROCESSED, 0);
+        return;
+    }
+
     int nCursor = DL_GetAreaWorkerCursor(oArea);
     int nNpcProcessed = DL_RunAreaNpcRoundRobinPass(oArea, nCursor, nBudget, DL_AREA_PASS_MODE_WORKER);
     int nNpcSeen = GetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN);
@@ -192,4 +214,6 @@ void DL_RunAreaWorkerTick(object oArea)
     SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK) + 1);
     object oModule = GetModule();
     SetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS, GetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS) + 1);
+    SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, nNpcProcessed);
+    SetLocalInt(oModule, DL_L_MODULE_WORKER_LAST_PROCESSED, nNpcProcessed);
 }
