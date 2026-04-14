@@ -225,3 +225,12 @@
   https://www.nwnlexicon.com/DelayCommand
 - NWN Lexicon: `SignalEvent` — модель исполнения событийного сигнала.<br>
   https://nwnlexicon.com/SignalEvent
+
+### 8.5 Применено в runtime (2026-04-14)
+
+- В `dl_worker_inc.nss` оптимизирован `DL_RunAreaNpcRoundRobinPass`:
+  - добавлен fast-path раннего выхода из area-обхода после выполнения бюджета в логическом окне `cursor + budget`;
+  - `DL_L_AREA_REG_COUNT` используется как registry-backed источник размера активного набора NPC для вычисления `pass_last_seen`, чтобы не требовать полного досканирования area каждый тик.
+- Это следует практикам NWN Lexicon:
+  - избегать частых полных area-обходов (`GetFirstObjectInArea` / `GetNextObjectInArea`);
+  - оставлять event/registry-driven модель как приоритет над «сканировать всё каждый тик».

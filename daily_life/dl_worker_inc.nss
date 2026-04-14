@@ -43,6 +43,17 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
 
     int nNpcProcessed = 0;
     int nNpcSeen = 0;
+    int nNpcRegistered = GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
+    if (nNpcRegistered < 0)
+    {
+        nNpcRegistered = 0;
+    }
+
+    if (nNpcRegistered > 0 && nCursor >= nNpcRegistered)
+    {
+        nCursor = nCursor % nNpcRegistered;
+    }
+
     object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
 
     while (GetIsObjectValid(oObj))
@@ -57,6 +68,13 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
                 }
             }
             nNpcSeen = nNpcSeen + 1;
+
+            // Fast-path: once we reached budget and a full logical window in front of cursor,
+            // avoid scanning the rest of the area.
+            if (nNpcProcessed >= nBudget && nNpcSeen >= (nCursor + nBudget))
+            {
+                break;
+            }
         }
 
         oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
@@ -85,7 +103,15 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         }
     }
 
-    SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcSeen);
+    if (nNpcRegistered > 0)
+    {
+        // Registry-backed source of truth: cheaper than full creature scans each tick.
+        SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcRegistered);
+    }
+    else
+    {
+        SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcSeen);
+    }
     return nNpcProcessed;
 }
 
