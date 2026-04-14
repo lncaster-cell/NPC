@@ -30,6 +30,18 @@ object DL_ResolveBlacksmithCraftWaypoint(object oNpc)
         "dl_work_craft"
     );
 }
+
+object DL_ResolveBlacksmithFetchWaypoint(object oNpc)
+{
+    object oWork = DL_GetWorkArea(oNpc);
+    object oWp = DL_GetAreaAnchorWaypoint(oNpc, oWork, "dl_anchor_work_fetch", DL_L_NPC_CACHE_WORK_FETCH, FALSE);
+    if (GetIsObjectValid(oWp))
+    {
+        return oWp;
+    }
+
+    return OBJECT_INVALID;
+}
 object DL_ResolveGatePostWaypoint(object oNpc)
 {
     object oWork = DL_GetWorkArea(oNpc);
@@ -70,10 +82,20 @@ void DL_ClearWorkExecutionState(object oNpc)
     DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
     DL_ClearTransitionExecutionState(oNpc);
 }
-string DL_ResolveBlacksmithWorkKindAtHour(int nHour)
+string DL_ResolveBlacksmithWorkKindAtHour(object oNpc)
 {
-    nHour = DL_NormalizeHour(nHour);
-    if ((nHour % 2) == 0)
+    int nHour = DL_NormalizeHour(GetTimeHour());
+    int nMinute = GetTimeMinute();
+    int nSlot = (nHour * 6) + (nMinute / 10);
+    int nOffset = DL_GetTagDeterministicOffset(GetTag(oNpc), 4, 0);
+    int nPhase = (nSlot + nOffset) % 12;
+
+    if (nPhase == 4 || nPhase == 9)
+    {
+        return DL_WORK_KIND_FETCH;
+    }
+
+    if ((nPhase % 2) == 0)
     {
         return DL_WORK_KIND_FORGE;
     }
@@ -145,9 +167,10 @@ void DL_ExecuteWorkDirective(object oNpc)
 
     if (sProfile == DL_PROFILE_BLACKSMITH)
     {
-        string sKind = DL_ResolveBlacksmithWorkKindAtHour(GetTimeHour());
+        string sKind = DL_ResolveBlacksmithWorkKindAtHour(oNpc);
         object oForge = DL_ResolveBlacksmithForgeWaypoint(oNpc);
         object oCraft = DL_ResolveBlacksmithCraftWaypoint(oNpc);
+        object oFetch = DL_ResolveBlacksmithFetchWaypoint(oNpc);
 
         if (!GetIsObjectValid(oForge) || !GetIsObjectValid(oCraft))
         {
@@ -155,7 +178,24 @@ void DL_ExecuteWorkDirective(object oNpc)
             return;
         }
 
-        object oTarget = sKind == DL_WORK_KIND_CRAFT ? oCraft : oForge;
+        object oTarget = oForge;
+        if (sKind == DL_WORK_KIND_CRAFT)
+        {
+            oTarget = oCraft;
+        }
+        else if (sKind == DL_WORK_KIND_FETCH)
+        {
+            if (GetIsObjectValid(oFetch))
+            {
+                oTarget = oFetch;
+            }
+            else
+            {
+                sKind = DL_WORK_KIND_CRAFT;
+                oTarget = oCraft;
+            }
+        }
+
         DL_SetWorkTargetState(oNpc, sKind, oTarget);
         DL_LogChatDebugEvent(
             oNpc,

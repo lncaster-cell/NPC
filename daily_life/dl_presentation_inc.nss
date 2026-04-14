@@ -12,13 +12,13 @@ int DL_TryApplyWorkActivityPresentation(object oNpc, string sProfile, string sWo
 {
     if (sProfile == DL_PROFILE_BLACKSMITH)
     {
-        if (sWorkKind == DL_WORK_KIND_CRAFT)
+        if (sWorkKind == DL_WORK_KIND_FORGE)
         {
-            DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_CRAFT);
+            DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
             return TRUE;
         }
 
-        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_CRAFT);
         return TRUE;
     }
 
@@ -141,11 +141,52 @@ void DL_PlayWorkAnimation(object oNpc)
         return;
     }
 
-    string sAnim = DL_GetFirstAnimToken(GetLocalString(oNpc, DL_L_NPC_ANIM_SET));
-    if (sAnim == "")
+    string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
+    if (sProfile == DL_PROFILE_BLACKSMITH)
+    {
+        string sKind = GetLocalString(oNpc, DL_L_NPC_WORK_KIND);
+        int nTick = (GetTimeHour() * 60 + GetTimeMinute()) / 5;
+        int nPhase = (nTick + DL_GetTagDeterministicOffset(GetTag(oNpc), 97, 0)) % 20;
+        string sAnim = "forge01";
+
+        if (sKind == DL_WORK_KIND_FORGE)
+        {
+            sAnim = (nPhase % 2) == 0 ? "forge01" : "forge02";
+            if (nPhase == 0)
+            {
+                sAnim = "dustoff";
+            }
+        }
+        else if (sKind == DL_WORK_KIND_FETCH)
+        {
+            sAnim = (nPhase % 2) == 0 ? "gettable" : "getground";
+            if (nPhase == 0)
+            {
+                sAnim = "dustoff";
+            }
+        }
+        else
+        {
+            sAnim = "craft01";
+            if (nPhase == 0)
+            {
+                sAnim = "dustoff";
+            }
+            else if ((nPhase % 5) == 0)
+            {
+                sAnim = "gettable";
+            }
+        }
+
+        PlayCustomAnimation(oNpc, sAnim, TRUE);
+        return;
+    }
+
+    string sAnimFallback = DL_GetFirstAnimToken(GetLocalString(oNpc, DL_L_NPC_ANIM_SET));
+    if (sAnimFallback == "")
     {
         return;
     }
 
-    PlayCustomAnimation(oNpc, sAnim, TRUE);
+    PlayCustomAnimation(oNpc, sAnimFallback, TRUE);
 }

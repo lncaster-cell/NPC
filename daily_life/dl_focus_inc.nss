@@ -180,7 +180,7 @@ void DL_ExecuteMealDirective(object oNpc)
     {
         sAnim = "sitdrink";
     }
-    else if ((DL_GetTagDeterministicOffset(GetTag(oNpc), 100, 0) % 2) == 0)
+    else if ((DL_GetTagDeterministicOffset(GetTag(oNpc), 6, 0) % 6) == 0)
     {
         sAnim = "sitdrink";
     }
