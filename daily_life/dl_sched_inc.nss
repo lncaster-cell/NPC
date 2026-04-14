@@ -195,38 +195,6 @@ int DL_NpcHasWorkDirectiveWindow(object oNpc, int bWeekend)
 
     return DL_GetNpcShiftLength(oNpc, bWeekend) > 0;
 }
-int DL_IsEarlyWorkerSleepHour(int nHour)
-{
-    nHour = DL_NormalizeHour(nHour);
-    return nHour >= 22 || nHour < 6;
-}
-int DL_IsBlacksmithWorkHour(int nHour)
-{
-    nHour = DL_NormalizeHour(nHour);
-    return nHour >= 8 && nHour < 18;
-}
-int DL_IsTraderWorkHour(int nHour)
-{
-    nHour = DL_NormalizeHour(nHour);
-    return nHour >= 8 && nHour < 18;
-}
-int DL_IsHourInShiftWindow(int nHour, int nStartHour, int nDuration)
-{
-    nHour = DL_NormalizeHour(nHour);
-    nStartHour = DL_NormalizeHour(nStartHour);
-
-    int nOffset = nHour - nStartHour;
-    if (nOffset < 0)
-    {
-        nOffset = nOffset + 24;
-    }
-
-    return nOffset >= 0 && nOffset < nDuration;
-}
-int DL_IsGatePostWorkHour(object oNpc, int nHour)
-{
-    return DL_IsHourInShiftWindow(nHour, GetLocalInt(oNpc, DL_L_NPC_GUARD_SHIFT_START), DL_GUARD_SHIFT_HOURS);
-}
 int DL_ResolveNpcDirectiveAtMinute(object oNpc, int nNow)
 {
     if (!GetIsObjectValid(oNpc))
