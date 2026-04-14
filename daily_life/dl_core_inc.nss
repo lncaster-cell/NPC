@@ -44,6 +44,9 @@ const int DL_TIER_HOT = 2;
 
 const string DL_L_AREA_WORKER_CURSOR = "dl_worker_cursor";
 const string DL_L_AREA_WORKER_BUDGET = "dl_worker_budget";
+const string DL_L_AREA_PLAYER_COUNT = "dl_area_player_count";
+const string DL_L_AREA_PLAYER_COUNT_INIT = "dl_area_player_count_init";
+const string DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK = "dl_area_player_count_reconcile_tick";
 const string DL_L_AREA_ENTER_RESYNC_PENDING = "dl_area_enter_resync_pending";
 const string DL_L_AREA_ENTER_RESYNC_CURSOR = "dl_area_enter_resync_cursor";
 const string DL_L_AREA_ENTER_RESYNC_TOUCHED = "dl_area_enter_resync_touched";
@@ -67,6 +70,7 @@ const int DL_WORKER_BUDGET_MIN = 1;
 const int DL_WORKER_BUDGET_WARM = 2;
 const int DL_WORKER_BUDGET_HOT = 4;
 const int DL_WORKER_BUDGET_MAX = 12;
+const int DL_PLAYER_COUNT_RECONCILE_INTERVAL_TICKS = 30;
 
 int DL_IsRuntimeEnabled()
 {
@@ -290,16 +294,86 @@ int DL_IsActivePipelineNpc(object oNpc)
 
 int DL_AreaHasPlayer(object oArea)
 {
-    object oObj = GetFirstObjectInArea(oArea);
+    // NWN:EE optimization path:
+    // filter loop to creatures only to avoid scanning placeables/items/doors every heartbeat tick.
+    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
     while (GetIsObjectValid(oObj))
     {
         if (GetIsPC(oObj) && !GetIsDM(oObj))
         {
             return TRUE;
         }
-        oObj = GetNextObjectInArea(oArea);
+        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
     }
     return FALSE;
+}
+
+int DL_CountPlayersInArea(object oArea)
+{
+    int nCount = 0;
+    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
+    while (GetIsObjectValid(oObj))
+    {
+        if (GetIsPC(oObj) && !GetIsDM(oObj))
+        {
+            nCount = nCount + 1;
+        }
+        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
+    }
+    return nCount;
+}
+
+int DL_GetAreaPlayerCount(object oArea)
+{
+    int nCount = GetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT);
+    if (nCount < 0)
+    {
+        nCount = 0;
+        SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT, nCount);
+    }
+    return nCount;
+}
+
+void DL_RefreshAreaPlayerCount(object oArea)
+{
+    int nCount = DL_CountPlayersInArea(oArea);
+    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT, nCount);
+    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_INIT, TRUE);
+}
+
+void DL_EnsureAreaPlayerCountSeeded(object oArea)
+{
+    if (GetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_INIT) == TRUE)
+    {
+        return;
+    }
+
+    DL_RefreshAreaPlayerCount(oArea);
+}
+
+void DL_MaybeReconcileAreaPlayerCount(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_INIT) != TRUE)
+    {
+        DL_RefreshAreaPlayerCount(oArea);
+        SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK));
+        return;
+    }
+
+    int nNowTick = GetLocalInt(oArea, DL_L_AREA_WORKER_TICK);
+    int nLastTick = GetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK);
+    if (nNowTick >= nLastTick && (nNowTick - nLastTick) < DL_PLAYER_COUNT_RECONCILE_INTERVAL_TICKS)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK, nNowTick);
+    DL_RefreshAreaPlayerCount(oArea);
 }
 
 int DL_GetAreaTier(object oArea)
@@ -379,8 +453,10 @@ void DL_BootstrapAreaTier(object oArea)
         return;
     }
 
+    DL_EnsureAreaPlayerCountSeeded(oArea);
+
     int nTier = DL_GetAreaTier(oArea);
-    if (nTier != DL_TIER_HOT && DL_AreaHasPlayer(oArea))
+    if (nTier != DL_TIER_HOT && DL_GetAreaPlayerCount(oArea) > 0)
     {
         nTier = DL_TIER_HOT;
     }
@@ -410,6 +486,8 @@ void DL_OnAreaEnterBootstrap(object oArea, object oEnter)
 
     if (GetIsPC(oEnter) && !GetIsDM(oEnter))
     {
+        // Runtime-safe refresh: OnEnter timing differs by engine/version; recompute exact count.
+        DL_RefreshAreaPlayerCount(oArea);
         DL_SetAreaTier(oArea, DL_TIER_HOT);
         SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, TRUE);
         return;
@@ -425,9 +503,14 @@ void DL_OnAreaExitBootstrap(object oArea, object oExit)
         return;
     }
 
-    if (GetIsPC(oExit) && !GetIsDM(oExit) && !DL_AreaHasPlayer(oArea))
+    if (GetIsPC(oExit) && !GetIsDM(oExit))
     {
-        DL_SetAreaTier(oArea, DL_TIER_WARM);
+        // Runtime-safe refresh: avoid counter drift from event ordering edge-cases.
+        DL_RefreshAreaPlayerCount(oArea);
+        if (DL_GetAreaPlayerCount(oArea) <= 0)
+        {
+            DL_SetAreaTier(oArea, DL_TIER_WARM);
+        }
         return;
     }
 
@@ -647,7 +730,7 @@ void DL_RunAreaEnterResyncTick(object oArea)
 
     int nNpcProcessed = 0;
     int nNpcSeen = 0;
-    object oObj = GetFirstObjectInArea(oArea);
+    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
 
     while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
     {
@@ -662,12 +745,12 @@ void DL_RunAreaEnterResyncTick(object oArea)
             nNpcSeen = nNpcSeen + 1;
         }
 
-        oObj = GetNextObjectInArea(oArea);
+        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
     }
 
     if (nNpcProcessed < nBudget && nCursor > 0)
     {
-        oObj = GetFirstObjectInArea(oArea);
+        oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
         int nWrapSeen = 0;
 
         while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
@@ -683,7 +766,7 @@ void DL_RunAreaEnterResyncTick(object oArea)
                 nWrapSeen = nWrapSeen + 1;
             }
 
-            oObj = GetNextObjectInArea(oArea);
+            oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
         }
     }
 
@@ -720,6 +803,7 @@ void DL_RunAreaWorkerTick(object oArea)
     }
 
     DL_BootstrapAreaTier(oArea);
+    DL_MaybeReconcileAreaPlayerCount(oArea);
     if (DL_GetAreaTier(oArea) != DL_TIER_HOT)
     {
         return;
@@ -731,7 +815,7 @@ void DL_RunAreaWorkerTick(object oArea)
     int nCursor = DL_GetAreaWorkerCursor(oArea);
     int nNpcProcessed = 0;
     int nNpcSeen = 0;
-    object oObj = GetFirstObjectInArea(oArea);
+    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
 
     while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
     {
@@ -745,12 +829,12 @@ void DL_RunAreaWorkerTick(object oArea)
             nNpcSeen = nNpcSeen + 1;
         }
 
-        oObj = GetNextObjectInArea(oArea);
+        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
     }
 
     if (nNpcProcessed < nBudget && nCursor > 0)
     {
-        oObj = GetFirstObjectInArea(oArea);
+        oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
         int nWrapSeen = 0;
 
         while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
@@ -765,7 +849,7 @@ void DL_RunAreaWorkerTick(object oArea)
                 nWrapSeen = nWrapSeen + 1;
             }
 
-            oObj = GetNextObjectInArea(oArea);
+            oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
         }
     }
 

@@ -10,6 +10,7 @@ void main()
     string sActor = GetIsObjectValid(oEnter) ? GetName(oEnter) : "<invalid>";
     string sLog = "[DL][AREA_ENTER] area=" + GetName(oArea) +
                   " actor=" + sActor +
+                  " players=" + IntToString(DL_GetAreaPlayerCount(oArea)) +
                   " tier=" + IntToString(DL_GetAreaTier(oArea)) +
                   " reg=" + IntToString(GetLocalInt(oArea, DL_L_AREA_REG_COUNT)) +
                   " resync_req=" + IntToString(GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING));
