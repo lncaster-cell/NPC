@@ -129,6 +129,8 @@
 - Для area-based навигации применяются **`dl_anchor_*` area-local anchors** (sleep/work/meal/social/public) как первичные точки назначения.
 - Внедрена **weekend-логика** (в т.ч. `off_public` и `reduced_work`, с weekend-ветвлением в директивном резолвере).
 - Влиты runtime-диагностика и анти-спам логирования: сигнатурный дедуп диагностик NPC (повторяющиеся состояния не спамят лог каждый тик).
+- Внедрён **двухконтурный quota-control**: отдельный area-resync budget + module-level NPC budget per minute (burst-ограничение между несколькими hot-area).
+- В runtime добавлены **операционные метрики последнего тика** (`worker_last_processed`/`resync_last_processed` на area и module уровне).
 
 #### Что подтверждено как текущая runtime truth
 
@@ -161,3 +163,60 @@
 2. Проверка trader `reduced_work` на субботе/воскресенье (факт сокращения смены + корректный выход в public/social окна).
 3. Негативные кейсы markup: NPC без `work`, area без `dl_anchor_public`, area с битым anchor waypoint tag.
 4. SOCIAL pair matrix: валидный партнёр, невалидный партнёр, партнёр вне area — с проверкой, что fallback в PUBLIC стабилен.
+
+---
+
+## 8) Архитектурная оптимизация (best practices + справка NWN Lexicon)
+
+Ниже — зафиксированный набор практик, который используем как baseline для оптимизации runtime-кода.
+
+### 8.1 Проверенные практики из NWN Lexicon
+
+1. **Минимизировать частые полные обходы area-объектов**<br>
+   `GetFirstObjectInArea`/`GetNextObjectInArea` полезны, но их не рекомендуют гонять слишком часто в крупных/населённых локациях. Следствие: worker-контур должен оставаться quota-based, а тяжёлые массовые обходы — только по событию/по необходимости.
+
+2. **Осторожно использовать `DelayCommand` как инфраструктуру планирования**<br>
+   По справке, множественные `DelayCommand` (особенно рекурсивные/долгие цепочки) могут приводить к проблемам производительности и к сложному поведению контекста. Следствие: для ядра Daily Life сохраняем event-first runtime, без «таймерной паутины».
+
+3. **Сигнализация событий вместо прямого fan-out в одном скрипте**<br>
+   `SignalEvent` исполняется как отдельная от вызывающего скрипта единица и подходит для развязки ingress/dispatch логики. Следствие: держим тонкие ingress-скрипты и передаём тяжёлую работу в резолверы/воркеры.
+
+4. **Фильтровать типы объектов при area-итерациях**<br>
+   Вызовы обхода area должны всегда использовать object-filter (например, `OBJECT_TYPE_CREATURE`) для снижения стоимости перебора.
+
+### 8.2 Практические рекомендации для vNext
+
+1. **Area worker: переход к registry-driven итерации (приоритет P1)**<br>
+   Цель: уйти от регулярного полного area-scan в тиках hot-tier.<br>
+   Подход: хранить компактный реестр активных NPC на area-уровне (через стабильные ключи/индексы) и обрабатывать только его.
+
+2. **Burst-контроль ingress (P1)**<br>
+   Ввести единый module-level лимит «максимум обработок NPC за тик» поверх area budget, чтобы входящий burst из нескольких горячих area не приводил к frame-spike.
+
+3. **Resync как отдельная фазовая квота (P1)**<br>
+   Разделить обычный worker budget и resync budget, чтобы массовый resync не вытеснял runtime-обновление уже активных NPC.
+
+4. **Диагностический профиль производительности (P2)**<br>
+   Добавить метрики в module/area locals:
+   - `processed_per_tick`
+   - `resync_processed_per_tick`
+   - `ingress_queue_depth`
+   - `max_tick_cost_marker`
+
+5. **Контракт на idempotent transitions (P2)**<br>
+   Формализовать таблицу разрешённых переходов directive/state и запретить повторную «дорогую» materialization, если effective state не изменился.
+
+### 8.3 Decision policy (обязательная)
+
+- Если есть встроенный механизм NWScript/NWN2 и он покрывает задачу — используем его.
+- Если встроенный механизм частично покрывает задачу — применяем тонкую адаптацию, не ломая runtime-контракты.
+- Если механизма нет — расширяем через явный контракт + диагностику + bounded execution.
+
+### 8.4 Sources of truth (внешние ссылки)
+
+- NWN Lexicon: `GetFirstObjectInArea` — рекомендации по частоте обходов и фильтрам.<br>
+  https://nwnlexicon.com/GetFirstObjectInArea
+- NWN Lexicon: `DelayCommand` — ограничения/подводные камни и влияние на производительность.<br>
+  https://www.nwnlexicon.com/DelayCommand
+- NWN Lexicon: `SignalEvent` — модель исполнения событийного сигнала.<br>
+  https://nwnlexicon.com/SignalEvent
