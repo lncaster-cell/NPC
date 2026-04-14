@@ -277,11 +277,6 @@ int DL_IsSleepWaypointInNpcArea(object oNpc, object oWp)
     return GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
 }
 
-int DL_IsWorkWaypointInNpcArea(object oNpc, object oWp)
-{
-    return GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
-}
-
 int DL_IsSleepWaypointTagInvalidArea(object oNpc, string sTag)
 {
     object oWp = DL_GetSleepWaypointByTag(sTag);
@@ -431,9 +426,17 @@ void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
         return;
     }
 
-    if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_BLACKSMITH)
+    if (nDirective != DL_DIR_WORK)
     {
-        if (GetLocalString(oNpc, DL_L_NPC_WORK_KIND) == DL_WORK_KIND_CRAFT)
+        DL_ClearActivityPresentation(oNpc);
+        return;
+    }
+
+    string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
+    if (sProfile == DL_PROFILE_BLACKSMITH)
+    {
+        string sWorkKind = GetLocalString(oNpc, DL_L_NPC_WORK_KIND);
+        if (sWorkKind == DL_WORK_KIND_CRAFT)
         {
             DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_CRAFT);
             return;
@@ -443,13 +446,13 @@ void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
         return;
     }
 
-    if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
+    if (sProfile == DL_PROFILE_GATE_POST)
     {
         DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_GUARD, DL_ARCH_ANIMS_GUARD);
         return;
     }
 
-    if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_TRADER)
+    if (sProfile == DL_PROFILE_TRADER)
     {
         DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_MERCHANT_MULTI, DL_ARCH_ANIMS_TRADE);
         return;
