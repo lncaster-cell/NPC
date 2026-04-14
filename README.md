@@ -1,23 +1,18 @@
 # PysukSystems (NPC) — README
 
-> Обновлено: **2026-04-11**.
+> Обновлено: **2026-04-14**.
 
-Цель текущего этапа: прекратить рост мета-документации и развивать runtime-код в `daily_life/`.
+Цель текущего этапа: развивать runtime-код в `daily_life/` и держать документацию синхронизированной с фактическим состоянием `main`.
 
-## ACTIVE DOC SET (только 5 файлов)
+## ACTIVE DOC SET
 
-Основной канонический маршрут:
-1. `docs/canon/12B_DAILY_LIFE_VNEXT_CANON.md`
-2. `docs/runtime/06_SYSTEM_INVARIANTS.md`
-3. `docs/runtime/41_DAILY_LIFE_V2_DESIGN_BASELINE_RU.md`
-4. `docs/runtime/40_DAILY_LIFE_V2_REWRITE_PROGRAM_RU.md`
-5. `docs/governance/21_ACTIVE_DEVELOPMENT_CONTROL_PANEL.md`
+Канонический и единственный источник документации проекта:
+1. `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`
 
-Важно: это **основной маршрут**, но не запрет на использование операционных reference-документов текущего этапа.
-Для уточнения acceptance-статуса и фактической рабочей точки также используются:
-- `docs/runtime/52_DAILY_LIFE_STEP06_ACCEPTANCE_RUNBOOK_RU.md`
-- `docs/runtime/53_DAILY_LIFE_CURRENT_EXECUTION_PLAN_RU.md`
-- `docs/runtime/12B_DAILY_LIFE_V1_ACCEPTANCE_JOURNAL.md`
+Важно:
+- legacy-структура `docs/canon`, `docs/runtime`, `docs/governance` больше не является активным маршрутом;
+- новые архитектурные и runtime-изменения фиксируются в unified-документе;
+- при проектировании и правках используем встроенные механики NWN2/NWScript с опорой на NWN Lexicon (без ad-hoc костылей).
 
 ## Канонический workspace path
 
@@ -39,9 +34,9 @@
 
 ## Практическое правило на следующий шаг
 
-Следующие PR должны быть code-first:
-- минимум 1 изменение в `daily_life/*.nss`,
-- документация правится только как короткая синхронизация в active doc set.
+Следующие PR по runtime должны быть code-first:
+- минимум 1 изменение в `daily_life/*.nss`;
+- документация правится как короткая синхронизация в `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`.
 
 ## Daily Life: доступные activity-анимации и игровые константы (как вызывать)
 

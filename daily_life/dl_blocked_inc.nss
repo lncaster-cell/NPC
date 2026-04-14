@@ -33,14 +33,12 @@ void DL_ReissueNpcDirectiveAfterBlocked(object oNpc)
     int nDirective = GetLocalInt(oNpc, DL_L_NPC_DIRECTIVE);
     if (nDirective == DL_DIR_WORK)
     {
-        DL_ClearWorkExecutionState(oNpc);
         DL_ApplyDirectiveSkeleton(oNpc, nDirective);
         return;
     }
 
     if (nDirective == DL_DIR_SLEEP)
     {
-        DL_ClearSleepExecutionState(oNpc);
         DL_ApplyDirectiveSkeleton(oNpc, nDirective);
         return;
     }
