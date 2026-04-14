@@ -1,4 +1,4 @@
-const int DL_NPC_EVENT_NONE = 0;
+// Valid runtime lifecycle events start at 1.
 const int DL_NPC_EVENT_SPAWN = 1;
 const int DL_NPC_EVENT_DEATH = 2;
 const int DL_NPC_EVENT_BLOCKED = 3;
