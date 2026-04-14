@@ -225,22 +225,6 @@ object DL_GetSleepWaypointByTag(string sTag)
     return oWp;
 }
 
-object DL_GetWorkWaypointByTag(string sTag)
-{
-    if (sTag == "")
-    {
-        return OBJECT_INVALID;
-    }
-
-    object oWp = GetWaypointByTag(sTag);
-    if (!GetIsObjectValid(oWp))
-    {
-        return OBJECT_INVALID;
-    }
-
-    return oWp;
-}
-
 object DL_GetNpcCachedWaypointByTag(object oNpc, string sCacheLocal, string sTag)
 {
     if (!GetIsObjectValid(oNpc) || sTag == "")
@@ -289,11 +273,6 @@ object DL_ResolveEffectiveWaypointForNpc(object oNpc, object oWp)
 }
 
 int DL_IsSleepWaypointInNpcArea(object oNpc, object oWp)
-{
-    return GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
-}
-
-int DL_IsWorkWaypointInNpcArea(object oNpc, object oWp)
 {
     return GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
 }
@@ -434,6 +413,35 @@ void DL_SetActivityPresentation(object oNpc, int nActivityId, string sAnimSet)
     SetLocalString(oNpc, DL_L_NPC_ANIM_SET, sAnimSet);
 }
 
+int DL_TryApplyWorkActivityPresentation(object oNpc, string sProfile, string sWorkKind)
+{
+    if (sProfile == DL_PROFILE_BLACKSMITH)
+    {
+        if (sWorkKind == DL_WORK_KIND_CRAFT)
+        {
+            DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_CRAFT);
+            return TRUE;
+        }
+
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
+        return TRUE;
+    }
+
+    if (sProfile == DL_PROFILE_GATE_POST)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_GUARD, DL_ARCH_ANIMS_GUARD);
+        return TRUE;
+    }
+
+    if (sProfile == DL_PROFILE_TRADER)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_MERCHANT_MULTI, DL_ARCH_ANIMS_TRADE);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
 {
     if (!GetIsObjectValid(oNpc))
@@ -447,27 +455,16 @@ void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
         return;
     }
 
-    if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_BLACKSMITH)
+    if (nDirective != DL_DIR_WORK)
     {
-        if (GetLocalString(oNpc, DL_L_NPC_WORK_KIND) == DL_WORK_KIND_CRAFT)
-        {
-            DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_CRAFT);
-            return;
-        }
-
-        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
+        DL_ClearActivityPresentation(oNpc);
         return;
     }
 
-    if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
+    string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
+    string sWorkKind = GetLocalString(oNpc, DL_L_NPC_WORK_KIND);
+    if (DL_TryApplyWorkActivityPresentation(oNpc, sProfile, sWorkKind))
     {
-        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_GUARD, DL_ARCH_ANIMS_GUARD);
-        return;
-    }
-
-    if (nDirective == DL_DIR_WORK && GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_TRADER)
-    {
-        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_MERCHANT_MULTI, DL_ARCH_ANIMS_TRADE);
         return;
     }
 
@@ -592,6 +589,40 @@ void DL_SetWorkTargetState(object oNpc, string sKind, object oTarget)
     DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
 }
 
+void DL_SetSleepMissingState(object oNpc, int bInvalidArea)
+{
+    SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_NONE);
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "missing_waypoints");
+    if (bInvalidArea)
+    {
+        SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_target_invalid_area");
+    }
+    else
+    {
+        DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+    }
+    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
+    DL_ClearTransitionExecutionState(oNpc);
+}
+
+void DL_SetSleepTargetState(object oNpc, object oBed)
+{
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, GetTag(oBed));
+    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+}
+
+void DL_QueueMoveAction(object oNpc, location lTarget, int bRun)
+{
+    AssignCommand(oNpc, ClearAllActions(TRUE));
+    AssignCommand(oNpc, ActionMoveToLocation(lTarget, bRun));
+}
+
+void DL_QueueJumpAction(object oNpc, location lTarget)
+{
+    AssignCommand(oNpc, ClearAllActions(TRUE));
+    AssignCommand(oNpc, ActionJumpToLocation(lTarget));
+}
+
 int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
@@ -613,8 +644,7 @@ int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
         if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
         {
             SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "moving_to_anchor");
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionMoveToLocation(lTarget, TRUE));
+            DL_QueueMoveAction(oNpc, lTarget, TRUE);
         }
         return TRUE;
     }
@@ -645,23 +675,11 @@ void DL_ExecuteSleepDirective(object oNpc)
 
     if (!GetIsObjectValid(oApproach) || !GetIsObjectValid(oBed))
     {
-        SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_NONE);
-        SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "missing_waypoints");
-        if (bInvalidArea)
-        {
-            SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_target_invalid_area");
-        }
-        else
-        {
-            DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
-        }
-        DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
-        DL_ClearTransitionExecutionState(oNpc);
+        DL_SetSleepMissingState(oNpc, bInvalidArea);
         return;
     }
 
-    SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, GetTag(oBed));
-    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+    DL_SetSleepTargetState(oNpc, oBed);
 
     if (DL_WaypointHasTransition(oApproach))
     {
@@ -683,8 +701,7 @@ void DL_ExecuteSleepDirective(object oNpc)
         {
             SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_MOVING);
             SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "moving_to_approach");
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionMoveToLocation(lApproach, TRUE));
+            DL_QueueMoveAction(oNpc, lApproach, TRUE);
         }
         return;
     }
@@ -711,8 +728,7 @@ void DL_ExecuteSleepDirective(object oNpc)
         {
             SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_JUMPING);
             SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "jumping_to_bed");
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionJumpToLocation(lBed));
+            DL_QueueJumpAction(oNpc, lBed);
         }
         return;
     }
@@ -793,6 +809,24 @@ void DL_SetInteractionModes(object oNpc, string sDialogue, string sService)
     SetLocalString(oNpc, DL_L_NPC_SERVICE_MODE, sService);
 }
 
+int DL_IsProfileServiceAvailable(string sProfile)
+{
+    return sProfile != DL_PROFILE_GATE_POST;
+}
+
+void DL_ApplyIdleLikeDirectiveState(object oNpc, int bSocial)
+{
+    SetLocalString(oNpc, DL_L_NPC_STATE, bSocial ? DL_STATE_SOCIAL : DL_STATE_IDLE);
+    DL_SetInteractionModes(
+        oNpc,
+        bSocial ? DL_DIALOGUE_SOCIAL : DL_DIALOGUE_IDLE,
+        DL_SERVICE_OFF
+    );
+    DL_ClearSleepExecutionState(oNpc);
+    DL_ClearWorkExecutionState(oNpc);
+    DL_ClearActivityPresentation(oNpc);
+}
+
 void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
 {
     if (!GetIsObjectValid(oNpc))
@@ -813,34 +847,23 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
     else if (nDirective == DL_DIR_WORK)
     {
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_WORK);
-
-        if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
-        {
-            DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_OFF);
-        }
-        else
-        {
-            DL_SetInteractionModes(oNpc, DL_DIALOGUE_WORK, DL_SERVICE_AVAILABLE);
-        }
+        string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
+        DL_SetInteractionModes(
+            oNpc,
+            DL_DIALOGUE_WORK,
+            DL_IsProfileServiceAvailable(sProfile) ? DL_SERVICE_AVAILABLE : DL_SERVICE_OFF
+        );
 
         DL_ClearSleepExecutionState(oNpc);
         DL_ExecuteWorkDirective(oNpc);
     }
     else if (nDirective == DL_DIR_SOCIAL)
     {
-        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
-        DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
-        DL_ClearSleepExecutionState(oNpc);
-        DL_ClearWorkExecutionState(oNpc);
-        DL_ClearActivityPresentation(oNpc);
+        DL_ApplyIdleLikeDirectiveState(oNpc, TRUE);
     }
     else
     {
-        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_IDLE);
-        DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
-        DL_ClearSleepExecutionState(oNpc);
-        DL_ClearWorkExecutionState(oNpc);
-        DL_ClearActivityPresentation(oNpc);
+        DL_ApplyIdleLikeDirectiveState(oNpc, FALSE);
     }
 
     DL_ApplyMaterializationSkeleton(oNpc, nDirective);
