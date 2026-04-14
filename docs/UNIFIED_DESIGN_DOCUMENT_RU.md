@@ -115,3 +115,99 @@
 3. Довести интеграционные handoff-точки с city/legal/clan/property/trade/travel.
 4. Сохранять производительность через bounded execution и наблюдаемость.
 
+
+---
+
+## 7) Daily Life vNext — каноническое состояние runtime (после schedule-driven обновления)
+
+### 7.1 Canonical model (что считается каноном)
+
+#### 7.1.1 Модель локаций NPC (area bindings)
+
+Каноническая модель Daily Life использует **area-привязки NPC** по ролям:
+- `home`
+- `work`
+- `meal`
+- `social`
+- `public`
+
+Источник этих привязок на NPC — локальные строки:
+- `dl_home_area_tag`
+- `dl_work_area_tag`
+- `dl_meal_area_tag`
+- `dl_social_area_tag`
+- `dl_public_area_tag`
+
+#### 7.1.2 Модель якорей (area-local anchors)
+
+Канонические якоря поведения задаются как area-local waypoint anchors:
+- `dl_anchor_sleep_approach`
+- `dl_anchor_sleep_bed`
+- `dl_anchor_meal`
+- `dl_anchor_work_primary`
+- `dl_anchor_work_secondary`
+- `dl_anchor_social_a`
+- `dl_anchor_social_b`
+- `dl_anchor_public`
+
+**Source of truth для якорей: area locals / area-local anchor waypoints.**
+Legacy-разметка waypoint’ами вне этой модели больше не считается каноном.
+
+#### 7.1.3 Модель директив
+
+Канонический набор директив runtime:
+- `SLEEP`
+- `WORK`
+- `MEAL`
+- `SOCIAL`
+- `PUBLIC`
+- `NONE`
+
+Расписание (schedule-driven) считается от персональных параметров:
+- `wake_hour`
+- `sleep_hours`
+- `shift_start`
+- `shift_length`
+- weekend-mode
+
+#### 7.1.4 Weekend model
+
+Минимально поддерживаемые режимы выходных:
+- `off_public`
+- `reduced_work`
+
+Правило профилей:
+- кузнецоподобные NPC могут по выходным не работать (уходить в public/social контур);
+- торговецоподобные NPC могут работать по сокращенному окну.
+
+#### 7.1.5 Meal model
+
+Каноническая meal-модель:
+- breakfast → `home`
+- lunch → `meal -> work -> home`
+- dinner → `home`
+
+#### 7.1.6 Social/Public model
+
+Каноническая social/public-модель:
+- `SOCIAL` — парная сцена с partner и слотами `social_a/social_b`;
+- если `SOCIAL` не собрался, допустим fallback в `PUBLIC`;
+- `PUBLIC` — самостоятельная директива городского присутствия (площадь, проповеди, музыканты, глашатай и т.п.).
+
+### 7.2 Implemented (что уже реализовано в коде)
+
+На текущем `main` реализовано:
+- minute-based scheduling в runtime-цикле;
+- новый набор директив (`SLEEP/WORK/MEAL/SOCIAL/PUBLIC/NONE`);
+- area-driven anchors и area-tag bindings для целевых зон;
+- weekend modes (`off_public`, `reduced_work`);
+- базовые meal/social/public flow;
+- диагностические состояния и debug-поля runtime (chat/debug/diagnostic locals и служебные статусы).
+
+### 7.3 Pending / known risks (что еще незавершено)
+
+Открытые пункты и риски на текущем этапе:
+- не все игровые сценарии прогнаны ручной валидацией end-to-end;
+- weekend/public behavior требует дальнейшей owner-validation по UX и балансу;
+- social/public richness пока уровня v1 (базовые сцены, ограниченная вариативность);
+- часть поведения остается intentionally basic до следующего витка полировки.
