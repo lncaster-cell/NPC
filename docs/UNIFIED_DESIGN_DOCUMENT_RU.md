@@ -115,3 +115,49 @@
 3. Довести интеграционные handoff-точки с city/legal/clan/property/trade/travel.
 4. Сохранять производительность через bounded execution и наблюдаемость.
 
+---
+
+## 7) Runtime Truth / Activity Journal (Daily Life)
+
+### 2026-04-14 — фиксация текущего runtime-состояния Daily Life (по `main`)
+
+#### Что внедрено (уже влито в `main`)
+
+- **Minute-based directive resolution**: директива рассчитывается поминутно (`DL_ResolveNpcDirectiveAtMinute`) с оконной логикой сна/еды/работы/social/public.
+- В runtime-контуре директив уже используются **`MEAL`**, **`SOCIAL`**, **`PUBLIC`** (помимо `SLEEP`/`WORK`) как materialization и execution-состояния.
+- На NPC используются area-теги: **`home/work/meal/social/public`** (`dl_home_area_tag`, `dl_work_area_tag`, `dl_meal_area_tag`, `dl_social_area_tag`, `dl_public_area_tag`).
+- Для area-based навигации применяются **`dl_anchor_*` area-local anchors** (sleep/work/meal/social/public) как первичные точки назначения.
+- Внедрена **weekend-логика** (в т.ч. `off_public` и `reduced_work`, с weekend-ветвлением в директивном резолвере).
+- Влиты runtime-диагностика и анти-спам логирования: сигнатурный дедуп диагностик NPC (повторяющиеся состояния не спамят лог каждый тик).
+
+#### Что подтверждено как текущая runtime truth
+
+- Текущая Daily Life модель считается **schedule-driven/area-driven runtime-моделью**; старая legacy-разметка больше не трактуется как канонический baseline.
+- **NPC location model = area-based** (через area tag locals на NPC и area anchor locals на area).
+- **Area anchors — source of truth** для целевых точек Daily Life в area-контексте.
+- **Legacy waypoint fallback** существует как совместимость/страховка для части профилей, но **не является целевой моделью развития**.
+
+#### Что ещё не подтверждено owner-run тестом (open runtime validation)
+
+- Кузнец в будни (полный цикл WORK/MEAL/SOCIAL/PUBLIC/SLEEP).
+- Кузнец в выходные (влияние weekend mode на поведение).
+- NPC без `work` area-тега (ожидаемый graceful fallback/idle-public-path, без деградации контура).
+- Торговец с `reduced_work` (корректное сокращение смены в weekend-режиме).
+- Успешный social pair сценарий (оба NPC доходят/держат social anchor).
+- Fallback из SOCIAL в PUBLIC при несостоявшейся паре.
+- Поведение при missing anchor (диагностика + безопасное поведение без «залипания»).
+- Практическая полезность chat debug в реальном owner-run (достаточность сигналов, отсутствие лишнего шума).
+
+#### Known risks (текущее честное состояние)
+
+- Часть weekend/public поведения всё ещё требует owner validation в живом прогоне.
+- SOCIAL/PUBLIC сцены пока уровня **v1 richness** (функционально есть, но глубина сценариев ограничена).
+- Корректность area-driven модели критически зависит от полноты и правильности area markup.
+- Финальная уверенность по качеству Daily Life требует **in-game owner run**, а не только code inspection.
+
+#### Что тестировать следующим (owner run next steps)
+
+1. Прогон «кузнец будни» и «кузнец выходные» в одном и том же area-наборе, с включённым chat-log и фиксацией директив по времени.
+2. Проверка trader `reduced_work` на субботе/воскресенье (факт сокращения смены + корректный выход в public/social окна).
+3. Негативные кейсы markup: NPC без `work`, area без `dl_anchor_public`, area с битым anchor waypoint tag.
+4. SOCIAL pair matrix: валидный партнёр, невалидный партнёр, партнёр вне area — с проверкой, что fallback в PUBLIC стабилен.
