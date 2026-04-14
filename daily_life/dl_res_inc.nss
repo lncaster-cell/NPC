@@ -209,22 +209,6 @@ void DL_ApplyMaterializationSkeleton(object oNpc, int nDirective)
     DeleteLocalString(oNpc, DL_L_NPC_MAT_TAG);
 }
 
-object DL_GetSleepWaypointByTag(string sTag)
-{
-    if (sTag == "")
-    {
-        return OBJECT_INVALID;
-    }
-
-    object oWp = GetWaypointByTag(sTag);
-    if (!GetIsObjectValid(oWp))
-    {
-        return OBJECT_INVALID;
-    }
-
-    return oWp;
-}
-
 object DL_GetNpcCachedWaypointByTag(object oNpc, string sCacheLocal, string sTag)
 {
     if (!GetIsObjectValid(oNpc) || sTag == "")
@@ -270,22 +254,6 @@ object DL_ResolveEffectiveWaypointForNpc(object oNpc, object oWp)
     }
 
     return OBJECT_INVALID;
-}
-
-int DL_IsSleepWaypointInNpcArea(object oNpc, object oWp)
-{
-    return GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
-}
-
-int DL_IsSleepWaypointTagInvalidArea(object oNpc, string sTag)
-{
-    object oWp = DL_GetSleepWaypointByTag(sTag);
-    if (!GetIsObjectValid(oWp))
-    {
-        return FALSE;
-    }
-
-    return !GetIsObjectValid(DL_ResolveEffectiveWaypointForNpc(oNpc, oWp));
 }
 
 object DL_ResolveNpcWaypointWithFallbackTag(
@@ -413,6 +381,35 @@ void DL_SetActivityPresentation(object oNpc, int nActivityId, string sAnimSet)
     SetLocalString(oNpc, DL_L_NPC_ANIM_SET, sAnimSet);
 }
 
+int DL_TryApplyWorkActivityPresentation(object oNpc, string sProfile, string sWorkKind)
+{
+    if (sProfile == DL_PROFILE_BLACKSMITH)
+    {
+        if (sWorkKind == DL_WORK_KIND_CRAFT)
+        {
+            DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_CRAFT);
+            return TRUE;
+        }
+
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
+        return TRUE;
+    }
+
+    if (sProfile == DL_PROFILE_GATE_POST)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_GUARD, DL_ARCH_ANIMS_GUARD);
+        return TRUE;
+    }
+
+    if (sProfile == DL_PROFILE_TRADER)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_MERCHANT_MULTI, DL_ARCH_ANIMS_TRADE);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
 {
     if (!GetIsObjectValid(oNpc))
@@ -433,28 +430,9 @@ void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
     }
 
     string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
-    if (sProfile == DL_PROFILE_BLACKSMITH)
+    string sWorkKind = GetLocalString(oNpc, DL_L_NPC_WORK_KIND);
+    if (DL_TryApplyWorkActivityPresentation(oNpc, sProfile, sWorkKind))
     {
-        string sWorkKind = GetLocalString(oNpc, DL_L_NPC_WORK_KIND);
-        if (sWorkKind == DL_WORK_KIND_CRAFT)
-        {
-            DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_CRAFT);
-            return;
-        }
-
-        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE, DL_ARCH_ANIMS_FORGE);
-        return;
-    }
-
-    if (sProfile == DL_PROFILE_GATE_POST)
-    {
-        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_GUARD, DL_ARCH_ANIMS_GUARD);
-        return;
-    }
-
-    if (sProfile == DL_PROFILE_TRADER)
-    {
-        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_MERCHANT_MULTI, DL_ARCH_ANIMS_TRADE);
         return;
     }
 
@@ -601,6 +579,18 @@ void DL_SetSleepTargetState(object oNpc, object oBed)
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
 }
 
+void DL_QueueMoveAction(object oNpc, location lTarget, int bRun)
+{
+    AssignCommand(oNpc, ClearAllActions(TRUE));
+    AssignCommand(oNpc, ActionMoveToLocation(lTarget, bRun));
+}
+
+void DL_QueueJumpAction(object oNpc, location lTarget)
+{
+    AssignCommand(oNpc, ClearAllActions(TRUE));
+    AssignCommand(oNpc, ActionJumpToLocation(lTarget));
+}
+
 int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
@@ -617,13 +607,12 @@ int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
     }
 
     location lTarget = GetLocation(oTarget);
-    if (GetDistanceBetweenLocations(GetLocation(oNpc), lTarget) > DL_WORK_ANCHOR_RADIUS)
+    if (GetDistanceBetween(oNpc, oTarget) > DL_WORK_ANCHOR_RADIUS)
     {
         if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
         {
             SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "moving_to_anchor");
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionMoveToLocation(lTarget, TRUE));
+            DL_QueueMoveAction(oNpc, lTarget, TRUE);
         }
         return TRUE;
     }
@@ -639,22 +628,10 @@ void DL_ExecuteSleepDirective(object oNpc)
 {
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
     object oBed = DL_ResolveSleepBedWaypoint(oNpc);
-    int bInvalidArea = FALSE;
-
-    if (GetIsObjectValid(oApproach) && !DL_IsSleepWaypointInNpcArea(oNpc, oApproach))
-    {
-        oApproach = OBJECT_INVALID;
-        bInvalidArea = TRUE;
-    }
-    if (GetIsObjectValid(oBed) && !DL_IsSleepWaypointInNpcArea(oNpc, oBed))
-    {
-        oBed = OBJECT_INVALID;
-        bInvalidArea = TRUE;
-    }
 
     if (!GetIsObjectValid(oApproach) || !GetIsObjectValid(oBed))
     {
-        DL_SetSleepMissingState(oNpc, bInvalidArea);
+        DL_SetSleepMissingState(oNpc, FALSE);
         return;
     }
 
@@ -674,14 +651,13 @@ void DL_ExecuteSleepDirective(object oNpc)
     string sStatus = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
     int bCommittedToBed = nPhase == DL_SLEEP_PHASE_JUMPING || nPhase == DL_SLEEP_PHASE_ON_BED;
 
-    if (!bCommittedToBed && GetDistanceBetweenLocations(GetLocation(oNpc), lApproach) > DL_SLEEP_APPROACH_RADIUS)
+    if (!bCommittedToBed && GetDistanceBetween(oNpc, oApproach) > DL_SLEEP_APPROACH_RADIUS)
     {
         if (nPhase != DL_SLEEP_PHASE_MOVING || sStatus != "moving_to_approach")
         {
             SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_MOVING);
             SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "moving_to_approach");
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionMoveToLocation(lApproach, TRUE));
+            DL_QueueMoveAction(oNpc, lApproach, TRUE);
         }
         return;
     }
@@ -702,14 +678,13 @@ void DL_ExecuteSleepDirective(object oNpc)
         }
     }
 
-    if (GetDistanceBetweenLocations(GetLocation(oNpc), lBed) > DL_SLEEP_BED_RADIUS)
+    if (GetDistanceBetween(oNpc, oBed) > DL_SLEEP_BED_RADIUS)
     {
         if (nPhase != DL_SLEEP_PHASE_JUMPING || sStatus != "jumping_to_bed")
         {
             SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_JUMPING);
             SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "jumping_to_bed");
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionJumpToLocation(lBed));
+            DL_QueueJumpAction(oNpc, lBed);
         }
         return;
     }
