@@ -241,8 +241,8 @@ int DL_MinuteInWindow(int nMinute, int nStart, int nDuration)
 
 int DL_GetWeekendType()
 {
-    int nAbsoluteDay = (GetCalendarYear() * 12 * 28) + (GetCalendarMonth() * 28) + GetCalendarDay();
-    int nDow = nAbsoluteDay % 7; // 0=Sunday, 6=Saturday in runtime convention
+    // Runtime-native weekday value (0=Sunday, 6=Saturday).
+    int nDow = GetCalendarDayOfWeek();
     if (nDow == 0)
     {
         return 2;
@@ -277,11 +277,6 @@ int DL_GetNpcWakeHour(object oNpc)
 int DL_GetNpcShiftStart(object oNpc)
 {
     int nStart = GetLocalInt(oNpc, DL_L_NPC_SHIFT_START);
-    if (nStart == 0)
-    {
-        nStart = 8;
-    }
-
     if (GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST)
     {
         int nLegacyGuardStart = GetLocalInt(oNpc, DL_L_NPC_GUARD_SHIFT_START);
@@ -290,6 +285,7 @@ int DL_GetNpcShiftStart(object oNpc)
             nStart = nLegacyGuardStart;
         }
     }
+
     if (nStart < 0 || nStart > 23)
     {
         nStart = 8;
@@ -327,6 +323,33 @@ int DL_GetNpcShiftLength(object oNpc, int bWeekend)
     }
 
     return nLen;
+}
+
+int DL_NpcHasWorkDirectiveWindow(object oNpc, int bWeekend)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return FALSE;
+    }
+
+    if (!GetIsObjectValid(DL_GetWorkArea(oNpc)))
+    {
+        return FALSE;
+    }
+
+    string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
+    if (sProfile != DL_PROFILE_BLACKSMITH && sProfile != DL_PROFILE_GATE_POST && sProfile != DL_PROFILE_TRADER)
+    {
+        return FALSE;
+    }
+
+    string sWeekendMode = GetLocalString(oNpc, DL_L_NPC_WEEKEND_MODE);
+    if (bWeekend && sWeekendMode == DL_WEEKEND_MODE_OFF_PUBLIC)
+    {
+        return FALSE;
+    }
+
+    return DL_GetNpcShiftLength(oNpc, bWeekend) > 0;
 }
 
 int DL_IsEarlyWorkerSleepHour(int nHour)
@@ -377,10 +400,18 @@ int DL_ResolveNpcDirectiveAtMinute(object oNpc, int nNow)
     int nWake = DL_GetNpcWakeHour(oNpc);
     int nSleepHours = DL_GetNpcSleepHours(oNpc);
     int nSleepStart = DL_NormalizeMinuteOfDay((nWake * 60) - (nSleepHours * 60));
-    int nShiftStart = DL_GetNpcShiftStart(oNpc) * 60;
     int nWeekendType = DL_GetWeekendType();
     int bWeekend = nWeekendType != 0;
-    int nShiftLen = DL_GetNpcShiftLength(oNpc, bWeekend);
+    int bHasWorkWindow = DL_NpcHasWorkDirectiveWindow(oNpc, bWeekend);
+    int nShiftLen = bHasWorkWindow ? DL_GetNpcShiftLength(oNpc, bWeekend) : 0;
+    int nShiftStartHour = DL_GetNpcShiftStart(oNpc);
+    if (nShiftStartHour == 0 && GetLocalInt(oNpc, DL_L_NPC_SHIFT_LENGTH) <= 0 && bHasWorkWindow)
+    {
+        // Keep historical default only for workers with implicit schedule;
+        // explicit midnight (00:00) with configured length remains valid.
+        nShiftStartHour = 8;
+    }
+    int nShiftStart = nShiftStartHour * 60;
     int nShiftEnd = DL_NormalizeMinuteOfDay(nShiftStart + (nShiftLen * 60));
     string sTag = GetTag(oNpc);
 
@@ -411,7 +442,7 @@ int DL_ResolveNpcDirectiveAtMinute(object oNpc, int nNow)
         return DL_DIR_MEAL;
     }
 
-    int bInWorkWindow = nShiftLen > 0 && DL_MinuteInWindow(nNow, nShiftStart, nShiftLen * 60);
+    int bInWorkWindow = bHasWorkWindow && DL_MinuteInWindow(nNow, nShiftStart, nShiftLen * 60);
     if (bWeekend && GetLocalString(oNpc, DL_L_NPC_WEEKEND_MODE) == DL_WEEKEND_MODE_OFF_PUBLIC)
     {
         if (DL_MinuteInWindow(nNow, nSocialStart, 75))
@@ -435,7 +466,7 @@ int DL_ResolveNpcDirectiveAtMinute(object oNpc, int nNow)
         return DL_DIR_PUBLIC;
     }
 
-    if (nShiftLen > 0 && DL_MinuteInWindow(nNow, nShiftStart, nShiftLen * 60))
+    if (bHasWorkWindow && DL_MinuteInWindow(nNow, nShiftStart, nShiftLen * 60))
     {
         return DL_DIR_WORK;
     }
@@ -1075,8 +1106,15 @@ string DL_ResolveMealKind(object oNpc)
     int nWake = DL_GetNpcWakeHour(oNpc);
     int nSleepHours = DL_GetNpcSleepHours(oNpc);
     int nSleepStart = DL_NormalizeMinuteOfDay((nWake * 60) - (nSleepHours * 60));
-    int nShiftStart = DL_GetNpcShiftStart(oNpc) * 60;
-    int nShiftLen = DL_GetNpcShiftLength(oNpc, DL_GetWeekendType() != 0);
+    int bWeekend = DL_GetWeekendType() != 0;
+    int bHasWorkWindow = DL_NpcHasWorkDirectiveWindow(oNpc, bWeekend);
+    int nShiftLen = bHasWorkWindow ? DL_GetNpcShiftLength(oNpc, bWeekend) : 0;
+    int nShiftStartHour = DL_GetNpcShiftStart(oNpc);
+    if (nShiftStartHour == 0 && GetLocalInt(oNpc, DL_L_NPC_SHIFT_LENGTH) <= 0 && bHasWorkWindow)
+    {
+        nShiftStartHour = 8;
+    }
+    int nShiftStart = nShiftStartHour * 60;
     string sTag = GetTag(oNpc);
     int nBreakfastStart = DL_NormalizeMinuteOfDay((nWake * 60) + DL_GetTagDeterministicOffset(sTag, 21, 10));
     int nLunchStart = DL_NormalizeMinuteOfDay(nShiftStart + 240 + DL_GetTagDeterministicOffset(sTag, 21, 10));
@@ -1327,6 +1365,8 @@ void DL_ExecuteSocialDirective(object oNpc)
     string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
     if (!GetIsObjectValid(oMe) || sPartnerTag == "")
     {
+        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
+        SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
         DL_ExecutePublicDirective(oNpc);
         return;
     }
@@ -1334,6 +1374,8 @@ void DL_ExecuteSocialDirective(object oNpc)
     object oPartner = GetObjectByTag(sPartnerTag);
     if (!GetIsObjectValid(oPartner) || GetLocalInt(oPartner, DL_L_NPC_DIRECTIVE) != DL_DIR_SOCIAL)
     {
+        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
+        SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
         DL_ExecutePublicDirective(oNpc);
         return;
     }
@@ -1341,6 +1383,8 @@ void DL_ExecuteSocialDirective(object oNpc)
     object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
     if (!GetIsObjectValid(oPartnerWp))
     {
+        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
+        SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
         DL_ExecutePublicDirective(oNpc);
         return;
     }
