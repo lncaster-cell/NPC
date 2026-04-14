@@ -74,6 +74,43 @@ object DL_ResolveTraderWaypoint(object oNpc)
         "dl_work_trade"
     );
 }
+object DL_ResolveDomesticWorkerWaypoint(object oNpc)
+{
+    object oHome = DL_GetHomeArea(oNpc);
+    if (!GetIsObjectValid(oHome))
+    {
+        return OBJECT_INVALID;
+    }
+
+    int nTick = (GetTimeHour() * 60 + GetTimeMinute()) / 10;
+    int nPhase = (nTick + DL_GetTagDeterministicOffset(GetTag(oNpc), 101, 0)) % 5;
+    int nSlot = DL_GetNpcHomeSlot(oNpc);
+
+    if (nPhase == 0)
+    {
+        object oMeal = DL_GetAreaAnchorWaypoint(oNpc, oHome, "dl_anchor_meal", DL_L_NPC_CACHE_MEAL, FALSE);
+        if (GetIsObjectValid(oMeal))
+        {
+            return oMeal;
+        }
+    }
+    else if (nPhase == 1)
+    {
+        object oPublic = DL_GetAreaAnchorWaypoint(oNpc, oHome, "dl_anchor_public", DL_L_NPC_CACHE_PUBLIC, FALSE);
+        if (GetIsObjectValid(oPublic))
+        {
+            return oPublic;
+        }
+    }
+
+    return DL_GetAreaAnchorWaypoint(
+        oNpc,
+        oHome,
+        "dl_anchor_sleep_approach_" + IntToString(nSlot),
+        DL_L_NPC_CACHE_SLEEP_APPROACH,
+        TRUE
+    );
+}
 void DL_ClearWorkExecutionState(object oNpc)
 {
     DeleteLocalString(oNpc, DL_L_NPC_WORK_KIND);
@@ -159,7 +196,10 @@ void DL_ExecuteWorkDirective(object oNpc)
 
     string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
 
-    if (sProfile != DL_PROFILE_BLACKSMITH && sProfile != DL_PROFILE_GATE_POST && sProfile != DL_PROFILE_TRADER)
+    if (sProfile != DL_PROFILE_BLACKSMITH &&
+        sProfile != DL_PROFILE_GATE_POST &&
+        sProfile != DL_PROFILE_TRADER &&
+        sProfile != DL_PROFILE_DOMESTIC_WORKER)
     {
         DL_ClearWorkExecutionState(oNpc);
         return;
@@ -223,6 +263,25 @@ void DL_ExecuteWorkDirective(object oNpc)
             "target dir=WORK area=" + GetTag(GetArea(oPost)) + " anchor=" + GetTag(oPost) + " kind=" + DL_WORK_KIND_POST
         );
         DL_ProgressWorkAtTarget(oNpc, oPost);
+        return;
+    }
+
+    if (sProfile == DL_PROFILE_DOMESTIC_WORKER)
+    {
+        object oHomeWork = DL_ResolveDomesticWorkerWaypoint(oNpc);
+        if (!GetIsObjectValid(oHomeWork))
+        {
+            DL_SetWorkMissingState(oNpc, DL_WORK_KIND_DOMESTIC, "need_home_domestic_anchors");
+            return;
+        }
+
+        DL_SetWorkTargetState(oNpc, DL_WORK_KIND_DOMESTIC, oHomeWork);
+        DL_LogChatDebugEvent(
+            oNpc,
+            "target_work",
+            "target dir=WORK area=" + GetTag(GetArea(oHomeWork)) + " anchor=" + GetTag(oHomeWork) + " kind=" + DL_WORK_KIND_DOMESTIC
+        );
+        DL_ProgressWorkAtTarget(oNpc, oHomeWork);
         return;
     }
 

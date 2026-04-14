@@ -219,6 +219,47 @@
 
 ### 8.4 Sources of truth (внешние ссылки)
 
+---
+
+## 9) Daily Life canonical extension: shared home + residence slots + domestic profile
+
+### 9.1 Короткий канонический дизайн-блок
+
+- `home` в Daily Life трактуется как **общая area проживания** для нескольких NPC, а не «личный дом одного профиля».
+- Привязка NPC к проживанию задаётся парой:
+  - `dl_home_area_tag` (какой общий дом/area),
+  - `dl_home_slot` (безличный слот проживания: `1`, `2`, `3`, ...).
+- `dl_home_slot` не кодирует родство (`wife/brother/child`) и не хранит семантику семейной роли.
+- Общие домашние точки (`meal/public`) разделяются между жильцами; точки сна (`sleep_approach/sleep_bed`) являются slot-specific.
+- Для домашней дневной активности используется профиль `domestic_worker`, описывающий **тип занятости** (бытовые дела), а не семейное отношение к другому NPC.
+
+### 9.2 Словарь local variables и anchor names
+
+#### NPC locals
+
+- `dl_home_area_tag` — area-тег общего дома.
+- `dl_home_slot` — номер безличного слота проживания внутри `home area`.
+- `dl_profile_id=domestic_worker` — профиль бытовой дневной деятельности.
+
+#### Home area anchors (канон)
+
+- Общие:
+  - `dl_anchor_meal`
+  - `dl_anchor_public`
+- Послотные:
+  - `dl_anchor_sleep_approach_<slot>`
+  - `dl_anchor_sleep_bed_<slot>`
+
+Пример для слота `2`:
+- `dl_anchor_sleep_approach_2`
+- `dl_anchor_sleep_bed_2`
+
+### 9.3 Почему семейные роли не используются как profile id
+
+- Семейные роли (`wife_of_blacksmith`, `brother_of_blacksmith`) смешивают **социальную связь** и **runtime-поведение**, что приводит к взрывному росту профилей.
+- Daily Life резолверу нужен профиль поведения (что NPC делает днём), а не генеалогическая метка.
+- `domestic_worker` переиспользуем для жены/брата/сестры/взрослого ребёнка/домашней прислуги без дублирования кода и без жёсткой привязки к одному «главному» NPC.
+
 - NWN Lexicon: `GetFirstObjectInArea` — рекомендации по частоте обходов и фильтрам.<br>
   https://nwnlexicon.com/GetFirstObjectInArea
 - NWN Lexicon: `DelayCommand` — ограничения/подводные камни и влияние на производительность.<br>
