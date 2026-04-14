@@ -1,22 +1,32 @@
 const string DL_L_MODULE_WORKER_SEQ = "dl_module_worker_seq";
 const string DL_L_MODULE_WORKER_TICKS = "dl_module_worker_ticks";
+const string DL_L_NPC_LAST_TOUCH_TICK = "dl_npc_last_touch_tick";
 
 const int DL_AREA_PASS_MODE_WORKER = 1;
 const int DL_AREA_PASS_MODE_RESYNC = 2;
 
-void DL_ProcessAreaNpcByPassMode(object oNpc, int nPassMode)
+int DL_ProcessAreaNpcByPassMode(object oNpc, int nPassMode, int nTickStamp)
 {
+    if (nPassMode == DL_AREA_PASS_MODE_WORKER &&
+        GetLocalInt(oNpc, DL_L_NPC_LAST_TOUCH_TICK) == nTickStamp)
+    {
+        return FALSE;
+    }
+
     if (nPassMode == DL_AREA_PASS_MODE_RESYNC)
     {
         DL_RequestResync(oNpc, DL_RESYNC_AREA_ENTER);
         DL_ProcessResync(oNpc);
-        return;
+        SetLocalInt(oNpc, DL_L_NPC_LAST_TOUCH_TICK, nTickStamp);
+        return TRUE;
     }
 
     DL_WorkerTouchNpc(oNpc);
+    SetLocalInt(oNpc, DL_L_NPC_LAST_TOUCH_TICK, nTickStamp);
+    return TRUE;
 }
 
-int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPassMode)
+int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPassMode, int nTickStamp)
 {
     if (nCursor < 0)
     {
@@ -38,8 +48,10 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         {
             if (nNpcProcessed < nBudget && nNpcSeen >= nCursor)
             {
-                DL_ProcessAreaNpcByPassMode(oObj, nPassMode);
-                nNpcProcessed = nNpcProcessed + 1;
+                if (DL_ProcessAreaNpcByPassMode(oObj, nPassMode, nTickStamp))
+                {
+                    nNpcProcessed = nNpcProcessed + 1;
+                }
             }
             nNpcSeen = nNpcSeen + 1;
         }
@@ -58,8 +70,10 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
             {
                 if (nWrapSeen < nCursor)
                 {
-                    DL_ProcessAreaNpcByPassMode(oObj, nPassMode);
-                    nNpcProcessed = nNpcProcessed + 1;
+                    if (DL_ProcessAreaNpcByPassMode(oObj, nPassMode, nTickStamp))
+                    {
+                        nNpcProcessed = nNpcProcessed + 1;
+                    }
                 }
                 nWrapSeen = nWrapSeen + 1;
             }
@@ -131,7 +145,8 @@ void DL_RunAreaEnterResyncTick(object oArea)
     }
 
     int nCursor = GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR);
-    int nNpcProcessed = DL_RunAreaNpcRoundRobinPass(oArea, nCursor, nBudget, DL_AREA_PASS_MODE_RESYNC);
+    int nTickStamp = GetLocalInt(oArea, DL_L_AREA_WORKER_TICK);
+    int nNpcProcessed = DL_RunAreaNpcRoundRobinPass(oArea, nCursor, nBudget, DL_AREA_PASS_MODE_RESYNC, nTickStamp);
     int nNpcSeen = GetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN);
 
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_TOUCHED, nNpcProcessed);
@@ -177,7 +192,8 @@ void DL_RunAreaWorkerTick(object oArea)
 
     int nBudget = DL_GetAreaWorkerBudget(oArea);
     int nCursor = DL_GetAreaWorkerCursor(oArea);
-    int nNpcProcessed = DL_RunAreaNpcRoundRobinPass(oArea, nCursor, nBudget, DL_AREA_PASS_MODE_WORKER);
+    int nTickStamp = GetLocalInt(oArea, DL_L_AREA_WORKER_TICK);
+    int nNpcProcessed = DL_RunAreaNpcRoundRobinPass(oArea, nCursor, nBudget, DL_AREA_PASS_MODE_WORKER, nTickStamp);
     int nNpcSeen = GetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN);
 
     if (nNpcSeen <= 0)
