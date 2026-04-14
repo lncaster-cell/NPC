@@ -46,6 +46,7 @@ const string DL_L_AREA_WORKER_CURSOR = "dl_worker_cursor";
 const string DL_L_AREA_WORKER_BUDGET = "dl_worker_budget";
 const string DL_L_AREA_PLAYER_COUNT = "dl_area_player_count";
 const string DL_L_AREA_PLAYER_COUNT_INIT = "dl_area_player_count_init";
+const string DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK = "dl_area_player_count_reconcile_tick";
 const string DL_L_AREA_ENTER_RESYNC_PENDING = "dl_area_enter_resync_pending";
 const string DL_L_AREA_ENTER_RESYNC_CURSOR = "dl_area_enter_resync_cursor";
 const string DL_L_AREA_ENTER_RESYNC_TOUCHED = "dl_area_enter_resync_touched";
@@ -69,6 +70,7 @@ const int DL_WORKER_BUDGET_MIN = 1;
 const int DL_WORKER_BUDGET_WARM = 2;
 const int DL_WORKER_BUDGET_HOT = 4;
 const int DL_WORKER_BUDGET_MAX = 12;
+const int DL_PLAYER_COUNT_RECONCILE_INTERVAL_TICKS = 30;
 
 int DL_IsRuntimeEnabled()
 {
@@ -346,6 +348,31 @@ void DL_EnsureAreaPlayerCountSeeded(object oArea)
         return;
     }
 
+    DL_RefreshAreaPlayerCount(oArea);
+}
+
+void DL_MaybeReconcileAreaPlayerCount(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_INIT) != TRUE)
+    {
+        DL_RefreshAreaPlayerCount(oArea);
+        SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK));
+        return;
+    }
+
+    int nNowTick = GetLocalInt(oArea, DL_L_AREA_WORKER_TICK);
+    int nLastTick = GetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK);
+    if (nNowTick >= nLastTick && (nNowTick - nLastTick) < DL_PLAYER_COUNT_RECONCILE_INTERVAL_TICKS)
+    {
+        return;
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK, nNowTick);
     DL_RefreshAreaPlayerCount(oArea);
 }
 
@@ -776,6 +803,7 @@ void DL_RunAreaWorkerTick(object oArea)
     }
 
     DL_BootstrapAreaTier(oArea);
+    DL_MaybeReconcileAreaPlayerCount(oArea);
     if (DL_GetAreaTier(oArea) != DL_TIER_HOT)
     {
         return;
