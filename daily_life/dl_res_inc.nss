@@ -57,6 +57,12 @@ const string DL_L_NPC_SHIFT_START = "dl_shift_start";
 const string DL_L_NPC_SHIFT_LENGTH = "dl_shift_length";
 const string DL_L_NPC_DIAG_LAST_KEY = "dl_diag_last_key";
 const string DL_L_NPC_DIAG_LAST_MINUTE = "dl_diag_last_minute";
+const string DL_L_MODULE_CHAT_DEBUG = "dl_chat_debug";
+const string DL_L_MODULE_CHAT_DEBUG_NPC_TAG = "dl_chat_debug_npc_tag";
+const string DL_L_NPC_CHAT_LAST_EVENT_SIG = "dl_chat_last_event_sig";
+const string DL_L_NPC_CHAT_STUCK_SIG = "dl_chat_stuck_sig";
+const string DL_L_NPC_CHAT_STUCK_SINCE = "dl_chat_stuck_since";
+const string DL_L_NPC_CHAT_STUCK_LAST_LOG = "dl_chat_stuck_last_log";
 
 const string DL_PROFILE_EARLY_WORKER = "early_worker";
 const string DL_PROFILE_BLACKSMITH = "blacksmith";
@@ -110,6 +116,9 @@ const string DL_WEEKEND_MODE_REDUCED_WORK = "reduced_work";
 const string DL_MEAL_KIND_BREAKFAST = "breakfast";
 const string DL_MEAL_KIND_LUNCH = "lunch";
 const string DL_MEAL_KIND_DINNER = "dinner";
+const int DL_CHAT_STUCK_THRESHOLD_MIN = 5;
+const int DL_CHAT_STUCK_LOG_INTERVAL_MIN = 5;
+const int DL_CHAT_MARKUP_COOLDOWN_MIN = 120;
 
 int DL_NormalizeHour(int nHour)
 {
@@ -171,6 +180,147 @@ void DL_LogChat(string sMessage)
     }
 }
 
+int DL_IsChatDebugEnabledForNpc(object oNpc)
+{
+    object oModule = GetModule();
+    if (GetLocalInt(oModule, DL_L_MODULE_CHAT_DEBUG) != TRUE)
+    {
+        return FALSE;
+    }
+
+    string sFilterTag = GetLocalString(oModule, DL_L_MODULE_CHAT_DEBUG_NPC_TAG);
+    if (sFilterTag == "" || !GetIsObjectValid(oNpc))
+    {
+        return TRUE;
+    }
+
+    return GetTag(oNpc) == sFilterTag;
+}
+
+string DL_GetDirectiveDebugLabel(int nDirective)
+{
+    if (nDirective == DL_DIR_SLEEP)
+    {
+        return "SLEEP";
+    }
+    if (nDirective == DL_DIR_WORK)
+    {
+        return "WORK";
+    }
+    if (nDirective == DL_DIR_MEAL)
+    {
+        return "MEAL";
+    }
+    if (nDirective == DL_DIR_SOCIAL)
+    {
+        return "SOCIAL";
+    }
+    if (nDirective == DL_DIR_PUBLIC)
+    {
+        return "PUBLIC";
+    }
+    return "NONE";
+}
+
+void DL_LogChatDebugEvent(object oNpc, string sKind, string sPayload)
+{
+    if (!GetIsObjectValid(oNpc) || !DL_IsChatDebugEnabledForNpc(oNpc))
+    {
+        return;
+    }
+
+    string sSig = sKind + "|" + sPayload;
+    if (GetLocalString(oNpc, DL_L_NPC_CHAT_LAST_EVENT_SIG) == sSig)
+    {
+        return;
+    }
+
+    SetLocalString(oNpc, DL_L_NPC_CHAT_LAST_EVENT_SIG, sSig);
+    DL_LogChat("npc=" + GetTag(oNpc) + " " + sPayload);
+}
+
+void DL_LogDirectiveChange(object oNpc, int nPrevDirective, int nDirective)
+{
+    if (nDirective == nPrevDirective)
+    {
+        return;
+    }
+
+    DL_LogChatDebugEvent(
+        oNpc,
+        "directive",
+        "dir=" + DL_GetDirectiveDebugLabel(nDirective) +
+            " prev=" + DL_GetDirectiveDebugLabel(nPrevDirective) +
+            " minute=" + IntToString(DL_GetNowMinuteOfDay())
+    );
+}
+
+void DL_LogStuckState(object oNpc, int nDirective)
+{
+    if (!GetIsObjectValid(oNpc) || !DL_IsChatDebugEnabledForNpc(oNpc))
+    {
+        return;
+    }
+
+    string sState = "";
+    string sTarget = "";
+    if (nDirective == DL_DIR_SLEEP)
+    {
+        sState = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
+        if (sState == "moving_to_approach" || sState == "jumping_to_bed")
+        {
+            sTarget = GetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
+        }
+    }
+    else if (nDirective == DL_DIR_WORK)
+    {
+        sState = GetLocalString(oNpc, DL_L_NPC_WORK_STATUS);
+        if (sState == "moving_to_anchor")
+        {
+            sTarget = GetLocalString(oNpc, DL_L_NPC_WORK_TARGET);
+        }
+    }
+    else if (nDirective == DL_DIR_MEAL || nDirective == DL_DIR_SOCIAL || nDirective == DL_DIR_PUBLIC)
+    {
+        sState = GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS);
+        if (sState == "moving_to_anchor")
+        {
+            sTarget = GetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET);
+        }
+    }
+
+    if (sTarget == "")
+    {
+        DeleteLocalString(oNpc, DL_L_NPC_CHAT_STUCK_SIG);
+        DeleteLocalInt(oNpc, DL_L_NPC_CHAT_STUCK_SINCE);
+        return;
+    }
+
+    int nNowAbsMin = DL_GetAbsoluteMinute();
+    string sSig = DL_GetDirectiveDebugLabel(nDirective) + "|" + sState + "|" + sTarget;
+    if (GetLocalString(oNpc, DL_L_NPC_CHAT_STUCK_SIG) != sSig)
+    {
+        SetLocalString(oNpc, DL_L_NPC_CHAT_STUCK_SIG, sSig);
+        SetLocalInt(oNpc, DL_L_NPC_CHAT_STUCK_SINCE, nNowAbsMin);
+        DeleteLocalInt(oNpc, DL_L_NPC_CHAT_STUCK_LAST_LOG);
+        return;
+    }
+
+    int nSince = GetLocalInt(oNpc, DL_L_NPC_CHAT_STUCK_SINCE);
+    int nLastLog = GetLocalInt(oNpc, DL_L_NPC_CHAT_STUCK_LAST_LOG);
+    if ((nNowAbsMin - nSince) < DL_CHAT_STUCK_THRESHOLD_MIN ||
+        (nLastLog > 0 && (nNowAbsMin - nLastLog) < DL_CHAT_STUCK_LOG_INTERVAL_MIN))
+    {
+        return;
+    }
+
+    SetLocalInt(oNpc, DL_L_NPC_CHAT_STUCK_LAST_LOG, nNowAbsMin);
+    DL_LogChat("npc=" + GetTag(oNpc) +
+              " stuck dir=" + DL_GetDirectiveDebugLabel(nDirective) +
+              " state=" + sState +
+              " target=" + sTarget);
+}
+
 void DL_LogMarkupIssueOnce(object oNpc, string sKey, string sMessage)
 {
     if (!GetIsObjectValid(oNpc))
@@ -181,14 +331,17 @@ void DL_LogMarkupIssueOnce(object oNpc, string sKey, string sMessage)
     int nNowAbsMin = DL_GetAbsoluteMinute();
     string sLastKey = GetLocalString(oNpc, DL_L_NPC_DIAG_LAST_KEY);
     int nLastMin = GetLocalInt(oNpc, DL_L_NPC_DIAG_LAST_MINUTE);
-    if (sLastKey == sKey && (nNowAbsMin - nLastMin) < 30)
+    if (sLastKey == sKey && (nNowAbsMin - nLastMin) < DL_CHAT_MARKUP_COOLDOWN_MIN)
     {
         return;
     }
 
     SetLocalString(oNpc, DL_L_NPC_DIAG_LAST_KEY, sKey);
     SetLocalInt(oNpc, DL_L_NPC_DIAG_LAST_MINUTE, nNowAbsMin);
-    DL_LogChat(sMessage);
+    if (DL_IsChatDebugEnabledForNpc(oNpc))
+    {
+        DL_LogChat(sMessage);
+    }
 }
 
 int DL_GetAlphaNumCharValue(string sChar)
@@ -1061,6 +1214,7 @@ int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
     SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
     DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
     DL_PlayWorkAnimation(oNpc);
+    DL_LogChatDebugEvent(oNpc, "on_work_anchor", "on_work_anchor anchor=" + GetTag(oTarget));
     return TRUE;
 }
 
@@ -1097,6 +1251,7 @@ int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus
     {
         PlayCustomAnimation(oNpc, sAnim, TRUE);
     }
+    DL_LogChatDebugEvent(oNpc, sOnAnchorStatus, sOnAnchorStatus + " anchor=" + GetTag(oTarget));
     return TRUE;
 }
 
@@ -1140,12 +1295,28 @@ object DL_ResolveMealWaypoint(object oNpc, string sMealKind)
         if (!GetIsObjectValid(oTargetArea))
         {
             oTargetArea = DL_GetWorkArea(oNpc);
+            if (GetIsObjectValid(oTargetArea))
+            {
+                DL_LogChatDebugEvent(
+                    oNpc,
+                    "fallback_meal_work",
+                    "fallback meal->work reason=missing_meal_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
+                );
+            }
         }
     }
 
     if (!GetIsObjectValid(oTargetArea))
     {
         oTargetArea = DL_GetHomeArea(oNpc);
+        if (GetIsObjectValid(oTargetArea) && sMealKind == DL_MEAL_KIND_LUNCH)
+        {
+            DL_LogChatDebugEvent(
+                oNpc,
+                "fallback_meal_home",
+                "fallback meal->home reason=missing_meal_and_work_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
+            );
+        }
     }
 
     return DL_GetAreaAnchorWaypoint(oNpc, oTargetArea, "dl_anchor_meal", DL_L_NPC_CACHE_MEAL, TRUE);
@@ -1196,6 +1367,11 @@ void DL_ExecuteSleepDirective(object oNpc)
     }
 
     DL_SetSleepTargetState(oNpc, oBed);
+    DL_LogChatDebugEvent(
+        oNpc,
+        "target_sleep",
+        "target dir=SLEEP area=" + GetTag(GetArea(oBed)) + " anchor=" + GetTag(oBed)
+    );
 
     if (DL_WaypointHasTransition(oApproach))
     {
@@ -1257,6 +1433,7 @@ void DL_ExecuteSleepDirective(object oNpc)
     DL_ClearTransitionExecutionState(oNpc);
     SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_ON_BED);
     SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "on_bed");
+    DL_LogChatDebugEvent(oNpc, "on_bed", "on_bed anchor=" + GetTag(oBed));
 }
 
 void DL_ExecuteWorkDirective(object oNpc)
@@ -1288,6 +1465,11 @@ void DL_ExecuteWorkDirective(object oNpc)
 
         object oTarget = sKind == DL_WORK_KIND_CRAFT ? oCraft : oForge;
         DL_SetWorkTargetState(oNpc, sKind, oTarget);
+        DL_LogChatDebugEvent(
+            oNpc,
+            "target_work",
+            "target dir=WORK area=" + GetTag(GetArea(oTarget)) + " anchor=" + GetTag(oTarget) + " kind=" + sKind
+        );
         DL_ProgressWorkAtTarget(oNpc, oTarget);
         return;
     }
@@ -1303,6 +1485,11 @@ void DL_ExecuteWorkDirective(object oNpc)
         }
 
         DL_SetWorkTargetState(oNpc, DL_WORK_KIND_POST, oPost);
+        DL_LogChatDebugEvent(
+            oNpc,
+            "target_work",
+            "target dir=WORK area=" + GetTag(GetArea(oPost)) + " anchor=" + GetTag(oPost) + " kind=" + DL_WORK_KIND_POST
+        );
         DL_ProgressWorkAtTarget(oNpc, oPost);
         return;
     }
@@ -1316,6 +1503,11 @@ void DL_ExecuteWorkDirective(object oNpc)
     }
 
     DL_SetWorkTargetState(oNpc, DL_WORK_KIND_TRADE, oTrade);
+    DL_LogChatDebugEvent(
+        oNpc,
+        "target_work",
+        "target dir=WORK area=" + GetTag(GetArea(oTrade)) + " anchor=" + GetTag(oTrade) + " kind=" + DL_WORK_KIND_TRADE
+    );
     DL_ProgressWorkAtTarget(oNpc, oTrade);
 }
 
@@ -1339,6 +1531,11 @@ void DL_ExecuteMealDirective(object oNpc)
         sAnim = "sitdrink";
     }
 
+    DL_LogChatDebugEvent(
+        oNpc,
+        "target_meal",
+        "target dir=MEAL area=" + GetTag(GetArea(oMeal)) + " anchor=" + GetTag(oMeal) + " kind=" + sMealKind
+    );
     DL_ProgressFocusAtTarget(oNpc, oMeal, "on_meal_anchor_" + sMealKind, sAnim);
 }
 
@@ -1356,6 +1553,11 @@ void DL_ExecutePublicDirective(object oNpc)
     {
         sAnim = "talk01";
     }
+    DL_LogChatDebugEvent(
+        oNpc,
+        "target_public",
+        "target dir=PUBLIC area=" + GetTag(GetArea(oPublic)) + " anchor=" + GetTag(oPublic)
+    );
     DL_ProgressFocusAtTarget(oNpc, oPublic, "on_public_anchor", sAnim);
 }
 
@@ -1365,6 +1567,7 @@ void DL_ExecuteSocialDirective(object oNpc)
     string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
     if (!GetIsObjectValid(oMe) || sPartnerTag == "")
     {
+        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=missing_social_anchor_or_partner");
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
         SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
         DL_ExecutePublicDirective(oNpc);
@@ -1374,6 +1577,7 @@ void DL_ExecuteSocialDirective(object oNpc)
     object oPartner = GetObjectByTag(sPartnerTag);
     if (!GetIsObjectValid(oPartner) || GetLocalInt(oPartner, DL_L_NPC_DIRECTIVE) != DL_DIR_SOCIAL)
     {
+        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_not_social");
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
         SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
         DL_ExecutePublicDirective(oNpc);
@@ -1383,6 +1587,7 @@ void DL_ExecuteSocialDirective(object oNpc)
     object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
     if (!GetIsObjectValid(oPartnerWp))
     {
+        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_missing_social_anchor");
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
         SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
         DL_ExecutePublicDirective(oNpc);
@@ -1403,6 +1608,13 @@ void DL_ExecuteSocialDirective(object oNpc)
         }
     }
 
+    DL_LogChatDebugEvent(
+        oNpc,
+        "target_social",
+        "target dir=SOCIAL area=" + GetTag(GetArea(oMe)) + " anchor=" + GetTag(oMe) +
+            " slot=" + GetLocalString(oNpc, DL_L_NPC_SOCIAL_SLOT) +
+            " partner=" + sPartnerTag
+    );
     DL_ProgressFocusAtTarget(oNpc, oMe, sStatus, sAnim);
 }
 
@@ -1438,7 +1650,9 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         return;
     }
 
+    int nPrevDirective = GetLocalInt(oNpc, DL_L_NPC_DIRECTIVE);
     SetLocalInt(oNpc, DL_L_NPC_DIRECTIVE, nDirective);
+    DL_LogDirectiveChange(oNpc, nPrevDirective, nDirective);
 
     if (nDirective == DL_DIR_SLEEP)
     {
@@ -1496,4 +1710,5 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
     }
 
     DL_ApplyMaterializationSkeleton(oNpc, nDirective);
+    DL_LogStuckState(oNpc, nDirective);
 }
