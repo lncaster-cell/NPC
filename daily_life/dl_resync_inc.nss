@@ -6,9 +6,8 @@ const string DL_L_MODULE_CLEANUP_CNT = "dl_module_cleanup_cnt";
 
 const int DL_RESYNC_NONE = 0;
 const int DL_RESYNC_SPAWN = 1;
-const int DL_RESYNC_DEATH = 2;
-const int DL_RESYNC_USER = 3;
-const int DL_RESYNC_AREA_ENTER = 4;
+const int DL_RESYNC_USER = 2;
+const int DL_RESYNC_AREA_ENTER = 3;
 
 void DL_RequestResync(object oNpc, int nReason)
 {
