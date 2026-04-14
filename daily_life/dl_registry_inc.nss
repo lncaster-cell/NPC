@@ -29,22 +29,6 @@ const int DL_PLAYER_COUNT_RECONCILE_INTERVAL_TICKS = 30;
 
 const string DL_L_AREA_PASS_LAST_SEEN = "dl_area_pass_last_seen";
 
-int DL_AreaHasPlayer(object oArea)
-{
-    // NWN:EE optimization path:
-    // filter loop to creatures only to avoid scanning placeables/items/doors every heartbeat tick.
-    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
-    while (GetIsObjectValid(oObj))
-    {
-        if (DL_IsRuntimePlayer(oObj))
-        {
-            return TRUE;
-        }
-        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
-    }
-    return FALSE;
-}
-
 int DL_CountPlayersInArea(object oArea)
 {
     int nCount = 0;

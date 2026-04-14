@@ -144,21 +144,6 @@ int DL_WaypointHasTransition(object oWp)
            DL_GetWaypointTransitionId(oWp) != "";
 }
 
-object DL_ResolveTransitionExitWaypoint(string sKind, string sTransitionId)
-{
-    if (sKind == DL_TRANSITION_KIND_AREA_LINK)
-    {
-        return DL_GetTransitionWaypointByTag("dl_xfer_" + sTransitionId + "_to");
-    }
-
-    if (sKind == DL_TRANSITION_KIND_LOCAL_JUMP)
-    {
-        return DL_GetTransitionWaypointByTag("dl_jump_" + sTransitionId + "_to");
-    }
-
-    return OBJECT_INVALID;
-}
-
 object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
 {
     if (!GetIsObjectValid(oEntryWp))
