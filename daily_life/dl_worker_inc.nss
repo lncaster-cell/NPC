@@ -7,6 +7,43 @@ const string DL_L_AREA_RESYNC_LAST_PROCESSED = "dl_area_resync_last_processed";
 
 const int DL_AREA_PASS_MODE_WORKER = 1;
 const int DL_AREA_PASS_MODE_RESYNC = 2;
+const string DL_L_AREA_REG_BOOTSTRAP_TICK = "dl_area_reg_bootstrap_tick";
+const int DL_REG_BOOTSTRAP_INTERVAL_TICKS = 30;
+
+int DL_MaybeBootstrapAreaRegistry(object oArea, int nTickStamp, int nScanBudget)
+{
+    int nLastBootstrapTick = GetLocalInt(oArea, DL_L_AREA_REG_BOOTSTRAP_TICK);
+    if (nTickStamp >= nLastBootstrapTick && (nTickStamp - nLastBootstrapTick) < DL_REG_BOOTSTRAP_INTERVAL_TICKS)
+    {
+        return GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_REG_BOOTSTRAP_TICK, nTickStamp);
+
+    if (nScanBudget < DL_WORKER_BUDGET_MIN)
+    {
+        nScanBudget = DL_WORKER_BUDGET_MIN;
+    }
+
+    object oObj = GetFirstObjectInArea(oArea, OBJECT_TYPE_CREATURE);
+    int nScannedActive = 0;
+
+    while (GetIsObjectValid(oObj) && nScannedActive < nScanBudget)
+    {
+        if (DL_IsActivePipelineNpc(oObj))
+        {
+            nScannedActive = nScannedActive + 1;
+            if (GetLocalInt(oObj, DL_L_NPC_REG_ON) != TRUE)
+            {
+                DL_RegisterNpc(oObj);
+            }
+        }
+
+        oObj = GetNextObjectInArea(oArea, OBJECT_TYPE_CREATURE);
+    }
+
+    return GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
+}
 
 int DL_ProcessAreaNpcByPassMode(object oNpc, int nPassMode, int nTickStamp)
 {
@@ -49,7 +86,19 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         nNpcRegistered = 0;
     }
 
-    if (nNpcRegistered > 0 && nCursor >= nNpcRegistered)
+    // Registry reconciliation: if area registry is empty, run throttled bounded scan
+    // to recover from missed spawn/registration edges.
+    if (nNpcRegistered == 0)
+    {
+        nNpcRegistered = DL_MaybeBootstrapAreaRegistry(oArea, nTickStamp, nBudget);
+        if (nNpcRegistered == 0)
+        {
+            SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, 0);
+            return 0;
+        }
+    }
+
+    if (nCursor >= nNpcRegistered)
     {
         nCursor = nCursor % nNpcRegistered;
     }
@@ -103,15 +152,8 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         }
     }
 
-    if (nNpcRegistered > 0)
-    {
-        // Registry-backed source of truth: cheaper than full creature scans each tick.
-        SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcRegistered);
-    }
-    else
-    {
-        SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcSeen);
-    }
+    // Registry-backed source of truth: cheaper than full creature scans each tick.
+    SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcRegistered);
     return nNpcProcessed;
 }
 
