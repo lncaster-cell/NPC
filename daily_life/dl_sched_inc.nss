@@ -176,12 +176,17 @@ int DL_NpcHasWorkDirectiveWindow(object oNpc, int bWeekend)
         return FALSE;
     }
 
+    string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
+    if (sProfile == DL_PROFILE_DOMESTIC_WORKER)
+    {
+        return GetIsObjectValid(DL_GetHomeArea(oNpc));
+    }
+
     if (!GetIsObjectValid(DL_GetWorkArea(oNpc)))
     {
         return FALSE;
     }
 
-    string sProfile = GetLocalString(oNpc, DL_L_NPC_PROFILE_ID);
     if (sProfile != DL_PROFILE_BLACKSMITH && sProfile != DL_PROFILE_GATE_POST && sProfile != DL_PROFILE_TRADER)
     {
         return FALSE;

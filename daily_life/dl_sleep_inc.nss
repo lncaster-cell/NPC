@@ -1,12 +1,45 @@
+int DL_GetNpcHomeSlot(object oNpc)
+{
+    int nSlot = GetLocalInt(oNpc, DL_L_NPC_HOME_SLOT);
+    if (nSlot <= 0)
+    {
+        string sSlot = GetLocalString(oNpc, DL_L_NPC_HOME_SLOT);
+        if (sSlot != "")
+        {
+            nSlot = StringToInt(sSlot);
+        }
+    }
+
+    if (nSlot <= 0)
+    {
+        nSlot = 1;
+    }
+
+    return nSlot;
+}
 object DL_ResolveSleepApproachWaypoint(object oNpc)
 {
     object oHome = DL_GetHomeArea(oNpc);
-    return DL_GetAreaAnchorWaypoint(oNpc, oHome, "dl_anchor_sleep_approach", DL_L_NPC_CACHE_SLEEP_APPROACH, TRUE);
+    int nSlot = DL_GetNpcHomeSlot(oNpc);
+    return DL_GetAreaAnchorWaypoint(
+        oNpc,
+        oHome,
+        "dl_anchor_sleep_approach_" + IntToString(nSlot),
+        DL_L_NPC_CACHE_SLEEP_APPROACH,
+        TRUE
+    );
 }
 object DL_ResolveSleepBedWaypoint(object oNpc)
 {
     object oHome = DL_GetHomeArea(oNpc);
-    return DL_GetAreaAnchorWaypoint(oNpc, oHome, "dl_anchor_sleep_bed", DL_L_NPC_CACHE_SLEEP_BED, TRUE);
+    int nSlot = DL_GetNpcHomeSlot(oNpc);
+    return DL_GetAreaAnchorWaypoint(
+        oNpc,
+        oHome,
+        "dl_anchor_sleep_bed_" + IntToString(nSlot),
+        DL_L_NPC_CACHE_SLEEP_BED,
+        TRUE
+    );
 }
 void DL_ClearSleepExecutionState(object oNpc)
 {

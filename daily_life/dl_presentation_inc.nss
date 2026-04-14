@@ -33,6 +33,11 @@ int DL_TryApplyWorkActivityPresentation(object oNpc, string sProfile, string sWo
         DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_MERCHANT_MULTI, DL_ARCH_ANIMS_TRADE);
         return TRUE;
     }
+    if (sProfile == DL_PROFILE_DOMESTIC_WORKER)
+    {
+        DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_FORGE_MULTI, DL_ARCH_ANIMS_DOMESTIC);
+        return TRUE;
+    }
 
     return FALSE;
 }
@@ -179,6 +184,28 @@ void DL_PlayWorkAnimation(object oNpc)
         }
 
         PlayCustomAnimation(oNpc, sAnim, TRUE);
+        return;
+    }
+    if (sProfile == DL_PROFILE_DOMESTIC_WORKER)
+    {
+        int nTickDomestic = (GetTimeHour() * 60 + GetTimeMinute()) / 5;
+        int nPhaseDomestic = (nTickDomestic + DL_GetTagDeterministicOffset(GetTag(oNpc), 97, 0)) % 12;
+        string sDomesticAnim = "craft01";
+
+        if (nPhaseDomestic == 0)
+        {
+            sDomesticAnim = "dustoff";
+        }
+        else if (nPhaseDomestic <= 3)
+        {
+            sDomesticAnim = (nPhaseDomestic % 2) == 0 ? "cooking01" : "cooking02";
+        }
+        else if (nPhaseDomestic <= 6)
+        {
+            sDomesticAnim = (nPhaseDomestic % 2) == 0 ? "gettable" : "getground";
+        }
+
+        PlayCustomAnimation(oNpc, sDomesticAnim, TRUE);
         return;
     }
 

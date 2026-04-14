@@ -72,7 +72,7 @@ DL_SetActivityPresentation(oNpc, DL_ARCH_ACT_NPC_SLEEP_BED, DL_ARCH_ANIMS_SLEEP_
 
 ```nss
 // Проставляет activity/anims внутри resolver-пайплайна:
-DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);  // blacksmith -> forge
+DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);  // profile-based WORK presentation
 DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_SLEEP); // sleep -> sleep_bed
 ```
 
@@ -94,7 +94,9 @@ DL_PlaySleepAnimation(oNpc); // Берёт 2-й токен из DL_L_NPC_ANIM_SE
 
 ### 4) Что реально используется сейчас в skeleton
 
-- `DL_ARCH_ACT_NPC_FORGE` + `DL_ARCH_ANIMS_FORGE` для `DL_DIR_WORK` (только профиль `blacksmith`).
+- `DL_ARCH_ACT_NPC_FORGE` + `DL_ARCH_ANIMS_FORGE` для `DL_DIR_WORK` (профиль `blacksmith`, `work_kind=forge`).
+- `DL_ARCH_ACT_NPC_FORGE_MULTI` + `DL_ARCH_ANIMS_CRAFT` для `DL_DIR_WORK` (профиль `blacksmith`, не-forge фазы).
+- `DL_ARCH_ACT_NPC_FORGE_MULTI` + `DL_ARCH_ANIMS_DOMESTIC` для `DL_DIR_WORK` (профиль `domestic_worker`).
 - `DL_ARCH_ACT_NPC_SLEEP_BED` + `DL_ARCH_ANIMS_SLEEP_BED` для `DL_DIR_SLEEP`.
 - `DL_ARCH_ACT_NPC_MIDNIGHT_BED`, `DL_ARCH_ACT_NPC_MIDNIGHT_90`, `DL_ARCH_ACT_NPC_SLEEP_90` присутствуют как доступные ID-константы reference-слоя, но в текущем skeleton напрямую не назначаются.
 
