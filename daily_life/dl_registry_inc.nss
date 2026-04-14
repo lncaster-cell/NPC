@@ -9,6 +9,7 @@ const int DL_TIER_HOT = 2;
 
 const string DL_L_AREA_WORKER_CURSOR = "dl_worker_cursor";
 const string DL_L_AREA_WORKER_BUDGET = "dl_worker_budget";
+const string DL_L_AREA_RESYNC_BUDGET = "dl_area_resync_budget";
 const string DL_L_AREA_PLAYER_COUNT = "dl_area_player_count";
 const string DL_L_AREA_PLAYER_COUNT_INIT = "dl_area_player_count_init";
 const string DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK = "dl_area_player_count_reconcile_tick";
@@ -25,9 +26,20 @@ const int DL_WORKER_BUDGET_MIN = 1;
 const int DL_WORKER_BUDGET_WARM = 2;
 const int DL_WORKER_BUDGET_HOT = 4;
 const int DL_WORKER_BUDGET_MAX = 12;
+const int DL_RESYNC_BUDGET_MIN = 1;
+const int DL_RESYNC_BUDGET_WARM = 1;
+const int DL_RESYNC_BUDGET_HOT = 2;
+const int DL_RESYNC_BUDGET_MAX = 6;
 const int DL_PLAYER_COUNT_RECONCILE_INTERVAL_TICKS = 30;
 
 const string DL_L_AREA_PASS_LAST_SEEN = "dl_area_pass_last_seen";
+const string DL_L_MODULE_NPC_BUDGET_PER_MINUTE = "dl_module_npc_budget_per_minute";
+const string DL_L_MODULE_NPC_BUDGET_MINUTE_KEY = "dl_module_npc_budget_minute_key";
+const string DL_L_MODULE_NPC_BUDGET_LEFT = "dl_module_npc_budget_left";
+
+const int DL_MODULE_NPC_BUDGET_MIN = 1;
+const int DL_MODULE_NPC_BUDGET_DEFAULT = 24;
+const int DL_MODULE_NPC_BUDGET_MAX = 128;
 
 int DL_CountPlayersInArea(object oArea)
 {
@@ -135,6 +147,104 @@ int DL_GetAreaWorkerBudget(object oArea)
     return nBudget;
 }
 
+int DL_GetAreaResyncBudget(object oArea)
+{
+    int nBudget = GetLocalInt(oArea, DL_L_AREA_RESYNC_BUDGET);
+    if (nBudget < DL_RESYNC_BUDGET_MIN || nBudget > DL_RESYNC_BUDGET_MAX)
+    {
+        int nTier = DL_GetAreaTier(oArea);
+        if (nTier == DL_TIER_HOT)
+        {
+            return DL_RESYNC_BUDGET_HOT;
+        }
+        return DL_RESYNC_BUDGET_WARM;
+    }
+    return nBudget;
+}
+
+void DL_SetAreaResyncBudget(object oArea, int nBudget)
+{
+    if (nBudget < DL_RESYNC_BUDGET_MIN)
+    {
+        nBudget = DL_RESYNC_BUDGET_MIN;
+    }
+    if (nBudget > DL_RESYNC_BUDGET_MAX)
+    {
+        nBudget = DL_RESYNC_BUDGET_MAX;
+    }
+    SetLocalInt(oArea, DL_L_AREA_RESYNC_BUDGET, nBudget);
+}
+
+int DL_GetModuleNpcBudgetPerMinute()
+{
+    object oModule = GetModule();
+    int nBudget = GetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_PER_MINUTE);
+    if (nBudget < DL_MODULE_NPC_BUDGET_MIN || nBudget > DL_MODULE_NPC_BUDGET_MAX)
+    {
+        return DL_MODULE_NPC_BUDGET_DEFAULT;
+    }
+    return nBudget;
+}
+
+void DL_SetModuleNpcBudgetPerMinute(int nBudget)
+{
+    if (nBudget < DL_MODULE_NPC_BUDGET_MIN)
+    {
+        nBudget = DL_MODULE_NPC_BUDGET_MIN;
+    }
+    if (nBudget > DL_MODULE_NPC_BUDGET_MAX)
+    {
+        nBudget = DL_MODULE_NPC_BUDGET_MAX;
+    }
+
+    object oModule = GetModule();
+    SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_PER_MINUTE, nBudget);
+}
+
+int DL_GetCurrentMinuteKey()
+{
+    return GetTimeHour() * 60 + GetTimeMinute();
+}
+
+void DL_EnsureModuleNpcBudgetWindow()
+{
+    object oModule = GetModule();
+    int nNowKey = DL_GetCurrentMinuteKey();
+    int nStoredKey = GetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_MINUTE_KEY);
+    if (nNowKey == nStoredKey)
+    {
+        return;
+    }
+
+    SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_MINUTE_KEY, nNowKey);
+    SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_LEFT, DL_GetModuleNpcBudgetPerMinute());
+}
+
+int DL_ConsumeModuleNpcBudget(int nRequested)
+{
+    if (nRequested <= 0)
+    {
+        return 0;
+    }
+
+    DL_EnsureModuleNpcBudgetWindow();
+
+    object oModule = GetModule();
+    int nLeft = GetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_LEFT);
+    if (nLeft <= 0)
+    {
+        return 0;
+    }
+
+    if (nRequested > nLeft)
+    {
+        nRequested = nLeft;
+    }
+
+    SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_LEFT, nLeft - nRequested);
+    return nRequested;
+}
+
 void DL_SetAreaWorkerBudget(object oArea, int nBudget)
 {
     if (nBudget < DL_WORKER_BUDGET_MIN)
@@ -195,6 +305,10 @@ void DL_BootstrapAreaTier(object oArea)
     if (GetLocalInt(oArea, DL_L_AREA_WORKER_BUDGET) < DL_WORKER_BUDGET_MIN)
     {
         DL_SetAreaWorkerBudget(oArea, DL_GetAreaTier(oArea) == DL_TIER_HOT ? DL_WORKER_BUDGET_HOT : DL_WORKER_BUDGET_WARM);
+    }
+    if (GetLocalInt(oArea, DL_L_AREA_RESYNC_BUDGET) < DL_RESYNC_BUDGET_MIN)
+    {
+        DL_SetAreaResyncBudget(oArea, DL_GetAreaTier(oArea) == DL_TIER_HOT ? DL_RESYNC_BUDGET_HOT : DL_RESYNC_BUDGET_WARM);
     }
 }
 

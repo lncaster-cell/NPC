@@ -134,6 +134,8 @@
 - Для area-based навигации применяются **`dl_anchor_*` area-local anchors** (sleep/work/meal/social/public) как первичные точки назначения.
 - Внедрена **weekend-логика** (в т.ч. `off_public` и `reduced_work`, с weekend-ветвлением в директивном резолвере).
 - Влиты runtime-диагностика и анти-спам логирования: сигнатурный дедуп диагностик NPC (повторяющиеся состояния не спамят лог каждый тик).
+- Внедрён **двухконтурный quota-control**: отдельный area-resync budget + module-level NPC budget per minute (burst-ограничение между несколькими hot-area).
+- В runtime добавлены **операционные метрики последнего тика** (`worker_last_processed`/`resync_last_processed` на area и module уровне).
 
 #### Что подтверждено как текущая runtime truth
 
