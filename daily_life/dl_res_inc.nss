@@ -34,6 +34,7 @@ const string DL_L_NPC_CACHE_SOCIAL_B = "dl_cache_social_b";
 const string DL_L_NPC_CACHE_PUBLIC = "dl_cache_public";
 const string DL_L_NPC_CACHE_WORK_PRIMARY = "dl_cache_work_primary";
 const string DL_L_NPC_CACHE_WORK_SECONDARY = "dl_cache_work_secondary";
+const string DL_L_NPC_CACHE_WORK_FETCH = "dl_cache_work_fetch";
 const string DL_L_NPC_CACHE_HOME_AREA = "dl_cache_home_area";
 const string DL_L_NPC_CACHE_WORK_AREA = "dl_cache_work_area";
 const string DL_L_NPC_CACHE_MEAL_AREA = "dl_cache_meal_area";
@@ -106,6 +107,7 @@ const float DL_WORK_ANCHOR_RADIUS = 1.60;
 
 const string DL_WORK_KIND_FORGE = "forge";
 const string DL_WORK_KIND_CRAFT = "craft";
+const string DL_WORK_KIND_FETCH = "fetch";
 const string DL_WORK_KIND_POST = "post";
 const string DL_WORK_KIND_TRADE = "trade";
 const string DL_WEEKEND_MODE_OFF_PUBLIC = "off_public";

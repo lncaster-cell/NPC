@@ -13,8 +13,8 @@ const int DL_ARCH_ACT_NPC_GUARD = 43;
 const int DL_ARCH_ACT_NPC_MIDNIGHT_90 = 31;
 const int DL_ARCH_ACT_NPC_SLEEP_90 = 32;
 
-const string DL_ARCH_ANIMS_FORGE = "craft01, dustoff, forge01";
-const string DL_ARCH_ANIMS_CRAFT = "craft01, dustoff, openlock";
+const string DL_ARCH_ANIMS_FORGE = "forge01, forge02, dustoff";
+const string DL_ARCH_ANIMS_CRAFT = "craft01, gettable, dustoff";
 const string DL_ARCH_ANIMS_TRADE = "bored, getground, gettable, openlock, sleightofhand, yawn";
 const string DL_ARCH_ANIMS_GUARD = "bored, lookleft, lookright, sigh";
 const string DL_ARCH_ANIMS_SLEEP_BED = "laydownB, proneB";
