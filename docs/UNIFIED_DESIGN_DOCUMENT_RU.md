@@ -119,6 +119,14 @@
 
 ## 7) Runtime Truth / Activity Journal (Daily Life)
 
+### 2026-04-15 — фиксация текущего прогресса после post-refactor audit (pass 4)
+
+- Зафиксировано, что после include-decomposition Daily Life остаётся runtime-safe по базовым инвариантам (budget-bound worker, стабильный lifecycle порядок, сохранён cache-layer).
+- Подтверждён главный риск производительности: в HOT-area при `area-enter resync pending` возможна двойная обработка одного NPC в рамках одного heartbeat (resync pass + worker pass).
+- Приоритет на следующий runtime-шаг: минимальная mitigation-правка через same-heartbeat dedupe marker (без смены архитектуры и без отказа от event-first модели).
+- Второй приоритет: снизить lookup churn в SOCIAL через валидацию/переиспользование partner object cache.
+- В документационном контуре закреплено: для изменений используем штатные механики NWN2/NWScript и подтверждённые функции/паттерны NWN Lexicon, не вводя ad-hoc обходы.
+
 ### 2026-04-14 — синхронизация документационного контура
 
 - README приведён к единому doc-маршруту: активным источником считается только `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`.

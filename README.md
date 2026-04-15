@@ -1,8 +1,14 @@
 # PysukSystems (NPC) — README
 
-> Обновлено: **2026-04-14**.
+> Обновлено: **2026-04-15**.
 
 Цель текущего этапа: развивать runtime-код в `daily_life/` и держать документацию синхронизированной с фактическим состоянием `main`.
+
+## Текущий зафиксированный прогресс (2026-04-15)
+
+- Проведён post-refactor runtime audit (pass 4) и зафиксирован в `daily_life/post_refactor_audit_pass4.md`.
+- Наивысший приоритет следующего runtime-шагa: устранение same-heartbeat дублирования orchestration при area-enter resync (`R1`), чтобы снизить hot-path churn без переписывания модели.
+- Сохраняем архитектурный курс: использовать штатные механики NWN2/NWScript и паттерны NWN Lexicon, без ad-hoc решений.
 
 ## ACTIVE DOC SET
 
