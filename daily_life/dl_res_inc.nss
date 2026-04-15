@@ -133,12 +133,7 @@ object DL_GetWorkArea(object oNpc);
 
 void DL_LogChat(string sMessage)
 {
-    object oPc = GetFirstPC();
-    while (GetIsObjectValid(oPc))
-    {
-        SendMessageToPC(oPc, "[DL] " + sMessage);
-        oPc = GetNextPC();
-    }
+    // Temporary: chat debug logging is disabled.
 }
 int DL_IsChatDebugEnabledForNpc(object oNpc)
 {

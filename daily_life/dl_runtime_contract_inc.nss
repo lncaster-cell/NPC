@@ -34,16 +34,7 @@ int DL_IsChatLogEnabled()
 
 void DL_LogRuntime(string sLog)
 {
-    if (DL_IsChatLogEnabled())
-    {
-        object oPC = GetFirstPC();
-        if (GetIsObjectValid(oPC))
-        {
-            SendMessageToPC(oPC, sLog);
-        }
-    }
-
-    PrintString(sLog);
+    // Temporary: global runtime logging is disabled.
 }
 
 void DL_InitModuleContract()
