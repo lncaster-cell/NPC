@@ -8,6 +8,7 @@ const string DL_L_NPC_LAST_TOUCH_TICK = "dl_npc_last_touch_tick";
 
 const int DL_AREA_PASS_MODE_WORKER = 1;
 const int DL_AREA_PASS_MODE_RESYNC = 2;
+const int DL_AREA_PASS_MODE_WARM = 3;
 const string DL_L_AREA_REG_BOOTSTRAP_TICK = "dl_area_reg_bootstrap_tick";
 const int DL_REG_BOOTSTRAP_INTERVAL_TICKS = 30;
 
@@ -50,7 +51,7 @@ int DL_MaybeBootstrapAreaRegistry(object oArea, int nTickStamp, int nScanBudget)
 
 int DL_ProcessAreaNpcByPassMode(object oNpc, int nPassMode, int nTickStamp)
 {
-    if (nPassMode == DL_AREA_PASS_MODE_WORKER &&
+    if ((nPassMode == DL_AREA_PASS_MODE_WORKER || nPassMode == DL_AREA_PASS_MODE_WARM) &&
         GetLocalInt(oNpc, DL_L_NPC_LAST_TOUCH_TICK) == nTickStamp)
     {
         return FALSE;
@@ -60,6 +61,22 @@ int DL_ProcessAreaNpcByPassMode(object oNpc, int nPassMode, int nTickStamp)
     {
         DL_RequestResync(oNpc, DL_RESYNC_AREA_ENTER);
         DL_ProcessResync(oNpc);
+        SetLocalInt(oNpc, DL_L_NPC_LAST_TOUCH_TICK, nTickStamp);
+        return TRUE;
+    }
+
+    if (nPassMode == DL_AREA_PASS_MODE_WARM)
+    {
+        if (!DL_IsActivePipelineNpc(oNpc))
+        {
+            return FALSE;
+        }
+
+        if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) != TRUE)
+        {
+            DL_RegisterNpc(oNpc);
+        }
+
         SetLocalInt(oNpc, DL_L_NPC_LAST_TOUCH_TICK, nTickStamp);
         return TRUE;
     }
@@ -250,6 +267,59 @@ void DL_RunAreaEnterResyncTick(object oArea)
     }
 }
 
+void DL_RunAreaWarmMaintenanceTick(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    if (!DL_IsRuntimeEnabled())
+    {
+        return;
+    }
+
+    if (DL_GetAreaTier(oArea) != DL_TIER_WARM)
+    {
+        return;
+    }
+
+    int nTickStamp = DL_GetAreaTick(oArea);
+    int nLastTick = GetLocalInt(oArea, DL_L_AREA_LAST_WARM_MAINT_TICK);
+    if (nTickStamp >= nLastTick && (nTickStamp - nLastTick) < DL_WARM_MAINTENANCE_INTERVAL_TICKS)
+    {
+        return;
+    }
+    SetLocalInt(oArea, DL_L_AREA_LAST_WARM_MAINT_TICK, nTickStamp);
+
+    int nBudget = DL_WORKER_BUDGET_MIN;
+    nBudget = DL_ConsumeModuleNpcBudget(nBudget);
+    if (nBudget <= 0)
+    {
+        SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, 0);
+        object oModuleNoBudget = GetModule();
+        SetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_LAST_PROCESSED, 0);
+        return;
+    }
+
+    int nCursor = DL_GetAreaWorkerCursor(oArea);
+    int nNpcProcessed = DL_RunAreaNpcRoundRobinPass(oArea, nCursor, nBudget, DL_AREA_PASS_MODE_WARM, nTickStamp);
+    int nNpcSeen = GetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN);
+
+    if (nNpcSeen <= 0)
+    {
+        DL_SetAreaWorkerCursor(oArea, 0);
+    }
+    else
+    {
+        DL_SetAreaWorkerCursor(oArea, (nCursor + nNpcProcessed) % nNpcSeen);
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, nNpcProcessed);
+    object oModule = GetModule();
+    SetLocalInt(oModule, DL_L_MODULE_WORKER_LAST_PROCESSED, nNpcProcessed);
+}
+
 void DL_RunAreaWorkerTick(object oArea)
 {
     if (!DL_IsAreaObject(oArea))
@@ -262,10 +332,19 @@ void DL_RunAreaWorkerTick(object oArea)
         return;
     }
 
+    DL_AdvanceAreaTick(oArea);
     DL_BootstrapAreaTier(oArea);
     DL_MaybeReconcileAreaPlayerCount(oArea);
-    if (DL_GetAreaTier(oArea) != DL_TIER_HOT)
+    DL_UpdateAreaTierLifecycle(oArea);
+
+    int nTier = DL_GetAreaTier(oArea);
+    if (nTier == DL_TIER_FROZEN)
     {
+        return;
+    }
+    if (nTier == DL_TIER_WARM)
+    {
+        DL_RunAreaWarmMaintenanceTick(oArea);
         return;
     }
 
@@ -275,7 +354,6 @@ void DL_RunAreaWorkerTick(object oArea)
     nBudget = DL_ConsumeModuleNpcBudget(nBudget);
     if (nBudget <= 0)
     {
-        SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK) + 1);
         object oModuleNoBudget = GetModule();
         SetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_TICKS, GetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_TICKS) + 1);
         SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, 0);
@@ -284,7 +362,7 @@ void DL_RunAreaWorkerTick(object oArea)
     }
 
     int nCursor = DL_GetAreaWorkerCursor(oArea);
-    int nTickStamp = GetLocalInt(oArea, DL_L_AREA_WORKER_TICK);
+    int nTickStamp = DL_GetAreaTick(oArea);
     int nNpcProcessed = DL_RunAreaNpcRoundRobinPass(oArea, nCursor, nBudget, DL_AREA_PASS_MODE_WORKER, nTickStamp);
     int nNpcSeen = GetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN);
 
@@ -297,7 +375,6 @@ void DL_RunAreaWorkerTick(object oArea)
         DL_SetAreaWorkerCursor(oArea, (nCursor + nNpcProcessed) % nNpcSeen);
     }
 
-    SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_TICK) + 1);
     object oModule = GetModule();
     SetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS, GetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS) + 1);
     SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, nNpcProcessed);
