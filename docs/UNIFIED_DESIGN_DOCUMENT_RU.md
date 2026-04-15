@@ -130,6 +130,16 @@
 - Второй приоритет: снизить lookup churn в SOCIAL через валидацию/переиспользование partner object cache.
 - В документационном контуре закреплено: для изменений используем штатные механики NWN2/NWScript и подтверждённые функции/паттерны NWN Lexicon, не вводя ad-hoc обходы.
 
+### 2026-04-15 — закладка anti-degradation архитектурного контура (budget pressure guard)
+
+- В module budget-контуре введён **pressure detector** на штатных locals NWScript: при систематическом дефиците minute-budget (`requested > granted`) модуль помечается как `budget pressure active`.
+- При активном pressure автоматически включается **мягкое load-shedding ограничение**:
+  - cap для area worker budget (hot path),
+  - отдельный cap для area resync budget,
+  что снижает риск лавинообразной деградации при длительных burst-нагрузках.
+- Выход из pressure выполняется только после серии стабильных «полных» grant-ов бюджета (relief streak), чтобы избежать дрожания режима (thrashing).
+- Решение реализовано без кастомного планировщика и без новых обходных костылей: используется существующий minute-window budget-контракт и стандартные local-переменные объекта `module`.
+
 ### 2026-04-14 — синхронизация документационного контура
 
 - README приведён к единому doc-маршруту: активным источником считается только `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`.
@@ -221,6 +231,9 @@
 
 5. **Контракт на idempotent transitions (P2)**<br>
    Формализовать таблицу разрешённых переходов directive/state и запретить повторную «дорогую» materialization, если effective state не изменился.
+
+6. **Adaptive backpressure (P1, внедрено v1)**<br>
+   На уровне module budget поддерживать флаг pressure-режима, который автоматически снижает cap worker/resync budgets в hot-контуре до безопасного минимума, пока не восстановится устойчивый запас minute-budget.
 
 ### 8.3 Decision policy (обязательная)
 
