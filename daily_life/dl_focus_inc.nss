@@ -18,13 +18,14 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
     object oCached = GetLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
     if (GetIsObjectValid(oCached) &&
         GetTag(oCached) == sPartnerTag &&
-        DL_IsActivePipelineNpc(oCached))
+        DL_IsActivePipelineNpc(oCached) &&
+        GetArea(oCached) == GetArea(oNpc))
     {
         return oCached;
     }
 
     object oPartner = GetObjectByTag(sPartnerTag);
-    if (!DL_IsActivePipelineNpc(oPartner))
+    if (!DL_IsActivePipelineNpc(oPartner) || GetArea(oPartner) != GetArea(oNpc))
     {
         DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
         return OBJECT_INVALID;
