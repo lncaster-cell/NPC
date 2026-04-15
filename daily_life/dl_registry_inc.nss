@@ -17,6 +17,10 @@ const string DL_L_AREA_ENTER_RESYNC_PENDING = "dl_area_enter_resync_pending";
 const string DL_L_AREA_ENTER_RESYNC_CURSOR = "dl_area_enter_resync_cursor";
 const string DL_L_AREA_ENTER_RESYNC_TOUCHED = "dl_area_enter_resync_touched";
 const string DL_L_AREA_ENTER_RESYNC_DONE = "dl_area_enter_resync_done";
+const string DL_L_AREA_LAST_PLAYER_SEEN_TICK = "dl_area_last_player_seen_tick";
+const string DL_L_AREA_WARM_SINCE_TICK = "dl_area_warm_since_tick";
+const string DL_L_AREA_LAST_HOT_TICK = "dl_area_last_hot_tick";
+const string DL_L_AREA_LAST_WARM_MAINT_TICK = "dl_area_last_warm_maint_tick";
 
 const string DL_L_NPC_REG_ON = "dl_reg_on";
 const string DL_L_NPC_WORKER_SEQ = "dl_npc_worker_seq";
@@ -31,6 +35,8 @@ const int DL_RESYNC_BUDGET_WARM = 1;
 const int DL_RESYNC_BUDGET_HOT = 2;
 const int DL_RESYNC_BUDGET_MAX = 6;
 const int DL_PLAYER_COUNT_RECONCILE_INTERVAL_TICKS = 30;
+const int DL_WARM_MAINTENANCE_INTERVAL_TICKS = 20;
+const int DL_WARM_TO_FROZEN_TIMEOUT_TICKS = 100;
 
 const string DL_L_AREA_PASS_LAST_SEEN = "dl_area_pass_last_seen";
 const string DL_L_MODULE_NPC_BUDGET_PER_MINUTE = "dl_module_npc_budget_per_minute";
@@ -66,6 +72,24 @@ int DL_GetAreaPlayerCount(object oArea)
         SetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT, nCount);
     }
     return nCount;
+}
+
+int DL_GetAreaTick(object oArea)
+{
+    int nTick = GetLocalInt(oArea, DL_L_AREA_WORKER_TICK);
+    if (nTick < 0)
+    {
+        nTick = 0;
+        SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, nTick);
+    }
+    return nTick;
+}
+
+int DL_AdvanceAreaTick(object oArea)
+{
+    int nNextTick = DL_GetAreaTick(oArea) + 1;
+    SetLocalInt(oArea, DL_L_AREA_WORKER_TICK, nNextTick);
+    return nNextTick;
 }
 
 void DL_RefreshAreaPlayerCount(object oArea)
@@ -288,17 +312,23 @@ void DL_BootstrapAreaTier(object oArea)
 
     DL_EnsureAreaPlayerCountSeeded(oArea);
 
+    int nTickStamp = DL_GetAreaTick(oArea);
     int nTier = DL_GetAreaTier(oArea);
-    if (nTier != DL_TIER_HOT && DL_GetAreaPlayerCount(oArea) > 0)
+    if (DL_GetAreaPlayerCount(oArea) > 0)
     {
-        nTier = DL_TIER_HOT;
+        DL_SetAreaTier(oArea, DL_TIER_HOT);
+        SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
+        SetLocalInt(oArea, DL_L_AREA_LAST_HOT_TICK, nTickStamp);
     }
-    else if (nTier < DL_TIER_WARM)
+    else if (nTier == DL_TIER_FROZEN)
     {
-        nTier = DL_TIER_WARM;
+        SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nTickStamp);
     }
-
-    DL_SetAreaTier(oArea, nTier);
+    else
+    {
+        DL_SetAreaTier(oArea, DL_TIER_WARM);
+        SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nTickStamp);
+    }
 
     if (GetLocalInt(oArea, DL_L_AREA_WORKER_CURSOR) < 0)
     {
@@ -311,6 +341,112 @@ void DL_BootstrapAreaTier(object oArea)
     if (GetLocalInt(oArea, DL_L_AREA_RESYNC_BUDGET) < DL_RESYNC_BUDGET_MIN)
     {
         DL_SetAreaResyncBudget(oArea, DL_GetAreaTier(oArea) == DL_TIER_HOT ? DL_RESYNC_BUDGET_HOT : DL_RESYNC_BUDGET_WARM);
+    }
+    if (GetLocalInt(oArea, DL_L_AREA_LAST_WARM_MAINT_TICK) <= 0)
+    {
+        SetLocalInt(oArea, DL_L_AREA_LAST_WARM_MAINT_TICK, nTickStamp - DL_WARM_MAINTENANCE_INTERVAL_TICKS);
+    }
+}
+
+void DL_TransitionAreaToHot(object oArea, int bRequestEnterResync)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    int nTickStamp = DL_GetAreaTick(oArea);
+    DL_SetAreaTier(oArea, DL_TIER_HOT);
+    SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
+    SetLocalInt(oArea, DL_L_AREA_LAST_HOT_TICK, nTickStamp);
+    DeleteLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK);
+    DL_SetAreaWorkerBudget(oArea, DL_WORKER_BUDGET_HOT);
+    DL_SetAreaResyncBudget(oArea, DL_RESYNC_BUDGET_HOT);
+
+    if (bRequestEnterResync)
+    {
+        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, TRUE);
+        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+    }
+}
+
+void DL_TransitionAreaToWarm(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    int nTickStamp = DL_GetAreaTick(oArea);
+    DL_SetAreaTier(oArea, DL_TIER_WARM);
+    SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nTickStamp);
+    SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
+    SetLocalInt(oArea, DL_L_AREA_LAST_WARM_MAINT_TICK, nTickStamp - DL_WARM_MAINTENANCE_INTERVAL_TICKS);
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+    DL_SetAreaWorkerBudget(oArea, DL_WORKER_BUDGET_WARM);
+    DL_SetAreaResyncBudget(oArea, DL_RESYNC_BUDGET_WARM);
+}
+
+void DL_TransitionAreaToFrozen(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    DL_SetAreaTier(oArea, DL_TIER_FROZEN);
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+}
+
+void DL_UpdateAreaTierLifecycle(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    int nPlayers = DL_GetAreaPlayerCount(oArea);
+    int nTickStamp = DL_GetAreaTick(oArea);
+    int nTier = DL_GetAreaTier(oArea);
+
+    if (nPlayers > 0)
+    {
+        SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
+        if (nTier != DL_TIER_HOT)
+        {
+            DL_TransitionAreaToHot(oArea, TRUE);
+        }
+        return;
+    }
+
+    if (nTier == DL_TIER_HOT)
+    {
+        DL_TransitionAreaToWarm(oArea);
+        return;
+    }
+
+    if (nTier != DL_TIER_WARM)
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING) == TRUE)
+    {
+        return;
+    }
+
+    int nWarmSinceTick = GetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK);
+    if (nWarmSinceTick < 0)
+    {
+        nWarmSinceTick = nTickStamp;
+        SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nWarmSinceTick);
+    }
+
+    if (nTickStamp >= nWarmSinceTick && (nTickStamp - nWarmSinceTick) >= DL_WARM_TO_FROZEN_TIMEOUT_TICKS)
+    {
+        DL_TransitionAreaToFrozen(oArea);
     }
 }
 
@@ -325,8 +461,7 @@ void DL_OnAreaEnterBootstrap(object oArea, object oEnter)
     {
         // Runtime-safe refresh: OnEnter timing differs by engine/version; recompute exact count.
         DL_RefreshAreaPlayerCount(oArea);
-        DL_SetAreaTier(oArea, DL_TIER_HOT);
-        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, TRUE);
+        DL_TransitionAreaToHot(oArea, TRUE);
         return;
     }
 
@@ -346,7 +481,7 @@ void DL_OnAreaExitBootstrap(object oArea, object oExit)
         DL_RefreshAreaPlayerCount(oArea);
         if (DL_GetAreaPlayerCount(oArea) <= 0)
         {
-            DL_SetAreaTier(oArea, DL_TIER_WARM);
+            DL_TransitionAreaToWarm(oArea);
         }
         return;
     }
