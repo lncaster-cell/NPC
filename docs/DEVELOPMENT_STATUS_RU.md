@@ -6,7 +6,7 @@
 
 - Runtime-контур Daily Life активен в `daily_life/`.
 - Базовая модель: schedule-driven + area-driven, с bounded execution.
-- Post-refactor audit (pass 5) подтверждает, что риски `R1/R2/R3` из pass 4 закрыты минимальными безопасными правками; критичных регрессий в audited-paths не выявлено.
+- Deep audit (pass 6) подтверждает закрытие `R1/R2/R3` и фиксирует/закрывает дополнительные риски `R6-1/R6-2` (same-area social partner validation и предсказуемый transition jump path).
 
 ## Что уже подтверждено
 
@@ -30,4 +30,4 @@
 
 ## Последний артефакт аудита
 
-- `daily_life/post_refactor_audit_pass5.md` — post-refactor static audit pass 5 (дельта к pass 4 и актуальные приоритеты).
+- `daily_life/post_refactor_audit_pass6_deep.md` — deep-аудит pass 6 с дополнительными рисками/фиксациями и обновлёнными приоритетами.
