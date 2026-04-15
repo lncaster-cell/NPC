@@ -47,10 +47,17 @@ const string DL_L_MODULE_NPC_BUDGET_PER_MINUTE = "dl_module_npc_budget_per_minut
 const string DL_L_MODULE_NPC_BUDGET_MINUTE_KEY = "dl_module_npc_budget_minute_key";
 const string DL_L_MODULE_NPC_BUDGET_LEFT = "dl_module_npc_budget_left";
 const string DL_L_MODULE_NPC_BUDGET_WINDOW_INIT = "dl_module_npc_budget_window_init";
+const string DL_L_MODULE_BUDGET_PRESSURE_STREAK = "dl_module_budget_pressure_streak";
+const string DL_L_MODULE_BUDGET_RELIEF_STREAK = "dl_module_budget_relief_streak";
+const string DL_L_MODULE_BUDGET_PRESSURE_ACTIVE = "dl_module_budget_pressure_active";
 
 const int DL_MODULE_NPC_BUDGET_MIN = 1;
 const int DL_MODULE_NPC_BUDGET_DEFAULT = 24;
 const int DL_MODULE_NPC_BUDGET_MAX = 128;
+const int DL_MODULE_BUDGET_PRESSURE_TRIGGER = 6;
+const int DL_MODULE_BUDGET_RELIEF_TRIGGER = 4;
+const int DL_MODULE_WORKER_PRESSURE_CAP = 3;
+const int DL_MODULE_RESYNC_PRESSURE_CAP = 1;
 
 int DL_CountPlayersInArea(object oArea)
 {
@@ -173,6 +180,13 @@ int DL_GetAreaWorkerBudget(object oArea)
         }
         return DL_WORKER_BUDGET_WARM;
     }
+
+    object oModule = GetModule();
+    if (GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_ACTIVE) == TRUE && nBudget > DL_MODULE_WORKER_PRESSURE_CAP)
+    {
+        nBudget = DL_MODULE_WORKER_PRESSURE_CAP;
+    }
+
     return nBudget;
 }
 
@@ -188,6 +202,13 @@ int DL_GetAreaResyncBudget(object oArea)
         }
         return DL_RESYNC_BUDGET_WARM;
     }
+
+    object oModule = GetModule();
+    if (GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_ACTIVE) == TRUE && nBudget > DL_MODULE_RESYNC_PRESSURE_CAP)
+    {
+        nBudget = DL_MODULE_RESYNC_PRESSURE_CAP;
+    }
+
     return nBudget;
 }
 
@@ -263,16 +284,44 @@ int DL_ConsumeModuleNpcBudget(int nRequested)
     int nLeft = GetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_LEFT);
     if (nLeft <= 0)
     {
+        SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK, GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) + 1);
+        SetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK, 0);
+        if (GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) >= DL_MODULE_BUDGET_PRESSURE_TRIGGER)
+        {
+            SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_ACTIVE, TRUE);
+        }
         return 0;
     }
 
+    int nGranted = nRequested;
     if (nRequested > nLeft)
     {
-        nRequested = nLeft;
+        nGranted = nLeft;
     }
 
-    SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_LEFT, nLeft - nRequested);
-    return nRequested;
+    SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_LEFT, nLeft - nGranted);
+
+    if (nGranted < nRequested)
+    {
+        SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK, GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) + 1);
+        SetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK, 0);
+        if (GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) >= DL_MODULE_BUDGET_PRESSURE_TRIGGER)
+        {
+            SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_ACTIVE, TRUE);
+        }
+    }
+    else
+    {
+        SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK, 0);
+        int nRelief = GetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK) + 1;
+        SetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK, nRelief);
+        if (nRelief >= DL_MODULE_BUDGET_RELIEF_TRIGGER)
+        {
+            SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_ACTIVE, FALSE);
+        }
+    }
+
+    return nGranted;
 }
 
 

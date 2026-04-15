@@ -13,12 +13,13 @@
 - Worker проходит по budget/cursor модели.
 - Lifecycle ingress (spawn/death/blocked) не потерял базовые инварианты.
 - Cache-layer и include-decomposition работают без обнаруженных критичных побочных эффектов.
+- В module minute-budget добавлен guard-контур `budget pressure`: при хроническом дефиците бюджета включается временный adaptive cap для worker/resync, что ограничивает накопление нагрузки в hot-area.
 
 ## Текущие приоритеты
 
-1. `P1`: owner-run проверка weekend/public и негативных markup-кейсов (включая межзоновые social/transition сценарии).
-2. `P1`: telemetry по cache miss-rate для transition-driver и anchor lookup (`GetObjectByTag`).
-3. `P2`: измерения hot-path стоимости directive skeleton (без функционального рефакторинга).
+1. `P1`: owner-run проверка weekend/public и негативных markup-кейсов на текущем runtime-контуре.
+2. `P1`: наблюдение за переходами `budget pressure on/off` и калибровка порогов trigger/relief в реальном owner-run.
+3. `P2`: точечный мониторинг transition-driver lookup churn в нагруженных локациях.
 
 ## Ограничения и политика
 
