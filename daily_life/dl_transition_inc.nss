@@ -326,7 +326,7 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oTargetWp)
         {
             AssignCommand(oNpc, DoDoorAction(oDoor, DOOR_ACTION_OPEN));
         }
-        AssignCommand(oNpc, ActionDoCommand(JumpToLocation(lExit)));
+        AssignCommand(oNpc, ActionJumpToLocation(lExit));
         return TRUE;
     }
 
