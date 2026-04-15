@@ -6,7 +6,7 @@
 
 - Runtime-контур Daily Life активен в `daily_life/`.
 - Базовая модель: schedule-driven + area-driven, с bounded execution.
-- Post-refactor audit (pass 4) подтверждает общую runtime-safe структуру, но фиксирует приоритетный performance-risk `R1`.
+- Post-refactor audit (pass 5) подтверждает, что риски `R1/R2/R3` из pass 4 закрыты минимальными безопасными правками; критичных регрессий в audited-paths не выявлено.
 
 ## Что уже подтверждено
 
@@ -16,12 +16,17 @@
 
 ## Текущие приоритеты
 
-1. `P1`: mitigation для `R1` (same-heartbeat dedupe при area-enter resync).
-2. `P1`: снижение churn в SOCIAL partner lookup через безопасное cache-переиспользование.
-3. `P2`: owner-run проверка weekend/public и негативных markup-кейсов.
+1. `P1`: owner-run проверка weekend/public и негативных markup-кейсов на текущем runtime-контуре.
+2. `P1`: точечный мониторинг transition-driver lookup churn в нагруженных локациях.
+3. `P2`: измерения hot-path стоимости directive skeleton (без функционального рефакторинга).
 
 ## Ограничения и политика
 
 - Все решения проверять через встроенные механики NWN2/NWScript и NWN Lexicon.
 - Не вводить ad-hoc обходы, если есть штатная функция/паттерн.
 - Любая правка runtime должна сопровождаться краткой синхронизацией статуса в этом файле.
+
+
+## Последний артефакт аудита
+
+- `daily_life/post_refactor_audit_pass5.md` — post-refactor static audit pass 5 (дельта к pass 4 и актуальные приоритеты).
