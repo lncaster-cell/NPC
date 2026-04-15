@@ -21,10 +21,14 @@ const string DL_L_AREA_LAST_PLAYER_SEEN_TICK = "dl_area_last_player_seen_tick";
 const string DL_L_AREA_WARM_SINCE_TICK = "dl_area_warm_since_tick";
 const string DL_L_AREA_LAST_HOT_TICK = "dl_area_last_hot_tick";
 const string DL_L_AREA_LAST_WARM_MAINT_TICK = "dl_area_last_warm_maint_tick";
+const string DL_L_AREA_FROZEN_SINCE_TICK = "dl_area_frozen_since_tick";
 
 const string DL_L_NPC_REG_ON = "dl_reg_on";
 const string DL_L_NPC_WORKER_SEQ = "dl_npc_worker_seq";
 const string DL_L_NPC_REG_AREA = "dl_npc_reg_area";
+const string DL_L_NPC_FROZEN = "dl_npc_frozen";
+const string DL_L_NPC_FROZEN_HB_WAS_SET = "dl_npc_frozen_hb_was_set";
+const string DL_L_NPC_FROZEN_HB_SCRIPT = "dl_npc_frozen_hb_script";
 
 const int DL_WORKER_BUDGET_MIN = 1;
 const int DL_WORKER_BUDGET_WARM = 2;
@@ -271,6 +275,79 @@ int DL_ConsumeModuleNpcBudget(int nRequested)
     return nRequested;
 }
 
+
+
+void DL_FreezeAreaNpcRuntime(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    object oNpc = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oNpc))
+    {
+        if (GetObjectType(oNpc) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oNpc))
+        {
+            if (GetLocalInt(oNpc, DL_L_NPC_FROZEN) != TRUE)
+            {
+                string sHeartbeat = GetEventHandler(oNpc, CREATURE_SCRIPT_ON_HEARTBEAT);
+                if (sHeartbeat != "")
+                {
+                    SetLocalInt(oNpc, DL_L_NPC_FROZEN_HB_WAS_SET, TRUE);
+                    SetLocalString(oNpc, DL_L_NPC_FROZEN_HB_SCRIPT, sHeartbeat);
+                }
+                else
+                {
+                    SetLocalInt(oNpc, DL_L_NPC_FROZEN_HB_WAS_SET, FALSE);
+                    DeleteLocalString(oNpc, DL_L_NPC_FROZEN_HB_SCRIPT);
+                }
+
+                SetEventHandler(oNpc, CREATURE_SCRIPT_ON_HEARTBEAT, "");
+                SetScriptHidden(oNpc, TRUE, TRUE);
+                SetLocalInt(oNpc, DL_L_NPC_FROZEN, TRUE);
+            }
+        }
+
+        oNpc = GetNextObjectInArea(oArea);
+    }
+}
+
+void DL_ThawAreaNpcRuntime(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    object oNpc = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oNpc))
+    {
+        if (GetObjectType(oNpc) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oNpc))
+        {
+            if (GetLocalInt(oNpc, DL_L_NPC_FROZEN) == TRUE)
+            {
+                SetScriptHidden(oNpc, FALSE, FALSE);
+
+                if (GetLocalInt(oNpc, DL_L_NPC_FROZEN_HB_WAS_SET) == TRUE)
+                {
+                    SetEventHandler(oNpc, CREATURE_SCRIPT_ON_HEARTBEAT, GetLocalString(oNpc, DL_L_NPC_FROZEN_HB_SCRIPT));
+                }
+                else
+                {
+                    SetEventHandler(oNpc, CREATURE_SCRIPT_ON_HEARTBEAT, "");
+                }
+
+                DeleteLocalInt(oNpc, DL_L_NPC_FROZEN);
+                DeleteLocalInt(oNpc, DL_L_NPC_FROZEN_HB_WAS_SET);
+                DeleteLocalString(oNpc, DL_L_NPC_FROZEN_HB_SCRIPT);
+            }
+        }
+
+        oNpc = GetNextObjectInArea(oArea);
+    }
+}
+
 void DL_SetAreaWorkerBudget(object oArea, int nBudget)
 {
     if (nBudget < DL_WORKER_BUDGET_MIN)
@@ -323,6 +400,10 @@ void DL_BootstrapAreaTier(object oArea)
     else if (nTier == DL_TIER_FROZEN)
     {
         SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nTickStamp);
+        if (GetLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK) <= 0)
+        {
+            SetLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK, nTickStamp);
+        }
     }
     else
     {
@@ -355,11 +436,18 @@ void DL_TransitionAreaToHot(object oArea, int bRequestEnterResync)
         return;
     }
 
+    int nPrevTier = DL_GetAreaTier(oArea);
+    if (nPrevTier == DL_TIER_FROZEN)
+    {
+        DL_ThawAreaNpcRuntime(oArea);
+    }
+
     int nTickStamp = DL_GetAreaTick(oArea);
     DL_SetAreaTier(oArea, DL_TIER_HOT);
     SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
     SetLocalInt(oArea, DL_L_AREA_LAST_HOT_TICK, nTickStamp);
     DeleteLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK);
+    DeleteLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK);
     DL_SetAreaWorkerBudget(oArea, DL_WORKER_BUDGET_HOT);
     DL_SetAreaResyncBudget(oArea, DL_RESYNC_BUDGET_HOT);
 
@@ -382,6 +470,7 @@ void DL_TransitionAreaToWarm(object oArea)
     SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nTickStamp);
     SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
     SetLocalInt(oArea, DL_L_AREA_LAST_WARM_MAINT_TICK, nTickStamp - DL_WARM_MAINTENANCE_INTERVAL_TICKS);
+    DeleteLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK);
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
     DL_SetAreaWorkerBudget(oArea, DL_WORKER_BUDGET_WARM);
@@ -395,9 +484,13 @@ void DL_TransitionAreaToFrozen(object oArea)
         return;
     }
 
+    int nTickStamp = DL_GetAreaTick(oArea);
     DL_SetAreaTier(oArea, DL_TIER_FROZEN);
+    SetLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK, nTickStamp);
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+
+    DL_FreezeAreaNpcRuntime(oArea);
 }
 
 void DL_UpdateAreaTierLifecycle(object oArea)
@@ -438,7 +531,7 @@ void DL_UpdateAreaTierLifecycle(object oArea)
     }
 
     int nWarmSinceTick = GetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK);
-    if (nWarmSinceTick < 0)
+    if (nWarmSinceTick <= 0)
     {
         nWarmSinceTick = nTickStamp;
         SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nWarmSinceTick);
