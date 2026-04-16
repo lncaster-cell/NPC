@@ -502,8 +502,14 @@ void DL_TransitionAreaToHot(object oArea, int bRequestEnterResync)
 
     if (bRequestEnterResync)
     {
-        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, TRUE);
-        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+        // Preserve in-flight round-robin progress for area-enter resync.
+        // Repeated player enters in already-hot areas must not restart cursor to 0,
+        // otherwise the same NPC prefix can be resynced repeatedly while tail NPCs starve.
+        if (GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING) != TRUE)
+        {
+            SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, TRUE);
+            SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+        }
     }
 }
 
