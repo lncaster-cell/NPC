@@ -22,6 +22,8 @@ const string DL_L_AREA_WARM_SINCE_TICK = "dl_area_warm_since_tick";
 const string DL_L_AREA_LAST_HOT_TICK = "dl_area_last_hot_tick";
 const string DL_L_AREA_LAST_WARM_MAINT_TICK = "dl_area_last_warm_maint_tick";
 const string DL_L_AREA_FROZEN_SINCE_TICK = "dl_area_frozen_since_tick";
+const string DL_L_AREA_FROZEN_HB_WAS_SET = "dl_area_frozen_hb_was_set";
+const string DL_L_AREA_FROZEN_HB_SCRIPT = "dl_area_frozen_hb_script";
 
 const string DL_L_NPC_REG_ON = "dl_reg_on";
 const string DL_L_NPC_WORKER_SEQ = "dl_npc_worker_seq";
@@ -362,6 +364,29 @@ void DL_FreezeAreaNpcRuntime(object oArea)
     }
 }
 
+void DL_FreezeAreaRuntime(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    string sHeartbeat = GetEventHandler(oArea, SCRIPT_AREA_ON_HEARTBEAT);
+    if (sHeartbeat != "")
+    {
+        SetLocalInt(oArea, DL_L_AREA_FROZEN_HB_WAS_SET, TRUE);
+        SetLocalString(oArea, DL_L_AREA_FROZEN_HB_SCRIPT, sHeartbeat);
+    }
+    else
+    {
+        SetLocalInt(oArea, DL_L_AREA_FROZEN_HB_WAS_SET, FALSE);
+        DeleteLocalString(oArea, DL_L_AREA_FROZEN_HB_SCRIPT);
+    }
+
+    SetEventHandler(oArea, SCRIPT_AREA_ON_HEARTBEAT, "");
+    DL_FreezeAreaNpcRuntime(oArea);
+}
+
 void DL_ThawAreaNpcRuntime(object oArea)
 {
     if (!DL_IsAreaObject(oArea))
@@ -395,6 +420,28 @@ void DL_ThawAreaNpcRuntime(object oArea)
 
         oNpc = GetNextObjectInArea(oArea);
     }
+}
+
+void DL_ThawAreaRuntime(object oArea)
+{
+    if (!DL_IsAreaObject(oArea))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, DL_L_AREA_FROZEN_HB_WAS_SET) == TRUE)
+    {
+        SetEventHandler(oArea, SCRIPT_AREA_ON_HEARTBEAT, GetLocalString(oArea, DL_L_AREA_FROZEN_HB_SCRIPT));
+    }
+    else
+    {
+        SetEventHandler(oArea, SCRIPT_AREA_ON_HEARTBEAT, "");
+    }
+
+    DeleteLocalInt(oArea, DL_L_AREA_FROZEN_HB_WAS_SET);
+    DeleteLocalString(oArea, DL_L_AREA_FROZEN_HB_SCRIPT);
+
+    DL_ThawAreaNpcRuntime(oArea);
 }
 
 void DL_SetAreaWorkerBudget(object oArea, int nBudget)
@@ -488,7 +535,7 @@ void DL_TransitionAreaToHot(object oArea, int bRequestEnterResync)
     int nPrevTier = DL_GetAreaTier(oArea);
     if (nPrevTier == DL_TIER_FROZEN)
     {
-        DL_ThawAreaNpcRuntime(oArea);
+        DL_ThawAreaRuntime(oArea);
     }
 
     int nTickStamp = DL_GetAreaTick(oArea);
@@ -539,7 +586,7 @@ void DL_TransitionAreaToFrozen(object oArea)
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
 
-    DL_FreezeAreaNpcRuntime(oArea);
+    DL_FreezeAreaRuntime(oArea);
 }
 
 void DL_UpdateAreaTierLifecycle(object oArea)
