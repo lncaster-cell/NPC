@@ -100,6 +100,7 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
 
     int nNpcProcessed = 0;
     int nNpcSeen = 0;
+    int nNpcSeenTotal = 0;
     int nNpcRegistered = GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
     if (nNpcRegistered < 0)
     {
@@ -124,11 +125,13 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
     }
 
     object oObj = GetFirstObjectInArea(oArea);
+    int bBrokeEarly = FALSE;
 
     while (GetIsObjectValid(oObj))
     {
         if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
         {
+            nNpcSeenTotal = nNpcSeenTotal + 1;
             if (nNpcProcessed < nBudget && nNpcSeen >= nCursor)
             {
                 if (DL_ProcessAreaNpcByPassMode(oObj, nPassMode, nTickStamp))
@@ -142,11 +145,25 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
             // avoid scanning the rest of the area.
             if (nNpcProcessed >= nBudget && nNpcSeen >= (nCursor + nBudget))
             {
+                bBrokeEarly = TRUE;
                 break;
             }
         }
 
         oObj = GetNextObjectInArea(oArea);
+    }
+
+    if (bBrokeEarly)
+    {
+        oObj = GetNextObjectInArea(oArea);
+        while (GetIsObjectValid(oObj))
+        {
+            if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
+            {
+                nNpcSeenTotal = nNpcSeenTotal + 1;
+            }
+            oObj = GetNextObjectInArea(oArea);
+        }
     }
 
     if (nNpcProcessed < nBudget && nCursor > 0)
@@ -158,6 +175,7 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         {
             if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
             {
+                nNpcSeenTotal = nNpcSeenTotal + 1;
                 if (nWrapSeen < nCursor)
                 {
                     if (DL_ProcessAreaNpcByPassMode(oObj, nPassMode, nTickStamp))
@@ -172,8 +190,13 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         }
     }
 
-    // Registry-backed source of truth: cheaper than full creature scans each tick.
-    SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcRegistered);
+    if (nNpcSeenTotal <= 0)
+    {
+        nNpcSeenTotal = nNpcRegistered;
+    }
+
+    // Cursor modulo must reflect observed active population to avoid same-window resets.
+    SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcSeenTotal);
     return nNpcProcessed;
 }
 
