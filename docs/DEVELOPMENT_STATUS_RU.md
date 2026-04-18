@@ -1,12 +1,12 @@
 # Development Status (RU)
 
-> Обновлено: **2026-04-15**
+> Обновлено: **2026-04-17**
 
 ## Текущее состояние
 
 - Runtime-контур Daily Life активен в `daily_life/`.
 - Базовая модель: schedule-driven + area-driven, с bounded execution.
-- Deep audit (pass 6) подтверждает закрытие `R1/R2/R3` и фиксирует/закрывает дополнительные риски `R6-1/R6-2` (same-area social partner validation и предсказуемый transition jump path).
+- Deep audit pass 7 подтверждает закрытие `R1/R2/R3`, `R6-1/R6-2` и дополнительно закрывает `R7-1` (устойчивый cursor modulo на наблюдаемом active-population в round-robin pass).
 
 ## Что уже подтверждено
 
@@ -30,4 +30,4 @@
 
 ## Последний артефакт аудита
 
-- `daily_life/post_refactor_audit_pass6_deep.md` — deep-аудит pass 6 с дополнительными рисками/фиксациями и обновлёнными приоритетами.
+- `daily_life/post_refactor_audit_pass7.md` — аудит pass 7 с закрытием риска R7-1 (same-window reset курсора при fast-break).
