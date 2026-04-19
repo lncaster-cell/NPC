@@ -66,7 +66,8 @@
   - реакция guard по perception + throttling.
 - Текущая стадия City Response:
   - ✅ attack/kill ingress готов;
-  - ⏳ theft/burglary/legal witness lifecycle не включён в этот этап и планируется отдельным доменным контуром.
+  - ✅ theft/burglary ingress v1 добавлен (`OnDisturbed`, `OnOpen`, restricted trigger `OnEnter`) с witness-gated немедленной реакцией;
+  - ⏳ legal witness lifecycle (судебный/процессуальный контур) остаётся отдельным следующим этапом.
 
 ## 2) Что подтверждено ревизией кода
 
