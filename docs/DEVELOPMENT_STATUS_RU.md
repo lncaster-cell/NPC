@@ -1,12 +1,13 @@
 # Development Status (RU)
 
-> Обновлено: **2026-04-17**
+> Обновлено: **2026-04-19**
 
 ## Текущее состояние
 
 - Runtime-контур Daily Life активен в `daily_life/`.
 - Базовая модель: schedule-driven + area-driven, с bounded execution.
 - Deep audit pass 7 подтверждает закрытие `R1/R2/R3`, `R6-1/R6-2` и дополнительно закрывает `R7-1` (устойчивый cursor modulo на наблюдаемом active-population в round-robin pass).
+- Добавлен базовый City Response ingress (ветка атака/убийство) как расширение Daily Life: `dl_damaged`, `dl_perception`, `dl_city_response_inc`.
 
 ## Что уже подтверждено
 
@@ -14,6 +15,7 @@
 - Lifecycle ingress (spawn/death/blocked) не потерял базовые инварианты.
 - Cache-layer и include-decomposition работают без обнаруженных критичных побочных эффектов.
 - В module minute-budget добавлен guard-контур `budget pressure`: при хроническом дефиците бюджета включается временный adaptive cap для worker/resync, что ограничивает накопление нагрузки в hot-area.
+- City Response реализован event-first без тяжёлой heartbeat-логики: антиспам инцидентов в `OnDamaged` через attacker→victim cooldown, усиление по `OnDeath`, реакция guard через `OnPerception`.
 
 ## Текущие приоритеты
 
