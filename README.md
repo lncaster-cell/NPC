@@ -1,6 +1,6 @@
 # NPC (PysukSystems)
 
-> Обновлено: **2026-04-15**
+> Обновлено: **2026-04-20**
 
 ## Что это
 
@@ -165,6 +165,13 @@ Area-флаг для City Response:
 - «Сдаться» → `dl_cr_detain_accept` (телепорт в jail waypoint).
 - «Отказаться» → `dl_cr_detain_refuse` (эскалация и силовое задержание).
 
+Минимальный runtime-контракт для detain flow:
+
+- у guard/NPC с реакцией должен быть корректный профиль `gate_post`;
+- в модуле должен существовать `.dlg` ресурс с resref из `dl_cr_detain_dialog` (по умолчанию `dl_cr_guard_detain`);
+- в модуле должен существовать waypoint для тюрьмы с tag из `dl_cr_jail_wp_tag` (по умолчанию `dl_jail_entry_wp`);
+- если `dl_cr_guard_responders_max` не задан, по умолчанию реагируют 2 ближайших поста.
+
 Сон по слотам проживания:
 
 - `dl_anchor_sleep_approach_<slot>`
@@ -188,3 +195,17 @@ Social anchors:
 3. Проверьте, что у тестового NPC выставлены минимум `dl_profile_id` и `dl_home_area_tag`.
 4. Проверьте, что в area реально есть anchors, на которые ссылаются локалки.
 5. Для smoke-проверок можно запускать вспомогательные скрипты `dl_smk_*` вручную в test-area.
+6. Для City Response smoke:
+   - witnessed кража должна вызвать shout свидетеля и реакцию только ближайших guard;
+   - в диалоге guard ветка «Сдаться» должна телепортировать в jail waypoint;
+   - ветка «Отказаться» должна эскалировать задержание в силовую фазу.
+
+## NWN Lexicon reference points (для реализации без костылей)
+
+Ключевые встроенные механики, на которые опирается текущий City Response/Detain контур:
+
+- `OnDisturbed`, `GetLastDisturbed`, `GetInventoryDisturbType` — ingress краж из инвентаря/контейнеров.
+- `OnOpen`, `GetLastOpenedBy`, `GetLocked` — ingress взлома дверей/placeable.
+- `OnPerception`, `GetLastPerceived`, `GetObjectSeen`, `GetObjectHeard` — witness/perception логика.
+- `AssignCommand`, `ActionMoveToObject`, `ActionStartConversation` — событийная реакция guard без heavy heartbeat.
+- `ActionJumpToLocation` + waypoint — доставка задержанного в jail-point.

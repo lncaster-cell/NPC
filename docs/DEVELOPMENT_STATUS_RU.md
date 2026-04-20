@@ -95,6 +95,17 @@
 3. `P1`: City Response tuning и фиксация контрактов для следующего этапа (theft/burglary/legal handoff).
 4. `P2`: точечная оптимизация transition/lookup churn в hot-tier area.
 
+## 4.1 Что синхронизировано в документации на 2026-04-20
+
+- README приведён к актуальному City Response v1 контракту:
+  - новые module locals `dl_cr_guard_responders_max`, `dl_cr_detain_dialog`, `dl_cr_jail_wp_tag`;
+  - обязательные шаги wiring для detain `.dlg` и jail waypoint;
+  - owner-run smoke-check по веткам «Сдаться/Отказаться».
+- Статус City Response согласован с фактическим кодом:
+  - witness shout;
+  - ограниченный отклик ближайших guard-постов;
+  - detain dialog handoff и jail teleport.
+
 ## 5) Ограничения и политика (не менялись)
 
 - Все решения проверять через встроенные механики NWN2/NWScript и NWN Lexicon.
