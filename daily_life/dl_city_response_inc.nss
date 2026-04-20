@@ -232,8 +232,22 @@ void DL_CR_HandleGuardPerception(object oGuard)
         return;
     }
 
-    string sCooldownKey = "dl_cr_guard_react_" + GetTag(oSeen);
     int nNowAbsMin = DL_GetAbsoluteMinute();
+    if (nLevel < 3)
+    {
+        if (GetLocalInt(oSeen, "dl_cr_detain_pending") != TRUE)
+        {
+            return;
+        }
+
+        if (GetLocalObject(oGuard, "dl_cr_investigate_target") != oSeen ||
+            GetLocalInt(oGuard, "dl_cr_investigate_until") < nNowAbsMin)
+        {
+            return;
+        }
+    }
+
+    string sCooldownKey = "dl_cr_guard_react_" + GetTag(oSeen);
     if (GetLocalInt(oGuard, sCooldownKey) > nNowAbsMin)
     {
         return;
@@ -247,5 +261,12 @@ void DL_CR_HandleGuardPerception(object oGuard)
         return;
     }
 
+    string sDialogResRef = GetLocalString(GetModule(), "dl_cr_detain_dialog");
+    if (sDialogResRef == "")
+    {
+        sDialogResRef = "dl_cr_guard_detain";
+    }
+
     ActionMoveToObject(oSeen, TRUE, 2.0);
+    ActionStartConversation(oSeen, sDialogResRef, TRUE, TRUE);
 }

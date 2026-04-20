@@ -53,6 +53,8 @@
    - `dl_disturbed`
    - `dl_open`
    - `dl_cr_restricted_trg`
+   - `dl_cr_detain_accept`
+   - `dl_cr_detain_refuse`
    - `dl_userdef`
 
 ### 2) Какие скрипты куда назначать
@@ -94,6 +96,9 @@
 - `dl_city_response_enabled = 1` — включает City Response контур на уровне модуля (ветка атаки/убийства).
 - `dl_cr_witness_radius = 10` — радиус поиска свидетелей для crime ingress.
 - `dl_cr_guard_alert_radius = 20` — радиус немедленного оповещения guard после witnessed crime.
+- `dl_cr_guard_responders_max = 2` — сколько ближайших guard-постов реагируют на witnessed crime.
+- `dl_cr_detain_dialog = dl_cr_guard_detain` — resref диалога задержания (guard → offender).
+- `dl_cr_jail_wp_tag = dl_jail_entry_wp` — waypoint-tag для телепорта при сдаче.
 
 Опционально для отладки:
 
@@ -150,6 +155,15 @@ Area-флаг для City Response:
 
 - `dl_city_response_enabled = 1` — включает реакцию города в конкретной area (по умолчанию контур выключен, даже если включён на модуле).
 - `dl_cr_restricted = 1` — помечает restricted area для инцидента проникновения.
+
+### 3.4 Диалог задержания (Detain Flow v1)
+
+При witnessed crime ближайшие guard реагируют точечно (по умолчанию 1–2 поста), пытаются подойти к offender и запустить диалог `dl_cr_guard_detain`.
+
+В диалоге рекомендуется две action-ноды:
+
+- «Сдаться» → `dl_cr_detain_accept` (телепорт в jail waypoint).
+- «Отказаться» → `dl_cr_detain_refuse` (эскалация и силовое задержание).
 
 Сон по слотам проживания:
 

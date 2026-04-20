@@ -1,6 +1,6 @@
 # Development Status (RU)
 
-> Обновлено: **2026-04-19**
+> Обновлено: **2026-04-20**
 
 ## 1) Runtime-срез проекта (полный инвентарь реализованного)
 
@@ -67,6 +67,7 @@
 - Текущая стадия City Response:
   - ✅ attack/kill ingress готов;
   - ✅ theft/burglary ingress v1 добавлен (`OnDisturbed`, `OnOpen`, restricted trigger `OnEnter`) с witness-gated немедленной реакцией;
+  - ✅ detain flow v1 добавлен: witness shout, ограниченный отклик ближайших guard-постов, диалог сдачи и телепорт в jail waypoint при согласии;
   - ⏳ legal witness lifecycle (судебный/процессуальный контур) остаётся отдельным следующим этапом.
 
 ## 2) Что подтверждено ревизией кода
