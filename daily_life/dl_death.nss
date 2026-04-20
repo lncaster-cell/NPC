@@ -5,6 +5,7 @@ void main()
     object oNpc = OBJECT_SELF;
     object oArea = GetArea(oNpc);
 
+    DL_CR_HandleNpcKilled(oNpc);
     DL_RequestNpcLifecycleSignal(oNpc, DL_NPC_EVENT_DEATH);
 
     string sLog = "[DL][DEATH_SIGNAL] npc=" + GetName(oNpc) +
