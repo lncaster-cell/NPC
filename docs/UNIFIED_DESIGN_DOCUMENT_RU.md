@@ -122,6 +122,12 @@
 
 ## 7) Runtime Truth / Activity Journal (Daily Life)
 
+### 2026-04-21 — процессная синхронизация документации (README + docs)
+
+- Зафиксирован обязательный процесс синхронизации документации в каждом runtime-коммите: `README` + `DEVELOPMENT_STATUS` + (при архитектурных изменениях) `UNIFIED`.
+- Явно закреплена маркировка `⏳ validation pending` для сценариев без подтверждения owner-run.
+- Подтверждён неизменный baseline: сначала встроенные функции/механики NWScript/NWN2 (с опорой на NWN Lexicon), затем минимальные адаптеры только при отсутствии штатного решения.
+
 ### 2026-04-15 — фиксация текущего прогресса после post-refactor audit (pass 4)
 
 - Зафиксировано, что после include-decomposition Daily Life остаётся runtime-safe по базовым инвариантам (budget-bound worker, стабильный lifecycle порядок, сохранён cache-layer).
