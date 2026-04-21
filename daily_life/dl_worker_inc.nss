@@ -214,6 +214,8 @@ void DL_WorkerTouchNpc(object oNpc)
         return;
     }
 
+    DL_ReconcileNpcAreaRegistration(oNpc);
+
     if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) != TRUE)
     {
         DL_RegisterNpc(oNpc);

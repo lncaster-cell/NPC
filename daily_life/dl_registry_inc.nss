@@ -693,6 +693,7 @@ void DL_RegisterNpc(object oNpc)
 
     if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) == TRUE)
     {
+        DL_ReconcileNpcAreaRegistration(oNpc);
         return;
     }
 
@@ -714,6 +715,50 @@ void DL_RegisterNpc(object oNpc)
         SetLocalInt(oArea, DL_L_AREA_REG_COUNT, GetLocalInt(oArea, DL_L_AREA_REG_COUNT) + 1);
         SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
     }
+}
+
+void DL_ReconcileNpcAreaRegistration(object oNpc)
+{
+    if (!DL_IsActivePipelineNpc(oNpc))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) != TRUE)
+    {
+        return;
+    }
+
+    object oCurrentArea = GetArea(oNpc);
+    object oRegisteredArea = GetLocalObject(oNpc, DL_L_NPC_REG_AREA);
+    if (oCurrentArea == oRegisteredArea)
+    {
+        return;
+    }
+
+    if (GetIsObjectValid(oRegisteredArea))
+    {
+        int nRegisteredCount = GetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT);
+        if (nRegisteredCount > 0)
+        {
+            SetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT, nRegisteredCount - 1);
+        }
+        else
+        {
+            SetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT, 0);
+        }
+        SetLocalInt(oRegisteredArea, DL_L_AREA_REG_SEQ, GetLocalInt(oRegisteredArea, DL_L_AREA_REG_SEQ) + 1);
+    }
+
+    if (GetIsObjectValid(oCurrentArea))
+    {
+        SetLocalInt(oCurrentArea, DL_L_AREA_REG_COUNT, GetLocalInt(oCurrentArea, DL_L_AREA_REG_COUNT) + 1);
+        SetLocalInt(oCurrentArea, DL_L_AREA_REG_SEQ, GetLocalInt(oCurrentArea, DL_L_AREA_REG_SEQ) + 1);
+        SetLocalObject(oNpc, DL_L_NPC_REG_AREA, oCurrentArea);
+        return;
+    }
+
+    DeleteLocalObject(oNpc, DL_L_NPC_REG_AREA);
 }
 
 void DL_UnregisterNpc(object oNpc)
