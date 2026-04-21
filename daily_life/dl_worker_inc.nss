@@ -24,19 +24,14 @@ int DL_MaybeBootstrapAreaRegistry(object oArea, int nTickStamp, int nScanBudget)
 
     SetLocalInt(oArea, DL_L_AREA_REG_BOOTSTRAP_TICK, nTickStamp);
 
-    if (nScanBudget < DL_WORKER_BUDGET_MIN)
-    {
-        nScanBudget = DL_WORKER_BUDGET_MIN;
-    }
-
+    // Empty registry recovery is intentionally full-scan, not budget-window based.
+    // A partial bootstrap can leave the area in a permanently under-registered state
+    // and corrupt round-robin cursor modulo/fairness assumptions.
     object oObj = GetFirstObjectInArea(oArea);
-    int nScannedActive = 0;
-
-    while (GetIsObjectValid(oObj) && nScannedActive < nScanBudget)
+    while (GetIsObjectValid(oObj))
     {
         if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
         {
-            nScannedActive = nScannedActive + 1;
             if (GetLocalInt(oObj, DL_L_NPC_REG_ON) != TRUE)
             {
                 DL_RegisterNpc(oObj);
@@ -131,6 +126,11 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
     {
         if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
         {
+            if (GetLocalInt(oObj, DL_L_NPC_REG_ON) != TRUE)
+            {
+                DL_RegisterNpc(oObj);
+            }
+
             nNpcSeenTotal = nNpcSeenTotal + 1;
             if (nNpcProcessed < nBudget && nNpcSeen >= nCursor)
             {
@@ -160,6 +160,11 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         {
             if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
             {
+                if (GetLocalInt(oObj, DL_L_NPC_REG_ON) != TRUE)
+                {
+                    DL_RegisterNpc(oObj);
+                }
+
                 nNpcSeenTotal = nNpcSeenTotal + 1;
             }
             oObj = GetNextObjectInArea(oArea);
@@ -175,7 +180,13 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         {
             if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
             {
-                nNpcSeenTotal = nNpcSeenTotal + 1;
+                if (GetLocalInt(oObj, DL_L_NPC_REG_ON) != TRUE)
+                {
+                    DL_RegisterNpc(oObj);
+                }
+
+                // Population total was already established by the primary scan (+ optional tail count).
+                // Wrap processing must not increment nNpcSeenTotal again.
                 if (nWrapSeen < nCursor)
                 {
                     if (DL_ProcessAreaNpcByPassMode(oObj, nPassMode, nTickStamp))
