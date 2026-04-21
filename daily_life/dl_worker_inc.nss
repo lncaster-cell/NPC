@@ -189,7 +189,15 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         }
     }
 
-    if (nNpcSeenTotal < 0)
+    // If main scan reached natural end (no fast-break), nNpcSeen already reflects
+    // exact active population in area for this pass. Keep total pinned to it so
+    // cursor modulo cannot drift from accidental re-count paths.
+    if (!bBrokeEarly && nNpcSeen > 0)
+    {
+        nNpcSeenTotal = nNpcSeen;
+    }
+
+    if (nNpcSeenTotal <= 0)
     {
         nNpcSeenTotal = 0;
     }
