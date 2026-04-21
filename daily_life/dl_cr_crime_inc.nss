@@ -318,7 +318,7 @@ void DL_CR_RecordCrimeEvent(object oOffender, object oArea, string sKind, int bW
     SetLocalString(oOffender, DL_L_EVT_CR_AREA_TAG, GetTag(oArea));
 }
 
-void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, int bWitnessed)
+void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, int bWitnessed, object oWitness)
 {
     if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
     {
@@ -331,6 +331,7 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
         return;
     }
 
+    DL_LG_OnWitnessedIncident(oOffender, sKind, oArea, oWitness);
     SetLocalInt(oOffender, DL_L_PC_CR_DETAIN_PENDING, TRUE);
     SetLocalInt(oOffender, DL_L_PC_CR_CASE_STATE, DL_CR_CASE_STATE_ACTIVE);
 
@@ -367,7 +368,7 @@ void DL_CR_HandleDisturbed(object oDisturbed)
     }
     string sKind = GetObjectType(oDisturbed) == OBJECT_TYPE_CREATURE ? DL_CR_EVT_PICKPOCKET : DL_CR_EVT_CONTAINER_THEFT;
 
-    DL_CR_RegisterCrimeIncident(oDisturber, oArea, sKind, bWitnessed);
+    DL_CR_RegisterCrimeIncident(oDisturber, oArea, sKind, bWitnessed, oWitness);
 }
 
 void DL_CR_HandleOpenObject(object oOpened)
@@ -403,7 +404,7 @@ void DL_CR_HandleOpenObject(object oOpened)
     }
     string sKind = GetObjectType(oOpened) == OBJECT_TYPE_DOOR ? DL_CR_EVT_DOOR_LOCKPICK : DL_CR_EVT_PLACEABLE_LOCKPICK;
 
-    DL_CR_RegisterCrimeIncident(oOpener, oArea, sKind, bWitnessed);
+    DL_CR_RegisterCrimeIncident(oOpener, oArea, sKind, bWitnessed, oWitness);
 }
 
 void DL_CR_HandleRestrictedEntry(object oActor, object oSource)
@@ -434,7 +435,7 @@ void DL_CR_HandleRestrictedEntry(object oActor, object oSource)
     {
         DL_CR_WitnessShout(oWitness, oOffender);
     }
-    DL_CR_RegisterCrimeIncident(oOffender, oArea, DL_CR_EVT_RESTRICTED_ENTRY, bWitnessed);
+    DL_CR_RegisterCrimeIncident(oOffender, oArea, DL_CR_EVT_RESTRICTED_ENTRY, bWitnessed, oWitness);
 }
 
 int DL_CR_TeleportToJail(object oPc)
@@ -465,6 +466,7 @@ void DL_CR_HandleDetainAccepted(object oPc, object oGuard)
     DeleteLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING);
     SetLocalInt(oPc, DL_L_PC_CR_CASE_STATE, DL_CR_CASE_STATE_DETAINED);
     DeleteLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+    DL_LG_OnDetained(oPc, oGuard);
 
     if (!DL_CR_TeleportToJail(oPc))
     {
@@ -486,6 +488,7 @@ void DL_CR_HandleDetainRefused(object oPc, object oGuard)
 
     SetLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING, TRUE);
     DL_CR_RegisterIncident(oPc, 10);
+    DL_LG_OnRefusedDetain(oPc, oGuard);
 
     if (GetIsObjectValid(oGuard))
     {
