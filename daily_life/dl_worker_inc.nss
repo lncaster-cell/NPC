@@ -175,7 +175,6 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         {
             if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
             {
-                nNpcSeenTotal = nNpcSeenTotal + 1;
                 if (nWrapSeen < nCursor)
                 {
                     if (DL_ProcessAreaNpcByPassMode(oObj, nPassMode, nTickStamp))
