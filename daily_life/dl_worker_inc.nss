@@ -9,25 +9,24 @@ const string DL_L_NPC_LAST_TOUCH_TICK = "dl_npc_last_touch_tick";
 const int DL_AREA_PASS_MODE_WORKER = 1;
 const int DL_AREA_PASS_MODE_RESYNC = 2;
 const int DL_AREA_PASS_MODE_WARM = 3;
-const string DL_L_AREA_REG_BOOTSTRAP_TICK = "dl_area_reg_bootstrap_tick";
-const int DL_REG_BOOTSTRAP_INTERVAL_TICKS = 30;
+const string DL_L_AREA_PASS_LAST_CANDIDATES = "dl_area_pass_last_candidates";
+const string DL_L_AREA_PASS_FALLBACK_COUNT = "dl_area_pass_fallback_count";
+const string DL_L_MODULE_PASS_FALLBACK_COUNT = "dl_module_pass_fallback_count";
+const string DL_L_AREA_PASS_FALLBACK_LAST_TICK = "dl_area_pass_fallback_last_tick";
 
 void DL_WorkerTouchNpc(object oNpc);
 
-int DL_MaybeBootstrapAreaRegistry(object oArea, int nTickStamp, int nScanBudget)
+int DL_RunAreaRegistryFallbackRecovery(object oArea, int nTickStamp, int nScanBudget)
 {
-    int nLastBootstrapTick = GetLocalInt(oArea, DL_L_AREA_REG_BOOTSTRAP_TICK);
-    if (nTickStamp >= nLastBootstrapTick && (nTickStamp - nLastBootstrapTick) < DL_REG_BOOTSTRAP_INTERVAL_TICKS)
-    {
-        return GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
-    }
-
-    SetLocalInt(oArea, DL_L_AREA_REG_BOOTSTRAP_TICK, nTickStamp);
-
     if (nScanBudget < DL_WORKER_BUDGET_MIN)
     {
         nScanBudget = DL_WORKER_BUDGET_MIN;
     }
+
+    SetLocalInt(oArea, DL_L_AREA_PASS_FALLBACK_LAST_TICK, nTickStamp);
+    SetLocalInt(oArea, DL_L_AREA_PASS_FALLBACK_COUNT, GetLocalInt(oArea, DL_L_AREA_PASS_FALLBACK_COUNT) + 1);
+    object oModule = GetModule();
+    SetLocalInt(oModule, DL_L_MODULE_PASS_FALLBACK_COUNT, GetLocalInt(oModule, DL_L_MODULE_PASS_FALLBACK_COUNT) + 1);
 
     object oObj = GetFirstObjectInArea(oArea);
     int nScannedActive = 0;
@@ -99,22 +98,21 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
     }
 
     int nNpcProcessed = 0;
-    int nNpcSeen = 0;
-    int nNpcSeenTotal = 0;
+    int nCandidates = 0;
     int nNpcRegistered = GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
     if (nNpcRegistered < 0)
     {
         nNpcRegistered = 0;
     }
 
-    // Registry reconciliation: if area registry is empty, run throttled bounded scan
-    // to recover from missed spawn/registration edges.
+    // Recovery path only: bounded scan when registry is empty or has stale slots.
     if (nNpcRegistered == 0)
     {
-        nNpcRegistered = DL_MaybeBootstrapAreaRegistry(oArea, nTickStamp, nBudget);
+        nNpcRegistered = DL_RunAreaRegistryFallbackRecovery(oArea, nTickStamp, nBudget);
         if (nNpcRegistered == 0)
         {
             SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, 0);
+            SetLocalInt(oArea, DL_L_AREA_PASS_LAST_CANDIDATES, 0);
             return 0;
         }
     }
@@ -124,78 +122,56 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         nCursor = nCursor % nNpcRegistered;
     }
 
-    object oObj = GetFirstObjectInArea(oArea);
-    int bBrokeEarly = FALSE;
-
-    while (GetIsObjectValid(oObj))
+    int nAttempts = 0;
+    int bFallbackNeeded = FALSE;
+    while (nAttempts < nNpcRegistered && nNpcProcessed < nBudget)
     {
-        if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
+        int nSlot = (nCursor + nAttempts) % nNpcRegistered;
+        object oCandidate = DL_GetAreaRegistryNpcAtSlot(oArea, nSlot);
+        nCandidates = nCandidates + 1;
+
+        if (GetIsObjectValid(oCandidate))
         {
-            nNpcSeenTotal = nNpcSeenTotal + 1;
-            if (nNpcProcessed < nBudget && nNpcSeen >= nCursor)
+            if (GetObjectType(oCandidate) == OBJECT_TYPE_CREATURE &&
+                GetIsPC(oCandidate) == FALSE &&
+                GetIsDM(oCandidate) == FALSE &&
+                GetLocalInt(oCandidate, DL_L_NPC_REG_ON) == TRUE &&
+                GetLocalObject(oCandidate, DL_L_NPC_REG_AREA) == oArea &&
+                GetLocalInt(oCandidate, DL_L_NPC_REG_SLOT) == nSlot &&
+                DL_IsActivePipelineNpc(oCandidate))
             {
-                if (DL_ProcessAreaNpcByPassMode(oObj, nPassMode, nTickStamp))
+                if (DL_ProcessAreaNpcByPassMode(oCandidate, nPassMode, nTickStamp))
                 {
                     nNpcProcessed = nNpcProcessed + 1;
                 }
             }
-            nNpcSeen = nNpcSeen + 1;
-
-            // Fast-path: once we reached budget and a full logical window in front of cursor,
-            // avoid scanning the rest of the area.
-            if (nNpcProcessed >= nBudget && nNpcSeen >= (nCursor + nBudget))
+            else if (GetLocalInt(oCandidate, DL_L_NPC_REG_ON) == TRUE)
             {
-                bBrokeEarly = TRUE;
-                break;
+                DL_UnregisterNpc(oCandidate);
+                bFallbackNeeded = TRUE;
             }
         }
-
-        oObj = GetNextObjectInArea(oArea);
-    }
-
-    if (bBrokeEarly)
-    {
-        oObj = GetNextObjectInArea(oArea);
-        while (GetIsObjectValid(oObj))
+        else
         {
-            if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
-            {
-                nNpcSeenTotal = nNpcSeenTotal + 1;
-            }
-            oObj = GetNextObjectInArea(oArea);
+            bFallbackNeeded = TRUE;
         }
+
+        nAttempts = nAttempts + 1;
     }
 
-    if (nNpcProcessed < nBudget && nCursor > 0)
+    if (bFallbackNeeded)
     {
-        oObj = GetFirstObjectInArea(oArea);
-        int nWrapSeen = 0;
-
-        while (GetIsObjectValid(oObj) && nNpcProcessed < nBudget)
+        int nRecoveryBudget = nBudget;
+        if (nRecoveryBudget < DL_WORKER_BUDGET_MIN)
         {
-            if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
-            {
-                if (nWrapSeen < nCursor)
-                {
-                    if (DL_ProcessAreaNpcByPassMode(oObj, nPassMode, nTickStamp))
-                    {
-                        nNpcProcessed = nNpcProcessed + 1;
-                    }
-                }
-                nWrapSeen = nWrapSeen + 1;
-            }
-
-            oObj = GetNextObjectInArea(oArea);
+            nRecoveryBudget = DL_WORKER_BUDGET_MIN;
         }
+        DL_RunAreaRegistryFallbackRecovery(oArea, nTickStamp, nRecoveryBudget);
+        nNpcRegistered = GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
     }
 
-    if (nNpcSeenTotal <= 0)
-    {
-        nNpcSeenTotal = nNpcRegistered;
-    }
-
-    // Cursor modulo must reflect observed active population to avoid same-window resets.
-    SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcSeenTotal);
+    SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcRegistered);
+    SetLocalInt(oArea, DL_L_AREA_PASS_LAST_CANDIDATES, nCandidates);
     return nNpcProcessed;
 }
 
