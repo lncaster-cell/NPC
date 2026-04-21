@@ -4,31 +4,44 @@
 
 - Дата аудита: 2026-04-21.
 - Область: `daily_life/dl_worker_inc.nss` (`DL_RunAreaNpcRoundRobinPass`).
-- Метод: path-audit логики `cursor/budget` с фокусом на корректность `DL_L_AREA_PASS_LAST_SEEN`.
-- Базовая политика: только штатные NWScript/NWN2 механики по паттернам NWN Lexicon (итерация area через `GetFirstObjectInArea`/`GetNextObjectInArea`), без ad-hoc обходов.
+- Запрос: поиск мусорного кода/конфликтующей логики и симптомов «нейросетевого абсурда» в hot-path.
+- Базовый принцип: использовать штатные механики NWScript/NWN2 с опорой на NWN Lexicon.
 
-## Найденная проблема
+## Найденный риск
 
-### R8-1 (Medium): двойной учёт active NPC в wrap-ветке
+### R8-1 (Medium): двойной учёт active NPC в wrap-фазе курсора
 
 Симптом:
-- После основного прохода (и опционального tail-count при fast-break) `nNpcSeenTotal` уже отражал наблюдаемую active-population area.
-- В wrap-ветке (`nNpcProcessed < nBudget && nCursor > 0`) счётчик `nNpcSeenTotal` повторно инкрементировался для первых `nCursor` NPC.
+- После pass 7 метрика `nNpcSeenTotal` стала опорой для `DL_L_AREA_PASS_LAST_SEEN` (и далее для modulo cursor).
+- В `wrap`-ветке (`nNpcProcessed < nBudget && nCursor > 0`) код повторно увеличивал `nNpcSeenTotal` при втором проходе по префиксу списка.
+- Это давало завышенный `nNpcSeenTotal` относительно фактического числа active NPC.
 
 Риск:
-- `DL_L_AREA_PASS_LAST_SEEN` завышался.
-- Cursor modulo мог вычисляться по inflated population, что ухудшало fairness round-robin и приводило к неритмичному покрытию части NPC.
+- Некорректный знаменатель для modulo cursor.
+- Drift/fairness деградация round-robin: часть NPC может получать более редкие touch-окна при длинных сериях тиков.
 
 ## Исправление
 
-Минимальная правка:
-- Убран повторный инкремент `nNpcSeenTotal` в wrap-ветке.
+Минимальная правка без изменения архитектуры:
+- Удалён инкремент `nNpcSeenTotal` в wrap-цикле.
+- Подсчёт `nNpcSeenTotal` теперь выполняется только в основном проходе (+ tail-count при fast-break), т.е. один раз на объект.
 
-Почему безопасно:
-- Контракт обработки NPC не изменён: меняется только метрика наблюдаемого total.
-- Бюджет и порядок вызовов `DL_ProcessAreaNpcByPassMode` не затронуты.
-- Используются те же стандартные механики NWScript, без новых side effects.
+Почему это корректно:
+- Не меняет контракт budget (`nBudget`) и не расширяет обработку NPC.
+- Не добавляет новых локалок/фаз.
+- Сохраняет модель event-first и существующие точки ingress/resync.
+
+## Сверка с NWN Lexicon
+
+Подход остаётся в пределах каноничного iteration-паттерна:
+- `GetFirstObjectInArea` / `GetNextObjectInArea` для bounded проходов по area.
+- `GetObjectType(...) == OBJECT_TYPE_CREATURE` для фильтрации существ.
+
+Проверено по справочным страницам NWN Lexicon:
+- https://nwnlexicon.com/GetFirstObjectInArea
+- https://nwnlexicon.com/GetNextObjectInArea
+- https://nwnlexicon.com/OBJECT_TYPE
 
 ## Итог
 
-Pass 8 закрывает R8-1: `DL_L_AREA_PASS_LAST_SEEN` снова отражает фактически наблюдаемую active-population без двойного счёта, что стабилизирует cursor progression в round-robin.
+Pass 8 закрывает конфликт логики учёта population в cursor-алгоритме: исключён двойной подсчёт в wrap-фазе, что стабилизирует fairness round-robin без ad-hoc костылей.
