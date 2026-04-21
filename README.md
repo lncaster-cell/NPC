@@ -142,6 +142,20 @@
 - `dl_social_slot` = `a` или `b`
 - `dl_social_partner_tag` = tag NPC-партнёра
 
+### 3.2.1 Player legal locals (Legal v1)
+
+Заполняются runtime автоматически (вручную не проставлять):
+
+- `dl_lg_case_state` (`0 none / 1 active / 2 detained / 3 resolved`)
+- `dl_lg_case_kind`
+- `dl_lg_case_severity`
+- `dl_lg_case_open_abs_min`
+- `dl_lg_case_last_update_abs_min`
+- `dl_lg_last_witness_tag`
+- `dl_lg_last_witnessed_kind`
+- `dl_lg_last_witnessed_area`
+- `dl_lg_last_witnessed_abs_min`
+
 ### 3.3 Area locals с anchor-точками (что вы назвали «локализации»)
 
 Daily Life использует area-local ссылки на waypoint/object через имена anchor-локалок.
@@ -215,3 +229,9 @@ Social anchors:
 - Witness/guard выборка ограничена **локальным радиусом** вокруг offender через shape-итераторы, а не полным обходом area.
 - Введены защитные cap-лимиты на число проверяемых объектов за событие, чтобы не раздувать стоимость в crowded-зонах.
 - `OnPerception` фильтруется по факту `seen/heard`, чтобы не обрабатывать шумные переходные события.
+
+## Legal v1 notes
+
+- Witnessed crime теперь делает handoff в legal-case runtime-состояние (`dl_lg_case_state=active`).
+- При сдаче (`dl_cr_detain_accept`) legal-case переходит в `detained`.
+- При отказе (`dl_cr_detain_refuse`) legal severity повышается.
