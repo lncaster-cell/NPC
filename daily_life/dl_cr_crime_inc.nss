@@ -23,6 +23,9 @@ const float DL_CR_WITNESS_RADIUS_DEFAULT = 10.0;
 const float DL_CR_GUARD_ALERT_RADIUS_DEFAULT = 20.0;
 const int DL_CR_GUARD_RESPONDERS_MAX_DEFAULT = 2;
 const int DL_CR_INVESTIGATE_TTL_MIN = 3;
+const int DL_CR_SHOUT_COOLDOWN_MIN = 1;
+const int DL_CR_WITNESS_SCAN_CAP = 24;
+const int DL_CR_GUARD_SCAN_CAP = 24;
 const string DL_CR_DETAIN_DIALOG_DEFAULT = "dl_cr_guard_detain";
 const string DL_CR_JAIL_WP_TAG_DEFAULT = "dl_jail_entry_wp";
 const int DL_CR_CASE_STATE_NONE = 0;
@@ -109,33 +112,6 @@ int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
     return TRUE;
 }
 
-int DL_CR_HasWitness(object oOffender, object oArea, float fRadius)
-{
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
-    {
-        return FALSE;
-    }
-
-    object oObj = GetFirstObjectInArea(oArea);
-    while (GetIsObjectValid(oObj))
-    {
-        if (DL_CR_IsWitnessCandidate(oObj, oOffender, oArea))
-        {
-            float fDist = GetDistanceBetween(oObj, oOffender);
-            if (fDist <= fRadius)
-            {
-                if (GetObjectSeen(oObj, oOffender) || GetObjectHeard(oObj, oOffender))
-                {
-                    return TRUE;
-                }
-            }
-        }
-        oObj = GetNextObjectInArea(oArea);
-    }
-
-    return FALSE;
-}
-
 object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
 {
     if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
@@ -146,9 +122,22 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
     object oBest = OBJECT_INVALID;
     float fBestDist = 1000000.0;
 
-    object oObj = GetFirstObjectInArea(oArea);
+    object oObj = GetFirstObjectInShape(
+        SHAPE_SPHERE,
+        fRadius,
+        GetLocation(oOffender),
+        FALSE,
+        OBJECT_TYPE_CREATURE
+    );
+    int nChecked = 0;
     while (GetIsObjectValid(oObj))
     {
+        if (nChecked >= DL_CR_WITNESS_SCAN_CAP)
+        {
+            break;
+        }
+        nChecked = nChecked + 1;
+
         if (DL_CR_IsWitnessCandidate(oObj, oOffender, oArea))
         {
             float fDist = GetDistanceBetween(oObj, oOffender);
@@ -161,18 +150,33 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
                 }
             }
         }
-        oObj = GetNextObjectInArea(oArea);
+        oObj = GetNextObjectInShape(
+            SHAPE_SPHERE,
+            fRadius,
+            GetLocation(oOffender),
+            FALSE,
+            OBJECT_TYPE_CREATURE
+        );
     }
 
     return oBest;
 }
 
-void DL_CR_WitnessShout(object oWitness)
+void DL_CR_WitnessShout(object oWitness, object oOffender)
 {
-    if (!GetIsObjectValid(oWitness))
+    if (!GetIsObjectValid(oWitness) || !DL_IsRuntimePlayer(oOffender))
     {
         return;
     }
+
+    string sKey = "dl_cr_shout_cd_" + GetTag(oOffender);
+    int nNowAbsMin = DL_GetAbsoluteMinute();
+    if (GetLocalInt(oWitness, sKey) > nNowAbsMin)
+    {
+        return;
+    }
+    SetLocalInt(oWitness, sKey, nNowAbsMin + DL_CR_SHOUT_COOLDOWN_MIN);
+
     AssignCommand(oWitness, SpeakString("Помогите! Меня обокрали!", TALKVOLUME_SHOUT));
 }
 
@@ -221,9 +225,23 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     float fBestA = 1000000.0;
     float fBestB = 1000000.0;
 
-    object oObj = GetFirstObjectInArea(oArea);
+    location lCenter = GetLocation(oOffender);
+    object oObj = GetFirstObjectInShape(
+        SHAPE_SPHERE,
+        fRadius,
+        lCenter,
+        FALSE,
+        OBJECT_TYPE_CREATURE
+    );
+    int nChecked = 0;
     while (GetIsObjectValid(oObj))
     {
+        if (nChecked >= DL_CR_GUARD_SCAN_CAP)
+        {
+            break;
+        }
+        nChecked = nChecked + 1;
+
         if (DL_IsActivePipelineNpc(oObj) && DL_CR_IsGuardVictim(oObj))
         {
             float fDist = GetDistanceBetween(oObj, oOffender);
@@ -243,7 +261,13 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
                 }
             }
         }
-        oObj = GetNextObjectInArea(oArea);
+        oObj = GetNextObjectInShape(
+            SHAPE_SPHERE,
+            fRadius,
+            lCenter,
+            FALSE,
+            OBJECT_TYPE_CREATURE
+        );
     }
 
     int nNowAbsMin = DL_GetAbsoluteMinute();
@@ -339,7 +363,7 @@ void DL_CR_HandleDisturbed(object oDisturbed)
     int bWitnessed = GetIsObjectValid(oWitness);
     if (bWitnessed)
     {
-        DL_CR_WitnessShout(oWitness);
+        DL_CR_WitnessShout(oWitness, oDisturber);
     }
     string sKind = GetObjectType(oDisturbed) == OBJECT_TYPE_CREATURE ? DL_CR_EVT_PICKPOCKET : DL_CR_EVT_CONTAINER_THEFT;
 
@@ -375,7 +399,7 @@ void DL_CR_HandleOpenObject(object oOpened)
     int bWitnessed = GetIsObjectValid(oWitness);
     if (bWitnessed)
     {
-        DL_CR_WitnessShout(oWitness);
+        DL_CR_WitnessShout(oWitness, oOpener);
     }
     string sKind = GetObjectType(oOpened) == OBJECT_TYPE_DOOR ? DL_CR_EVT_DOOR_LOCKPICK : DL_CR_EVT_PLACEABLE_LOCKPICK;
 
@@ -408,7 +432,7 @@ void DL_CR_HandleRestrictedEntry(object oActor, object oSource)
     int bWitnessed = GetIsObjectValid(oWitness);
     if (bWitnessed)
     {
-        DL_CR_WitnessShout(oWitness);
+        DL_CR_WitnessShout(oWitness, oOffender);
     }
     DL_CR_RegisterCrimeIncident(oOffender, oArea, DL_CR_EVT_RESTRICTED_ENTRY, bWitnessed);
 }

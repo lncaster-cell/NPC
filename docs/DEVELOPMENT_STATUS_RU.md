@@ -68,6 +68,7 @@
   - ✅ attack/kill ingress готов;
   - ✅ theft/burglary ingress v1 добавлен (`OnDisturbed`, `OnOpen`, restricted trigger `OnEnter`) с witness-gated немедленной реакцией;
   - ✅ detain flow v1 добавлен: witness shout, ограниченный отклик ближайших guard-постов, диалог сдачи и телепорт в jail waypoint при согласии;
+  - ✅ perf-tuning v1: witness/guard поиск переведён на bounded shape-итераторы с cap-ограничениями и perception seen/heard фильтрацией;
   - ⏳ legal witness lifecycle (судебный/процессуальный контур) остаётся отдельным следующим этапом.
 
 ## 2) Что подтверждено ревизией кода

@@ -220,6 +220,11 @@ void DL_CR_HandleGuardPerception(object oGuard)
         return;
     }
 
+    if (!GetLastPerceptionSeen() && !GetLastPerceptionHeard())
+    {
+        return;
+    }
+
     object oArea = GetArea(oGuard);
     if (!DL_CR_IsEnabledForArea(oArea) || !DL_CR_IsOffenderActive(oSeen))
     {

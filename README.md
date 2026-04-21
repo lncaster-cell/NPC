@@ -209,3 +209,9 @@ Social anchors:
 - `OnPerception`, `GetLastPerceived`, `GetObjectSeen`, `GetObjectHeard` — witness/perception логика.
 - `AssignCommand`, `ActionMoveToObject`, `ActionStartConversation` — событийная реакция guard без heavy heartbeat.
 - `ActionJumpToLocation` + waypoint — доставка задержанного в jail-point.
+
+## Perf notes (City Response / Witness)
+
+- Witness/guard выборка ограничена **локальным радиусом** вокруг offender через shape-итераторы, а не полным обходом area.
+- Введены защитные cap-лимиты на число проверяемых объектов за событие, чтобы не раздувать стоимость в crowded-зонах.
+- `OnPerception` фильтруется по факту `seen/heard`, чтобы не обрабатывать шумные переходные события.
