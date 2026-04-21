@@ -199,10 +199,10 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
 
     if (nNpcSeenTotal <= 0)
     {
-        nNpcSeenTotal = nNpcRegistered;
+        nNpcSeenTotal = 0;
     }
 
-    // Cursor modulo must reflect observed active population to avoid same-window resets.
+    // Cursor modulo must reflect observed active population to avoid stale-window resets.
     SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcSeenTotal);
     return nNpcProcessed;
 }
@@ -342,7 +342,13 @@ void DL_RunAreaWarmMaintenanceTick(object oArea)
     }
     else
     {
-        DL_SetAreaWorkerCursor(oArea, (nCursor + nNpcProcessed) % nNpcSeen);
+        int nCursorAdvance = nNpcProcessed;
+        if (nCursorAdvance <= 0)
+        {
+            // Avoid same-window stalls when all candidates in this tick were skipped by dedupe gates.
+            nCursorAdvance = 1;
+        }
+        DL_SetAreaWorkerCursor(oArea, (nCursor + nCursorAdvance) % nNpcSeen);
     }
 
     SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, nNpcProcessed);
@@ -402,7 +408,13 @@ void DL_RunAreaWorkerTick(object oArea)
     }
     else
     {
-        DL_SetAreaWorkerCursor(oArea, (nCursor + nNpcProcessed) % nNpcSeen);
+        int nCursorAdvance = nNpcProcessed;
+        if (nCursorAdvance <= 0)
+        {
+            // Avoid same-window stalls when all candidates in this tick were skipped by dedupe gates.
+            nCursorAdvance = 1;
+        }
+        DL_SetAreaWorkerCursor(oArea, (nCursor + nCursorAdvance) % nNpcSeen);
     }
 
     object oModule = GetModule();
