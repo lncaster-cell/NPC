@@ -34,7 +34,12 @@ int DL_IsChatLogEnabled()
 
 void DL_LogRuntime(string sLog)
 {
-    // Temporary: global runtime logging is disabled.
+    if (sLog == "" || !DL_IsChatLogEnabled())
+    {
+        return;
+    }
+
+    PrintString(sLog);
 }
 
 void DL_InitModuleContract()
