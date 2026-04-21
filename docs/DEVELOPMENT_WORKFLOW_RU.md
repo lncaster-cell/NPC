@@ -12,6 +12,7 @@
 4. Синхронизировать документацию:
    - архитектурный контекст: `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`;
    - оперативный прогресс: `docs/DEVELOPMENT_STATUS_RU.md`.
+5. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
 
 ## Минимальный Definition of Done
 
@@ -26,3 +27,11 @@
 - `docs/UNIFIED_DESIGN_DOCUMENT_RU.md` — источник архитектурной истины.
 - Этот файл и `docs/DEVELOPMENT_STATUS_RU.md` — операционные документы сопровождения (короткие, прикладные, без дублирования всего unified).
 - Избегаем создания новых документов без необходимости.
+
+## Чек-лист «обновление документации и README»
+
+- [ ] Проверены штатные функции/паттерны NWScript и релевантные заметки NWN Lexicon.
+- [ ] README синхронизирован с фактическими runtime-контрактами (скрипты, локалки, wiring).
+- [ ] `docs/DEVELOPMENT_STATUS_RU.md` обновлён текущей датой и кратким changelog.
+- [ ] Неподтверждённые owner-run сценарии помечены как `⏳ validation pending`.
+- [ ] Архитектурные изменения (если есть) отражены в `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`.

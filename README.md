@@ -1,6 +1,6 @@
 # NPC (PysukSystems)
 
-> Обновлено: **2026-04-20**
+> Обновлено: **2026-04-21**
 
 ## Что это
 
@@ -25,6 +25,15 @@
 - `docs/UNIFIED_DESIGN_DOCUMENT_RU.md` — канонический дизайн и архитектурные решения.
 - `docs/DEVELOPMENT_STATUS_RU.md` — краткий оперативный статус и ближайшие шаги.
 - `docs/DEVELOPMENT_WORKFLOW_RU.md` — правила сопровождения, чек-листы изменений и синхронизации docs/code.
+
+## Политика обновления документации и README
+
+- Любая runtime-правка в `daily_life/*.nss` сопровождается синхронизацией:
+  - `README.md` (если меняются wiring/контракты/локалки);
+  - `docs/DEVELOPMENT_STATUS_RU.md` (оперативный статус и ближайшие шаги);
+  - `docs/UNIFIED_DESIGN_DOCUMENT_RU.md` (только при изменении архитектурных правил).
+- Перед добавлением новой логики сначала проверяем существующие механики NWScript/NWN2 в NWN Lexicon; только при отсутствии штатного решения допускаются тонкие адаптеры.
+- Не публикуем в README неподтверждённые runtime-утверждения: для owner-run кейсов явно помечаем статус как `⏳ validation pending`.
 
 ## Где вносить runtime-изменения
 
@@ -142,6 +151,20 @@
 - `dl_social_slot` = `a` или `b`
 - `dl_social_partner_tag` = tag NPC-партнёра
 
+### 3.2.1 Player legal locals (Legal v1)
+
+Заполняются runtime автоматически (вручную не проставлять):
+
+- `dl_lg_case_state` (`0 none / 1 active / 2 detained / 3 resolved`)
+- `dl_lg_case_kind`
+- `dl_lg_case_severity`
+- `dl_lg_case_open_abs_min`
+- `dl_lg_case_last_update_abs_min`
+- `dl_lg_last_witness_tag`
+- `dl_lg_last_witnessed_kind`
+- `dl_lg_last_witnessed_area`
+- `dl_lg_last_witnessed_abs_min`
+
 ### 3.3 Area locals с anchor-точками (что вы назвали «локализации»)
 
 Daily Life использует area-local ссылки на waypoint/object через имена anchor-локалок.
@@ -215,3 +238,9 @@ Social anchors:
 - Witness/guard выборка ограничена **локальным радиусом** вокруг offender через shape-итераторы, а не полным обходом area.
 - Введены защитные cap-лимиты на число проверяемых объектов за событие, чтобы не раздувать стоимость в crowded-зонах.
 - `OnPerception` фильтруется по факту `seen/heard`, чтобы не обрабатывать шумные переходные события.
+
+## Legal v1 notes
+
+- Witnessed crime теперь делает handoff в legal-case runtime-состояние (`dl_lg_case_state=active`).
+- При сдаче (`dl_cr_detain_accept`) legal-case переходит в `detained`.
+- При отказе (`dl_cr_detain_refuse`) legal severity повышается.
