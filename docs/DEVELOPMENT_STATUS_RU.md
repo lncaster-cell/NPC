@@ -69,7 +69,7 @@
   - ✅ theft/burglary ingress v1 добавлен (`OnDisturbed`, `OnOpen`, restricted trigger `OnEnter`) с witness-gated немедленной реакцией;
   - ✅ detain flow v1 добавлен: witness shout, ограниченный отклик ближайших guard-постов, диалог сдачи и телепорт в jail waypoint при согласии;
   - ✅ perf-tuning v1: witness/guard поиск переведён на bounded shape-итераторы с cap-ограничениями и perception seen/heard фильтрацией;
-  - ✅ legal witness lifecycle v1 scaffold добавлен: witnessed handoff в legal-case state, переходы `active -> detained/resolved`.
+  - ✅ legal witness lifecycle v1 scaffold добавлен: witnessed handoff в legal-case state, переходы `active -> detained/resolved`;
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
@@ -110,11 +110,10 @@
 
 ## 4.2 Точечные runtime-правки на 2026-04-21
 
-- В `dl_worker_inc.nss` устранён конфликт подсчёта observed population в round-robin:
-  - удалён повторный учёт `nNpcSeenTotal` в wrap-ветке;
-  - добавлен лёгкий инвариант: при non-fast-break `nNpcSeenTotal` фиксируется в `nNpcSeen`.
-- Эффект: `DL_L_AREA_PASS_LAST_SEEN` стабильно отражает фактически наблюдённое число active NPC, что снижает риск drift в cursor modulo/fairness.
-- Правка выполнена без изменения budget-контрактов и без новых ad-hoc механизмов; используются штатные NWScript area-итераторы (`GetFirstObjectInArea` / `GetNextObjectInArea`) и фильтрация `OBJECT_TYPE_CREATURE` согласно NWN Lexicon.
+- README дополнен отдельной политикой обновления документации и явным чеком синхронизации `README + STATUS + UNIFIED`.
+- Зафиксировано требование: в документации указывать `⏳ validation pending` для сценариев, которые ещё не подтверждены owner-run.
+- Подтверждён процессный приоритет: сначала проверка штатных механизмов NWScript/NWN2 по NWN Lexicon, затем только минимальные адаптеры при необходимости.
+- 2026-04-21: устранён merge-конфликт в статусе City Response; канонически принят статус `legal witness lifecycle v1 scaffold добавлен`, а полный процессуальный legal-контур оставлен следующим этапом.
 
 ## 5) Ограничения и политика (не менялись)
 
