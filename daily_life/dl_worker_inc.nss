@@ -175,7 +175,6 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         {
             if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
             {
-                nNpcSeenTotal = nNpcSeenTotal + 1;
                 if (nWrapSeen < nCursor)
                 {
                     if (DL_ProcessAreaNpcByPassMode(oObj, nPassMode, nTickStamp))
@@ -190,12 +189,12 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
         }
     }
 
-    if (nNpcSeenTotal <= 0)
+    if (nNpcSeenTotal < 0)
     {
-        nNpcSeenTotal = nNpcRegistered;
+        nNpcSeenTotal = 0;
     }
 
-    // Cursor modulo must reflect observed active population to avoid same-window resets.
+    // Cursor modulo must reflect observed active population to avoid stale-window resets.
     SetLocalInt(oArea, DL_L_AREA_PASS_LAST_SEEN, nNpcSeenTotal);
     return nNpcProcessed;
 }
