@@ -88,6 +88,7 @@ void DL_HandleNpcUserDefined(object oNpc, int nUserDefined)
         }
 
         DL_RegisterNpc(oNpc);
+        DL_ReconcileNpcAreaRegistration(oNpc);
         DL_RequestResync(oNpc, DL_RESYNC_SPAWN);
         DL_ProcessResync(oNpc);
         return;

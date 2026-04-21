@@ -338,6 +338,7 @@
   - если `DL_L_AREA_REG_COUNT == 0`, включается throttled bounded registry-reconcile (редкий и лимитированный scan), чтобы восстановиться после пропущенных lifecycle/register событий;
   - при успешном reconcile worker возвращается к registry-driven pass без полного area-scan;
   - `pass_last_seen` фиксируется из реестра (`DL_L_AREA_REG_COUNT`) как стабильный размер логического окна round-robin, без перехода к scan-derived значению.
+  - меж-area миграция уже зарегистрированного активного NPC теперь корректирует `DL_L_AREA_REG_COUNT` и `DL_L_AREA_REG_SEQ` в обеих area (old/new) через reconcile-path, с защитой от двойного декремента ниже нуля.
 - Это следует практикам NWN Lexicon:
   - избегать частых полных area-обходов (`GetFirstObjectInArea` / `GetNextObjectInArea`);
   - оставлять event/registry-driven модель как приоритет над «сканировать всё каждый тик».
