@@ -1,6 +1,6 @@
 # Development Status (RU)
 
-> Обновлено: **2026-04-20**
+> Обновлено: **2026-04-21**
 
 ## 1) Runtime-срез проекта (полный инвентарь реализованного)
 
@@ -106,6 +106,14 @@
   - witness shout;
   - ограниченный отклик ближайших guard-постов;
   - detain dialog handoff и jail teleport.
+
+## 4.2 Точечные runtime-правки на 2026-04-21
+
+- В `dl_worker_inc.nss` устранён конфликт подсчёта observed population в round-robin:
+  - удалён повторный учёт `nNpcSeenTotal` в wrap-ветке;
+  - добавлен лёгкий инвариант: при non-fast-break `nNpcSeenTotal` фиксируется в `nNpcSeen`.
+- Эффект: `DL_L_AREA_PASS_LAST_SEEN` стабильно отражает фактически наблюдённое число active NPC, что снижает риск drift в cursor modulo/fairness.
+- Правка выполнена без изменения budget-контрактов и без новых ad-hoc механизмов; используются штатные NWScript area-итераторы (`GetFirstObjectInArea` / `GetNextObjectInArea`) и фильтрация `OBJECT_TYPE_CREATURE` согласно NWN Lexicon.
 
 ## 5) Ограничения и политика (не менялись)
 
