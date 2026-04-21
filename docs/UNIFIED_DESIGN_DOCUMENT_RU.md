@@ -122,6 +122,12 @@
 
 ## 7) Runtime Truth / Activity Journal (Daily Life)
 
+### 2026-04-21 — фиксация канонического статуса Legal (City Response)
+
+- Устранён конфликт формулировок между документами по стадии Legal.
+- Канонический факт: `legal witness lifecycle v1 scaffold` уже реализован (witnessed handoff + переходы `active -> detained/resolved`).
+- Полный судебный/расследовательский legal-контур зафиксирован как следующий этап, не входящий в текущий v1 runtime.
+
 ### 2026-04-21 — процессная синхронизация документации (README + docs)
 
 - Зафиксирован обязательный процесс синхронизации документации в каждом runtime-коммите: `README` + `DEVELOPMENT_STATUS` + (при архитектурных изменениях) `UNIFIED`.
