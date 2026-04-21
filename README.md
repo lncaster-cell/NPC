@@ -244,3 +244,4 @@ Social anchors:
 - Witnessed crime теперь делает handoff в legal-case runtime-состояние (`dl_lg_case_state=active`).
 - При сдаче (`dl_cr_detain_accept`) legal-case переходит в `detained`.
 - При отказе (`dl_cr_detain_refuse`) legal severity повышается.
+- Текущая стадия: реализован `legal witness lifecycle v1 scaffold`; полный судебный/расследовательский контур остаётся следующим этапом.
