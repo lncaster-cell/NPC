@@ -1,6 +1,6 @@
 # NPC (PysukSystems)
 
-> Обновлено: **2026-04-21**
+> Обновлено: **2026-04-20**
 
 ## Что это
 
@@ -64,6 +64,8 @@
    - `dl_cr_restricted_trg`
    - `dl_cr_detain_accept`
    - `dl_cr_detain_refuse`
+   - `dl_lg_resolve_fine`
+   - `dl_lg_resolve_detain`
    - `dl_userdef`
 
 ### 2) Какие скрипты куда назначать
@@ -108,6 +110,7 @@
 - `dl_cr_guard_responders_max = 2` — сколько ближайших guard-постов реагируют на witnessed crime.
 - `dl_cr_detain_dialog = dl_cr_guard_detain` — resref диалога задержания (guard → offender).
 - `dl_cr_jail_wp_tag = dl_jail_entry_wp` — waypoint-tag для телепорта при сдаче.
+- `dl_lg_default_fine = 100` — дефолтный штраф для Legal v1.1 resolve-fine (если явно не передан).
 
 Опционально для отладки:
 
@@ -155,7 +158,7 @@
 
 Заполняются runtime автоматически (вручную не проставлять):
 
-- `dl_lg_case_state` (`0 none / 1 active / 2 detained / 3 resolved`) — **единственный** runtime case-state локал для legal flow.
+- `dl_lg_case_state` (`0 none / 1 active / 2 detained / 3 resolved`)
 - `dl_lg_case_kind`
 - `dl_lg_case_severity`
 - `dl_lg_case_open_abs_min`
@@ -164,8 +167,8 @@
 - `dl_lg_last_witnessed_kind`
 - `dl_lg_last_witnessed_area`
 - `dl_lg_last_witnessed_abs_min`
-
-- `dl_cr_case_state` **не используется** и должен отсутствовать (legacy-локал удалён из runtime-контракта).
+- `dl_lg_case_resolution` (`fine` / `detain_complete`)
+- `dl_lg_case_fine`
 
 ### 3.3 Area locals с anchor-точками (что вы назвали «локализации»)
 
@@ -243,7 +246,9 @@ Social anchors:
 
 ## Legal v1 notes
 
-- Witnessed crime теперь делает handoff в legal-case runtime-состояние (`dl_lg_case_state=active`) без записи в любые `dl_cr_*_case_state`.
+- Witnessed crime теперь делает handoff в legal-case runtime-состояние (`dl_lg_case_state=active`).
 - При сдаче (`dl_cr_detain_accept`) legal-case переходит в `detained`.
 - При отказе (`dl_cr_detain_refuse`) legal severity повышается.
-- Текущая стадия: реализован `legal witness lifecycle v1 scaffold`; полный судебный/расследовательский контур остаётся следующим этапом.
+- Для простого финализатора без “полного суда”:
+  - `dl_lg_resolve_fine` закрывает кейс как `fine`;
+  - `dl_lg_resolve_detain` закрывает кейс как `detain_complete`.

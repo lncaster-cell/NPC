@@ -107,24 +107,12 @@ object DL_CR_ResolveResponsibleActor(object oActor)
 
 string DL_CR_GetEpisodeCooldownKey(object oOffender)
 {
-    string sActorKey = "";
-    if (DL_IsRuntimePlayer(oOffender))
+    string sTag = GetTag(oOffender);
+    if (sTag == "")
     {
-        // NWN2-safe stable key for player identity across sessions.
-        sActorKey = GetPCPublicCDKey(oOffender);
+        sTag = "unknown";
     }
-
-    if (sActorKey == "")
-    {
-        sActorKey = GetTag(oOffender);
-    }
-
-    if (sActorKey == "")
-    {
-        sActorKey = "unknown";
-    }
-
-    return "dl_cr_cd_" + sActorKey;
+    return "dl_cr_cd_" + sTag;
 }
 
 int DL_CR_IsGuardVictim(object oVictim)
@@ -264,7 +252,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
         }
     }
 
-    string sCooldownKey = "dl_cr_guard_react_" + DL_CR_GetEpisodeCooldownKey(oSeen);
+    string sCooldownKey = "dl_cr_guard_react_" + GetTag(oSeen);
     if (GetLocalInt(oGuard, sCooldownKey) > nNowAbsMin)
     {
         return;

@@ -1,6 +1,6 @@
 # Development Status (RU)
 
-> Обновлено: **2026-04-21**
+> Обновлено: **2026-04-20**
 
 ## 1) Runtime-срез проекта (полный инвентарь реализованного)
 
@@ -69,7 +69,8 @@
   - ✅ theft/burglary ingress v1 добавлен (`OnDisturbed`, `OnOpen`, restricted trigger `OnEnter`) с witness-gated немедленной реакцией;
   - ✅ detain flow v1 добавлен: witness shout, ограниченный отклик ближайших guard-постов, диалог сдачи и телепорт в jail waypoint при согласии;
   - ✅ perf-tuning v1: witness/guard поиск переведён на bounded shape-итераторы с cap-ограничениями и perception seen/heard фильтрацией;
-  - ✅ legal witness lifecycle v1 scaffold добавлен: witnessed handoff в legal-case state, переходы `active -> detained/resolved`;
+  - ✅ legal witness lifecycle v1 scaffold добавлен: witnessed handoff в legal-case state, переходы `active -> detained/resolved`.
+  - ✅ legal v1.1 simple finalizer добавлен: `fine`/`detain_complete` резолв кейса без ввода полного суда.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
@@ -108,14 +109,6 @@
   - ограниченный отклик ближайших guard-постов;
   - detain dialog handoff и jail teleport.
 
-## 4.2 Точечные runtime-правки на 2026-04-21
-
-- README дополнен отдельной политикой обновления документации и явным чеком синхронизации `README + STATUS + UNIFIED`.
-- Зафиксировано требование: в документации указывать `⏳ validation pending` для сценариев, которые ещё не подтверждены owner-run.
-- Подтверждён процессный приоритет: сначала проверка штатных механизмов NWScript/NWN2 по NWN Lexicon, затем только минимальные адаптеры при необходимости.
-- В runtime-контуре регистрации NPC зафиксирован reconcile меж-area миграции активного NPC: `reg_count/reg_seq` теперь корректируются на old/new area без ухода счётчика ниже нуля.
-- В City Response устранены multiplayer-коллизии cooldown-ключей: anti-spam и guard-react ключи нормализованы через `GetPCPublicCDKey` (с безопасным fallback), чтобы разные PC с одинаковым tag не делили один cooldown.
-
 ## 5) Ограничения и политика (не менялись)
 
 - Все решения проверять через встроенные механики NWN2/NWScript и NWN Lexicon.
@@ -128,4 +121,3 @@
 - `daily_life/post_refactor_audit_pass5.md`
 - `daily_life/post_refactor_audit_pass6_deep.md`
 - `daily_life/post_refactor_audit_pass7.md`
-- `daily_life/post_refactor_audit_pass11.md`
