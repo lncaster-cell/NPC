@@ -40,6 +40,8 @@ void DL_ProcessResync(object oNpc)
         return;
     }
 
+    DL_ReconcileNpcAreaRegistration(oNpc);
+
     if (GetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING) != TRUE)
     {
         return;

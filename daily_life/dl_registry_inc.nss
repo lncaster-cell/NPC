@@ -1,6 +1,8 @@
 const string DL_L_AREA_TIER = "dl_area_tier";
 const string DL_L_AREA_REG_COUNT = "dl_reg_count";
 const string DL_L_AREA_REG_SEQ = "dl_reg_seq";
+const string DL_L_AREA_REG_SLOT_PREFIX = "dl_reg_slot_";
+const string DL_L_NPC_REG_SLOT = "dl_npc_reg_slot";
 const string DL_L_AREA_WORKER_TICK = "dl_worker_tick";
 
 const int DL_TIER_FROZEN = 0;
@@ -256,6 +258,30 @@ void DL_SetModuleNpcBudgetPerMinute(int nBudget)
 int DL_GetCurrentMinuteKey()
 {
     return GetTimeHour() * 60 + GetTimeMinute();
+}
+
+string DL_GetAreaRegistrySlotKey(int nSlot)
+{
+    if (nSlot < 0)
+    {
+        nSlot = 0;
+    }
+    return DL_L_AREA_REG_SLOT_PREFIX + IntToString(nSlot);
+}
+
+object DL_GetAreaRegistryNpcAtSlot(object oArea, int nSlot)
+{
+    return GetLocalObject(oArea, DL_GetAreaRegistrySlotKey(nSlot));
+}
+
+void DL_SetAreaRegistryNpcAtSlot(object oArea, int nSlot, object oNpc)
+{
+    SetLocalObject(oArea, DL_GetAreaRegistrySlotKey(nSlot), oNpc);
+}
+
+void DL_DeleteAreaRegistrySlot(object oArea, int nSlot)
+{
+    DeleteLocalObject(oArea, DL_GetAreaRegistrySlotKey(nSlot));
 }
 
 void DL_EnsureModuleNpcBudgetWindow()
@@ -693,6 +719,7 @@ void DL_RegisterNpc(object oNpc)
 
     if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) == TRUE)
     {
+        DL_ReconcileNpcAreaRegistration(oNpc);
         return;
     }
 
@@ -710,10 +737,62 @@ void DL_RegisterNpc(object oNpc)
     object oArea = GetArea(oNpc);
     if (GetIsObjectValid(oArea))
     {
+        int nSlot = GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
+        if (nSlot < 0)
+        {
+            nSlot = 0;
+        }
+
+        DL_SetAreaRegistryNpcAtSlot(oArea, nSlot, oNpc);
+        SetLocalInt(oNpc, DL_L_NPC_REG_SLOT, nSlot);
         SetLocalObject(oNpc, DL_L_NPC_REG_AREA, oArea);
-        SetLocalInt(oArea, DL_L_AREA_REG_COUNT, GetLocalInt(oArea, DL_L_AREA_REG_COUNT) + 1);
+        SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nSlot + 1);
         SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
     }
+}
+
+void DL_ReconcileNpcAreaRegistration(object oNpc)
+{
+    if (!DL_IsActivePipelineNpc(oNpc))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) != TRUE)
+    {
+        return;
+    }
+
+    object oCurrentArea = GetArea(oNpc);
+    object oRegisteredArea = GetLocalObject(oNpc, DL_L_NPC_REG_AREA);
+    if (oCurrentArea == oRegisteredArea)
+    {
+        return;
+    }
+
+    if (GetIsObjectValid(oRegisteredArea))
+    {
+        int nRegisteredCount = GetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT);
+        if (nRegisteredCount > 0)
+        {
+            SetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT, nRegisteredCount - 1);
+        }
+        else
+        {
+            SetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT, 0);
+        }
+        SetLocalInt(oRegisteredArea, DL_L_AREA_REG_SEQ, GetLocalInt(oRegisteredArea, DL_L_AREA_REG_SEQ) + 1);
+    }
+
+    if (GetIsObjectValid(oCurrentArea))
+    {
+        SetLocalInt(oCurrentArea, DL_L_AREA_REG_COUNT, GetLocalInt(oCurrentArea, DL_L_AREA_REG_COUNT) + 1);
+        SetLocalInt(oCurrentArea, DL_L_AREA_REG_SEQ, GetLocalInt(oCurrentArea, DL_L_AREA_REG_SEQ) + 1);
+        SetLocalObject(oNpc, DL_L_NPC_REG_AREA, oCurrentArea);
+        return;
+    }
+
+    DeleteLocalObject(oNpc, DL_L_NPC_REG_AREA);
 }
 
 void DL_UnregisterNpc(object oNpc)
@@ -743,6 +822,7 @@ void DL_UnregisterNpc(object oNpc)
         return;
     }
 
+    int nNpcSlot = GetLocalInt(oNpc, DL_L_NPC_REG_SLOT);
     DeleteLocalInt(oNpc, DL_L_NPC_REG_ON);
 
     object oArea = GetArea(oNpc);
@@ -756,11 +836,32 @@ void DL_UnregisterNpc(object oNpc)
         int nCount = GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
         if (nCount > 0)
         {
-            SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nCount - 1);
+            int nLastSlot = nCount - 1;
+            if (nNpcSlot >= 0 && nNpcSlot <= nLastSlot)
+            {
+                if (nNpcSlot != nLastSlot)
+                {
+                    object oTailNpc = DL_GetAreaRegistryNpcAtSlot(oArea, nLastSlot);
+                    DL_SetAreaRegistryNpcAtSlot(oArea, nNpcSlot, oTailNpc);
+                    if (GetIsObjectValid(oTailNpc))
+                    {
+                        SetLocalInt(oTailNpc, DL_L_NPC_REG_SLOT, nNpcSlot);
+                        SetLocalObject(oTailNpc, DL_L_NPC_REG_AREA, oArea);
+                    }
+                }
+
+                DL_DeleteAreaRegistrySlot(oArea, nLastSlot);
+                SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nLastSlot);
+            }
+            else
+            {
+                SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nLastSlot);
+            }
         }
         SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
     }
 
     DeleteLocalObject(oNpc, DL_L_NPC_REG_AREA);
+    DeleteLocalInt(oNpc, DL_L_NPC_REG_SLOT);
     DeleteLocalString(oNpc, DL_L_NPC_DIAG_LAST_SIG);
 }
