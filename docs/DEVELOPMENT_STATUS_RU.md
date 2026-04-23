@@ -114,6 +114,7 @@
 - Зафиксировано требование: в документации указывать `⏳ validation pending` для сценариев, которые ещё не подтверждены owner-run.
 - Подтверждён процессный приоритет: сначала проверка штатных механизмов NWScript/NWN2 по NWN Lexicon, затем только минимальные адаптеры при необходимости.
 - В runtime-контуре регистрации NPC зафиксирован reconcile меж-area миграции активного NPC: `reg_count/reg_seq` теперь корректируются на old/new area без ухода счётчика ниже нуля.
+- В City Response устранены multiplayer-коллизии cooldown-ключей: anti-spam и guard-react ключи нормализованы через `GetPCPublicCDKey` (с безопасным fallback), чтобы разные PC с одинаковым tag не делили один cooldown.
 
 ## 5) Ограничения и политика (не менялись)
 
@@ -127,3 +128,4 @@
 - `daily_life/post_refactor_audit_pass5.md`
 - `daily_life/post_refactor_audit_pass6_deep.md`
 - `daily_life/post_refactor_audit_pass7.md`
+- `daily_life/post_refactor_audit_pass11.md`
