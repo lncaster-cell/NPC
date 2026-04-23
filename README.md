@@ -155,7 +155,7 @@
 
 Заполняются runtime автоматически (вручную не проставлять):
 
-- `dl_lg_case_state` (`0 none / 1 active / 2 detained / 3 resolved`)
+- `dl_lg_case_state` (`0 none / 1 active / 2 detained / 3 resolved`) — **единственный** runtime case-state локал для legal flow.
 - `dl_lg_case_kind`
 - `dl_lg_case_severity`
 - `dl_lg_case_open_abs_min`
@@ -164,6 +164,8 @@
 - `dl_lg_last_witnessed_kind`
 - `dl_lg_last_witnessed_area`
 - `dl_lg_last_witnessed_abs_min`
+
+- `dl_cr_case_state` **не используется** и должен отсутствовать (legacy-локал удалён из runtime-контракта).
 
 ### 3.3 Area locals с anchor-точками (что вы назвали «локализации»)
 
@@ -241,7 +243,7 @@ Social anchors:
 
 ## Legal v1 notes
 
-- Witnessed crime теперь делает handoff в legal-case runtime-состояние (`dl_lg_case_state=active`).
+- Witnessed crime теперь делает handoff в legal-case runtime-состояние (`dl_lg_case_state=active`) без записи в любые `dl_cr_*_case_state`.
 - При сдаче (`dl_cr_detain_accept`) legal-case переходит в `detained`.
 - При отказе (`dl_cr_detain_refuse`) legal severity повышается.
 - Текущая стадия: реализован `legal witness lifecycle v1 scaffold`; полный судебный/расследовательский контур остаётся следующим этапом.
