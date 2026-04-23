@@ -122,6 +122,12 @@
 
 ## 7) Runtime Truth / Activity Journal (Daily Life)
 
+### 2026-04-21 — фиксация канонического статуса Legal (City Response)
+
+- Устранён конфликт формулировок между документами по стадии Legal.
+- Канонический факт: `legal witness lifecycle v1 scaffold` уже реализован (witnessed handoff + переходы `active -> detained/resolved`).
+- Полный судебный/расследовательский legal-контур зафиксирован как следующий этап, не входящий в текущий v1 runtime.
+
 ### 2026-04-21 — процессная синхронизация документации (README + docs)
 
 - Зафиксирован обязательный процесс синхронизации документации в каждом runtime-коммите: `README` + `DEVELOPMENT_STATUS` + (при архитектурных изменениях) `UNIFIED`.
@@ -338,6 +344,7 @@
   - если `DL_L_AREA_REG_COUNT == 0`, включается throttled bounded registry-reconcile (редкий и лимитированный scan), чтобы восстановиться после пропущенных lifecycle/register событий;
   - при успешном reconcile worker возвращается к registry-driven pass без полного area-scan;
   - `pass_last_seen` фиксируется из реестра (`DL_L_AREA_REG_COUNT`) как стабильный размер логического окна round-robin, без перехода к scan-derived значению.
+  - меж-area миграция уже зарегистрированного активного NPC теперь корректирует `DL_L_AREA_REG_COUNT` и `DL_L_AREA_REG_SEQ` в обеих area (old/new) через reconcile-path, с защитой от двойного декремента ниже нуля.
 - Это следует практикам NWN Lexicon:
   - избегать частых полных area-обходов (`GetFirstObjectInArea` / `GetNextObjectInArea`);
   - оставлять event/registry-driven модель как приоритет над «сканировать всё каждый тик».

@@ -182,6 +182,8 @@ void DL_WorkerTouchNpc(object oNpc)
         return;
     }
 
+    DL_ReconcileNpcAreaRegistration(oNpc);
+
     if (GetLocalInt(oNpc, DL_L_NPC_REG_ON) != TRUE)
     {
         DL_RegisterNpc(oNpc);
@@ -310,7 +312,13 @@ void DL_RunAreaWarmMaintenanceTick(object oArea)
     }
     else
     {
-        DL_SetAreaWorkerCursor(oArea, (nCursor + nNpcProcessed) % nNpcSeen);
+        int nCursorAdvance = nNpcProcessed;
+        if (nCursorAdvance <= 0)
+        {
+            // Avoid same-window stalls when all candidates in this tick were skipped by dedupe gates.
+            nCursorAdvance = 1;
+        }
+        DL_SetAreaWorkerCursor(oArea, (nCursor + nCursorAdvance) % nNpcSeen);
     }
 
     SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, nNpcProcessed);
@@ -370,7 +378,13 @@ void DL_RunAreaWorkerTick(object oArea)
     }
     else
     {
-        DL_SetAreaWorkerCursor(oArea, (nCursor + nNpcProcessed) % nNpcSeen);
+        int nCursorAdvance = nNpcProcessed;
+        if (nCursorAdvance <= 0)
+        {
+            // Avoid same-window stalls when all candidates in this tick were skipped by dedupe gates.
+            nCursorAdvance = 1;
+        }
+        DL_SetAreaWorkerCursor(oArea, (nCursor + nCursorAdvance) % nNpcSeen);
     }
 
     object oModule = GetModule();
