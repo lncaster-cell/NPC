@@ -6,6 +6,10 @@ const string DL_L_MODULE_CR_LAST_ABS_MIN = "dl_cr_last_abs_min";
 const string DL_L_NPC_CR_OFFENDER_UNTIL = "dl_cr_offender_until";
 const string DL_L_NPC_CR_LAST_INCIDENT_ABS_MIN = "dl_cr_last_incident_abs_min";
 const string DL_L_AREA_CR_ENABLED = "dl_city_response_enabled";
+const string DL_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
+const string DL_L_PC_CR_DETAIN_PENDING = "dl_cr_detain_pending";
+const string DL_L_NPC_CR_INVESTIGATE_TARGET = "dl_cr_investigate_target";
+const string DL_L_NPC_CR_INVESTIGATE_UNTIL = "dl_cr_investigate_until";
 
 const int DL_CR_HEAT_MIN = 0;
 const int DL_CR_HEAT_MAX = 100;
@@ -13,6 +17,11 @@ const int DL_CR_EPISODE_COOLDOWN_MIN = 1; // one heat increment per attacker->vi
 const int DL_CR_OFFENDER_TTL_MIN = 5;
 const int DL_CR_DECAY_INTERVAL_MIN = 5;
 const int DL_CR_DECAY_PER_STEP = 10;
+
+const string DL_CR_KEY_PREFIX_EPISODE = "dl_cr_cd_";
+const string DL_CR_KEY_PREFIX_GUARD_REACT = "dl_cr_guard_react_";
+const string DL_CR_KEY_UNKNOWN_IDENTITY = "unknown";
+const string DL_CR_DETAIN_DIALOG_DEFAULT = "dl_cr_guard_detain";
 
 int DL_CR_IsEnabledForArea(object oArea)
 {
@@ -105,25 +114,43 @@ object DL_CR_ResolveResponsibleActor(object oActor)
     return OBJECT_INVALID;
 }
 
-string DL_CR_GetEpisodeCooldownKey(object oOffender)
+string DL_CR_GetOffenderIdentityKey(object oOffender)
 {
-    string sActorKey = "";
+    if (!GetIsObjectValid(oOffender))
+    {
+        return DL_CR_KEY_UNKNOWN_IDENTITY;
+    }
+
     if (DL_IsRuntimePlayer(oOffender))
     {
-        sActorKey = GetPCPublicCDKey(oOffender);
+        string sPublicCdKey = GetPCPublicCDKey(oOffender, TRUE);
+        if (sPublicCdKey != "")
+        {
+            return sPublicCdKey;
+        }
     }
 
-    if (sActorKey == "")
+    string sIdentity = ObjectToString(oOffender);
+    if (sIdentity == "")
     {
-        sActorKey = GetTag(oOffender);
+        sIdentity = GetTag(oOffender);
     }
-
-    if (sActorKey == "")
+    if (sIdentity == "")
     {
-        sActorKey = "unknown";
+        sIdentity = DL_CR_KEY_UNKNOWN_IDENTITY;
     }
 
-    return "dl_cr_cd_" + sActorKey;
+    return GetStringLowerCase(sIdentity);
+}
+
+string DL_CR_GetEpisodeCooldownKey(object oOffender)
+{
+    return DL_CR_KEY_PREFIX_EPISODE + DL_CR_GetOffenderIdentityKey(oOffender);
+}
+
+string DL_CR_GetGuardReactionCooldownKey(object oOffender)
+{
+    return DL_CR_KEY_PREFIX_GUARD_REACT + DL_CR_GetOffenderIdentityKey(oOffender);
 }
 
 int DL_CR_IsGuardVictim(object oVictim)
@@ -251,19 +278,19 @@ void DL_CR_HandleGuardPerception(object oGuard)
     int nNowAbsMin = DL_GetAbsoluteMinute();
     if (nLevel < 3)
     {
-        if (GetLocalInt(oSeen, "dl_cr_detain_pending") != TRUE)
+        if (GetLocalInt(oSeen, DL_L_PC_CR_DETAIN_PENDING) != TRUE)
         {
             return;
         }
 
-        if (GetLocalObject(oGuard, "dl_cr_investigate_target") != oSeen ||
-            GetLocalInt(oGuard, "dl_cr_investigate_until") < nNowAbsMin)
+        if (GetLocalObject(oGuard, DL_L_NPC_CR_INVESTIGATE_TARGET) != oSeen ||
+            GetLocalInt(oGuard, DL_L_NPC_CR_INVESTIGATE_UNTIL) < nNowAbsMin)
         {
             return;
         }
     }
 
-    string sCooldownKey = "dl_cr_guard_react_" + DL_CR_GetEpisodeCooldownKey(oSeen);
+    string sCooldownKey = DL_CR_GetGuardReactionCooldownKey(oSeen);
     if (GetLocalInt(oGuard, sCooldownKey) > nNowAbsMin)
     {
         return;
@@ -277,10 +304,10 @@ void DL_CR_HandleGuardPerception(object oGuard)
         return;
     }
 
-    string sDialogResRef = GetLocalString(GetModule(), "dl_cr_detain_dialog");
+    string sDialogResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
     if (sDialogResRef == "")
     {
-        sDialogResRef = "dl_cr_guard_detain";
+        sDialogResRef = DL_CR_DETAIN_DIALOG_DEFAULT;
     }
 
     ActionMoveToObject(oSeen, TRUE, 2.0);

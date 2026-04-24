@@ -75,10 +75,23 @@
   - ✅ attack/kill ingress готов;
   - ✅ theft/burglary ingress v1 добавлен с witness-gated реакцией;
   - ✅ detain flow v1 добавлен: witness shout, ограниченный отклик ближайших guard-постов, диалог сдачи и телепорт в jail waypoint при согласии;
-  - ✅ first witnessed theft/restricted incidents теперь должны будить guard даже при свежем `dl_cr_level=0`;
-  - ✅ legal witness lifecycle v1 scaffold добавлен: witnessed handoff в `dl_lg_case_state`;
-  - ✅ `dl_lg_case_state` является единственным runtime case-state legal flow; `dl_cr_case_state` не используется;
-  - ✅ legal v1.1 simple finalizer добавлен: `fine`/`detain_complete` закрывают кейс и очищают City Response pursuit/detain state;
+  - ✅ perf-tuning v1: witness/guard поиск переведён на bounded shape-итераторы с cap-ограничениями и perception seen/heard фильтрацией;
+  - ✅ legal witness lifecycle v1 scaffold добавлен: witnessed handoff в legal-case state, переходы `active -> detained/resolved`.
+  - ✅ legal v1.1 simple finalizer добавлен: `fine`/`detain_complete` резолв кейса без ввода полного суда.
+  - ✅ cooldown key normalization v1: anti-spam ключи инцидентов/реакции guard переведены на `GetPCPublicCDKey` (с fallback на tag), устранены multiplayer-коллизии при одинаковом PC tag.
+  - ✅ cooldown key contract hardening: введены единые prefix-константы и специализированные helper-функции для incident/guard reaction ключей, чтобы исключить дрейф форматов.
+  - ✅ identity normalization hardening: fallback-chain уточнён (`GetPCPublicCDKey(..., TRUE)` -> `ObjectToString` -> tag/unknown), при этом built-in public key остаётся каноническим без модификации.
+  - ✅ city-response constants cleanup: магические строки legal/detain local keys вынесены в именованные константы для безопасного сопровождения без изменения runtime-поведения.
+  - ✅ witness shout anti-spam hardening: cooldown ключ witness-shout переведён с `GetTag` на нормализованный offender identity chain (public cd key/object id/tag fallback), устранён риск коллизий в multiplayer.
+  - ✅ include-scope dedupe cleanup: `dl_cr_crime_inc` переиспользует `DL_CR_GetOffenderIdentityKey` из `dl_city_response_inc`, устранено дублирование identity-helper/констант в общем include-графе `dl_core_inc`.
+  - ✅ include symbol isolation: пересекающиеся local-key константы в `dl_cr_crime_inc` переведены на `DL_CRIME_*` namespace, устранён риск redefinition-конфликтов в общем include-графе.
+  - ✅ detain default dedupe: `DL_CR_DETAIN_DIALOG_DEFAULT` централизован в city-response include и переиспользуется crime-flow, убран риск дрейфа fallback dialog resref.
+  - ✅ pending-key contract unification: `dl_cr_detain_pending` закреплён за единым символом `DL_L_PC_CR_DETAIN_PENDING` в city-response слое, crime-flow переиспользует этот контракт без дублирования объявления.
+  - ✅ hot-path micro-opt: в witness scan центр shape-итерации кэшируется (`location lCenter`) вместо повторных `GetLocation(oOffender)` вызовов внутри bounded-loop.
+  - ✅ witness scan micro-opt v2: perception-gate (`seen/heard`) вынесен перед `GetDistanceBetween`, что снижает число distance-вычислений для нерелевантных кандидатов.
+  - ✅ guard alert consistency fix: в `DL_CR_AlertNearbyGuards` добавлен perception-gate (`seen/heard`) перед distance ranking, что синхронизирует поведение с declared perf-policy и отсекает «слепые» guard-кандидаты.
+  - ✅ distance-ranking cleanup: магическое `1000000.0` в witness/guard ranking заменено на именованную константу `DL_CR_DISTANCE_INF` для единообразия и безопасного сопровождения.
+  - ✅ radius/responders contract hardening: `dl_cr_witness_radius` и `dl_cr_guard_alert_radius` теперь читаются через `GetLocalFloat` (с legacy-fallback на int), а `dl_cr_guard_responders_max` ограничен capability-лимитом алгоритма (до 2), чтобы runtime-конфиг отражал реальное поведение без скрытого дрейфа.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
