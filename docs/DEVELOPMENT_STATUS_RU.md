@@ -75,6 +75,7 @@
   - ✅ cooldown key contract hardening: введены единые prefix-константы и специализированные helper-функции для incident/guard reaction ключей, чтобы исключить дрейф форматов.
   - ✅ identity normalization hardening: fallback-chain уточнён (`GetPCPublicCDKey(..., TRUE)` -> `ObjectToString` -> tag/unknown), при этом built-in public key остаётся каноническим без модификации.
   - ✅ city-response constants cleanup: магические строки legal/detain local keys вынесены в именованные константы для безопасного сопровождения без изменения runtime-поведения.
+  - ✅ witness shout anti-spam hardening: cooldown ключ witness-shout переведён с `GetTag` на нормализованный offender identity chain (public cd key/object id/tag fallback), устранён риск коллизий в multiplayer.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
