@@ -116,17 +116,16 @@ string DL_CR_GetOffenderIdentityKey(object oOffender)
         return DL_CR_KEY_UNKNOWN_IDENTITY;
     }
 
-    string sIdentity = "";
     if (DL_IsRuntimePlayer(oOffender))
     {
-        sIdentity = GetPCPublicCDKey(oOffender);
+        string sPublicCdKey = GetPCPublicCDKey(oOffender);
+        if (sPublicCdKey != "")
+        {
+            return sPublicCdKey;
+        }
     }
 
-    if (sIdentity == "")
-    {
-        sIdentity = GetTag(oOffender);
-    }
-
+    string sIdentity = GetTag(oOffender);
     if (sIdentity == "")
     {
         sIdentity = DL_CR_KEY_UNKNOWN_IDENTITY;
