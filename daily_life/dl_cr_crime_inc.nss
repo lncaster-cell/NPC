@@ -15,7 +15,6 @@ const string DL_CRIME_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
 const string DL_L_MODULE_CR_JAIL_WP_TAG = "dl_cr_jail_wp_tag";
 const string DL_CRIME_L_NPC_CR_INVESTIGATE_TARGET = "dl_cr_investigate_target";
 const string DL_CRIME_L_NPC_CR_INVESTIGATE_UNTIL = "dl_cr_investigate_until";
-const string DL_L_PC_CR_CASE_STATE = "dl_cr_case_state";
 const string DL_L_PC_CR_LAST_GUARD = "dl_cr_last_guard";
 
 const float DL_CR_WITNESS_RADIUS_DEFAULT = 10.0;
@@ -28,9 +27,6 @@ const int DL_CR_WITNESS_SCAN_CAP = 24;
 const int DL_CR_GUARD_SCAN_CAP = 24;
 const string DL_CR_KEY_PREFIX_SHOUT_CD = "dl_cr_shout_cd_";
 const string DL_CR_JAIL_WP_TAG_DEFAULT = "dl_jail_entry_wp";
-const int DL_CR_CASE_STATE_NONE = 0;
-const int DL_CR_CASE_STATE_ACTIVE = 1;
-const int DL_CR_CASE_STATE_DETAINED = 2;
 const float DL_CR_DISTANCE_INF = 1000000.0;
 
 float DL_CR_GetWitnessRadius()
