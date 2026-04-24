@@ -141,10 +141,10 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
 
         if (DL_CR_IsWitnessCandidate(oObj, oOffender, oArea))
         {
-            float fDist = GetDistanceBetween(oObj, oOffender);
-            if (fDist <= fRadius && fDist < fBestDist)
+            if (GetObjectSeen(oObj, oOffender) || GetObjectHeard(oObj, oOffender))
             {
-                if (GetObjectSeen(oObj, oOffender) || GetObjectHeard(oObj, oOffender))
+                float fDist = GetDistanceBetween(oObj, oOffender);
+                if (fDist <= fRadius && fDist < fBestDist)
                 {
                     oBest = oObj;
                     fBestDist = fDist;
