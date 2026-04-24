@@ -11,6 +11,10 @@ const string DL_L_PC_LG_LAST_WITNESSED_KIND = "dl_lg_last_witnessed_kind";
 const string DL_L_PC_LG_LAST_WITNESSED_AREA = "dl_lg_last_witnessed_area";
 const string DL_L_PC_LG_LAST_WITNESSED_ABS_MIN = "dl_lg_last_witnessed_abs_min";
 
+const string DL_L_PC_LG_CR_DETAIN_PENDING = "dl_cr_detain_pending";
+const string DL_L_PC_LG_CR_LAST_GUARD = "dl_cr_last_guard";
+const string DL_L_PC_LG_CR_OFFENDER_UNTIL = "dl_cr_offender_until";
+
 const int DL_LG_CASE_STATE_NONE = 0;
 const int DL_LG_CASE_STATE_ACTIVE = 1;
 const int DL_LG_CASE_STATE_DETAINED = 2;
@@ -25,6 +29,18 @@ int DL_LG_GetDefaultFine()
         return 100;
     }
     return nFine;
+}
+
+void DL_LG_ClearCityResponsePursuitState(object oOffender)
+{
+    if (!DL_IsRuntimePlayer(oOffender))
+    {
+        return;
+    }
+
+    DeleteLocalInt(oOffender, DL_L_PC_LG_CR_DETAIN_PENDING);
+    DeleteLocalObject(oOffender, DL_L_PC_LG_CR_LAST_GUARD);
+    DeleteLocalInt(oOffender, DL_L_PC_LG_CR_OFFENDER_UNTIL);
 }
 
 int DL_LG_GetSeverityByKind(string sKind)
@@ -135,6 +151,7 @@ void DL_LG_ResolveCaseFine(object oOffender, int nFine)
         nFine = DL_LG_GetDefaultFine();
     }
 
+    DL_LG_ClearCityResponsePursuitState(oOffender);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_STATE, DL_LG_CASE_STATE_RESOLVED);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, DL_GetAbsoluteMinute());
     SetLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION, "fine");
@@ -153,6 +170,7 @@ void DL_LG_ResolveCaseDetainComplete(object oOffender)
         return;
     }
 
+    DL_LG_ClearCityResponsePursuitState(oOffender);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_STATE, DL_LG_CASE_STATE_RESOLVED);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, DL_GetAbsoluteMinute());
     SetLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION, "detain_complete");

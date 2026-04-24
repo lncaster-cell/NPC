@@ -16,7 +16,6 @@ const string DL_L_MODULE_CR_JAIL_WP_TAG = "dl_cr_jail_wp_tag";
 const string DL_L_PC_CR_DETAIN_PENDING = "dl_cr_detain_pending";
 const string DL_L_NPC_CR_INVESTIGATE_TARGET = "dl_cr_investigate_target";
 const string DL_L_NPC_CR_INVESTIGATE_UNTIL = "dl_cr_investigate_until";
-const string DL_L_PC_CR_CASE_STATE = "dl_cr_case_state";
 const string DL_L_PC_CR_LAST_GUARD = "dl_cr_last_guard";
 
 const float DL_CR_WITNESS_RADIUS_DEFAULT = 10.0;
@@ -28,9 +27,6 @@ const int DL_CR_WITNESS_SCAN_CAP = 24;
 const int DL_CR_GUARD_SCAN_CAP = 24;
 const string DL_CR_DETAIN_DIALOG_DEFAULT = "dl_cr_guard_detain";
 const string DL_CR_JAIL_WP_TAG_DEFAULT = "dl_jail_entry_wp";
-const int DL_CR_CASE_STATE_NONE = 0;
-const int DL_CR_CASE_STATE_ACTIVE = 1;
-const int DL_CR_CASE_STATE_DETAINED = 2;
 
 float DL_CR_GetWitnessRadius()
 {
@@ -80,6 +76,18 @@ string DL_CR_GetJailWaypointTag()
         return DL_CR_JAIL_WP_TAG_DEFAULT;
     }
     return sTag;
+}
+
+void DL_CR_ClearPursuitState(object oPc)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    DeleteLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING);
+    DeleteLocalObject(oPc, DL_L_PC_CR_LAST_GUARD);
+    DeleteLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
 }
 
 int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
@@ -213,9 +221,9 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     }
 
     int nLevel = GetLocalInt(GetModule(), DL_L_MODULE_CR_LEVEL);
-    if (nLevel <= 0)
+    if (nLevel < 1)
     {
-        return;
+        nLevel = 1;
     }
 
     float fRadius = DL_CR_GetGuardAlertRadius();
@@ -333,7 +341,6 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
 
     DL_LG_OnWitnessedIncident(oOffender, sKind, oArea, oWitness);
     SetLocalInt(oOffender, DL_L_PC_CR_DETAIN_PENDING, TRUE);
-    SetLocalInt(oOffender, DL_L_PC_CR_CASE_STATE, DL_CR_CASE_STATE_ACTIVE);
 
     int nHeat = DL_CR_GetCrimeHeat(sKind);
     DL_CR_RegisterIncident(oOffender, nHeat);
@@ -463,9 +470,7 @@ void DL_CR_HandleDetainAccepted(object oPc, object oGuard)
         return;
     }
 
-    DeleteLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING);
-    SetLocalInt(oPc, DL_L_PC_CR_CASE_STATE, DL_CR_CASE_STATE_DETAINED);
-    DeleteLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+    DL_CR_ClearPursuitState(oPc);
     DL_LG_OnDetained(oPc, oGuard);
 
     if (!DL_CR_TeleportToJail(oPc))
