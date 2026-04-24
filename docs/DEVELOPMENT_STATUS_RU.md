@@ -73,7 +73,7 @@
   - ✅ legal v1.1 simple finalizer добавлен: `fine`/`detain_complete` резолв кейса без ввода полного суда.
   - ✅ cooldown key normalization v1: anti-spam ключи инцидентов/реакции guard переведены на `GetPCPublicCDKey` (с fallback на tag), устранены multiplayer-коллизии при одинаковом PC tag.
   - ✅ cooldown key contract hardening: введены единые prefix-константы и специализированные helper-функции для incident/guard reaction ключей, чтобы исключить дрейф форматов.
-  - ✅ identity normalization hardening: fallback identity (tag/unknown) приводится к lower-case, при этом `GetPCPublicCDKey` используется как канонический встроенный ключ без модификации.
+  - ✅ identity normalization hardening: для player fallback-chain расширен (`GetPCPublicCDKey` -> `GetPCPlayerName` -> tag/unknown), при этом built-in public key остаётся каноническим без модификации.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
