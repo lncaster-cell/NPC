@@ -134,14 +134,14 @@ string DL_CR_GetOffenderIdentityKey(object oOffender)
     return GetStringLowerCase(sIdentity);
 }
 
-string DL_CR_GetCooldownKey(string sPrefix, object oOffender)
-{
-    return sPrefix + DL_CR_GetOffenderIdentityKey(oOffender);
-}
-
 string DL_CR_GetEpisodeCooldownKey(object oOffender)
 {
-    return DL_CR_GetCooldownKey(DL_CR_KEY_PREFIX_EPISODE, oOffender);
+    return DL_CR_KEY_PREFIX_EPISODE + DL_CR_GetOffenderIdentityKey(oOffender);
+}
+
+string DL_CR_GetGuardReactionCooldownKey(object oOffender)
+{
+    return DL_CR_KEY_PREFIX_GUARD_REACT + DL_CR_GetOffenderIdentityKey(oOffender);
 }
 
 int DL_CR_IsGuardVictim(object oVictim)
@@ -281,7 +281,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
         }
     }
 
-    string sCooldownKey = DL_CR_GetCooldownKey(DL_CR_KEY_PREFIX_GUARD_REACT, oSeen);
+    string sCooldownKey = DL_CR_GetGuardReactionCooldownKey(oSeen);
     if (GetLocalInt(oGuard, sCooldownKey) > nNowAbsMin)
     {
         return;

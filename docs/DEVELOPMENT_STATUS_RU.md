@@ -72,7 +72,7 @@
   - ✅ legal witness lifecycle v1 scaffold добавлен: witnessed handoff в legal-case state, переходы `active -> detained/resolved`.
   - ✅ legal v1.1 simple finalizer добавлен: `fine`/`detain_complete` резолв кейса без ввода полного суда.
   - ✅ cooldown key normalization v1: anti-spam ключи инцидентов/реакции guard переведены на `GetPCPublicCDKey` (с fallback на tag), устранены multiplayer-коллизии при одинаковом PC tag.
-  - ✅ cooldown key contract hardening: введены единые prefix-константы и общий builder ключей, чтобы исключить дрейф форматов между incident и guard reaction.
+  - ✅ cooldown key contract hardening: введены единые prefix-константы и специализированные helper-функции для incident/guard reaction ключей, чтобы исключить дрейф форматов.
   - ✅ identity normalization hardening: fallback identity (tag/unknown) приводится к lower-case, при этом `GetPCPublicCDKey` используется как канонический встроенный ключ без модификации.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
