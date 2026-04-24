@@ -13,7 +13,6 @@ const string DL_L_EVT_CR_AREA_TAG = "dl_cr_evt_area_tag";
 const string DL_L_MODULE_CR_GUARD_RESPONDERS_MAX = "dl_cr_guard_responders_max";
 const string DL_CRIME_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
 const string DL_L_MODULE_CR_JAIL_WP_TAG = "dl_cr_jail_wp_tag";
-const string DL_L_PC_CR_DETAIN_PENDING = "dl_cr_detain_pending";
 const string DL_CRIME_L_NPC_CR_INVESTIGATE_TARGET = "dl_cr_investigate_target";
 const string DL_CRIME_L_NPC_CR_INVESTIGATE_UNTIL = "dl_cr_investigate_until";
 const string DL_L_PC_CR_CASE_STATE = "dl_cr_case_state";

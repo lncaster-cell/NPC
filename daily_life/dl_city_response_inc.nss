@@ -7,7 +7,7 @@ const string DL_L_NPC_CR_OFFENDER_UNTIL = "dl_cr_offender_until";
 const string DL_L_NPC_CR_LAST_INCIDENT_ABS_MIN = "dl_cr_last_incident_abs_min";
 const string DL_L_AREA_CR_ENABLED = "dl_city_response_enabled";
 const string DL_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
-const string DL_L_NPC_CR_DETAIN_PENDING = "dl_cr_detain_pending";
+const string DL_L_PC_CR_DETAIN_PENDING = "dl_cr_detain_pending";
 const string DL_L_NPC_CR_INVESTIGATE_TARGET = "dl_cr_investigate_target";
 const string DL_L_NPC_CR_INVESTIGATE_UNTIL = "dl_cr_investigate_until";
 
@@ -277,7 +277,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
     int nNowAbsMin = DL_GetAbsoluteMinute();
     if (nLevel < 3)
     {
-        if (GetLocalInt(oSeen, DL_L_NPC_CR_DETAIN_PENDING) != TRUE)
+        if (GetLocalInt(oSeen, DL_L_PC_CR_DETAIN_PENDING) != TRUE)
         {
             return;
         }
