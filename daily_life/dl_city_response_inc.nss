@@ -14,6 +14,9 @@ const int DL_CR_OFFENDER_TTL_MIN = 5;
 const int DL_CR_DECAY_INTERVAL_MIN = 5;
 const int DL_CR_DECAY_PER_STEP = 10;
 
+const string DL_CR_KEY_PREFIX_EPISODE = "dl_cr_cd_";
+const string DL_CR_KEY_PREFIX_GUARD_REACT = "dl_cr_guard_react_";
+
 int DL_CR_IsEnabledForArea(object oArea)
 {
     if (!DL_IsRuntimeEnabled())
@@ -107,6 +110,11 @@ object DL_CR_ResolveResponsibleActor(object oActor)
 
 string DL_CR_GetOffenderIdentityKey(object oOffender)
 {
+    if (!GetIsObjectValid(oOffender))
+    {
+        return "unknown";
+    }
+
     string sIdentity = "";
     if (DL_IsRuntimePlayer(oOffender))
     {
@@ -126,9 +134,14 @@ string DL_CR_GetOffenderIdentityKey(object oOffender)
     return sIdentity;
 }
 
+string DL_CR_GetCooldownKey(string sPrefix, object oOffender)
+{
+    return sPrefix + DL_CR_GetOffenderIdentityKey(oOffender);
+}
+
 string DL_CR_GetEpisodeCooldownKey(object oOffender)
 {
-    return "dl_cr_cd_" + DL_CR_GetOffenderIdentityKey(oOffender);
+    return DL_CR_GetCooldownKey(DL_CR_KEY_PREFIX_EPISODE, oOffender);
 }
 
 int DL_CR_IsGuardVictim(object oVictim)
@@ -268,7 +281,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
         }
     }
 
-    string sCooldownKey = "dl_cr_guard_react_" + DL_CR_GetOffenderIdentityKey(oSeen);
+    string sCooldownKey = DL_CR_GetCooldownKey(DL_CR_KEY_PREFIX_GUARD_REACT, oSeen);
     if (GetLocalInt(oGuard, sCooldownKey) > nNowAbsMin)
     {
         return;
