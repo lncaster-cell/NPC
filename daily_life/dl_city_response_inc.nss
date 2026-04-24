@@ -16,6 +16,7 @@ const int DL_CR_DECAY_PER_STEP = 10;
 
 const string DL_CR_KEY_PREFIX_EPISODE = "dl_cr_cd_";
 const string DL_CR_KEY_PREFIX_GUARD_REACT = "dl_cr_guard_react_";
+const string DL_CR_KEY_UNKNOWN_IDENTITY = "unknown";
 
 int DL_CR_IsEnabledForArea(object oArea)
 {
@@ -112,7 +113,7 @@ string DL_CR_GetOffenderIdentityKey(object oOffender)
 {
     if (!GetIsObjectValid(oOffender))
     {
-        return "unknown";
+        return DL_CR_KEY_UNKNOWN_IDENTITY;
     }
 
     string sIdentity = "";
@@ -128,10 +129,10 @@ string DL_CR_GetOffenderIdentityKey(object oOffender)
 
     if (sIdentity == "")
     {
-        sIdentity = "unknown";
+        sIdentity = DL_CR_KEY_UNKNOWN_IDENTITY;
     }
 
-    return sIdentity;
+    return GetStringLowerCase(sIdentity);
 }
 
 string DL_CR_GetCooldownKey(string sPrefix, object oOffender)
