@@ -6,6 +6,10 @@ const string DL_L_MODULE_CR_LAST_ABS_MIN = "dl_cr_last_abs_min";
 const string DL_L_NPC_CR_OFFENDER_UNTIL = "dl_cr_offender_until";
 const string DL_L_NPC_CR_LAST_INCIDENT_ABS_MIN = "dl_cr_last_incident_abs_min";
 const string DL_L_AREA_CR_ENABLED = "dl_city_response_enabled";
+const string DL_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
+const string DL_L_NPC_CR_DETAIN_PENDING = "dl_cr_detain_pending";
+const string DL_L_NPC_CR_INVESTIGATE_TARGET = "dl_cr_investigate_target";
+const string DL_L_NPC_CR_INVESTIGATE_UNTIL = "dl_cr_investigate_until";
 
 const int DL_CR_HEAT_MIN = 0;
 const int DL_CR_HEAT_MAX = 100;
@@ -275,13 +279,13 @@ void DL_CR_HandleGuardPerception(object oGuard)
     int nNowAbsMin = DL_GetAbsoluteMinute();
     if (nLevel < 3)
     {
-        if (GetLocalInt(oSeen, "dl_cr_detain_pending") != TRUE)
+        if (GetLocalInt(oSeen, DL_L_NPC_CR_DETAIN_PENDING) != TRUE)
         {
             return;
         }
 
-        if (GetLocalObject(oGuard, "dl_cr_investigate_target") != oSeen ||
-            GetLocalInt(oGuard, "dl_cr_investigate_until") < nNowAbsMin)
+        if (GetLocalObject(oGuard, DL_L_NPC_CR_INVESTIGATE_TARGET) != oSeen ||
+            GetLocalInt(oGuard, DL_L_NPC_CR_INVESTIGATE_UNTIL) < nNowAbsMin)
         {
             return;
         }
@@ -301,7 +305,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
         return;
     }
 
-    string sDialogResRef = GetLocalString(GetModule(), "dl_cr_detain_dialog");
+    string sDialogResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
     if (sDialogResRef == "")
     {
         sDialogResRef = "dl_cr_guard_detain";
