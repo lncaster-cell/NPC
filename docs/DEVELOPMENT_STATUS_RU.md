@@ -43,7 +43,8 @@
 - Внедрён anti-degradation контур:
   - budget pressure detector;
   - adaptive cap для worker/resync при хроническом дефиците бюджета.
-- Deep audit pass 4/5/6/7 зафиксирован в репозитории; pass 7 закрыл `R7-1` (cursor modulo на observed population).
+- Area worker hot-path переведён на per-area slot registry с bounded fallback recovery.
+- Registry учитывает активных NPC через slot-based структуру и не полагается на полный area scan в обычном worker-проходе.
 
 ### 1.4 Diagnostics/Ops (реализовано)
 
@@ -53,20 +54,26 @@
   - problem summary и markup/stuck сигнализация без log spam.
 - Smoke-скрипты и вспомогательные проверки присутствуют (`dl_smk_*`, `dl_smoke_ev`).
 
-### 1.5 City Response (текущий реализованный объём)
+### 1.5 City Response + Legal v1 (текущий реализованный объём)
 
 - Реализован **базовый ingress атака/убийство** как продолжение Daily Life:
   - `dl_city_response_inc` (heat/level, lazy decay, offender TTL);
   - `dl_damaged` (OnDamaged ingress);
   - `dl_perception` (guard reaction ingress);
   - интеграция kill-эскалации в `dl_death`.
+- Реализованы theft/burglary/restricted ingress:
+  - `dl_disturbed` (`OnDisturbed`);
+  - `dl_open` (`OnOpen`);
+  - `dl_cr_restricted_trg` (`Trigger OnEnter`).
 - Производительный профиль:
   - без тяжёлых heartbeat-проходов;
-  - антиспам через attacker→victim cooldown (один инцидент на боевой эпизод);
-  - реакция guard по perception + throttling.
+  - антиспам через attacker/offender cooldown;
+  - witness/guard поиск через bounded shape-итераторы с cap-ограничениями;
+  - guard reaction по perception + throttling;
+  - cooldown-ключи runtime players нормализуются через `GetPCPublicCDKey` с fallback на tag.
 - Текущая стадия City Response:
   - ✅ attack/kill ingress готов;
-  - ✅ theft/burglary ingress v1 добавлен (`OnDisturbed`, `OnOpen`, restricted trigger `OnEnter`) с witness-gated немедленной реакцией;
+  - ✅ theft/burglary ingress v1 добавлен с witness-gated реакцией;
   - ✅ detain flow v1 добавлен: witness shout, ограниченный отклик ближайших guard-постов, диалог сдачи и телепорт в jail waypoint при согласии;
   - ✅ perf-tuning v1: witness/guard поиск переведён на bounded shape-итераторы с cap-ограничениями и perception seen/heard фильтрацией;
   - ✅ legal witness lifecycle v1 scaffold добавлен: witnessed handoff в legal-case state, переходы `active -> detained/resolved`.
@@ -93,13 +100,22 @@
 - Lifecycle ingress (spawn/death/blocked/userdef) не потерял базовые инварианты после рефакторинга include-слоя.
 - Worker/resync/budget pipeline сохраняет ограниченность обработки и метрики наблюдаемости.
 - City Response добавлен без архитектурного разрыва: через существующий Daily Life ingress и object-local/module-local контракты.
+- Legal v1 держит единый case-state в `dl_lg_case_state`, без дублирования через `dl_cr_case_state`.
 
 ## 3) Что ещё в owner-run validation (не закрыто)
 
 1. Weekend/public поведение на реальном модуле (включая reduced_work/off_public кейсы).
 2. Негативные markup-кейсы (missing/broken anchors, частично заполненные area tags).
 3. SOCIAL pair сценарии на живой карте (валидный/невалидный partner, fallback в PUBLIC).
-4. City Response калибровка:
+4. City Response + Legal v1 smoke:
+   - witnessed theft на свежем `dl_cr_level=0`;
+   - restricted entry;
+   - detain dialog: «Сдаться» / «Отказаться»;
+   - jail waypoint teleport;
+   - `dl_lg_resolve_fine`;
+   - `dl_lg_resolve_detain`;
+   - проверка, что после legal resolve guard больше не считает PC active offender.
+5. City Response калибровка:
    - heat thresholds;
    - offender TTL;
    - guard reaction stage policy;
@@ -107,27 +123,31 @@
 
 ## 4) Текущие приоритеты
 
-1. `P1`: owner-run валидация Daily Life matrix (weekday/weekend + негативные markup).
-2. `P1`: tuning budget pressure trigger/relief порогов по фактическим нагрузкам.
-3. `P1`: City Response tuning и фиксация контрактов для следующего этапа (theft/burglary/legal handoff).
+1. `P1`: owner-run smoke City Response + Legal v1 на живом модуле.
+2. `P1`: owner-run валидация Daily Life matrix (weekday/weekend + негативные markup).
+3. `P1`: tuning budget pressure trigger/relief порогов по фактическим нагрузкам.
 4. `P2`: точечная оптимизация transition/lookup churn в hot-tier area.
+5. `P2`: подготовка следующего этапа Legal — только после smoke-подтверждения v1.
 
-## 4.1 Что синхронизировано в документации на 2026-04-20
+## 4.1 Что синхронизировано в документации на 2026-04-24
 
-- README приведён к актуальному City Response v1 контракту:
-  - новые module locals `dl_cr_guard_responders_max`, `dl_cr_detain_dialog`, `dl_cr_jail_wp_tag`;
-  - обязательные шаги wiring для detain `.dlg` и jail waypoint;
-  - owner-run smoke-check по веткам «Сдаться/Отказаться».
+- README приведён к актуальному City Response + Legal v1.1 контракту:
+  - first witnessed crime должен оповещать guard даже при `dl_cr_level=0`;
+  - `dl_lg_case_state` — единственный legal case-state;
+  - `dl_cr_case_state` удалён из runtime-контракта;
+  - legal finalizers очищают pursuit/detain state.
 - Статус City Response согласован с фактическим кодом:
   - witness shout;
   - ограниченный отклик ближайших guard-постов;
-  - detain dialog handoff и jail teleport.
+  - detain dialog handoff и jail teleport;
+  - cleanup после legal resolve.
 
 ## 5) Ограничения и политика (не менялись)
 
 - Все решения проверять через встроенные механики NWN2/NWScript и NWN Lexicon.
 - Не вводить ad-hoc обходы, если есть штатная функция/паттерн.
 - Любая правка runtime должна сопровождаться синхронизацией этого файла.
+- Не добавлять heartbeat polling и полные area scan в hot path.
 
 ## 6) Артефакты аудита
 
@@ -135,3 +155,6 @@
 - `daily_life/post_refactor_audit_pass5.md`
 - `daily_life/post_refactor_audit_pass6_deep.md`
 - `daily_life/post_refactor_audit_pass7.md`
+- `daily_life/post_refactor_audit_pass8.md`
+- `daily_life/post_refactor_audit_pass9.md`
+- `daily_life/post_refactor_audit_pass11.md`

@@ -99,6 +99,18 @@ string DL_CR_GetJailWaypointTag()
     return sTag;
 }
 
+void DL_CR_ClearPursuitState(object oPc)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    DeleteLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING);
+    DeleteLocalObject(oPc, DL_L_PC_CR_LAST_GUARD);
+    DeleteLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+}
+
 int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
 {
     if (!GetIsObjectValid(oWitness) || !GetIsObjectValid(oOffender) || !GetIsObjectValid(oArea))
@@ -231,9 +243,9 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     }
 
     int nLevel = GetLocalInt(GetModule(), DL_L_MODULE_CR_LEVEL);
-    if (nLevel <= 0)
+    if (nLevel < 1)
     {
-        return;
+        nLevel = 1;
     }
 
     float fRadius = DL_CR_GetGuardAlertRadius();
@@ -354,7 +366,6 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
 
     DL_LG_OnWitnessedIncident(oOffender, sKind, oArea, oWitness);
     SetLocalInt(oOffender, DL_L_PC_CR_DETAIN_PENDING, TRUE);
-    SetLocalInt(oOffender, DL_L_PC_CR_CASE_STATE, DL_CR_CASE_STATE_ACTIVE);
 
     int nHeat = DL_CR_GetCrimeHeat(sKind);
     DL_CR_RegisterIncident(oOffender, nHeat);
@@ -484,9 +495,7 @@ void DL_CR_HandleDetainAccepted(object oPc, object oGuard)
         return;
     }
 
-    DeleteLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING);
-    SetLocalInt(oPc, DL_L_PC_CR_CASE_STATE, DL_CR_CASE_STATE_DETAINED);
-    DeleteLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+    DL_CR_ClearPursuitState(oPc);
     DL_LG_OnDetained(oPc, oGuard);
 
     if (!DL_CR_TeleportToJail(oPc))
