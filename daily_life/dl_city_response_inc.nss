@@ -127,15 +127,13 @@ string DL_CR_GetOffenderIdentityKey(object oOffender)
         {
             return sPublicCdKey;
         }
-
-        string sPlayerName = GetPCPlayerName(oOffender);
-        if (sPlayerName != "")
-        {
-            return GetStringLowerCase(sPlayerName);
-        }
     }
 
-    string sIdentity = GetTag(oOffender);
+    string sIdentity = ObjectToString(oOffender);
+    if (sIdentity == "")
+    {
+        sIdentity = GetTag(oOffender);
+    }
     if (sIdentity == "")
     {
         sIdentity = DL_CR_KEY_UNKNOWN_IDENTITY;
