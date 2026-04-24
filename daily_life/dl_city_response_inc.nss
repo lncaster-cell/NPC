@@ -118,7 +118,7 @@ string DL_CR_GetOffenderIdentityKey(object oOffender)
 
     if (DL_IsRuntimePlayer(oOffender))
     {
-        string sPublicCdKey = GetPCPublicCDKey(oOffender);
+        string sPublicCdKey = GetPCPublicCDKey(oOffender, TRUE);
         if (sPublicCdKey != "")
         {
             return sPublicCdKey;
