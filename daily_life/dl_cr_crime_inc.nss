@@ -21,6 +21,7 @@ const string DL_L_PC_CR_LAST_GUARD = "dl_cr_last_guard";
 const float DL_CR_WITNESS_RADIUS_DEFAULT = 10.0;
 const float DL_CR_GUARD_ALERT_RADIUS_DEFAULT = 20.0;
 const int DL_CR_GUARD_RESPONDERS_MAX_DEFAULT = 2;
+const int DL_CR_GUARD_RESPONDERS_MAX_CAP = 2;
 const int DL_CR_INVESTIGATE_TTL_MIN = 3;
 const int DL_CR_SHOUT_COOLDOWN_MIN = 1;
 const int DL_CR_WITNESS_SCAN_CAP = 24;
@@ -34,22 +35,34 @@ const float DL_CR_DISTANCE_INF = 1000000.0;
 
 float DL_CR_GetWitnessRadius()
 {
-    int nRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_WITNESS_RADIUS);
-    if (nRaw <= 0)
+    float fRaw = GetLocalFloat(GetModule(), DL_L_MODULE_CR_WITNESS_RADIUS);
+    if (fRaw > 0.0)
+    {
+        return fRaw;
+    }
+
+    int nLegacyRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_WITNESS_RADIUS);
+    if (nLegacyRaw <= 0)
     {
         return DL_CR_WITNESS_RADIUS_DEFAULT;
     }
-    return IntToFloat(nRaw);
+    return IntToFloat(nLegacyRaw);
 }
 
 float DL_CR_GetGuardAlertRadius()
 {
-    int nRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_GUARD_ALERT_RADIUS);
-    if (nRaw <= 0)
+    float fRaw = GetLocalFloat(GetModule(), DL_L_MODULE_CR_GUARD_ALERT_RADIUS);
+    if (fRaw > 0.0)
+    {
+        return fRaw;
+    }
+
+    int nLegacyRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_GUARD_ALERT_RADIUS);
+    if (nLegacyRaw <= 0)
     {
         return DL_CR_GUARD_ALERT_RADIUS_DEFAULT;
     }
-    return IntToFloat(nRaw);
+    return IntToFloat(nLegacyRaw);
 }
 
 int DL_CR_GetGuardRespondersMax()
@@ -58,6 +71,10 @@ int DL_CR_GetGuardRespondersMax()
     if (nRaw <= 0)
     {
         return DL_CR_GUARD_RESPONDERS_MAX_DEFAULT;
+    }
+    if (nRaw > DL_CR_GUARD_RESPONDERS_MAX_CAP)
+    {
+        return DL_CR_GUARD_RESPONDERS_MAX_CAP;
     }
     return nRaw;
 }
