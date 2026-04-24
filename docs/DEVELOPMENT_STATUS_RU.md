@@ -1,6 +1,6 @@
 # Development Status (RU)
 
-> Обновлено: **2026-04-20**
+> Обновлено: **2026-04-24**
 
 ## 1) Runtime-срез проекта (полный инвентарь реализованного)
 
@@ -71,6 +71,7 @@
   - ✅ perf-tuning v1: witness/guard поиск переведён на bounded shape-итераторы с cap-ограничениями и perception seen/heard фильтрацией;
   - ✅ legal witness lifecycle v1 scaffold добавлен: witnessed handoff в legal-case state, переходы `active -> detained/resolved`.
   - ✅ legal v1.1 simple finalizer добавлен: `fine`/`detain_complete` резолв кейса без ввода полного суда.
+  - ✅ cooldown key normalization v1: anti-spam ключи инцидентов/реакции guard переведены на `GetPCPublicCDKey` (с fallback на tag), устранены multiplayer-коллизии при одинаковом PC tag.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода

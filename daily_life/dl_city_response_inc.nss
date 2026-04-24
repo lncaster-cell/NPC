@@ -105,14 +105,30 @@ object DL_CR_ResolveResponsibleActor(object oActor)
     return OBJECT_INVALID;
 }
 
+string DL_CR_GetOffenderIdentityKey(object oOffender)
+{
+    string sIdentity = "";
+    if (DL_IsRuntimePlayer(oOffender))
+    {
+        sIdentity = GetPCPublicCDKey(oOffender);
+    }
+
+    if (sIdentity == "")
+    {
+        sIdentity = GetTag(oOffender);
+    }
+
+    if (sIdentity == "")
+    {
+        sIdentity = "unknown";
+    }
+
+    return sIdentity;
+}
+
 string DL_CR_GetEpisodeCooldownKey(object oOffender)
 {
-    string sTag = GetTag(oOffender);
-    if (sTag == "")
-    {
-        sTag = "unknown";
-    }
-    return "dl_cr_cd_" + sTag;
+    return "dl_cr_cd_" + DL_CR_GetOffenderIdentityKey(oOffender);
 }
 
 int DL_CR_IsGuardVictim(object oVictim)
@@ -252,7 +268,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
         }
     }
 
-    string sCooldownKey = "dl_cr_guard_react_" + GetTag(oSeen);
+    string sCooldownKey = "dl_cr_guard_react_" + DL_CR_GetOffenderIdentityKey(oSeen);
     if (GetLocalInt(oGuard, sCooldownKey) > nNowAbsMin)
     {
         return;
