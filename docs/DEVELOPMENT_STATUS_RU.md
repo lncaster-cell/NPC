@@ -76,6 +76,7 @@
   - ✅ identity normalization hardening: fallback-chain уточнён (`GetPCPublicCDKey(..., TRUE)` -> `ObjectToString` -> tag/unknown), при этом built-in public key остаётся каноническим без модификации.
   - ✅ city-response constants cleanup: магические строки legal/detain local keys вынесены в именованные константы для безопасного сопровождения без изменения runtime-поведения.
   - ✅ witness shout anti-spam hardening: cooldown ключ witness-shout переведён с `GetTag` на нормализованный offender identity chain (public cd key/object id/tag fallback), устранён риск коллизий в multiplayer.
+  - ✅ include-scope dedupe cleanup: `dl_cr_crime_inc` переиспользует `DL_CR_GetOffenderIdentityKey` из `dl_city_response_inc`, устранено дублирование identity-helper/констант в общем include-графе `dl_core_inc`.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода

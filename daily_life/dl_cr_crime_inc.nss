@@ -27,7 +27,6 @@ const int DL_CR_SHOUT_COOLDOWN_MIN = 1;
 const int DL_CR_WITNESS_SCAN_CAP = 24;
 const int DL_CR_GUARD_SCAN_CAP = 24;
 const string DL_CR_KEY_PREFIX_SHOUT_CD = "dl_cr_shout_cd_";
-const string DL_CR_KEY_UNKNOWN_IDENTITY = "unknown";
 const string DL_CR_DETAIN_DIALOG_DEFAULT = "dl_cr_guard_detain";
 const string DL_CR_JAIL_WP_TAG_DEFAULT = "dl_jail_entry_wp";
 const int DL_CR_CASE_STATE_NONE = 0;
@@ -164,35 +163,6 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
     return oBest;
 }
 
-string DL_CR_GetOffenderIdentityForCooldown(object oOffender)
-{
-    if (!GetIsObjectValid(oOffender))
-    {
-        return DL_CR_KEY_UNKNOWN_IDENTITY;
-    }
-
-    if (DL_IsRuntimePlayer(oOffender))
-    {
-        string sPublicCdKey = GetPCPublicCDKey(oOffender, TRUE);
-        if (sPublicCdKey != "")
-        {
-            return sPublicCdKey;
-        }
-    }
-
-    string sIdentity = ObjectToString(oOffender);
-    if (sIdentity == "")
-    {
-        sIdentity = GetTag(oOffender);
-    }
-    if (sIdentity == "")
-    {
-        sIdentity = DL_CR_KEY_UNKNOWN_IDENTITY;
-    }
-
-    return GetStringLowerCase(sIdentity);
-}
-
 void DL_CR_WitnessShout(object oWitness, object oOffender)
 {
     if (!GetIsObjectValid(oWitness) || !DL_IsRuntimePlayer(oOffender))
@@ -200,7 +170,7 @@ void DL_CR_WitnessShout(object oWitness, object oOffender)
         return;
     }
 
-    string sKey = DL_CR_KEY_PREFIX_SHOUT_CD + DL_CR_GetOffenderIdentityForCooldown(oOffender);
+    string sKey = DL_CR_KEY_PREFIX_SHOUT_CD + DL_CR_GetOffenderIdentityKey(oOffender);
     int nNowAbsMin = DL_GetAbsoluteMinute();
     if (GetLocalInt(oWitness, sKey) > nNowAbsMin)
     {
