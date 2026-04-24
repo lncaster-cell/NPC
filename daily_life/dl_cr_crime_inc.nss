@@ -30,6 +30,7 @@ const string DL_CR_JAIL_WP_TAG_DEFAULT = "dl_jail_entry_wp";
 const int DL_CR_CASE_STATE_NONE = 0;
 const int DL_CR_CASE_STATE_ACTIVE = 1;
 const int DL_CR_CASE_STATE_DETAINED = 2;
+const float DL_CR_DISTANCE_INF = 1000000.0;
 
 float DL_CR_GetWitnessRadius()
 {
@@ -119,7 +120,7 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
     }
 
     object oBest = OBJECT_INVALID;
-    float fBestDist = 1000000.0;
+    float fBestDist = DL_CR_DISTANCE_INF;
     location lCenter = GetLocation(oOffender);
 
     object oObj = GetFirstObjectInShape(
@@ -222,8 +223,8 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     int nMaxResponders = DL_CR_GetGuardRespondersMax();
     object oBestA = OBJECT_INVALID;
     object oBestB = OBJECT_INVALID;
-    float fBestA = 1000000.0;
-    float fBestB = 1000000.0;
+    float fBestA = DL_CR_DISTANCE_INF;
+    float fBestB = DL_CR_DISTANCE_INF;
 
     location lCenter = GetLocation(oOffender);
     object oObj = GetFirstObjectInShape(
