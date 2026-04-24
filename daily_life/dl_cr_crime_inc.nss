@@ -121,11 +121,12 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
 
     object oBest = OBJECT_INVALID;
     float fBestDist = 1000000.0;
+    location lCenter = GetLocation(oOffender);
 
     object oObj = GetFirstObjectInShape(
         SHAPE_SPHERE,
         fRadius,
-        GetLocation(oOffender),
+        lCenter,
         FALSE,
         OBJECT_TYPE_CREATURE
     );
@@ -153,7 +154,7 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
         oObj = GetNextObjectInShape(
             SHAPE_SPHERE,
             fRadius,
-            GetLocation(oOffender),
+            lCenter,
             FALSE,
             OBJECT_TYPE_CREATURE
         );
