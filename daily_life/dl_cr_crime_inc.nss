@@ -245,20 +245,23 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
 
         if (DL_IsActivePipelineNpc(oObj) && DL_CR_IsGuardVictim(oObj))
         {
-            float fDist = GetDistanceBetween(oObj, oOffender);
-            if (fDist <= fRadius)
+            if (GetObjectSeen(oObj, oOffender) || GetObjectHeard(oObj, oOffender))
             {
-                if (fDist < fBestA)
+                float fDist = GetDistanceBetween(oObj, oOffender);
+                if (fDist <= fRadius)
                 {
-                    oBestB = oBestA;
-                    fBestB = fBestA;
-                    oBestA = oObj;
-                    fBestA = fDist;
-                }
-                else if (fDist < fBestB)
-                {
-                    oBestB = oObj;
-                    fBestB = fDist;
+                    if (fDist < fBestA)
+                    {
+                        oBestB = oBestA;
+                        fBestB = fBestA;
+                        oBestA = oObj;
+                        fBestA = fDist;
+                    }
+                    else if (fDist < fBestB)
+                    {
+                        oBestB = oObj;
+                        fBestB = fDist;
+                    }
                 }
             }
         }

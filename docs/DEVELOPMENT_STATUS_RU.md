@@ -81,6 +81,7 @@
   - ✅ pending-key contract unification: `dl_cr_detain_pending` закреплён за единым символом `DL_L_PC_CR_DETAIN_PENDING` в city-response слое, crime-flow переиспользует этот контракт без дублирования объявления.
   - ✅ hot-path micro-opt: в witness scan центр shape-итерации кэшируется (`location lCenter`) вместо повторных `GetLocation(oOffender)` вызовов внутри bounded-loop.
   - ✅ witness scan micro-opt v2: perception-gate (`seen/heard`) вынесен перед `GetDistanceBetween`, что снижает число distance-вычислений для нерелевантных кандидатов.
+  - ✅ guard alert consistency fix: в `DL_CR_AlertNearbyGuards` добавлен perception-gate (`seen/heard`) перед distance ranking, что синхронизирует поведение с declared perf-policy и отсекает «слепые» guard-кандидаты.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
