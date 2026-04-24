@@ -1,6 +1,6 @@
 # NPC (PysukSystems)
 
-> Обновлено: **2026-04-20**
+> Обновлено: **2026-04-24**
 
 ## Что это
 
@@ -11,12 +11,13 @@
 ## Текущий прогресс (кратко)
 
 - Daily Life работает как event-first/area-driven runtime-контур.
-- Post-refactor audit (pass 4) завершён и зафиксирован: `daily_life/post_refactor_audit_pass4.md`.
-- Главный технический приоритет: убрать same-heartbeat двойную обработку NPC при area-enter resync (R1) минимальной безопасной правкой.
+- Hot-path NPC worker переведён на per-area slot registry с bounded fallback recovery; полные area scan не используются в обычном проходе worker.
+- City Response + Legal v1 находятся на этапе стабилизации после интеграции: witnessed crime, guard detain flow и simple legal finalizers уже подключены.
+- Текущий технический приоритет: owner-run smoke/validation City Response + Legal v1 без расширения в полный судебный контур.
 
 ## Цели текущего этапа
 
-1. Снизить hot-path churn без архитектурного переписывания.
+1. Проверить City Response на живом модуле: witnessed theft, restricted entry, detain accept/refuse, fine и detain-complete.
 2. Довести owner-run валидацию сценариев будни/выходные и негативных markup-кейсов.
 3. Поддерживать документацию синхронной с фактическим состоянием `main`.
 
@@ -104,7 +105,7 @@
 Минимум:
 
 - `dl_enabled = 1` — включает runtime (при загрузке также ставится контракт `dl_contract_version=a0`).
-- `dl_city_response_enabled = 1` — включает City Response контур на уровне модуля (ветка атаки/убийства).
+- `dl_city_response_enabled = 1` — включает City Response контур на уровне модуля.
 - `dl_cr_witness_radius = 10` — радиус поиска свидетелей для crime ingress.
 - `dl_cr_guard_alert_radius = 20` — радиус немедленного оповещения guard после witnessed crime.
 - `dl_cr_guard_responders_max = 2` — сколько ближайших guard-постов реагируют на witnessed crime.
@@ -158,7 +159,7 @@
 
 Заполняются runtime автоматически (вручную не проставлять):
 
-- `dl_lg_case_state` (`0 none / 1 active / 2 detained / 3 resolved`)
+- `dl_lg_case_state` (`0 none / 1 active / 2 detained / 3 resolved`) — **единственный** runtime case-state локал legal flow.
 - `dl_lg_case_kind`
 - `dl_lg_case_severity`
 - `dl_lg_case_open_abs_min`
@@ -169,6 +170,8 @@
 - `dl_lg_last_witnessed_abs_min`
 - `dl_lg_case_resolution` (`fine` / `detain_complete`)
 - `dl_lg_case_fine`
+
+`dl_cr_case_state` не используется и не должен возвращаться в runtime-контракт.
 
 ### 3.3 Area locals с anchor-точками (что вы назвали «локализации»)
 
@@ -224,9 +227,10 @@ Social anchors:
 4. Проверьте, что в area реально есть anchors, на которые ссылаются локалки.
 5. Для smoke-проверок можно запускать вспомогательные скрипты `dl_smk_*` вручную в test-area.
 6. Для City Response smoke:
-   - witnessed кража должна вызвать shout свидетеля и реакцию только ближайших guard;
+   - witnessed кража должна вызвать shout свидетеля и реакцию ближайших guard даже при свежем `dl_cr_level=0`;
    - в диалоге guard ветка «Сдаться» должна телепортировать в jail waypoint;
-   - ветка «Отказаться» должна эскалировать задержание в силовую фазу.
+   - ветка «Отказаться» должна эскалировать задержание в силовую фазу;
+   - `dl_lg_resolve_fine` и `dl_lg_resolve_detain` должны закрывать legal-case и очищать pursuit/detain state.
 
 ## NWN Lexicon reference points (для реализации без костылей)
 
@@ -243,12 +247,13 @@ Social anchors:
 - Witness/guard выборка ограничена **локальным радиусом** вокруг offender через shape-итераторы, а не полным обходом area.
 - Введены защитные cap-лимиты на число проверяемых объектов за событие, чтобы не раздувать стоимость в crowded-зонах.
 - `OnPerception` фильтруется по факту `seen/heard`, чтобы не обрабатывать шумные переходные события.
+- Cooldown-ключи для runtime players нормализуются через `GetPCPublicCDKey` с fallback на tag, чтобы разные PC с одинаковым tag не делили anti-spam/reaction cooldown.
 
 ## Legal v1 notes
 
-- Witnessed crime теперь делает handoff в legal-case runtime-состояние (`dl_lg_case_state=active`).
+- Witnessed crime теперь делает handoff только в legal-case runtime-состояние (`dl_lg_case_state=active`) без записи в `dl_cr_case_state`.
 - При сдаче (`dl_cr_detain_accept`) legal-case переходит в `detained`.
 - При отказе (`dl_cr_detain_refuse`) legal severity повышается.
 - Для простого финализатора без “полного суда”:
-  - `dl_lg_resolve_fine` закрывает кейс как `fine`;
-  - `dl_lg_resolve_detain` закрывает кейс как `detain_complete`.
+  - `dl_lg_resolve_fine` закрывает кейс как `fine` и очищает City Response pursuit state;
+  - `dl_lg_resolve_detain` закрывает кейс как `detain_complete` и очищает City Response pursuit state.
