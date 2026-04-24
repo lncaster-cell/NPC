@@ -78,6 +78,7 @@
   - ✅ witness shout anti-spam hardening: cooldown ключ witness-shout переведён с `GetTag` на нормализованный offender identity chain (public cd key/object id/tag fallback), устранён риск коллизий в multiplayer.
   - ✅ include-scope dedupe cleanup: `dl_cr_crime_inc` переиспользует `DL_CR_GetOffenderIdentityKey` из `dl_city_response_inc`, устранено дублирование identity-helper/констант в общем include-графе `dl_core_inc`.
   - ✅ include symbol isolation: пересекающиеся local-key константы в `dl_cr_crime_inc` переведены на `DL_CRIME_*` namespace, устранён риск redefinition-конфликтов в общем include-графе.
+  - ✅ detain default dedupe: `DL_CR_DETAIN_DIALOG_DEFAULT` централизован в city-response include и переиспользуется crime-flow, убран риск дрейфа fallback dialog resref.
   - ✅ pending-key contract unification: `dl_cr_detain_pending` закреплён за единым символом `DL_L_PC_CR_DETAIN_PENDING` в city-response слое, crime-flow переиспользует этот контракт без дублирования объявления.
   - ✅ hot-path micro-opt: в witness scan центр shape-итерации кэшируется (`location lCenter`) вместо повторных `GetLocation(oOffender)` вызовов внутри bounded-loop.
   - ✅ witness scan micro-opt v2: perception-gate (`seen/heard`) вынесен перед `GetDistanceBetween`, что снижает число distance-вычислений для нерелевантных кандидатов.

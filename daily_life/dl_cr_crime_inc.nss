@@ -26,7 +26,6 @@ const int DL_CR_SHOUT_COOLDOWN_MIN = 1;
 const int DL_CR_WITNESS_SCAN_CAP = 24;
 const int DL_CR_GUARD_SCAN_CAP = 24;
 const string DL_CR_KEY_PREFIX_SHOUT_CD = "dl_cr_shout_cd_";
-const string DL_CR_DETAIN_DIALOG_DEFAULT = "dl_cr_guard_detain";
 const string DL_CR_JAIL_WP_TAG_DEFAULT = "dl_jail_entry_wp";
 const int DL_CR_CASE_STATE_NONE = 0;
 const int DL_CR_CASE_STATE_ACTIVE = 1;

@@ -21,6 +21,7 @@ const int DL_CR_DECAY_PER_STEP = 10;
 const string DL_CR_KEY_PREFIX_EPISODE = "dl_cr_cd_";
 const string DL_CR_KEY_PREFIX_GUARD_REACT = "dl_cr_guard_react_";
 const string DL_CR_KEY_UNKNOWN_IDENTITY = "unknown";
+const string DL_CR_DETAIN_DIALOG_DEFAULT = "dl_cr_guard_detain";
 
 int DL_CR_IsEnabledForArea(object oArea)
 {
@@ -306,7 +307,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
     string sDialogResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
     if (sDialogResRef == "")
     {
-        sDialogResRef = "dl_cr_guard_detain";
+        sDialogResRef = DL_CR_DETAIN_DIALOG_DEFAULT;
     }
 
     ActionMoveToObject(oSeen, TRUE, 2.0);
