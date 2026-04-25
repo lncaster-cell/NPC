@@ -3,13 +3,8 @@ const string DL_L_MODULE_CR_HEAT = "dl_cr_heat";
 const string DL_L_MODULE_CR_LEVEL = "dl_cr_level";
 const string DL_L_MODULE_CR_LAST_ABS_MIN = "dl_cr_last_abs_min";
 
-const string DL_L_NPC_CR_OFFENDER_UNTIL = "dl_cr_offender_until";
 const string DL_L_NPC_CR_LAST_INCIDENT_ABS_MIN = "dl_cr_last_incident_abs_min";
 const string DL_L_AREA_CR_ENABLED = "dl_city_response_enabled";
-const string DL_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
-const string DL_L_PC_CR_DETAIN_PENDING = "dl_cr_detain_pending";
-const string DL_L_NPC_CR_INVESTIGATE_TARGET = "dl_cr_investigate_target";
-const string DL_L_NPC_CR_INVESTIGATE_UNTIL = "dl_cr_investigate_until";
 
 const int DL_CR_HEAT_MIN = 0;
 const int DL_CR_HEAT_MAX = 100;
@@ -151,6 +146,16 @@ string DL_CR_GetEpisodeCooldownKey(object oOffender)
 string DL_CR_GetGuardReactionCooldownKey(object oOffender)
 {
     return DL_CR_KEY_PREFIX_GUARD_REACT + DL_CR_GetOffenderIdentityKey(oOffender);
+}
+
+string DL_CR_GetDetainDialogResRef()
+{
+    string sDialogResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
+    if (sDialogResRef == "")
+    {
+        return DL_CR_DETAIN_DIALOG_DEFAULT;
+    }
+    return sDialogResRef;
 }
 
 int DL_CR_IsGuardVictim(object oVictim)
@@ -304,12 +309,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
         return;
     }
 
-    string sDialogResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
-    if (sDialogResRef == "")
-    {
-        sDialogResRef = DL_CR_DETAIN_DIALOG_DEFAULT;
-    }
-
+    string sDialogResRef = DL_CR_GetDetainDialogResRef();
     ActionMoveToObject(oSeen, TRUE, 2.0);
     ActionStartConversation(oSeen, sDialogResRef, TRUE, TRUE);
 }

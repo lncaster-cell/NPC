@@ -11,10 +11,6 @@ const string DL_L_PC_LG_LAST_WITNESSED_KIND = "dl_lg_last_witnessed_kind";
 const string DL_L_PC_LG_LAST_WITNESSED_AREA = "dl_lg_last_witnessed_area";
 const string DL_L_PC_LG_LAST_WITNESSED_ABS_MIN = "dl_lg_last_witnessed_abs_min";
 
-const string DL_L_PC_LG_CR_DETAIN_PENDING = "dl_cr_detain_pending";
-const string DL_L_PC_LG_CR_LAST_GUARD = "dl_cr_last_guard";
-const string DL_L_PC_LG_CR_OFFENDER_UNTIL = "dl_cr_offender_until";
-
 const int DL_LG_CASE_STATE_NONE = 0;
 const int DL_LG_CASE_STATE_ACTIVE = 1;
 const int DL_LG_CASE_STATE_DETAINED = 2;
@@ -38,9 +34,9 @@ void DL_LG_ClearCityResponsePursuitState(object oOffender)
         return;
     }
 
-    DeleteLocalInt(oOffender, DL_L_PC_LG_CR_DETAIN_PENDING);
-    DeleteLocalObject(oOffender, DL_L_PC_LG_CR_LAST_GUARD);
-    DeleteLocalInt(oOffender, DL_L_PC_LG_CR_OFFENDER_UNTIL);
+    DeleteLocalInt(oOffender, DL_L_PC_CR_DETAIN_PENDING);
+    DeleteLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD);
+    DeleteLocalInt(oOffender, DL_L_NPC_CR_OFFENDER_UNTIL);
 }
 
 int DL_LG_GetSeverityByKind(string sKind)
