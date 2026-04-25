@@ -89,6 +89,7 @@
   - ✅ stale contract symbol cleanup: удалены неиспользуемые legacy-константы `dl_cr_case_state`/`DL_CR_CASE_STATE_*` из `dl_cr_crime_inc`, чтобы исключить возврат неактуального legal state-контракта в сопровождении.
   - ✅ shared-local contract dedupe: `dl_cr_last_guard`, `dl_cr_detain_dialog`, `dl_cr_offender_until` и `dl_cr_investigate_*` централизованы в `dl_runtime_contract_inc` как cross-include канон (без дублирования в city-response/legal/crime include), что снижает риск дрейфа ключей между слоями.
   - ✅ detain-resolver dedupe: helper `DL_CR_GetDetainDialogResRef` централизован в `dl_city_response_inc` и переиспользуется crime/guard flow, чтобы убрать дубли fallback-логики и сохранить единый источник чтения module-local `dl_cr_detain_dialog`.
+  - ✅ witness-candidate hardening: `DL_CR_IsWitnessCandidate` ограничен `DL_IsActivePipelineNpc`, чтобы witness-gated crime ingress не использовал runtime-players/DM/невалидные сущности как «свидетелей» и оставался в каноническом NPC-пайплайне.
   - ✅ hot-path micro-opt: в witness scan центр shape-итерации кэшируется (`location lCenter`) вместо повторных `GetLocation(oOffender)` вызовов внутри bounded-loop.
   - ✅ witness scan micro-opt v2: perception-gate (`seen/heard`) вынесен перед `GetDistanceBetween`, что снижает число distance-вычислений для нерелевантных кандидатов.
   - ✅ guard alert consistency fix: в `DL_CR_AlertNearbyGuards` добавлен perception-gate (`seen/heard`) перед distance ranking, что синхронизирует поведение с declared perf-policy и отсекает «слепые» guard-кандидаты.

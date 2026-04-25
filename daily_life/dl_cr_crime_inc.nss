@@ -110,7 +110,7 @@ int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
         return FALSE;
     }
 
-    if (GetIsDead(oWitness) || GetIsDM(oWitness))
+    if (!DL_IsActivePipelineNpc(oWitness))
     {
         return FALSE;
     }
