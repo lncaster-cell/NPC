@@ -11,11 +11,7 @@ const string DL_L_EVT_CR_KIND = "dl_cr_evt_kind";
 const string DL_L_EVT_CR_WITNESSED = "dl_cr_evt_witnessed";
 const string DL_L_EVT_CR_AREA_TAG = "dl_cr_evt_area_tag";
 const string DL_L_MODULE_CR_GUARD_RESPONDERS_MAX = "dl_cr_guard_responders_max";
-const string DL_CRIME_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
 const string DL_L_MODULE_CR_JAIL_WP_TAG = "dl_cr_jail_wp_tag";
-const string DL_CRIME_L_NPC_CR_INVESTIGATE_TARGET = "dl_cr_investigate_target";
-const string DL_CRIME_L_NPC_CR_INVESTIGATE_UNTIL = "dl_cr_investigate_until";
-const string DL_L_PC_CR_LAST_GUARD = "dl_cr_last_guard";
 
 const float DL_CR_WITNESS_RADIUS_DEFAULT = 10.0;
 const float DL_CR_GUARD_ALERT_RADIUS_DEFAULT = 20.0;
@@ -77,7 +73,7 @@ int DL_CR_GetGuardRespondersMax()
 
 string DL_CR_GetDetainDialogResRef()
 {
-    string sResRef = GetLocalString(GetModule(), DL_CRIME_L_MODULE_CR_DETAIN_DIALOG);
+    string sResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
     if (sResRef == "")
     {
         return DL_CR_DETAIN_DIALOG_DEFAULT;
@@ -304,8 +300,8 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
 
     if (GetIsObjectValid(oBestA))
     {
-        SetLocalObject(oBestA, DL_CRIME_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
-        SetLocalInt(oBestA, DL_CRIME_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
+        SetLocalObject(oBestA, DL_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
+        SetLocalInt(oBestA, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
         SetLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD, oBestA);
         AssignCommand(oBestA, ClearAllActions(TRUE));
         if (nLevel >= 3)
@@ -321,8 +317,8 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
 
     if (nMaxResponders >= 2 && GetIsObjectValid(oBestB))
     {
-        SetLocalObject(oBestB, DL_CRIME_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
-        SetLocalInt(oBestB, DL_CRIME_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
+        SetLocalObject(oBestB, DL_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
+        SetLocalInt(oBestB, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
         AssignCommand(oBestB, ClearAllActions(TRUE));
         if (nLevel >= 3)
         {

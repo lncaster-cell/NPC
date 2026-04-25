@@ -88,6 +88,7 @@
   - ✅ detain default dedupe: `DL_CR_DETAIN_DIALOG_DEFAULT` централизован в city-response include и переиспользуется crime-flow, убран риск дрейфа fallback dialog resref.
   - ✅ pending-key contract unification: `dl_cr_detain_pending` закреплён за единым символом `DL_L_PC_CR_DETAIN_PENDING` в city-response слое, crime-flow переиспользует этот контракт без дублирования объявления.
   - ✅ stale contract symbol cleanup: удалены неиспользуемые legacy-константы `dl_cr_case_state`/`DL_CR_CASE_STATE_*` из `dl_cr_crime_inc`, чтобы исключить возврат неактуального legal state-контракта в сопровождении.
+  - ✅ shared-local contract dedupe: `dl_cr_last_guard`, `dl_cr_detain_dialog` и `dl_cr_investigate_*` переведены на единые символы city-response include (без дублирования в legal/crime include), что снижает риск дрейфа ключей между слоями.
   - ✅ hot-path micro-opt: в witness scan центр shape-итерации кэшируется (`location lCenter`) вместо повторных `GetLocation(oOffender)` вызовов внутри bounded-loop.
   - ✅ witness scan micro-opt v2: perception-gate (`seen/heard`) вынесен перед `GetDistanceBetween`, что снижает число distance-вычислений для нерелевантных кандидатов.
   - ✅ guard alert consistency fix: в `DL_CR_AlertNearbyGuards` добавлен perception-gate (`seen/heard`) перед distance ranking, что синхронизирует поведение с declared perf-policy и отсекает «слепые» guard-кандидаты.
