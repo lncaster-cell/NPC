@@ -6,6 +6,14 @@ const string DL_CONTRACT_VERSION_A0 = "a0";
 const string DL_L_MODULE_CHAT_LOG = "dl_chat_log";
 const string DL_L_MODULE_CHAT_LOG_INIT = "dl_chat_log_init";
 
+// Shared City Response / Legal v1 contract locals (cross-include canonical symbols).
+const string DL_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
+const string DL_L_PC_CR_DETAIN_PENDING = "dl_cr_detain_pending";
+const string DL_L_PC_CR_LAST_GUARD = "dl_cr_last_guard";
+const string DL_L_NPC_CR_OFFENDER_UNTIL = "dl_cr_offender_until";
+const string DL_L_NPC_CR_INVESTIGATE_TARGET = "dl_cr_investigate_target";
+const string DL_L_NPC_CR_INVESTIGATE_UNTIL = "dl_cr_investigate_until";
+
 const string DL_L_NPC_EVENT_KIND = "dl_npc_event_kind";
 const string DL_L_NPC_EVENT_SEQ = "dl_npc_event_seq";
 
