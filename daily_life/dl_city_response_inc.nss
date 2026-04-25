@@ -148,6 +148,16 @@ string DL_CR_GetGuardReactionCooldownKey(object oOffender)
     return DL_CR_KEY_PREFIX_GUARD_REACT + DL_CR_GetOffenderIdentityKey(oOffender);
 }
 
+string DL_CR_GetDetainDialogResRef()
+{
+    string sDialogResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
+    if (sDialogResRef == "")
+    {
+        return DL_CR_DETAIN_DIALOG_DEFAULT;
+    }
+    return sDialogResRef;
+}
+
 int DL_CR_IsGuardVictim(object oVictim)
 {
     return GetLocalString(oVictim, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST;
@@ -299,12 +309,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
         return;
     }
 
-    string sDialogResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
-    if (sDialogResRef == "")
-    {
-        sDialogResRef = DL_CR_DETAIN_DIALOG_DEFAULT;
-    }
-
+    string sDialogResRef = DL_CR_GetDetainDialogResRef();
     ActionMoveToObject(oSeen, TRUE, 2.0);
     ActionStartConversation(oSeen, sDialogResRef, TRUE, TRUE);
 }

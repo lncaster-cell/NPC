@@ -71,16 +71,6 @@ int DL_CR_GetGuardRespondersMax()
     return nRaw;
 }
 
-string DL_CR_GetDetainDialogResRef()
-{
-    string sResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
-    if (sResRef == "")
-    {
-        return DL_CR_DETAIN_DIALOG_DEFAULT;
-    }
-    return sResRef;
-}
-
 string DL_CR_GetJailWaypointTag()
 {
     string sTag = GetLocalString(GetModule(), DL_L_MODULE_CR_JAIL_WP_TAG);
