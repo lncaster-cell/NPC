@@ -16,6 +16,32 @@ const string DL_L_AREA_PASS_FALLBACK_LAST_TICK = "dl_area_pass_fallback_last_tic
 
 void DL_WorkerTouchNpc(object oNpc);
 
+int DL_GetCursorAdvance(int nNpcProcessed, int nCandidatesSeen, int nNpcSeen)
+{
+    int nAdvance = nNpcProcessed;
+    if (nAdvance <= 0)
+    {
+        // If pass-mode dedupe skipped processing, advance by scanned window size.
+        nAdvance = nCandidatesSeen;
+    }
+    if (nAdvance <= 0)
+    {
+        // Final safety net to guarantee forward progress.
+        nAdvance = 1;
+    }
+
+    if (nNpcSeen > 0 && nAdvance > nNpcSeen)
+    {
+        nAdvance = nAdvance % nNpcSeen;
+        if (nAdvance <= 0)
+        {
+            nAdvance = 1;
+        }
+    }
+
+    return nAdvance;
+}
+
 int DL_RunAreaRegistryFallbackRecovery(object oArea, int nTickStamp, int nScanBudget)
 {
     if (nScanBudget < DL_WORKER_BUDGET_MIN)
@@ -257,13 +283,8 @@ void DL_RunAreaEnterResyncTick(object oArea)
         return;
     }
 
-    int nCursorAdvance = nNpcProcessed;
-    if (nCursorAdvance <= 0)
-    {
-        // Avoid resync stalls when this pass only hit skipped/invalid candidates.
-        nCursorAdvance = 1;
-    }
-
+    int nCandidatesSeen = GetLocalInt(oArea, DL_L_AREA_PASS_LAST_CANDIDATES);
+    int nCursorAdvance = DL_GetCursorAdvance(nNpcProcessed, nCandidatesSeen, nNpcSeen);
     int nNextCursor = (nCursor + nCursorAdvance) % nNpcSeen;
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, nNextCursor);
 
@@ -319,12 +340,8 @@ void DL_RunAreaWarmMaintenanceTick(object oArea)
     }
     else
     {
-        int nCursorAdvance = nNpcProcessed;
-        if (nCursorAdvance <= 0)
-        {
-            // Avoid same-window stalls when all candidates in this tick were skipped by dedupe gates.
-            nCursorAdvance = 1;
-        }
+        int nCandidatesSeen = GetLocalInt(oArea, DL_L_AREA_PASS_LAST_CANDIDATES);
+        int nCursorAdvance = DL_GetCursorAdvance(nNpcProcessed, nCandidatesSeen, nNpcSeen);
         DL_SetAreaWorkerCursor(oArea, (nCursor + nCursorAdvance) % nNpcSeen);
     }
 
@@ -385,12 +402,8 @@ void DL_RunAreaWorkerTick(object oArea)
     }
     else
     {
-        int nCursorAdvance = nNpcProcessed;
-        if (nCursorAdvance <= 0)
-        {
-            // Avoid same-window stalls when all candidates in this tick were skipped by dedupe gates.
-            nCursorAdvance = 1;
-        }
+        int nCandidatesSeen = GetLocalInt(oArea, DL_L_AREA_PASS_LAST_CANDIDATES);
+        int nCursorAdvance = DL_GetCursorAdvance(nNpcProcessed, nCandidatesSeen, nNpcSeen);
         DL_SetAreaWorkerCursor(oArea, (nCursor + nCursorAdvance) % nNpcSeen);
     }
 
