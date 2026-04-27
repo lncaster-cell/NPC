@@ -125,8 +125,12 @@ void DL_LG_OnRefusedDetain(object oOffender, object oGuard)
     {
         SetLocalInt(oOffender, DL_L_PC_LG_CASE_STATE, DL_LG_CASE_STATE_ACTIVE);
         SetLocalInt(oOffender, DL_L_PC_LG_CASE_OPEN_ABS_MIN, nNowAbsMin);
+        SetLocalInt(oOffender, DL_L_PC_LG_CASE_SEVERITY, 0);
+        DeleteLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION);
+        DeleteLocalInt(oOffender, DL_L_PC_LG_CASE_FINE);
     }
 
+    SetLocalString(oOffender, DL_L_PC_LG_CASE_KIND, "detain_refusal");
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_SEVERITY,
         GetLocalInt(oOffender, DL_L_PC_LG_CASE_SEVERITY) + 1);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, nNowAbsMin);
