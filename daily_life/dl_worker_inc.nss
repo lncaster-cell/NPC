@@ -30,13 +30,10 @@ int DL_GetCursorAdvance(int nNpcProcessed, int nCandidatesSeen, int nNpcSeen)
         nAdvance = 1;
     }
 
-    if (nNpcSeen > 0 && nAdvance > nNpcSeen)
+    if (nNpcSeen > 0)
     {
-        nAdvance = nAdvance % nNpcSeen;
-        if (nAdvance <= 0)
-        {
-            nAdvance = 1;
-        }
+        // Round-robin pass is bounded by registry count; clamp keeps contract explicit.
+        nAdvance = DL_ClampInt(nAdvance, 1, nNpcSeen);
     }
 
     return nAdvance;

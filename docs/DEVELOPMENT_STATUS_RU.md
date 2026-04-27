@@ -95,7 +95,7 @@
   - ✅ guard alert consistency fix: в `DL_CR_AlertNearbyGuards` добавлен perception-gate (`seen/heard`) перед distance ranking, что синхронизирует поведение с declared perf-policy и отсекает «слепые» guard-кандидаты.
   - ✅ distance-ranking cleanup: магическое `1000000.0` в witness/guard ranking заменено на именованную константу `DL_CR_DISTANCE_INF` для единообразия и безопасного сопровождения.
   - ✅ radius/responders contract hardening: `dl_cr_witness_radius` и `dl_cr_guard_alert_radius` теперь читаются через `GetLocalFloat` (с legacy-fallback на int), а `dl_cr_guard_responders_max` ограничен capability-лимитом алгоритма (до 2), чтобы runtime-конфиг отражал реальное поведение без скрытого дрейфа.
-  - ✅ cursor advancement hardening v2: `resync/worker/warm` теперь используют общий helper `DL_GetCursorAdvance` (processed -> candidates -> safety floor), поэтому при `nNpcProcessed == 0` курсор продвигается по размеру реально просмотренного окна и не зацикливается на одном диапазоне слотов.
+  - ✅ cursor advancement hardening v3: `DL_GetCursorAdvance` оставляет схему `processed -> candidates -> safety floor`, а границы шага теперь фиксируются через `DL_ClampInt(1..nNpcSeen)` (вместо modulo-ветки), что делает контракт проще, дешевле и полностью согласованным с bounded round-robin проходом.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
