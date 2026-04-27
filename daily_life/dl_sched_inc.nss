@@ -1,3 +1,11 @@
+const int DL_SCHED_DEFAULT_WAKE_HOUR = 6;
+const int DL_SCHED_DEFAULT_SLEEP_HOURS = 8;
+const int DL_SCHED_MIN_SLEEP_HOURS = 7;
+const int DL_SCHED_MAX_SLEEP_HOURS = 10;
+const int DL_SCHED_DEFAULT_SHIFT_START = 8;
+const int DL_SCHED_DEFAULT_SHIFT_LENGTH = 8;
+const int DL_SCHED_DEFAULT_WEEKEND_SHIFT_LENGTH = 6;
+
 int DL_NormalizeHour(int nHour)
 {
     while (nHour < 0)
@@ -110,16 +118,16 @@ int DL_GetNpcSleepHours(object oNpc)
     int nHours = GetLocalInt(oNpc, DL_L_NPC_SLEEP_HOURS);
     if (nHours <= 0)
     {
-        nHours = 8;
+        nHours = DL_SCHED_DEFAULT_SLEEP_HOURS;
     }
-    return DL_ClampInt(nHours, 7, 10);
+    return DL_ClampInt(nHours, DL_SCHED_MIN_SLEEP_HOURS, DL_SCHED_MAX_SLEEP_HOURS);
 }
 int DL_GetNpcWakeHour(object oNpc)
 {
     int nWake = GetLocalInt(oNpc, DL_L_NPC_WAKE_HOUR);
-    if (nWake < 0 || nWake > 23)
+    if (nWake <= 0 || nWake > 23)
     {
-        nWake = 6;
+        nWake = DL_SCHED_DEFAULT_WAKE_HOUR;
     }
     return nWake;
 }
@@ -135,9 +143,9 @@ int DL_GetNpcShiftStart(object oNpc)
         }
     }
 
-    if (nStart < 0 || nStart > 23)
+    if (nStart <= 0 || nStart > 23)
     {
-        nStart = 8;
+        nStart = DL_SCHED_DEFAULT_SHIFT_START;
     }
     return nStart;
 }
@@ -146,7 +154,7 @@ int DL_GetNpcShiftLength(object oNpc, int bWeekend)
     int nLen = GetLocalInt(oNpc, DL_L_NPC_SHIFT_LENGTH);
     if (nLen <= 0)
     {
-        nLen = 8;
+        nLen = DL_SCHED_DEFAULT_SHIFT_LENGTH;
     }
 
     if (bWeekend)
@@ -161,7 +169,7 @@ int DL_GetNpcShiftLength(object oNpc, int bWeekend)
             }
             else
             {
-                nLen = 6;
+                nLen = DL_SCHED_DEFAULT_WEEKEND_SHIFT_LENGTH;
             }
         }
         else if (sMode == DL_WEEKEND_MODE_OFF_PUBLIC)
@@ -219,12 +227,6 @@ int DL_ResolveNpcDirectiveAtMinute(object oNpc, int nNow)
     int bHasWorkWindow = DL_NpcHasWorkDirectiveWindow(oNpc, bWeekend);
     int nShiftLen = bHasWorkWindow ? DL_GetNpcShiftLength(oNpc, bWeekend) : 0;
     int nShiftStartHour = DL_GetNpcShiftStart(oNpc);
-    if (nShiftStartHour == 0 && GetLocalInt(oNpc, DL_L_NPC_SHIFT_LENGTH) <= 0 && bHasWorkWindow)
-    {
-        // Keep historical default only for workers with implicit schedule;
-        // explicit midnight (00:00) with configured length remains valid.
-        nShiftStartHour = 8;
-    }
     int nShiftStart = nShiftStartHour * 60;
     int nShiftEnd = DL_NormalizeMinuteOfDay(nShiftStart + (nShiftLen * 60));
     string sTag = GetTag(oNpc);
