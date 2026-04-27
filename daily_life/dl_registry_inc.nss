@@ -4,6 +4,7 @@ const string DL_L_AREA_REG_SEQ = "dl_reg_seq";
 const string DL_L_AREA_REG_SLOT_PREFIX = "dl_reg_slot_";
 const string DL_L_NPC_REG_SLOT = "dl_npc_reg_slot";
 const string DL_L_AREA_WORKER_TICK = "dl_worker_tick";
+const string DL_L_NPC_REG_FALLBACK_UNREG_DIAG = "dl_reg_fallback_unreg_diag";
 
 const int DL_TIER_FROZEN = 0;
 const int DL_TIER_WARM = 1;
@@ -833,6 +834,14 @@ void DL_UnregisterNpc(object oNpc)
             }
             else
             {
+                DL_DeleteAreaRegistrySlot(oArea, nLastSlot);
+
+                if (GetLocalInt(oNpc, DL_L_NPC_REG_FALLBACK_UNREG_DIAG) != TRUE)
+                {
+                    SetLocalInt(oNpc, DL_L_NPC_REG_FALLBACK_UNREG_DIAG, TRUE);
+                    DL_LogRuntime("[DL][REG] fallback unregister invalid slot npc=" + GetName(oNpc) + " slot=" + IntToString(nNpcSlot) + " last=" + IntToString(nLastSlot));
+                }
+
                 SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nLastSlot);
             }
         }
