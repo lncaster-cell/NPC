@@ -242,7 +242,10 @@ int DL_GetModuleNpcBudgetPerMinute()
 
 int DL_GetCurrentMinuteKey()
 {
-    return GetTimeHour() * 60 + GetTimeMinute();
+    // Use absolute minute (calendar date + time) so the key advances
+    // across day boundaries and does not wrap every 1440 minutes.
+    int nDays = (GetCalendarYear() * 12 * 28) + (GetCalendarMonth() * 28) + GetCalendarDay();
+    return (nDays * 1440) + (GetTimeHour() * 60) + GetTimeMinute();
 }
 
 string DL_GetAreaRegistrySlotKey(int nSlot)
