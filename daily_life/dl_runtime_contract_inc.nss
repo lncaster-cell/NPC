@@ -8,6 +8,7 @@ const string DL_L_MODULE_CHAT_LOG_INIT = "dl_chat_log_init";
 
 // Shared City Response / Legal v1 contract locals (cross-include canonical symbols).
 const string DL_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
+const string DL_L_MODULE_TRANSITION_DRIVER_LOOKUP_CAP = "dl_transition_driver_lookup_cap";
 const string DL_L_PC_CR_DETAIN_PENDING = "dl_cr_detain_pending";
 const string DL_L_PC_CR_LAST_GUARD = "dl_cr_last_guard";
 const string DL_L_NPC_CR_OFFENDER_UNTIL = "dl_cr_offender_until";

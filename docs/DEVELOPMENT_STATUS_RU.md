@@ -33,7 +33,10 @@
   - cache-слой anchor/object ссылок для снижения lookup churn.
 - Transition driver lookup hardening:
   - резолвер драйвера перехода использует bounded `GetNearestObjectByTag(..., nNth)` по waypoint-контексту вместо глобального `GetObjectByTag`;
-  - добавлена единая проверка типа драйвера (`door`/`trigger`) + same-area как для cache-hit, так и для lookup-кандидатов; `driver=none` теперь явно short-circuit в `OBJECT_INVALID`.
+  - добавлена единая проверка типа драйвера (`door`/`trigger`) + same-area как для cache-hit, так и для lookup-кандидатов; `driver=none` теперь явно short-circuit в `OBJECT_INVALID`;
+  - cap lookup-попыток параметризован module-local ключом `dl_transition_driver_lookup_cap` (bounded clamp), чтобы owner мог калибровать поведение без правки кода;
+  - module-local symbol централизован в `dl_runtime_contract_inc` как канонический runtime-контракт (без дублирования объявления в transition include);
+  - miss-cache на tick-уровне (`dl_transition_driver_miss_tick`) снижает повторные lookup-miss в одном area-tick при отсутствующем/битом driver tag.
 
 ### 1.3 Worker/Resync/Budget control (реализовано)
 

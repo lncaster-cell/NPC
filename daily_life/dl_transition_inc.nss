@@ -13,6 +13,7 @@ const string DL_L_WP_TRANSITION_DRIVER = "dl_transition_driver";
 const string DL_L_WP_TRANSITION_DRIVER_TAG = "dl_transition_driver_tag";
 const string DL_L_WP_TRANSITION_EXIT_OBJ = "dl_transition_exit_obj";
 const string DL_L_WP_TRANSITION_DRIVER_OBJ = "dl_transition_driver_obj";
+const string DL_L_WP_TRANSITION_DRIVER_MISS_TICK = "dl_transition_driver_miss_tick";
 
 const string DL_L_NPC_TRANSITION_KIND = "dl_npc_transition_kind";
 const string DL_L_NPC_TRANSITION_ID = "dl_npc_transition_id";
@@ -29,6 +30,8 @@ const string DL_TRANSITION_DRIVER_TRIGGER = "trigger";
 
 const float DL_TRANSITION_ENTRY_RADIUS = 1.60;
 const int DL_TRANSITION_DRIVER_LOOKUP_CAP = 4;
+const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MIN = 1;
+const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MAX = 16;
 
 object DL_GetTransitionWaypointByTag(string sTag)
 {
@@ -219,6 +222,16 @@ int DL_IsTransitionDriverTypeMatch(string sDriverKind, object oDriver)
     return nType == OBJECT_TYPE_DOOR || nType == OBJECT_TYPE_TRIGGER;
 }
 
+int DL_GetTransitionDriverLookupCap()
+{
+    int nCap = GetLocalInt(GetModule(), DL_L_MODULE_TRANSITION_DRIVER_LOOKUP_CAP);
+    if (nCap <= 0)
+    {
+        return DL_TRANSITION_DRIVER_LOOKUP_CAP;
+    }
+    return DL_ClampInt(nCap, DL_TRANSITION_DRIVER_LOOKUP_CAP_MIN, DL_TRANSITION_DRIVER_LOOKUP_CAP_MAX);
+}
+
 object DL_ResolveTransitionDriverObject(object oEntryWp)
 {
     string sDriverTag = DL_GetWaypointTransitionDriverTag(oEntryWp);
@@ -233,17 +246,26 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
         return OBJECT_INVALID;
     }
 
+    object oArea = GetArea(oEntryWp);
+    int nNowTick = DL_GetAreaTick(oArea);
+    if (GetLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK) == nNowTick)
+    {
+        return oCached;
+    }
+
     object oCached = GetLocalObject(oEntryWp, DL_L_WP_TRANSITION_DRIVER_OBJ);
     if (GetIsObjectValid(oCached) &&
         GetTag(oCached) == sDriverTag &&
         GetArea(oCached) == GetArea(oEntryWp) &&
         DL_IsTransitionDriverTypeMatch(sDriverKind, oCached))
     {
+        DeleteLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK);
         return oCached;
     }
 
+    int nLookupCap = DL_GetTransitionDriverLookupCap();
     int nNth = 1;
-    while (nNth <= DL_TRANSITION_DRIVER_LOOKUP_CAP)
+    while (nNth <= nLookupCap)
     {
         object oDriver = GetNearestObjectByTag(sDriverTag, oEntryWp, nNth);
         if (!GetIsObjectValid(oDriver))
@@ -256,6 +278,7 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
             if (DL_IsTransitionDriverTypeMatch(sDriverKind, oDriver))
             {
                 SetLocalObject(oEntryWp, DL_L_WP_TRANSITION_DRIVER_OBJ, oDriver);
+                DeleteLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK);
                 return oDriver;
             }
         }
@@ -263,6 +286,7 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
         nNth = nNth + 1;
     }
 
+    SetLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK, nNowTick);
     return OBJECT_INVALID;
 }
 
