@@ -173,7 +173,7 @@
 
 `dl_cr_case_state` не используется и не должен возвращаться в runtime-контракт.
 
-### 3.3 Area locals с anchor-точками (что вы назвали «локализации»)
+### 3.3 Area locals с anchor-точками
 
 Daily Life использует area-local ссылки на waypoint/object через имена anchor-локалок.
 
