@@ -214,36 +214,42 @@ void DL_ExecutePublicDirective(object oNpc)
     );
     DL_ProgressFocusAtTarget(oNpc, oPublic, "on_public_anchor", sAnim);
 }
-void DL_ExecuteSocialDirective(object oNpc)
+int DL_ShouldFallbackSocialToPublic(object oNpc)
 {
     object oMe = DL_ResolveSocialWaypoint(oNpc);
     string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
     if (!GetIsObjectValid(oMe) || sPartnerTag == "")
     {
         DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=missing_social_anchor_or_partner");
-        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
-        SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
-        DL_ExecutePublicDirective(oNpc);
-        return;
+        return TRUE;
     }
 
     object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
     if (!GetIsObjectValid(oPartner) || GetLocalInt(oPartner, DL_L_NPC_DIRECTIVE) != DL_DIR_SOCIAL)
     {
         DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_not_social");
-        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
-        SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
-        DL_ExecutePublicDirective(oNpc);
-        return;
+        return TRUE;
     }
 
     object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
     if (!GetIsObjectValid(oPartnerWp))
     {
         DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_missing_social_anchor");
-        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
-        SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
-        DL_ExecutePublicDirective(oNpc);
+        return TRUE;
+    }
+
+    return FALSE;
+}
+void DL_ExecuteSocialDirective(object oNpc)
+{
+    object oMe = DL_ResolveSocialWaypoint(oNpc);
+    string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
+    object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
+    object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
+
+    if (!GetIsObjectValid(oMe) || !GetIsObjectValid(oPartner) || !GetIsObjectValid(oPartnerWp))
+    {
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "social_fallback_to_public");
         return;
     }
 
