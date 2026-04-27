@@ -5,6 +5,7 @@ const string DL_L_MODULE_CONTRACT_VERSION = "dl_contract_version";
 const string DL_CONTRACT_VERSION_A0 = "a0";
 const string DL_L_MODULE_CHAT_LOG = "dl_chat_log";
 const string DL_L_MODULE_CHAT_LOG_INIT = "dl_chat_log_init";
+const string DL_L_MODULE_RUNTIME_LOG = "dl_runtime_log";
 
 // Shared City Response / Legal v1 contract locals (cross-include canonical symbols).
 const string DL_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
@@ -35,8 +36,18 @@ int DL_IsRuntimeEnabled()
     return GetLocalString(oModule, DL_L_MODULE_CONTRACT_VERSION) == DL_CONTRACT_VERSION_A0;
 }
 
+int DL_IsRuntimeLogEnabled()
+{
+    return GetLocalInt(GetModule(), DL_L_MODULE_RUNTIME_LOG) == TRUE;
+}
+
 void DL_LogRuntime(string sLog)
 {
+    if (!DL_IsRuntimeLogEnabled())
+    {
+        return;
+    }
+
     // Temporary: global runtime logging is disabled.
 }
 

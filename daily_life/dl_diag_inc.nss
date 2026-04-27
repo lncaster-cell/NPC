@@ -96,6 +96,11 @@ void DL_LogNpcDiagnostic(object oNpc, string sSource)
         return;
     }
 
+    if (!DL_IsRuntimeLogEnabled())
+    {
+        return;
+    }
+
     string sProblem = DL_GetNpcProblemSummary(oNpc);
     string sLog = "[DL][NPC] src=" + sSource +
                   " npc=" + GetName(oNpc) +
