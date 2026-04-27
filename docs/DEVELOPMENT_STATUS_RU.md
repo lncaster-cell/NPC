@@ -1,6 +1,6 @@
 # Development Status (RU)
 
-> Обновлено: **2026-04-24**
+> Обновлено: **2026-04-27**
 
 ## 1) Runtime-срез проекта (полный инвентарь реализованного)
 
@@ -31,6 +31,12 @@
   - home/work/meal/social/public area tags на NPC;
   - `dl_anchor_*` локалки на area;
   - cache-слой anchor/object ссылок для снижения lookup churn.
+- Transition driver lookup hardening:
+  - резолвер драйвера перехода использует bounded `GetNearestObjectByTag(..., nNth)` по waypoint-контексту вместо глобального `GetObjectByTag`;
+  - добавлена единая проверка типа драйвера (`door`/`trigger`) + same-area как для cache-hit, так и для lookup-кандидатов; `driver=none` теперь явно short-circuit в `OBJECT_INVALID`;
+  - cap lookup-попыток параметризован module-local ключом `dl_transition_driver_lookup_cap` (bounded clamp), чтобы owner мог калибровать поведение без правки кода;
+  - module-local symbol централизован в `dl_runtime_contract_inc` как канонический runtime-контракт (без дублирования объявления в transition include);
+  - miss-cache на tick-уровне (`dl_transition_driver_miss_tick`) снижает повторные lookup-miss в одном area-tick при отсутствующем/битом driver tag, включая ранний `GetNearestObjectByTag` miss-path.
 
 ### 1.3 Worker/Resync/Budget control (реализовано)
 
@@ -45,6 +51,7 @@
   - adaptive cap для worker/resync при хроническом дефиците бюджета.
 - Area worker hot-path переведён на per-area slot registry с bounded fallback recovery.
 - Registry учитывает активных NPC через slot-based структуру и не полагается на полный area scan в обычном worker-проходе.
+- Tick-source consistency hardening: `area-enter resync` теперь берёт tick stamp через `DL_GetAreaTick` (с каноническим guard от отрицательных значений), а не прямым `GetLocalInt`.
 
 ### 1.4 Diagnostics/Ops (реализовано)
 
@@ -95,6 +102,7 @@
   - ✅ guard alert consistency fix: в `DL_CR_AlertNearbyGuards` добавлен perception-gate (`seen/heard`) перед distance ranking, что синхронизирует поведение с declared perf-policy и отсекает «слепые» guard-кандидаты.
   - ✅ distance-ranking cleanup: магическое `1000000.0` в witness/guard ranking заменено на именованную константу `DL_CR_DISTANCE_INF` для единообразия и безопасного сопровождения.
   - ✅ radius/responders contract hardening: `dl_cr_witness_radius` и `dl_cr_guard_alert_radius` теперь читаются через `GetLocalFloat` (с legacy-fallback на int), а `dl_cr_guard_responders_max` ограничен capability-лимитом алгоритма (до 2), чтобы runtime-конфиг отражал реальное поведение без скрытого дрейфа.
+  - ✅ cursor advancement hardening v3: `DL_GetCursorAdvance` оставляет схему `processed -> candidates -> safety floor`, а границы шага теперь фиксируются через `DL_ClampInt(1..nNpcSeen)` (вместо modulo-ветки), что делает контракт проще, дешевле и полностью согласованным с bounded round-robin проходом.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
