@@ -27,18 +27,6 @@ int DL_LG_GetDefaultFine()
     return nFine;
 }
 
-void DL_LG_ClearCityResponsePursuitState(object oOffender)
-{
-    if (!DL_IsRuntimePlayer(oOffender))
-    {
-        return;
-    }
-
-    DeleteLocalInt(oOffender, DL_L_PC_CR_DETAIN_PENDING);
-    DeleteLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD);
-    DeleteLocalInt(oOffender, DL_L_NPC_CR_OFFENDER_UNTIL);
-}
-
 int DL_LG_GetSeverityByKind(string sKind)
 {
     if (sKind == "kill")
@@ -153,7 +141,7 @@ void DL_LG_ResolveCaseFine(object oOffender, int nFine)
         nFine = DL_LG_GetDefaultFine();
     }
 
-    DL_LG_ClearCityResponsePursuitState(oOffender);
+    DL_CR_ClearPursuitState(oOffender);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_STATE, DL_LG_CASE_STATE_RESOLVED);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, DL_GetAbsoluteMinute());
     SetLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION, "fine");
@@ -172,7 +160,7 @@ void DL_LG_ResolveCaseDetainComplete(object oOffender)
         return;
     }
 
-    DL_LG_ClearCityResponsePursuitState(oOffender);
+    DL_CR_ClearPursuitState(oOffender);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_STATE, DL_LG_CASE_STATE_RESOLVED);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, DL_GetAbsoluteMinute());
     SetLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION, "detain_complete");
