@@ -36,7 +36,7 @@
   - добавлена единая проверка типа драйвера (`door`/`trigger`) + same-area как для cache-hit, так и для lookup-кандидатов; `driver=none` теперь явно short-circuit в `OBJECT_INVALID`;
   - cap lookup-попыток параметризован module-local ключом `dl_transition_driver_lookup_cap` (bounded clamp), чтобы owner мог калибровать поведение без правки кода;
   - module-local symbol централизован в `dl_runtime_contract_inc` как канонический runtime-контракт (без дублирования объявления в transition include);
-  - miss-cache на tick-уровне (`dl_transition_driver_miss_tick`) снижает повторные lookup-miss в одном area-tick при отсутствующем/битом driver tag.
+  - miss-cache на tick-уровне (`dl_transition_driver_miss_tick`) снижает повторные lookup-miss в одном area-tick при отсутствующем/битом driver tag, включая ранний `GetNearestObjectByTag` miss-path.
 
 ### 1.3 Worker/Resync/Budget control (реализовано)
 
@@ -51,6 +51,7 @@
   - adaptive cap для worker/resync при хроническом дефиците бюджета.
 - Area worker hot-path переведён на per-area slot registry с bounded fallback recovery.
 - Registry учитывает активных NPC через slot-based структуру и не полагается на полный area scan в обычном worker-проходе.
+- Tick-source consistency hardening: `area-enter resync` теперь берёт tick stamp через `DL_GetAreaTick` (с каноническим guard от отрицательных значений), а не прямым `GetLocalInt`.
 
 ### 1.4 Diagnostics/Ops (реализовано)
 

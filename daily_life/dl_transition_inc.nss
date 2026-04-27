@@ -250,6 +250,7 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
     int nNowTick = DL_GetAreaTick(oArea);
     if (GetLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK) == nNowTick)
     {
+        DeleteLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK);
         return oCached;
     }
 
@@ -270,6 +271,7 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
         object oDriver = GetNearestObjectByTag(sDriverTag, oEntryWp, nNth);
         if (!GetIsObjectValid(oDriver))
         {
+            SetLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK, nNowTick);
             return OBJECT_INVALID;
         }
 
