@@ -252,6 +252,11 @@ int DL_CR_IsOffenderActive(object oCreature)
 
 void DL_CR_HandleGuardPerception(object oGuard)
 {
+    if (!GetIsObjectValid(oGuard))
+    {
+        return;
+    }
+
     if (!DL_IsActivePipelineNpc(oGuard) || !DL_CR_IsGuardVictim(oGuard))
     {
         return;
@@ -302,14 +307,15 @@ void DL_CR_HandleGuardPerception(object oGuard)
     }
     SetLocalInt(oGuard, sCooldownKey, nNowAbsMin + 1);
 
-    ClearAllActions(TRUE);
     if (nLevel >= 3)
     {
-        ActionAttack(oSeen);
+        AssignCommand(oGuard, ClearAllActions(TRUE));
+        AssignCommand(oGuard, ActionAttack(oSeen));
         return;
     }
 
     string sDialogResRef = DL_CR_GetDetainDialogResRef();
-    ActionMoveToObject(oSeen, TRUE, 2.0);
-    ActionStartConversation(oSeen, sDialogResRef, TRUE, TRUE);
+    AssignCommand(oGuard, ClearAllActions(TRUE));
+    AssignCommand(oGuard, ActionMoveToObject(oSeen, TRUE, 2.0));
+    AssignCommand(oGuard, ActionStartConversation(oSeen, sDialogResRef, TRUE, TRUE));
 }
