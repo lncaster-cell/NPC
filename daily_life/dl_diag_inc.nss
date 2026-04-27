@@ -3,6 +3,10 @@ const string DL_L_NPC_DIAG_LAST_SIG = "dl_npc_diag_last_sig";
 
 string DL_GetDirectiveLabel(int nDirective)
 {
+    if (nDirective == DL_DIR_NONE)
+    {
+        return "none";
+    }
     if (nDirective == DL_DIR_SLEEP)
     {
         return "sleep";
@@ -14,6 +18,14 @@ string DL_GetDirectiveLabel(int nDirective)
     if (nDirective == DL_DIR_SOCIAL)
     {
         return "social";
+    }
+    if (nDirective == DL_DIR_MEAL)
+    {
+        return "meal";
+    }
+    if (nDirective == DL_DIR_PUBLIC)
+    {
+        return "public";
     }
     return "none";
 }
