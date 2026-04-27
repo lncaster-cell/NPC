@@ -51,6 +51,7 @@ int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus
 
     if (GetDistanceBetween(oNpc, oTarget) > DL_WORK_ANCHOR_RADIUS)
     {
+        DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
         if (GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) != "moving_to_anchor")
         {
             SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, "moving_to_anchor");
@@ -61,6 +62,7 @@ int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus
     }
 
     DL_ClearTransitionExecutionState(oNpc);
+    DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
     SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, sOnAnchorStatus);
     SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oTarget));
     if (sAnim != "")
