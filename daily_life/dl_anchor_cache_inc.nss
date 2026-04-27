@@ -135,6 +135,26 @@ object DL_GetAreaAnchorWaypoint(object oNpc, object oArea, string sAnchorLocal, 
         );
         return OBJECT_INVALID;
     }
+
+    if (GetArea(oWp) != oArea)
+    {
+        if (DL_WaypointHasTransition(oWp))
+        {
+            object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oWp);
+            if (GetIsObjectValid(oExitWp) && GetArea(oExitWp) == oArea)
+            {
+                return oExitWp;
+            }
+        }
+
+        DL_LogMarkupIssueOnce(
+            oNpc,
+            "foreign_wp_" + GetTag(oArea) + "_" + sAnchorLocal + "_" + sWpTag,
+            "Area " + GetTag(oArea) + " anchor '" + sAnchorLocal + "' points to foreign area waypoint '" + sWpTag + "'."
+        );
+        return OBJECT_INVALID;
+    }
+
     return oWp;
 }
 object DL_GetHomeArea(object oNpc)
