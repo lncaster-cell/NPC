@@ -257,7 +257,14 @@ void DL_RunAreaEnterResyncTick(object oArea)
         return;
     }
 
-    int nNextCursor = (nCursor + nNpcProcessed) % nNpcSeen;
+    int nCursorAdvance = nNpcProcessed;
+    if (nCursorAdvance <= 0)
+    {
+        // Avoid resync stalls when this pass only hit skipped/invalid candidates.
+        nCursorAdvance = 1;
+    }
+
+    int nNextCursor = (nCursor + nCursorAdvance) % nNpcSeen;
     SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, nNextCursor);
 
     if (nNextCursor == 0)

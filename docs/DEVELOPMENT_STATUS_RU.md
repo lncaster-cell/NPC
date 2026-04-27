@@ -1,6 +1,6 @@
 # Development Status (RU)
 
-> Обновлено: **2026-04-24**
+> Обновлено: **2026-04-26**
 
 ## 1) Runtime-срез проекта (полный инвентарь реализованного)
 
@@ -95,6 +95,7 @@
   - ✅ guard alert consistency fix: в `DL_CR_AlertNearbyGuards` добавлен perception-gate (`seen/heard`) перед distance ranking, что синхронизирует поведение с declared perf-policy и отсекает «слепые» guard-кандидаты.
   - ✅ distance-ranking cleanup: магическое `1000000.0` в witness/guard ranking заменено на именованную константу `DL_CR_DISTANCE_INF` для единообразия и безопасного сопровождения.
   - ✅ radius/responders contract hardening: `dl_cr_witness_radius` и `dl_cr_guard_alert_radius` теперь читаются через `GetLocalFloat` (с legacy-fallback на int), а `dl_cr_guard_responders_max` ограничен capability-лимитом алгоритма (до 2), чтобы runtime-конфиг отражал реальное поведение без скрытого дрейфа.
+  - ✅ area-enter resync cursor anti-stall fix: при `nNpcProcessed == 0` курсор resync теперь продвигается минимум на 1 слот (как в worker/warm), чтобы pending-resync не зацикливался на одном окне кандидатов при dedupe/invalid-итерациях.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
