@@ -71,68 +71,40 @@ dl_anchor_sleep_bed_1
 
 Area anchors всё ещё поддерживаются и имеют приоритет над fallback tags.
 
-## Минимальная настройка локального перехода
+## Переходы между точками/этажами
 
-Для простого перехода внутри той же area больше не обязательно прописывать `dl_transition_exit_tag`.
+Переходы пока остаются по старой явной схеме через waypoint locals.
 
-Достаточно поставить пару waypoint tags по соглашению:
-
-```text
-dl_jump_<id>_from
-dl_jump_<id>_to
-```
-
-Пример для лестницы/двери на второй этаж кузницы:
+Минимальный локальный переход:
 
 ```text
-dl_jump_smith_bedroom_from
-dl_jump_smith_bedroom_to
+нижний waypoint:
+dl_transition_exit_tag = tag_верхнего_waypoint
+
+'tag верхнего waypoint' должен существовать как waypoint
 ```
 
-Такой переход двусторонний по именам:
+Для двустороннего перехода:
 
 ```text
-dl_jump_smith_bedroom_from -> dl_jump_smith_bedroom_to
-dl_jump_smith_bedroom_to   -> dl_jump_smith_bedroom_from
+верхний waypoint:
+dl_transition_exit_tag = tag_нижнего_waypoint
 ```
 
-### Переход без двери
-
-Никаких locals на waypoint не нужно. Система просто доводит NPC до ближайшей точки пары и делает jump на вторую.
-
-### Переход с дверью
-
-Если нужно открыть конкретную дверь, локалки всё ещё нужны только на entry-waypoint:
+Для перехода через дверь:
 
 ```text
 dl_transition_driver = door
 dl_transition_driver_tag = tag_двери
 ```
 
-Для первого smoke-теста лучше начинать без двери. Когда jump заработал, подключать дверь отдельно.
-
-### Сон на втором этаже
-
-Для сна на втором этаже можно сделать так:
+Для первого smoke-теста лучше начинать без двери:
 
 ```text
-dl_sleep_approach_1 = dl_jump_smith_bedroom_to
-dl_sleep_bed_1
+dl_transition_driver = none
 ```
 
-Где:
-
-```text
-dl_jump_smith_bedroom_from
-```
-
-стоит внизу у двери/лестницы, а
-
-```text
-dl_jump_smith_bedroom_to
-```
-
-стоит наверху у входа в комнату.
+или не задавать `dl_transition_driver` вообще.
 
 ## Дефолтное расписание
 
@@ -198,24 +170,8 @@ dl_sleep_approach_1
 dl_sleep_bed_1
 ```
 
-6. Для сна через второй этаж/локальный переход:
-
-```text
-dl_jump_smith_bedroom_from
-dl_jump_smith_bedroom_to
-dl_sleep_bed_1
-```
-
-И использовать `dl_jump_smith_bedroom_to` как sleep approach target.
-
 ## Когда всё ещё нужны explicit area tags
 
 Использовать `dl_home_area_tag`, `dl_work_area_tag`, `dl_meal_area_tag`, `dl_social_area_tag`, `dl_public_area_tag`, если NPC должен ходить в другую area или у него разные home/work/public области.
 
 Для обычных NPC внутри одной area эти locals можно не ставить.
-
-## Когда всё ещё нужны explicit transition locals
-
-Использовать `dl_transition_exit_tag`, если tag-пара не следует соглашению `dl_jump_<id>_from/to` или если нужен нестандартный one-way переход.
-
-Использовать `dl_transition_driver` и `dl_transition_driver_tag`, если переход должен взаимодействовать с door/trigger-driver.
