@@ -31,6 +31,9 @@
   - home/work/meal/social/public area tags на NPC;
   - `dl_anchor_*` локалки на area;
   - cache-слой anchor/object ссылок для снижения lookup churn.
+- Transition driver lookup hardening:
+  - резолвер драйвера перехода использует bounded `GetNearestObjectByTag(..., nNth)` по waypoint-контексту вместо глобального `GetObjectByTag`;
+  - добавлена валидация типа драйвера (`door`/`trigger`) и same-area контракт перед cache-write.
 
 ### 1.3 Worker/Resync/Budget control (реализовано)
 
