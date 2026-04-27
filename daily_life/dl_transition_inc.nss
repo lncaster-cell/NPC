@@ -2,10 +2,9 @@
 // Backward compatible modes:
 // 1) simple mode: entry waypoint stores explicit exit tag in `dl_transition_exit_tag`
 // 2) legacy mode: entry waypoint stores `dl_transition_kind` + `dl_transition_id`
-// 3) builder-friendly convention mode: `dl_jump_<id>_from` pairs with `dl_jump_<id>_to`
-// Entry waypoint tag can stay arbitrary in explicit/local modes.
+// Entry waypoint tag can stay arbitrary in both cases.
 // Bidirectional 2-waypoint same-area portal pairs are supported when each waypoint
-// points to the other explicitly or through the builder-friendly convention.
+// points to the other via `dl_transition_exit_tag`.
 
 const string DL_L_WP_TRANSITION_KIND = "dl_transition_kind";
 const string DL_L_WP_TRANSITION_ID = "dl_transition_id";
@@ -28,11 +27,6 @@ const string DL_TRANSITION_KIND_LOCAL_JUMP = "local_jump";
 const string DL_TRANSITION_DRIVER_NONE = "none";
 const string DL_TRANSITION_DRIVER_DOOR = "door";
 const string DL_TRANSITION_DRIVER_TRIGGER = "trigger";
-
-const string DL_TRANSITION_TAG_PREFIX_LOCAL_JUMP = "dl_jump_";
-const string DL_TRANSITION_TAG_PREFIX_AREA_LINK = "dl_xfer_";
-const string DL_TRANSITION_TAG_SUFFIX_FROM = "_from";
-const string DL_TRANSITION_TAG_SUFFIX_TO = "_to";
 
 const float DL_TRANSITION_ENTRY_RADIUS = 1.60;
 const int DL_TRANSITION_DRIVER_LOOKUP_CAP = 4;
@@ -110,60 +104,6 @@ string DL_GetWaypointTransitionDriverTag(object oWp)
     return GetLocalString(oWp, DL_L_WP_TRANSITION_DRIVER_TAG);
 }
 
-int DL_StringStartsWith(string sValue, string sPrefix)
-{
-    int nPrefixLen = GetStringLength(sPrefix);
-    if (nPrefixLen <= 0 || GetStringLength(sValue) < nPrefixLen)
-    {
-        return FALSE;
-    }
-
-    return GetSubString(sValue, 0, nPrefixLen) == sPrefix;
-}
-
-int DL_StringEndsWith(string sValue, string sSuffix)
-{
-    int nValueLen = GetStringLength(sValue);
-    int nSuffixLen = GetStringLength(sSuffix);
-    if (nSuffixLen <= 0 || nValueLen < nSuffixLen)
-    {
-        return FALSE;
-    }
-
-    return GetSubString(sValue, nValueLen - nSuffixLen, nSuffixLen) == sSuffix;
-}
-
-string DL_GetConventionTransitionExitTag(object oEntryWp)
-{
-    if (!GetIsObjectValid(oEntryWp))
-    {
-        return "";
-    }
-
-    string sTag = GetTag(oEntryWp);
-    if (!DL_StringStartsWith(sTag, DL_TRANSITION_TAG_PREFIX_LOCAL_JUMP) &&
-        !DL_StringStartsWith(sTag, DL_TRANSITION_TAG_PREFIX_AREA_LINK))
-    {
-        return "";
-    }
-
-    int nLen = GetStringLength(sTag);
-    int nFromLen = GetStringLength(DL_TRANSITION_TAG_SUFFIX_FROM);
-    int nToLen = GetStringLength(DL_TRANSITION_TAG_SUFFIX_TO);
-
-    if (DL_StringEndsWith(sTag, DL_TRANSITION_TAG_SUFFIX_FROM))
-    {
-        return GetSubString(sTag, 0, nLen - nFromLen) + DL_TRANSITION_TAG_SUFFIX_TO;
-    }
-
-    if (DL_StringEndsWith(sTag, DL_TRANSITION_TAG_SUFFIX_TO))
-    {
-        return GetSubString(sTag, 0, nLen - nToLen) + DL_TRANSITION_TAG_SUFFIX_FROM;
-    }
-
-    return "";
-}
-
 string DL_GetResolvedTransitionExitTag(object oEntryWp)
 {
     if (!GetIsObjectValid(oEntryWp))
@@ -189,7 +129,7 @@ string DL_GetResolvedTransitionExitTag(object oEntryWp)
         return "dl_jump_" + sTransitionId + "_to";
     }
 
-    return DL_GetConventionTransitionExitTag(oEntryWp);
+    return "";
 }
 
 void DL_ClearTransitionExecutionState(object oNpc)
@@ -208,7 +148,7 @@ int DL_WaypointHasTransition(object oWp)
         return FALSE;
     }
 
-    if (DL_GetResolvedTransitionExitTag(oWp) != "")
+    if (DL_GetWaypointTransitionExitTag(oWp) != "")
     {
         return TRUE;
     }
@@ -425,18 +365,10 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oTargetWp)
     string sKind = DL_GetWaypointTransitionKind(oTargetWp);
     string sTransitionId = DL_GetWaypointTransitionId(oTargetWp);
     string sExitTag = DL_GetWaypointTransitionExitTag(oTargetWp);
-    string sResolvedExitTag = DL_GetResolvedTransitionExitTag(oTargetWp);
     string sDriver = DL_GetWaypointTransitionDriver(oTargetWp);
 
-    if (sResolvedExitTag == "")
+    if (sExitTag == "" && sKind == "" && sTransitionId == "")
     {
-        if (sExitTag != "" || sKind != "" || sTransitionId != "")
-        {
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "metadata_missing");
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_transition_exit_tag_or_kind_id_on_entry_waypoint");
-            return TRUE;
-        }
-
         DL_ClearTransitionExecutionState(oNpc);
         return FALSE;
     }
@@ -444,6 +376,13 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oTargetWp)
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_KIND, sKind);
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_ID, sTransitionId);
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET, GetTag(oTargetWp));
+
+    if (sExitTag == "" && (sKind == "" || sTransitionId == ""))
+    {
+        SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "metadata_missing");
+        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_transition_exit_tag_or_kind_id_on_entry_waypoint");
+        return TRUE;
+    }
 
     object oActualEntry = oTargetWp;
     object oPairedWp = DL_ResolveTransitionExitWaypointFromEntry(oTargetWp);
