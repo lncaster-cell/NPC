@@ -17,6 +17,7 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
 
     object oCached = GetLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
     if (GetIsObjectValid(oCached) &&
+        oCached != oNpc &&
         GetTag(oCached) == sPartnerTag &&
         DL_IsActivePipelineNpc(oCached) &&
         GetArea(oCached) == GetArea(oNpc))
@@ -25,7 +26,9 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
     }
 
     object oPartner = GetObjectByTag(sPartnerTag);
-    if (!DL_IsActivePipelineNpc(oPartner) || GetArea(oPartner) != GetArea(oNpc))
+    if (oPartner == oNpc ||
+        !DL_IsActivePipelineNpc(oPartner) ||
+        GetArea(oPartner) != GetArea(oNpc))
     {
         DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
         return OBJECT_INVALID;
@@ -230,6 +233,16 @@ void DL_ExecuteSocialDirective(object oNpc)
     }
 
     object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
+    if (oPartner == oNpc)
+    {
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "social_partner_self");
+        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=social_partner_self");
+        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
+        SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, DL_DIALOGUE_IDLE);
+        DL_ExecutePublicDirective(oNpc);
+        return;
+    }
+
     if (!GetIsObjectValid(oPartner) || GetLocalInt(oPartner, DL_L_NPC_DIRECTIVE) != DL_DIR_SOCIAL)
     {
         DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_not_social");
