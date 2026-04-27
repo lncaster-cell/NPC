@@ -153,6 +153,26 @@ int DL_WaypointHasTransition(object oWp)
     return sKind != "" && sTransitionId != "";
 }
 
+int DL_IsValidTransitionWaypointForTag(object oWp, string sExpectedTag)
+{
+    if (!GetIsObjectValid(oWp))
+    {
+        return FALSE;
+    }
+
+    if (GetObjectType(oWp) != OBJECT_TYPE_WAYPOINT)
+    {
+        return FALSE;
+    }
+
+    if (GetTag(oWp) != sExpectedTag)
+    {
+        return FALSE;
+    }
+
+    return DL_WaypointHasTransition(oWp);
+}
+
 object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
 {
     if (!GetIsObjectValid(oEntryWp))
@@ -167,18 +187,20 @@ object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
     }
 
     object oCached = GetLocalObject(oEntryWp, DL_L_WP_TRANSITION_EXIT_OBJ);
-    if (GetIsObjectValid(oCached) && GetTag(oCached) == sResolvedTag)
+    if (DL_IsValidTransitionWaypointForTag(oCached, sResolvedTag))
     {
         return oCached;
     }
+    DeleteLocalObject(oEntryWp, DL_L_WP_TRANSITION_EXIT_OBJ);
 
     object oExit = DL_GetTransitionWaypointByTag(sResolvedTag);
-    if (GetIsObjectValid(oExit))
+    if (DL_IsValidTransitionWaypointForTag(oExit, sResolvedTag))
     {
         SetLocalObject(oEntryWp, DL_L_WP_TRANSITION_EXIT_OBJ, oExit);
+        return oExit;
     }
 
-    return oExit;
+    return OBJECT_INVALID;
 }
 
 int DL_IsBidirectionalTransitionPair(object oWpA, object oWpB)
