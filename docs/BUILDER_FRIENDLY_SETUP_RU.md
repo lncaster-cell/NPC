@@ -121,12 +121,80 @@ dl_home_slot
 Дефолты:
 
 ```text
-dl_wake_hour   = 6
-dl_sleep_hours = 8
-dl_shift_start = 8
+dl_wake_hour    = 6
+dl_sleep_hours  = 8
+dl_shift_start  = 8
 dl_shift_length = 8
-dl_home_slot   = 1
+dl_home_slot    = 1
 ```
+
+Это значит:
+
+```text
+22:00–06:00  SLEEP
+06:00–07:00  MEAL / breakfast window
+08:00–16:00  WORK
+примерно 12:00 MEAL / lunch window, если shift_length >= 8
+вечером       MEAL / dinner window перед сном
+после работы  SOCIAL или PUBLIC, если есть соответствующие точки
+остальное     NONE / idle
+```
+
+Точные окна еды/social/public чуть сдвигаются по tag NPC, чтобы все NPC не вставали и не ели в одну и ту же минуту.
+
+## Индивидуальное расписание через локалки
+
+Локалки расписания работают как override. Ставить их нужно только особым NPC.
+
+Примеры:
+
+```text
+dl_wake_hour = 7
+```
+
+NPC просыпается в 07:00. При `dl_sleep_hours = 8` сон будет примерно 23:00–07:00.
+
+```text
+dl_shift_start = 10
+dl_shift_length = 6
+```
+
+NPC работает примерно 10:00–16:00.
+
+```text
+dl_sleep_hours = 10
+```
+
+NPC спит дольше. Значение ограничивается safe-диапазоном 7–10 часов.
+
+```text
+dl_weekend_mode = off_public
+```
+
+В выходные не работает, может уходить в PUBLIC/SOCIAL при наличии точек.
+
+```text
+dl_weekend_mode = reduced_work
+dl_weekend_shift_length = 4
+```
+
+В выходные работает укороченную смену.
+
+## Приоритет директив
+
+Если несколько окон пересекаются, порядок выбора такой:
+
+```text
+1. SLEEP
+2. MEAL breakfast
+3. MEAL lunch
+4. MEAL dinner
+5. SOCIAL / PUBLIC вне работы
+6. WORK
+7. NONE
+```
+
+Сон всегда важнее работы. Поэтому ночью NPC должен спать даже если рабочая смена длинная.
 
 ## Практический минимум для теста кузнеца
 
