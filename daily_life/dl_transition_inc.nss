@@ -167,23 +167,32 @@ object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
     }
 
     object oCached = GetLocalObject(oEntryWp, DL_L_WP_TRANSITION_EXIT_OBJ);
-    if (GetIsObjectValid(oCached) && GetTag(oCached) == sResolvedTag)
+    if (GetIsObjectValid(oCached) &&
+        GetObjectType(oCached) == OBJECT_TYPE_WAYPOINT &&
+        GetTag(oCached) == sResolvedTag)
     {
         return oCached;
     }
 
     object oExit = DL_GetTransitionWaypointByTag(sResolvedTag);
-    if (GetIsObjectValid(oExit))
+    if (GetIsObjectValid(oExit) && GetObjectType(oExit) == OBJECT_TYPE_WAYPOINT)
     {
         SetLocalObject(oEntryWp, DL_L_WP_TRANSITION_EXIT_OBJ, oExit);
+        return oExit;
     }
 
-    return oExit;
+    return OBJECT_INVALID;
 }
 
 int DL_IsBidirectionalTransitionPair(object oWpA, object oWpB)
 {
     if (!GetIsObjectValid(oWpA) || !GetIsObjectValid(oWpB))
+    {
+        return FALSE;
+    }
+
+    if (GetObjectType(oWpA) != OBJECT_TYPE_WAYPOINT ||
+        GetObjectType(oWpB) != OBJECT_TYPE_WAYPOINT)
     {
         return FALSE;
     }
@@ -194,7 +203,18 @@ int DL_IsBidirectionalTransitionPair(object oWpA, object oWpB)
         return FALSE;
     }
 
-    return GetTag(oBack) == GetTag(oWpA);
+    if (GetObjectType(oBack) != OBJECT_TYPE_WAYPOINT)
+    {
+        return FALSE;
+    }
+
+    if (oBack == oWpA)
+    {
+        return TRUE;
+    }
+
+    // Legacy fallback for tag-based metadata when exact object identity cannot be trusted.
+    return GetArea(oBack) == GetArea(oWpA) && GetTag(oBack) == GetTag(oWpA);
 }
 
 int DL_IsTransitionDriverTypeMatch(string sDriverKind, object oDriver)
