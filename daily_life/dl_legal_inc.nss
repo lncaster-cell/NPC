@@ -75,6 +75,8 @@ void DL_LG_OnWitnessedIncident(object oOffender, string sKind, object oArea, obj
         SetLocalInt(oOffender, DL_L_PC_LG_CASE_STATE, DL_LG_CASE_STATE_ACTIVE);
         SetLocalInt(oOffender, DL_L_PC_LG_CASE_OPEN_ABS_MIN, nNowAbsMin);
         SetLocalInt(oOffender, DL_L_PC_LG_CASE_SEVERITY, 0);
+        DeleteLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION);
+        DeleteLocalInt(oOffender, DL_L_PC_LG_CASE_FINE);
     }
 
     SetLocalString(oOffender, DL_L_PC_LG_CASE_KIND, sKind);
