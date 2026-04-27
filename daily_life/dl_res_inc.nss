@@ -378,6 +378,40 @@ int DL_ResolveEffectiveDirective(object oNpc, int nDirective)
 
     return nDirective;
 }
+int DL_ShouldUseDirectiveFastPath(object oNpc, int nEffectiveDirective)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return FALSE;
+    }
+
+    if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "" ||
+        GetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET) != "" ||
+        GetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC) != "")
+    {
+        return FALSE;
+    }
+
+    if (DL_GetNpcProblemSummary(oNpc) != "ok")
+    {
+        return FALSE;
+    }
+
+    if (nEffectiveDirective == DL_DIR_SLEEP)
+    {
+        return GetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE) == DL_SLEEP_PHASE_ON_BED &&
+               GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS) == "on_bed" &&
+               GetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET) != "";
+    }
+
+    if (nEffectiveDirective == DL_DIR_WORK)
+    {
+        return GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) == "on_anchor" &&
+               GetLocalString(oNpc, DL_L_NPC_WORK_TARGET) != "";
+    }
+
+    return FALSE;
+}
 
 void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
 {
@@ -388,6 +422,14 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
 
     int nEffectiveDirective = DL_ResolveEffectiveDirective(oNpc, nDirective);
     int nPrevDirective = GetLocalInt(oNpc, DL_L_NPC_DIRECTIVE);
+
+    if (nPrevDirective == nEffectiveDirective && DL_ShouldUseDirectiveFastPath(oNpc, nEffectiveDirective))
+    {
+        DL_ApplyMaterializationSkeleton(oNpc, nEffectiveDirective);
+        DL_LogStuckState(oNpc, nEffectiveDirective);
+        return;
+    }
+
     SetLocalInt(oNpc, DL_L_NPC_DIRECTIVE, nEffectiveDirective);
     DL_LogDirectiveChange(oNpc, nPrevDirective, nEffectiveDirective);
 
