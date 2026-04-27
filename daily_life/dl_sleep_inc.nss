@@ -75,18 +75,11 @@ void DL_ClearSleepExecutionState(object oNpc)
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
     DL_ClearTransitionExecutionState(oNpc);
 }
-void DL_SetSleepMissingState(object oNpc, int bInvalidArea)
+void DL_SetSleepMissingState(object oNpc)
 {
     SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_NONE);
     SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "missing_waypoints");
-    if (bInvalidArea)
-    {
-        SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_target_invalid_area");
-    }
-    else
-    {
-        DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
-    }
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_waypoints_missing");
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
     DL_ClearTransitionExecutionState(oNpc);
 }
@@ -112,7 +105,7 @@ void DL_ExecuteSleepDirective(object oNpc)
 
     if (!GetIsObjectValid(oApproach) || !GetIsObjectValid(oBed))
     {
-        DL_SetSleepMissingState(oNpc, FALSE);
+        DL_SetSleepMissingState(oNpc);
         return;
     }
 
