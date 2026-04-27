@@ -297,14 +297,20 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
     object oCached = GetLocalObject(oEntryWp, DL_L_WP_TRANSITION_DRIVER_OBJ);
     if (GetLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK) == nNowTick)
     {
-        DeleteLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK);
         if (GetIsObjectValid(oCached) &&
             GetTag(oCached) == sDriverTag &&
             GetArea(oCached) == GetArea(oEntryWp) &&
             DL_IsTransitionDriverTypeMatch(sDriverKind, oCached))
         {
+            DeleteLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK);
             return oCached;
         }
+
+        if (!GetIsObjectValid(oCached))
+        {
+            return OBJECT_INVALID;
+        }
+
         return OBJECT_INVALID;
     }
 
