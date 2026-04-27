@@ -162,10 +162,11 @@
 
 ## 6) Артефакты аудита
 
-- `daily_life/post_refactor_audit_pass4.md`
-- `daily_life/post_refactor_audit_pass5.md`
-- `daily_life/post_refactor_audit_pass6_deep.md`
-- `daily_life/post_refactor_audit_pass7.md`
-- `daily_life/post_refactor_audit_pass8.md`
-- `daily_life/post_refactor_audit_pass9.md`
-- `daily_life/post_refactor_audit_pass11.md`
+- `docs/audits/post_refactor_audit_pass4.md`
+- `docs/audits/post_refactor_audit_pass5.md`
+- `docs/audits/post_refactor_audit_pass6_deep.md`
+- `docs/audits/post_refactor_audit_pass7.md`
+- `docs/audits/post_refactor_audit_pass8.md`
+- `docs/audits/post_refactor_audit_pass9.md`
+- `docs/audits/post_refactor_audit_pass10.md`
+- `docs/audits/post_refactor_audit_pass11.md`
