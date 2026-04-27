@@ -33,7 +33,7 @@
   - cache-слой anchor/object ссылок для снижения lookup churn.
 - Transition driver lookup hardening:
   - резолвер драйвера перехода использует bounded `GetNearestObjectByTag(..., nNth)` по waypoint-контексту вместо глобального `GetObjectByTag`;
-  - добавлена валидация типа драйвера (`door`/`trigger`) и same-area контракт перед cache-write.
+  - добавлена единая проверка типа драйвера (`door`/`trigger`) + same-area как для cache-hit, так и для lookup-кандидатов; `driver=none` теперь явно short-circuit в `OBJECT_INVALID`.
 
 ### 1.3 Worker/Resync/Budget control (реализовано)
 

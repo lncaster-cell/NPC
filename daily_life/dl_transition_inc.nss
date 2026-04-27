@@ -189,6 +189,31 @@ int DL_IsBidirectionalTransitionPair(object oWpA, object oWpB)
     return GetTag(oBack) == GetTag(oWpA);
 }
 
+int DL_IsTransitionDriverTypeMatch(string sDriverKind, object oDriver)
+{
+    if (!GetIsObjectValid(oDriver))
+    {
+        return FALSE;
+    }
+
+    int nType = GetObjectType(oDriver);
+    if (sDriverKind == DL_TRANSITION_DRIVER_DOOR)
+    {
+        return nType == OBJECT_TYPE_DOOR;
+    }
+    if (sDriverKind == DL_TRANSITION_DRIVER_TRIGGER)
+    {
+        return nType == OBJECT_TYPE_TRIGGER;
+    }
+    if (sDriverKind == DL_TRANSITION_DRIVER_NONE)
+    {
+        return FALSE;
+    }
+
+    // Legacy/empty kind: allow classic door/trigger drivers.
+    return nType == OBJECT_TYPE_DOOR || nType == OBJECT_TYPE_TRIGGER;
+}
+
 object DL_ResolveTransitionDriverObject(object oEntryWp)
 {
     string sDriverTag = DL_GetWaypointTransitionDriverTag(oEntryWp);
@@ -197,13 +222,21 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
         return OBJECT_INVALID;
     }
 
+    string sDriverKind = DL_GetWaypointTransitionDriver(oEntryWp);
+    if (sDriverKind == DL_TRANSITION_DRIVER_NONE)
+    {
+        return OBJECT_INVALID;
+    }
+
     object oCached = GetLocalObject(oEntryWp, DL_L_WP_TRANSITION_DRIVER_OBJ);
-    if (GetIsObjectValid(oCached) && GetTag(oCached) == sDriverTag && GetArea(oCached) == GetArea(oEntryWp))
+    if (GetIsObjectValid(oCached) &&
+        GetTag(oCached) == sDriverTag &&
+        GetArea(oCached) == GetArea(oEntryWp) &&
+        DL_IsTransitionDriverTypeMatch(sDriverKind, oCached))
     {
         return oCached;
     }
 
-    string sDriverKind = DL_GetWaypointTransitionDriver(oEntryWp);
     int nNth = 1;
     while (nNth <= DL_TRANSITION_DRIVER_LOOKUP_CAP)
     {
@@ -215,10 +248,7 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
 
         if (GetArea(oDriver) == GetArea(oEntryWp))
         {
-            int nType = GetObjectType(oDriver);
-            if ((sDriverKind == DL_TRANSITION_DRIVER_DOOR && nType == OBJECT_TYPE_DOOR) ||
-                (sDriverKind == DL_TRANSITION_DRIVER_TRIGGER && nType == OBJECT_TYPE_TRIGGER) ||
-                (sDriverKind == "" && (nType == OBJECT_TYPE_DOOR || nType == OBJECT_TYPE_TRIGGER)))
+            if (DL_IsTransitionDriverTypeMatch(sDriverKind, oDriver))
             {
                 SetLocalObject(oEntryWp, DL_L_WP_TRANSITION_DRIVER_OBJ, oDriver);
                 return oDriver;
