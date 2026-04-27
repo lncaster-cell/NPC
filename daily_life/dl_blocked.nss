@@ -24,11 +24,14 @@ void main()
 
     DL_RequestNpcBlockedSignal(oNpc, oBlocker);
 
-    string sLog = "[DL][BLOCKED_SIGNAL] npc=" + GetName(oNpc) +
-                  " blocker=" + GetTag(oBlocker) +
-                  " type=" + IntToString(GetObjectType(oBlocker)) +
-                  " kind=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_EVENT_KIND)) +
-                  " seq=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_EVENT_SEQ));
+    if (DL_IsRuntimeLogEnabled())
+    {
+        string sLog = "[DL][BLOCKED_SIGNAL] npc=" + GetName(oNpc) +
+                      " blocker=" + GetTag(oBlocker) +
+                      " type=" + IntToString(GetObjectType(oBlocker)) +
+                      " kind=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_EVENT_KIND)) +
+                      " seq=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_EVENT_SEQ));
 
-    DL_LogRuntime(sLog);
+        DL_LogRuntime(sLog);
+    }
 }
