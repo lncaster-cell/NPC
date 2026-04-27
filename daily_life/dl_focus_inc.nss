@@ -1,4 +1,5 @@
 const string DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ = "dl_cache_social_partner_obj";
+const int DL_SOCIAL_PARTNER_TAG_SEARCH_CAP = 32;
 
 void DL_ClearFocusExecutionState(object oNpc)
 {
@@ -25,12 +26,52 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
         return oCached;
     }
 
-    object oPartner = GetObjectByTag(sPartnerTag);
-    if (oPartner == oNpc ||
-        !DL_IsActivePipelineNpc(oPartner) ||
-        GetArea(oPartner) != GetArea(oNpc))
+    object oNpcArea = GetArea(oNpc);
+    int nNth = 0;
+    int bTagFound = FALSE;
+    int bTagFoundOutsideArea = FALSE;
+    object oPartner = OBJECT_INVALID;
+    while (nNth < DL_SOCIAL_PARTNER_TAG_SEARCH_CAP)
+    {
+        object oCandidate = GetObjectByTag(sPartnerTag, nNth);
+        if (!GetIsObjectValid(oCandidate))
+        {
+            break;
+        }
+
+        bTagFound = TRUE;
+        if (oCandidate != oNpc && DL_IsActivePipelineNpc(oCandidate))
+        {
+            if (GetArea(oCandidate) == oNpcArea)
+            {
+                oPartner = oCandidate;
+                break;
+            }
+            bTagFoundOutsideArea = TRUE;
+        }
+
+        nNth++;
+    }
+
+    if (!GetIsObjectValid(oPartner))
     {
         DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+        if (bTagFoundOutsideArea)
+        {
+            DL_LogChatDebugEvent(
+                oNpc,
+                "social_partner_lookup",
+                "social partner lookup tag=" + sPartnerTag + " result=found_outside_area"
+            );
+        }
+        else if (!bTagFound)
+        {
+            DL_LogChatDebugEvent(
+                oNpc,
+                "social_partner_lookup",
+                "social partner lookup tag=" + sPartnerTag + " result=tag_not_found"
+            );
+        }
         return OBJECT_INVALID;
     }
 
