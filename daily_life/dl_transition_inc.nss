@@ -153,6 +153,26 @@ int DL_WaypointHasTransition(object oWp)
     return sKind != "" && sTransitionId != "";
 }
 
+int DL_IsValidTransitionWaypointForTag(object oWp, string sExpectedTag)
+{
+    if (!GetIsObjectValid(oWp))
+    {
+        return FALSE;
+    }
+
+    if (GetObjectType(oWp) != OBJECT_TYPE_WAYPOINT)
+    {
+        return FALSE;
+    }
+
+    if (GetTag(oWp) != sExpectedTag)
+    {
+        return FALSE;
+    }
+
+    return DL_WaypointHasTransition(oWp);
+}
+
 object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
 {
     if (!GetIsObjectValid(oEntryWp))
@@ -173,6 +193,7 @@ object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
     {
         return oCached;
     }
+    DeleteLocalObject(oEntryWp, DL_L_WP_TRANSITION_EXIT_OBJ);
 
     object oExit = DL_GetTransitionWaypointByTag(sResolvedTag);
     if (GetIsObjectValid(oExit) && GetObjectType(oExit) == OBJECT_TYPE_WAYPOINT)
@@ -298,8 +319,7 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
         object oDriver = GetNearestObjectByTag(sDriverTag, oEntryWp, nNth);
         if (!GetIsObjectValid(oDriver))
         {
-            SetLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK, nNowTick);
-            return OBJECT_INVALID;
+            break;
         }
 
         if (GetArea(oDriver) == GetArea(oEntryWp))
