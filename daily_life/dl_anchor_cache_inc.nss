@@ -123,6 +123,35 @@ object DL_GetNpcAreaByTagCached(object oNpc, string sAreaTagLocal, string sAreaC
     SetLocalObject(oNpc, sAreaCacheLocal, oArea);
     return oArea;
 }
+object DL_GetNpcCurrentAreaFallback(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (GetIsObjectValid(oArea) && DL_IsAreaObject(oArea))
+    {
+        return oArea;
+    }
+
+    return OBJECT_INVALID;
+}
+object DL_GetNpcAreaOrCurrentFallback(object oNpc, string sAreaTagLocal, string sAreaCacheLocal)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return OBJECT_INVALID;
+    }
+
+    if (GetLocalString(oNpc, sAreaTagLocal) != "")
+    {
+        return DL_GetNpcAreaByTagCached(oNpc, sAreaTagLocal, sAreaCacheLocal);
+    }
+
+    return DL_GetNpcCurrentAreaFallback(oNpc);
+}
 object DL_GetAreaAnchorWaypoint(object oNpc, object oArea, string sAnchorLocal, string sCacheLocal, int bRequired)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oArea))
@@ -178,30 +207,47 @@ object DL_GetAreaAnchorWaypoint(object oNpc, object oArea, string sAnchorLocal, 
 }
 object DL_GetHomeArea(object oNpc)
 {
-    object oHome = DL_GetNpcAreaByTagCached(oNpc, DL_L_NPC_HOME_AREA_TAG, DL_L_NPC_CACHE_HOME_AREA);
+    object oHome = DL_GetNpcAreaOrCurrentFallback(oNpc, DL_L_NPC_HOME_AREA_TAG, DL_L_NPC_CACHE_HOME_AREA);
     if (!GetIsObjectValid(oHome))
     {
         DL_LogMarkupIssueOnce(
             oNpc,
             "missing_home_area",
-            "NPC " + GetTag(oNpc) + " has no valid home area (dl_home_area_tag)."
+            "NPC " + GetTag(oNpc) + " has no valid home area and no valid current area fallback."
         );
     }
     return oHome;
 }
 object DL_GetWorkArea(object oNpc)
 {
-    return DL_GetNpcAreaByTagCached(oNpc, DL_L_NPC_WORK_AREA_TAG, DL_L_NPC_CACHE_WORK_AREA);
+    return DL_GetNpcAreaOrCurrentFallback(oNpc, DL_L_NPC_WORK_AREA_TAG, DL_L_NPC_CACHE_WORK_AREA);
 }
 object DL_GetMealArea(object oNpc)
 {
-    return DL_GetNpcAreaByTagCached(oNpc, DL_L_NPC_MEAL_AREA_TAG, DL_L_NPC_CACHE_MEAL_AREA);
+    if (GetLocalString(oNpc, DL_L_NPC_MEAL_AREA_TAG) != "")
+    {
+        return DL_GetNpcAreaByTagCached(oNpc, DL_L_NPC_MEAL_AREA_TAG, DL_L_NPC_CACHE_MEAL_AREA);
+    }
+
+    object oArea = DL_GetHomeArea(oNpc);
+    if (GetIsObjectValid(oArea))
+    {
+        return oArea;
+    }
+
+    oArea = DL_GetWorkArea(oNpc);
+    if (GetIsObjectValid(oArea))
+    {
+        return oArea;
+    }
+
+    return DL_GetNpcCurrentAreaFallback(oNpc);
 }
 object DL_GetSocialArea(object oNpc)
 {
-    return DL_GetNpcAreaByTagCached(oNpc, DL_L_NPC_SOCIAL_AREA_TAG, DL_L_NPC_CACHE_SOCIAL_AREA);
+    return DL_GetNpcAreaOrCurrentFallback(oNpc, DL_L_NPC_SOCIAL_AREA_TAG, DL_L_NPC_CACHE_SOCIAL_AREA);
 }
 object DL_GetPublicArea(object oNpc)
 {
-    return DL_GetNpcAreaByTagCached(oNpc, DL_L_NPC_PUBLIC_AREA_TAG, DL_L_NPC_CACHE_PUBLIC_AREA);
+    return DL_GetNpcAreaOrCurrentFallback(oNpc, DL_L_NPC_PUBLIC_AREA_TAG, DL_L_NPC_CACHE_PUBLIC_AREA);
 }
