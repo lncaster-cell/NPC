@@ -770,29 +770,15 @@ void DL_ReconcileNpcAreaRegistration(object oNpc)
         return;
     }
 
-    if (GetIsObjectValid(oRegisteredArea))
-    {
-        int nRegisteredCount = GetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT);
-        if (nRegisteredCount > 0)
-        {
-            SetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT, nRegisteredCount - 1);
-        }
-        else
-        {
-            SetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT, 0);
-        }
-        SetLocalInt(oRegisteredArea, DL_L_AREA_REG_SEQ, GetLocalInt(oRegisteredArea, DL_L_AREA_REG_SEQ) + 1);
-    }
+    // Canonical migration path:
+    // 1) unregister from old area with swap-tail + slot cleanup,
+    // 2) register in the new area with a freshly assigned slot.
+    DL_UnregisterNpc(oNpc);
 
-    if (GetIsObjectValid(oCurrentArea))
+    if (GetIsObjectValid(oCurrentArea) && DL_IsActivePipelineNpc(oNpc))
     {
-        SetLocalInt(oCurrentArea, DL_L_AREA_REG_COUNT, GetLocalInt(oCurrentArea, DL_L_AREA_REG_COUNT) + 1);
-        SetLocalInt(oCurrentArea, DL_L_AREA_REG_SEQ, GetLocalInt(oCurrentArea, DL_L_AREA_REG_SEQ) + 1);
-        SetLocalObject(oNpc, DL_L_NPC_REG_AREA, oCurrentArea);
-        return;
+        DL_RegisterNpc(oNpc);
     }
-
-    DeleteLocalObject(oNpc, DL_L_NPC_REG_AREA);
 }
 
 void DL_UnregisterNpc(object oNpc)
