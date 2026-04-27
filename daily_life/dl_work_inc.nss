@@ -174,6 +174,15 @@ void DL_SetWorkTargetState(object oNpc, string sKind, object oTarget)
     SetLocalString(oNpc, DL_L_NPC_WORK_TARGET, GetTag(oTarget));
     DeleteLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
 }
+void DL_FaceWorkTargetOrientation(object oNpc, object oTarget)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
+    {
+        return;
+    }
+
+    AssignCommand(oNpc, SetFacing(GetFacing(oTarget)));
+}
 int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
@@ -202,6 +211,7 @@ int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
 
     DL_ClearTransitionExecutionState(oNpc);
     SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
+    DL_FaceWorkTargetOrientation(oNpc, oTarget);
     DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
     DL_PlayWorkAnimation(oNpc);
     DL_LogChatDebugEvent(oNpc, "on_work_anchor", "on_work_anchor anchor=" + GetTag(oTarget));
