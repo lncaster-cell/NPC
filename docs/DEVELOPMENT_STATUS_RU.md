@@ -1,6 +1,6 @@
 # Development Status (RU)
 
-> Обновлено: **2026-04-24**
+> Обновлено: **2026-04-25**
 
 ## 1) Runtime-срез проекта (полный инвентарь реализованного)
 
@@ -95,6 +95,7 @@
   - ✅ guard alert consistency fix: в `DL_CR_AlertNearbyGuards` добавлен perception-gate (`seen/heard`) перед distance ranking, что синхронизирует поведение с declared perf-policy и отсекает «слепые» guard-кандидаты.
   - ✅ distance-ranking cleanup: магическое `1000000.0` в witness/guard ranking заменено на именованную константу `DL_CR_DISTANCE_INF` для единообразия и безопасного сопровождения.
   - ✅ radius/responders contract hardening: `dl_cr_witness_radius` и `dl_cr_guard_alert_radius` теперь читаются через `GetLocalFloat` (с legacy-fallback на int), а `dl_cr_guard_responders_max` ограничен capability-лимитом алгоритма (до 2), чтобы runtime-конфиг отражал реальное поведение без скрытого дрейфа.
+  - ✅ transition metadata gate hardening: `DL_WaypointHasTransition` теперь считает waypoint переходом только при валидном контракте (`dl_transition_exit_tag` ИЛИ пара `dl_transition_kind` + `dl_transition_id`), чтобы неполная разметка не перехватывала movement-flow и не оставляла NPC в `metadata_missing`.
   - ⏳ legal процессуальные расширения (полный суд/расследование post-factum) остаются следующими этапами.
 
 ## 2) Что подтверждено ревизией кода
