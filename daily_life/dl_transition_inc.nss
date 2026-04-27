@@ -143,9 +143,14 @@ int DL_WaypointHasTransition(object oWp)
         return FALSE;
     }
 
-    return DL_GetWaypointTransitionExitTag(oWp) != "" ||
-           DL_GetWaypointTransitionKind(oWp) != "" ||
-           DL_GetWaypointTransitionId(oWp) != "";
+    if (DL_GetWaypointTransitionExitTag(oWp) != "")
+    {
+        return TRUE;
+    }
+
+    string sKind = DL_GetWaypointTransitionKind(oWp);
+    string sTransitionId = DL_GetWaypointTransitionId(oWp);
+    return sKind != "" && sTransitionId != "";
 }
 
 object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
@@ -245,7 +250,7 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
     int nNowTick = DL_GetAreaTick(oArea);
     if (GetLocalInt(oEntryWp, DL_L_WP_TRANSITION_DRIVER_MISS_TICK) == nNowTick)
     {
-        return OBJECT_INVALID;
+        return oCached;
     }
 
     object oCached = GetLocalObject(oEntryWp, DL_L_WP_TRANSITION_DRIVER_OBJ);
