@@ -43,6 +43,13 @@ int DL_TryApplyWorkActivityPresentation(object oNpc, string sProfile, string sWo
 }
 void DL_ApplyArchiveActivityPresentation(object oNpc, int nDirective)
 {
+    // Canonical archive activity-id mapping for active directives:
+    // - DL_DIR_SLEEP => DL_ARCH_ACT_NPC_SLEEP_BED (5)
+    // - DL_DIR_WORK  => DL_TryApplyWorkActivityPresentation:
+    //   * blacksmith/forge => DL_ARCH_ACT_NPC_FORGE (15)
+    //   * blacksmith/(non-forge), domestic_worker => DL_ARCH_ACT_NPC_FORGE_MULTI (30)
+    //   * trader => DL_ARCH_ACT_NPC_MERCHANT_MULTI (38)
+    //   * gate_post => DL_ARCH_ACT_NPC_GUARD (43)
     if (!GetIsObjectValid(oNpc))
     {
         return;
