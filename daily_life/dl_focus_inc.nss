@@ -1,4 +1,5 @@
 const string DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ = "dl_cache_social_partner_obj";
+const int DL_SOCIAL_PARTNER_TAG_SEARCH_CAP = 32;
 
 void DL_ClearFocusExecutionState(object oNpc)
 {
@@ -38,6 +39,22 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
         GetArea(oPartner) != GetArea(oNpc))
     {
         DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+        if (bTagFoundOutsideArea)
+        {
+            DL_LogChatDebugEvent(
+                oNpc,
+                "social_partner_lookup",
+                "social partner lookup tag=" + sPartnerTag + " result=found_outside_area"
+            );
+        }
+        else if (!bTagFound)
+        {
+            DL_LogChatDebugEvent(
+                oNpc,
+                "social_partner_lookup",
+                "social partner lookup tag=" + sPartnerTag + " result=tag_not_found"
+            );
+        }
         return OBJECT_INVALID;
     }
 
