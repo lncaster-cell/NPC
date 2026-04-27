@@ -59,7 +59,7 @@
   - сигнатурный дедуп диагностик;
   - чат-debug фильтрация (`dl_chat_debug`, `dl_chat_debug_npc_tag`);
   - problem summary и markup/stuck сигнализация без log spam.
-- Smoke-скрипты и вспомогательные проверки присутствуют (`dl_smk_*`, `dl_smoke_ev`).
+- Smoke-скрипты и вспомогательные проверки присутствуют (`dl_smk_tier`, `dl_smk_sync`, `dl_smk_work`, `dl_smoke_ev`).
 
 ### 1.5 City Response + Legal v1 (текущий реализованный объём)
 

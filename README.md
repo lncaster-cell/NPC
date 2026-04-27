@@ -225,7 +225,7 @@ Social anchors:
 2. Зайдите игроком в area с назначенным `dl_a_enter` и `dl_a_hb`.
 3. Проверьте, что у тестового NPC выставлены минимум `dl_profile_id` и `dl_home_area_tag`.
 4. Проверьте, что в area реально есть anchors, на которые ссылаются локалки.
-5. Для smoke-проверок можно запускать вспомогательные скрипты `dl_smk_*` вручную в test-area.
+5. Для smoke-проверок запускайте только актуальные вспомогательные скрипты вручную в test-area: `dl_smk_tier`, `dl_smk_sync`, `dl_smk_work`, `dl_smoke_ev`.
 6. Для City Response smoke:
    - witnessed кража должна вызвать shout свидетеля и реакцию ближайших guard даже при свежем `dl_cr_level=0`;
    - в диалоге guard ветка «Сдаться» должна телепортировать в jail waypoint;
