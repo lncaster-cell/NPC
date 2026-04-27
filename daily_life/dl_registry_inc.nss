@@ -240,21 +240,6 @@ int DL_GetModuleNpcBudgetPerMinute()
     return nBudget;
 }
 
-void DL_SetModuleNpcBudgetPerMinute(int nBudget)
-{
-    if (nBudget < DL_MODULE_NPC_BUDGET_MIN)
-    {
-        nBudget = DL_MODULE_NPC_BUDGET_MIN;
-    }
-    if (nBudget > DL_MODULE_NPC_BUDGET_MAX)
-    {
-        nBudget = DL_MODULE_NPC_BUDGET_MAX;
-    }
-
-    object oModule = GetModule();
-    SetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_PER_MINUTE, nBudget);
-}
-
 int DL_GetCurrentMinuteKey()
 {
     return GetTimeHour() * 60 + GetTimeMinute();

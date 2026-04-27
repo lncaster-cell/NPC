@@ -35,12 +35,6 @@ int DL_IsRuntimeEnabled()
     return GetLocalString(oModule, DL_L_MODULE_CONTRACT_VERSION) == DL_CONTRACT_VERSION_A0;
 }
 
-int DL_IsChatLogEnabled()
-{
-    object oModule = GetModule();
-    return GetLocalInt(oModule, DL_L_MODULE_CHAT_LOG) == TRUE;
-}
-
 void DL_LogRuntime(string sLog)
 {
     // Temporary: global runtime logging is disabled.
