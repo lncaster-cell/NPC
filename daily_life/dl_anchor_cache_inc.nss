@@ -90,8 +90,27 @@ object DL_GetNpcAreaByTagCached(object oNpc, string sAreaTagLocal, string sAreaC
         return oCached;
     }
 
-    object oArea = GetObjectByTag(sAreaTag);
-    if (!GetIsObjectValid(oArea) || !DL_IsAreaObject(oArea))
+    int nNth = 0;
+    int nSearchCap = 32;
+    object oArea = OBJECT_INVALID;
+    while (nNth < nSearchCap)
+    {
+        object oCandidate = GetObjectByTag(sAreaTag, nNth);
+        if (!GetIsObjectValid(oCandidate))
+        {
+            break;
+        }
+
+        if (DL_IsAreaObject(oCandidate))
+        {
+            oArea = oCandidate;
+            break;
+        }
+
+        nNth++;
+    }
+
+    if (!GetIsObjectValid(oArea))
     {
         DL_LogMarkupIssueOnce(
             oNpc,
