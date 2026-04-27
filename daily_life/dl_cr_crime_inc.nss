@@ -464,17 +464,36 @@ void DL_CR_HandleOpenObject(object oOpened)
         return;
     }
 
+    string sKind = "";
+    if (bLockpick)
+    {
+        int nOpenedType = GetObjectType(oOpened);
+        if (nOpenedType == OBJECT_TYPE_DOOR)
+        {
+            sKind = DL_CR_EVT_DOOR_LOCKPICK;
+        }
+        else if (nOpenedType == OBJECT_TYPE_PLACEABLE)
+        {
+            sKind = DL_CR_EVT_PLACEABLE_LOCKPICK;
+        }
+    }
+
+    if (sKind == "" && bRestricted)
+    {
+        sKind = DL_CR_EVT_RESTRICTED_ENTRY;
+    }
+
+    if (sKind == "")
+    {
+        return;
+    }
+
     float fRadius = DL_CR_GetWitnessRadius();
     object oWitness = DL_CR_FindWitness(oOpener, oArea, fRadius);
     int bWitnessed = GetIsObjectValid(oWitness);
     if (bWitnessed)
     {
         DL_CR_WitnessShout(oWitness, oOpener);
-    }
-    string sKind = DL_CR_EVT_RESTRICTED_ENTRY;
-    if (!bRestricted)
-    {
-        sKind = GetObjectType(oOpened) == OBJECT_TYPE_DOOR ? DL_CR_EVT_DOOR_LOCKPICK : DL_CR_EVT_PLACEABLE_LOCKPICK;
     }
 
     DL_CR_RegisterCrimeIncident(oOpener, oArea, sKind, bWitnessed, oWitness);
