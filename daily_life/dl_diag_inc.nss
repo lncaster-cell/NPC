@@ -50,6 +50,12 @@ string DL_GetNpcProblemSummary(object oNpc)
         return "work:" + sWorkDiag;
     }
 
+    string sFocusDiag = GetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
+    if (sFocusDiag != "")
+    {
+        return "focus:" + sFocusDiag;
+    }
+
     string sBlockedDiag = GetLocalString(oNpc, DL_L_NPC_BLOCKED_DIAGNOSTIC);
     if (sBlockedDiag != "")
     {
@@ -72,6 +78,12 @@ string DL_GetNpcProblemSummary(object oNpc)
     if (sWorkStatus != "" && sWorkStatus != "on_anchor")
     {
         return "work_status:" + sWorkStatus;
+    }
+
+    string sFocusStatus = GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS);
+    if (sFocusStatus != "")
+    {
+        return "focus:" + sFocusStatus;
     }
 
     return "ok";
