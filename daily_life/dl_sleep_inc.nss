@@ -1,3 +1,6 @@
+const string DL_L_NPC_SLEEP_ROUTE_DONE = "dl_npc_sleep_route_done";
+const string DL_L_NPC_SLEEP_ROUTE_TARGET = "dl_npc_sleep_route_target";
+
 int DL_GetNpcHomeSlot(object oNpc)
 {
     int nSlot = GetLocalInt(oNpc, DL_L_NPC_HOME_SLOT);
@@ -80,12 +83,18 @@ object DL_ResolveSleepBedWaypoint(object oNpc)
         "dl_sleep_bed_" + IntToString(nSlot)
     );
 }
+void DL_ClearSleepRouteState(object oNpc)
+{
+    DeleteLocalInt(oNpc, DL_L_NPC_SLEEP_ROUTE_DONE);
+    DeleteLocalString(oNpc, DL_L_NPC_SLEEP_ROUTE_TARGET);
+}
 void DL_ClearSleepExecutionState(object oNpc)
 {
     DeleteLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
+    DL_ClearSleepRouteState(oNpc);
     DL_ClearTransitionExecutionState(oNpc);
 }
 void DL_SetSleepMissingState(object oNpc)
@@ -94,6 +103,7 @@ void DL_SetSleepMissingState(object oNpc)
     SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "missing_waypoints");
     SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_waypoints_missing");
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
+    DL_ClearSleepRouteState(oNpc);
     DL_ClearTransitionExecutionState(oNpc);
 }
 void DL_SetSleepTargetState(object oNpc, object oBed)
@@ -111,9 +121,38 @@ void DL_QueueJumpAction(object oNpc, location lTarget)
     AssignCommand(oNpc, ClearAllActions(TRUE));
     AssignCommand(oNpc, ActionJumpToLocation(lTarget));
 }
+int DL_IsSleepRouteCompleted(object oNpc, object oRoute)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oRoute))
+    {
+        return FALSE;
+    }
+
+    return GetLocalInt(oNpc, DL_L_NPC_SLEEP_ROUTE_DONE) == TRUE &&
+           GetLocalString(oNpc, DL_L_NPC_SLEEP_ROUTE_TARGET) == GetTag(oRoute);
+}
+void DL_MarkSleepRouteCompleted(object oNpc, object oRoute)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oRoute))
+    {
+        return;
+    }
+
+    SetLocalInt(oNpc, DL_L_NPC_SLEEP_ROUTE_DONE, TRUE);
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_ROUTE_TARGET, GetTag(oRoute));
+    if (GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS) == "moving_to_route")
+    {
+        SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "route_reached");
+    }
+}
 int DL_ProgressSleepRouteWaypoint(object oNpc, object oRoute, int bCommittedToBed)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oRoute) || bCommittedToBed)
+    {
+        return FALSE;
+    }
+
+    if (DL_IsSleepRouteCompleted(oNpc, oRoute))
     {
         return FALSE;
     }
@@ -137,6 +176,7 @@ int DL_ProgressSleepRouteWaypoint(object oNpc, object oRoute, int bCommittedToBe
         return TRUE;
     }
 
+    DL_MarkSleepRouteCompleted(oNpc, oRoute);
     return FALSE;
 }
 void DL_ExecuteSleepDirective(object oNpc)
