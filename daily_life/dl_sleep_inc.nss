@@ -17,19 +17,6 @@ int DL_GetNpcHomeSlot(object oNpc)
 
     return nSlot;
 }
-object DL_ResolveSleepRouteWaypoint(object oNpc)
-{
-    object oHome = DL_GetHomeArea(oNpc);
-    int nSlot = DL_GetNpcHomeSlot(oNpc);
-    string sAnchor = "dl_anchor_sleep_route_" + IntToString(nSlot);
-    return DL_GetAreaAnchorWaypoint(
-        oNpc,
-        oHome,
-        sAnchor,
-        "dl_cache_sleep_route",
-        FALSE
-    );
-}
 object DL_ResolveSleepApproachWaypoint(object oNpc)
 {
     object oHome = DL_GetHomeArea(oNpc);
@@ -47,9 +34,10 @@ object DL_ResolveSleepApproachWaypoint(object oNpc)
         return oWp;
     }
 
-    return DL_ResolveNpcWaypointWithFallbackTag(
+    return DL_ResolveNpcWaypointWithFallbackTagInArea(
         oNpc,
         DL_L_NPC_CACHE_SLEEP_APPROACH,
+        oHome,
         "dl_sleep_",
         "_approach",
         "dl_sleep_approach_" + IntToString(nSlot)
@@ -72,9 +60,10 @@ object DL_ResolveSleepBedWaypoint(object oNpc)
         return oWp;
     }
 
-    return DL_ResolveNpcWaypointWithFallbackTag(
+    return DL_ResolveNpcWaypointWithFallbackTagInArea(
         oNpc,
         DL_L_NPC_CACHE_SLEEP_BED,
+        oHome,
         "dl_sleep_",
         "_bed",
         "dl_sleep_bed_" + IntToString(nSlot)
@@ -111,37 +100,8 @@ void DL_QueueJumpAction(object oNpc, location lTarget)
     AssignCommand(oNpc, ClearAllActions(TRUE));
     AssignCommand(oNpc, ActionJumpToLocation(lTarget));
 }
-int DL_ProgressSleepRouteWaypoint(object oNpc, object oRoute, int bCommittedToBed)
-{
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oRoute) || bCommittedToBed)
-    {
-        return FALSE;
-    }
-
-    if (DL_WaypointHasTransition(oRoute))
-    {
-        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oRoute))
-        {
-            return TRUE;
-        }
-    }
-
-    if (GetDistanceBetween(oNpc, oRoute) > DL_SLEEP_APPROACH_RADIUS)
-    {
-        if (GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS) != "moving_to_route")
-        {
-            SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_MOVING);
-            SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "moving_to_route");
-            DL_QueueMoveAction(oNpc, GetLocation(oRoute), TRUE);
-        }
-        return TRUE;
-    }
-
-    return FALSE;
-}
 void DL_ExecuteSleepDirective(object oNpc)
 {
-    object oRoute = DL_ResolveSleepRouteWaypoint(oNpc);
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
     object oBed = DL_ResolveSleepBedWaypoint(oNpc);
 
@@ -164,17 +124,17 @@ void DL_ExecuteSleepDirective(object oNpc)
     string sStatus = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
     int bCommittedToBed = nPhase == DL_SLEEP_PHASE_JUMPING || nPhase == DL_SLEEP_PHASE_ON_BED;
 
-    if (DL_ProgressSleepRouteWaypoint(oNpc, oRoute, bCommittedToBed))
-    {
-        return;
-    }
-
     if (!bCommittedToBed && DL_WaypointHasTransition(oApproach))
     {
         if (DL_TryExecuteTransitionAtWaypoint(oNpc, oApproach))
         {
             return;
         }
+    }
+
+    if (!bCommittedToBed && DL_TryUseNavigationRouteToTarget(oNpc, oApproach))
+    {
+        return;
     }
 
     if (!bCommittedToBed && GetDistanceBetween(oNpc, oApproach) > DL_SLEEP_APPROACH_RADIUS)
@@ -202,6 +162,11 @@ void DL_ExecuteSleepDirective(object oNpc)
         {
             return;
         }
+    }
+
+    if (DL_TryUseNavigationRouteToTarget(oNpc, oBed))
+    {
+        return;
     }
 
     if (GetDistanceBetween(oNpc, oBed) > DL_SLEEP_BED_RADIUS)
