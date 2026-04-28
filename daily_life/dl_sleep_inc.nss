@@ -17,6 +17,19 @@ int DL_GetNpcHomeSlot(object oNpc)
 
     return nSlot;
 }
+object DL_ResolveSleepRouteWaypoint(object oNpc)
+{
+    object oHome = DL_GetHomeArea(oNpc);
+    int nSlot = DL_GetNpcHomeSlot(oNpc);
+    string sAnchor = "dl_anchor_sleep_route_" + IntToString(nSlot);
+    return DL_GetAreaAnchorWaypoint(
+        oNpc,
+        oHome,
+        sAnchor,
+        "dl_cache_sleep_route",
+        FALSE
+    );
+}
 object DL_ResolveSleepApproachWaypoint(object oNpc)
 {
     object oHome = DL_GetHomeArea(oNpc);
@@ -98,8 +111,37 @@ void DL_QueueJumpAction(object oNpc, location lTarget)
     AssignCommand(oNpc, ClearAllActions(TRUE));
     AssignCommand(oNpc, ActionJumpToLocation(lTarget));
 }
+int DL_ProgressSleepRouteWaypoint(object oNpc, object oRoute, int bCommittedToBed)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oRoute) || bCommittedToBed)
+    {
+        return FALSE;
+    }
+
+    if (DL_WaypointHasTransition(oRoute))
+    {
+        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oRoute))
+        {
+            return TRUE;
+        }
+    }
+
+    if (GetDistanceBetween(oNpc, oRoute) > DL_SLEEP_APPROACH_RADIUS)
+    {
+        if (GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS) != "moving_to_route")
+        {
+            SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_MOVING);
+            SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "moving_to_route");
+            DL_QueueMoveAction(oNpc, GetLocation(oRoute), TRUE);
+        }
+        return TRUE;
+    }
+
+    return FALSE;
+}
 void DL_ExecuteSleepDirective(object oNpc)
 {
+    object oRoute = DL_ResolveSleepRouteWaypoint(oNpc);
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
     object oBed = DL_ResolveSleepBedWaypoint(oNpc);
 
@@ -116,19 +158,24 @@ void DL_ExecuteSleepDirective(object oNpc)
         "target dir=SLEEP area=" + GetTag(GetArea(oBed)) + " anchor=" + GetTag(oBed)
     );
 
-    if (DL_WaypointHasTransition(oApproach))
+    location lApproach = GetLocation(oApproach);
+    location lBed = GetLocation(oBed);
+    int nPhase = GetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
+    string sStatus = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
+    int bCommittedToBed = nPhase == DL_SLEEP_PHASE_JUMPING || nPhase == DL_SLEEP_PHASE_ON_BED;
+
+    if (DL_ProgressSleepRouteWaypoint(oNpc, oRoute, bCommittedToBed))
+    {
+        return;
+    }
+
+    if (!bCommittedToBed && DL_WaypointHasTransition(oApproach))
     {
         if (DL_TryExecuteTransitionAtWaypoint(oNpc, oApproach))
         {
             return;
         }
     }
-
-    location lApproach = GetLocation(oApproach);
-    location lBed = GetLocation(oBed);
-    int nPhase = GetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
-    string sStatus = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
-    int bCommittedToBed = nPhase == DL_SLEEP_PHASE_JUMPING || nPhase == DL_SLEEP_PHASE_ON_BED;
 
     if (!bCommittedToBed && GetDistanceBetween(oNpc, oApproach) > DL_SLEEP_APPROACH_RADIUS)
     {
