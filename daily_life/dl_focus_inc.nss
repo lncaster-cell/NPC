@@ -98,6 +98,11 @@ int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus
         }
     }
 
+    if (DL_TryUseNavigationRouteToTarget(oNpc, oTarget))
+    {
+        return TRUE;
+    }
+
     if (GetDistanceBetween(oNpc, oTarget) > DL_WORK_ANCHOR_RADIUS)
     {
         DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
