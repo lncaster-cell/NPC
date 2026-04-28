@@ -34,9 +34,24 @@ const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MIN = 1;
 const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MAX = 16;
 const string DL_L_TRANSITION_DRIVER_LOOKUP_CAP = "dl_transition_driver_lookup_cap";
 
+const string DL_L_AREA_NAV_READY = "dl_area_nav_ready";
+const string DL_L_AREA_NAV_COUNT = "dl_area_nav_count";
+const string DL_L_AREA_NAV_SLOT_PREFIX = "dl_area_nav_";
+const int DL_AREA_NAV_ROUTE_CAP = 32;
+const float DL_AREA_NAV_SIDE_BIAS = 0.50;
+
 // Forward declarations for helpers provided by other include units.
 int DL_ClampInt(int nValue, int nMin, int nMax);
 int DL_GetAreaTick(object oArea);
+
+string DL_GetAreaNavigationSlotKey(int nSlot)
+{
+    if (nSlot < 0)
+    {
+        nSlot = 0;
+    }
+    return DL_L_AREA_NAV_SLOT_PREFIX + IntToString(nSlot);
+}
 
 object DL_GetTransitionWaypointByTag(string sTag)
 {
@@ -156,6 +171,67 @@ int DL_WaypointHasTransition(object oWp)
     string sKind = DL_GetWaypointTransitionKind(oWp);
     string sTransitionId = DL_GetWaypointTransitionId(oWp);
     return sKind != "" && sTransitionId != "";
+}
+
+void DL_BuildAreaNavigationRouteCache(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oArea, DL_L_AREA_NAV_READY) == TRUE)
+    {
+        return;
+    }
+
+    int i = 0;
+    while (i < DL_AREA_NAV_ROUTE_CAP)
+    {
+        DeleteLocalObject(oArea, DL_GetAreaNavigationSlotKey(i));
+        i = i + 1;
+    }
+
+    int nCount = 0;
+    object oObj = GetFirstObjectInArea(oArea);
+    while (GetIsObjectValid(oObj) && nCount < DL_AREA_NAV_ROUTE_CAP)
+    {
+        if (GetObjectType(oObj) == OBJECT_TYPE_WAYPOINT && DL_WaypointHasTransition(oObj))
+        {
+            SetLocalObject(oArea, DL_GetAreaNavigationSlotKey(nCount), oObj);
+            nCount = nCount + 1;
+        }
+        oObj = GetNextObjectInArea(oArea);
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_NAV_COUNT, nCount);
+    SetLocalInt(oArea, DL_L_AREA_NAV_READY, TRUE);
+}
+
+int DL_GetAreaNavigationRouteCount(object oArea)
+{
+    DL_BuildAreaNavigationRouteCache(oArea);
+    int nCount = GetLocalInt(oArea, DL_L_AREA_NAV_COUNT);
+    if (nCount < 0)
+    {
+        return 0;
+    }
+    if (nCount > DL_AREA_NAV_ROUTE_CAP)
+    {
+        return DL_AREA_NAV_ROUTE_CAP;
+    }
+    return nCount;
+}
+
+object DL_GetAreaNavigationRouteAtSlot(object oArea, int nSlot)
+{
+    if (!GetIsObjectValid(oArea) || nSlot < 0 || nSlot >= DL_AREA_NAV_ROUTE_CAP)
+    {
+        return OBJECT_INVALID;
+    }
+
+    DL_BuildAreaNavigationRouteCache(oArea);
+    return GetLocalObject(oArea, DL_GetAreaNavigationSlotKey(nSlot));
 }
 
 int DL_IsValidTransitionWaypointForTag(object oWp, string sExpectedTag)
@@ -466,4 +542,94 @@ int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oTargetWp)
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "driver_unknown");
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "unknown_transition_driver");
     return TRUE;
+}
+
+int DL_ShouldUseNavigationEntryForTarget(object oNpc, object oTarget, object oEntry, object oExit)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget) ||
+        !GetIsObjectValid(oEntry) || !GetIsObjectValid(oExit))
+    {
+        return FALSE;
+    }
+
+    object oNpcArea = GetArea(oNpc);
+    object oTargetArea = GetArea(oTarget);
+    if (!GetIsObjectValid(oNpcArea) || !GetIsObjectValid(oTargetArea) || GetArea(oEntry) != oNpcArea)
+    {
+        return FALSE;
+    }
+
+    object oExitArea = GetArea(oExit);
+    if (!GetIsObjectValid(oExitArea))
+    {
+        return FALSE;
+    }
+
+    // Cross-area route: use an entry in the current area whose exit lands in the target area.
+    if (oNpcArea != oTargetArea)
+    {
+        return oExitArea == oTargetArea;
+    }
+
+    // Same-area route: use the transition only when target and NPC appear to be
+    // on opposite sides of a bidirectional local pair, e.g. first floor/second floor.
+    if (oExitArea != oTargetArea || !DL_IsBidirectionalTransitionPair(oEntry, oExit))
+    {
+        return FALSE;
+    }
+
+    float fNpcToEntry = GetDistanceBetween(oNpc, oEntry);
+    float fNpcToExit = GetDistanceBetween(oNpc, oExit);
+    float fTargetToEntry = GetDistanceBetween(oTarget, oEntry);
+    float fTargetToExit = GetDistanceBetween(oTarget, oExit);
+
+    int bNpcOnEntrySide = (fNpcToEntry + DL_AREA_NAV_SIDE_BIAS) < fNpcToExit;
+    int bTargetOnExitSide = (fTargetToExit + DL_AREA_NAV_SIDE_BIAS) < fTargetToEntry;
+
+    return bNpcOnEntrySide && bTargetOnExitSide;
+}
+
+int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
+    {
+        return FALSE;
+    }
+
+    object oNpcArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oNpcArea))
+    {
+        return FALSE;
+    }
+
+    int nCount = DL_GetAreaNavigationRouteCount(oNpcArea);
+    object oBestEntry = OBJECT_INVALID;
+    int nBestScore = 1000000;
+    int i = 0;
+    while (i < nCount)
+    {
+        object oEntry = DL_GetAreaNavigationRouteAtSlot(oNpcArea, i);
+        if (GetIsObjectValid(oEntry) && DL_WaypointHasTransition(oEntry))
+        {
+            object oExit = DL_ResolveTransitionExitWaypointFromEntry(oEntry);
+            if (DL_ShouldUseNavigationEntryForTarget(oNpc, oTarget, oEntry, oExit))
+            {
+                int nScore = FloatToInt(GetDistanceBetween(oNpc, oEntry) * 100.0) +
+                             FloatToInt(GetDistanceBetween(oExit, oTarget) * 100.0);
+                if (!GetIsObjectValid(oBestEntry) || nScore < nBestScore)
+                {
+                    oBestEntry = oEntry;
+                    nBestScore = nScore;
+                }
+            }
+        }
+        i = i + 1;
+    }
+
+    if (!GetIsObjectValid(oBestEntry))
+    {
+        return FALSE;
+    }
+
+    return DL_TryExecuteTransitionAtWaypoint(oNpc, oBestEntry);
 }
