@@ -1,6 +1,6 @@
 # Builder-friendly Daily Life setup (RU)
 
-> Обновлено: **2026-04-28**
+> Обновлено: **2026-04-29**
 
 ## Главное правило по waypoint tags
 
@@ -26,6 +26,70 @@ Runtime ищет waypoint сначала в нужной area:
 ```
 
 Внутри одной area одинаковые tags всё ещё использовать не надо. Если в одной area два `dl_sleep_bed_1`, результат будет неоднозначным.
+
+## Общая навигация / переходы
+
+Переходы больше не должны настраиваться отдельно для каждого NPC или каждой директивы.
+
+Один раз размеченный переход может использовать любой Daily Life target:
+
+```text
+SLEEP
+WORK
+MEAL
+SOCIAL
+PUBLIC
+будущий CHILL / GUARD / SEARCH
+```
+
+Минимальная пара перехода внутри одной area:
+
+```text
+wp_stairs_down:
+dl_transition_exit_tag = wp_stairs_up
+
+wp_stairs_up:
+dl_transition_exit_tag = wp_stairs_down
+```
+
+После этого NPC, которому нужна точка на другой стороне перехода, сначала использует переход, потом идёт к своей цели.
+
+Пример сна на втором этаже:
+
+```text
+wp_stairs_down
+wp_stairs_up
+dl_sleep_approach_1
+dl_sleep_bed_1
+```
+
+На area больше не нужно ставить:
+
+```text
+dl_anchor_sleep_route_1
+```
+
+Нужно только поставить обычные sleep-точки наверху:
+
+```text
+dl_sleep_approach_1
+dl_sleep_bed_1
+```
+
+Для перехода через дверь можно дополнительно указать:
+
+```text
+dl_transition_driver = door
+dl_transition_driver_tag = tag_двери
+```
+
+Для первого smoke-теста лучше начинать без двери:
+
+```text
+dl_transition_driver = none
+```
+
+или не задавать `dl_transition_driver` вообще.
 
 ## Минимальная настройка кузнеца
 
@@ -85,38 +149,7 @@ dl_anchor_sleep_bed_1
 
 Area anchors всё ещё поддерживаются и имеют приоритет над fallback tags.
 
-## Переходы между точками/этажами
-
-Переходы пока остаются по старой явной схеме через waypoint locals.
-
-Минимальный локальный переход:
-
-```text
-нижний waypoint:
-dl_transition_exit_tag = tag_верхнего_waypoint
-```
-
-Для двустороннего перехода:
-
-```text
-верхний waypoint:
-dl_transition_exit_tag = tag_нижнего_waypoint
-```
-
-Для перехода через дверь:
-
-```text
-dl_transition_driver = door
-dl_transition_driver_tag = tag_двери
-```
-
-Для первого smoke-теста лучше начинать без двери:
-
-```text
-dl_transition_driver = none
-```
-
-или не задавать `dl_transition_driver` вообще.
+Если спальня за локальным переходом внутри той же area, sleep-route local больше не нужен. Достаточно общей пары перехода и sleep-точек за переходом.
 
 ## Дефолтное расписание
 
@@ -236,18 +269,28 @@ OnUserDefined = dl_userdef
 dl_profile_id = blacksmith
 ```
 
-4. Waypoints в той же area:
+4. Work waypoints:
 
 ```text
 dl_work_forge
 dl_work_craft
 ```
 
-5. Для сна добавить:
+5. Sleep waypoints:
 
 ```text
 dl_sleep_approach_1
 dl_sleep_bed_1
+```
+
+6. Если сон на втором этаже внутри этой же area, добавить общую пару перехода:
+
+```text
+wp_stairs_down:
+dl_transition_exit_tag = wp_stairs_up
+
+wp_stairs_up:
+dl_transition_exit_tag = wp_stairs_down
 ```
 
 ## Когда всё ещё нужны explicit area tags
