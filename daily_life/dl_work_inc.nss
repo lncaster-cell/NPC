@@ -198,6 +198,11 @@ int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
         }
     }
 
+    if (DL_TryUseNavigationRouteToTarget(oNpc, oTarget))
+    {
+        return TRUE;
+    }
+
     location lTarget = GetLocation(oTarget);
     if (GetDistanceBetween(oNpc, oTarget) > DL_WORK_ANCHOR_RADIUS)
     {
