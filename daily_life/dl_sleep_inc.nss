@@ -106,6 +106,15 @@ void DL_MarkSleepNavigationInProgress(object oNpc, string sTargetTag)
     SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "moving_via_navigation");
     SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, sTargetTag);
 }
+int DL_ShouldAttemptSleepNavigation(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return FALSE;
+    }
+
+    return GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS) != "moving_via_navigation";
+}
 void DL_ExecuteSleepDirective(object oNpc)
 {
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
@@ -129,8 +138,9 @@ void DL_ExecuteSleepDirective(object oNpc)
     int nPhase = GetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
     string sStatus = GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
     int bCommittedToBed = nPhase == DL_SLEEP_PHASE_JUMPING || nPhase == DL_SLEEP_PHASE_ON_BED;
+    int bMayUseNavigation = DL_ShouldAttemptSleepNavigation(oNpc);
 
-    if (!bCommittedToBed && DL_WaypointHasTransition(oApproach))
+    if (!bCommittedToBed && bMayUseNavigation && DL_WaypointHasTransition(oApproach))
     {
         if (DL_TryExecuteTransitionAtWaypoint(oNpc, oApproach))
         {
@@ -139,7 +149,7 @@ void DL_ExecuteSleepDirective(object oNpc)
         }
     }
 
-    if (!bCommittedToBed && DL_TryUseNavigationRouteToTarget(oNpc, oApproach))
+    if (!bCommittedToBed && bMayUseNavigation && DL_TryUseNavigationRouteToTarget(oNpc, oApproach))
     {
         DL_MarkSleepNavigationInProgress(oNpc, GetTag(oApproach));
         return;
@@ -164,7 +174,7 @@ void DL_ExecuteSleepDirective(object oNpc)
         sStatus = "approach_reached";
     }
 
-    if (DL_WaypointHasTransition(oBed))
+    if (bMayUseNavigation && DL_WaypointHasTransition(oBed))
     {
         if (DL_TryExecuteTransitionAtWaypoint(oNpc, oBed))
         {
@@ -173,7 +183,7 @@ void DL_ExecuteSleepDirective(object oNpc)
         }
     }
 
-    if (DL_TryUseNavigationRouteToTarget(oNpc, oBed))
+    if (bMayUseNavigation && DL_TryUseNavigationRouteToTarget(oNpc, oBed))
     {
         DL_MarkSleepNavigationInProgress(oNpc, GetTag(oBed));
         return;
