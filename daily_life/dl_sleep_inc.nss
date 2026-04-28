@@ -100,6 +100,12 @@ void DL_QueueJumpAction(object oNpc, location lTarget)
     AssignCommand(oNpc, ClearAllActions(TRUE));
     AssignCommand(oNpc, ActionJumpToLocation(lTarget));
 }
+void DL_MarkSleepNavigationInProgress(object oNpc, string sTargetTag)
+{
+    SetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE, DL_SLEEP_PHASE_MOVING);
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS, "moving_via_navigation");
+    SetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET, sTargetTag);
+}
 void DL_ExecuteSleepDirective(object oNpc)
 {
     object oApproach = DL_ResolveSleepApproachWaypoint(oNpc);
@@ -128,12 +134,14 @@ void DL_ExecuteSleepDirective(object oNpc)
     {
         if (DL_TryExecuteTransitionAtWaypoint(oNpc, oApproach))
         {
+            DL_MarkSleepNavigationInProgress(oNpc, GetTag(oApproach));
             return;
         }
     }
 
     if (!bCommittedToBed && DL_TryUseNavigationRouteToTarget(oNpc, oApproach))
     {
+        DL_MarkSleepNavigationInProgress(oNpc, GetTag(oApproach));
         return;
     }
 
@@ -160,12 +168,14 @@ void DL_ExecuteSleepDirective(object oNpc)
     {
         if (DL_TryExecuteTransitionAtWaypoint(oNpc, oBed))
         {
+            DL_MarkSleepNavigationInProgress(oNpc, GetTag(oBed));
             return;
         }
     }
 
     if (DL_TryUseNavigationRouteToTarget(oNpc, oBed))
     {
+        DL_MarkSleepNavigationInProgress(oNpc, GetTag(oBed));
         return;
     }
 
