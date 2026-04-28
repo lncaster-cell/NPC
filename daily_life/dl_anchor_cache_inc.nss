@@ -1,3 +1,5 @@
+const int DL_WAYPOINT_TAG_SEARCH_CAP = 64;
+
 object DL_GetNpcCachedWaypointByTag(object oNpc, string sCacheLocal, string sTag)
 {
     if (!GetIsObjectValid(oNpc) || sTag == "")
@@ -19,6 +21,43 @@ object DL_GetNpcCachedWaypointByTag(object oNpc, string sCacheLocal, string sTag
 
     SetLocalObject(oNpc, sCacheLocal, oWp);
     return oWp;
+}
+object DL_GetNpcCachedWaypointByTagInArea(object oNpc, string sCacheLocal, string sTag, object oArea)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oArea) || sTag == "")
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oCached = GetLocalObject(oNpc, sCacheLocal);
+    if (GetIsObjectValid(oCached) &&
+        GetTag(oCached) == sTag &&
+        GetObjectType(oCached) == OBJECT_TYPE_WAYPOINT &&
+        GetArea(oCached) == oArea)
+    {
+        return oCached;
+    }
+    DeleteLocalObject(oNpc, sCacheLocal);
+
+    int nNth = 0;
+    while (nNth < DL_WAYPOINT_TAG_SEARCH_CAP)
+    {
+        object oCandidate = GetObjectByTag(sTag, nNth);
+        if (!GetIsObjectValid(oCandidate))
+        {
+            break;
+        }
+
+        if (GetObjectType(oCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oCandidate) == oArea)
+        {
+            SetLocalObject(oNpc, sCacheLocal, oCandidate);
+            return oCandidate;
+        }
+
+        nNth = nNth + 1;
+    }
+
+    return OBJECT_INVALID;
 }
 object DL_ResolveEffectiveWaypointForNpc(object oNpc, object oWp)
 {
@@ -56,20 +95,53 @@ object DL_ResolveNpcWaypointWithFallbackTag(
         return OBJECT_INVALID;
     }
 
+    object oArea = GetArea(oNpc);
+    if (!GetIsObjectValid(oArea))
+    {
+        return OBJECT_INVALID;
+    }
+
     string sNpcTag = GetTag(oNpc);
-    object oWp = DL_ResolveEffectiveWaypointForNpc(
+    object oWp = DL_GetNpcCachedWaypointByTagInArea(
         oNpc,
-        DL_GetNpcCachedWaypointByTag(oNpc, sCacheLocal, sPersonalPrefix + sNpcTag + sPersonalSuffix)
+        sCacheLocal,
+        sPersonalPrefix + sNpcTag + sPersonalSuffix,
+        oArea
     );
     if (GetIsObjectValid(oWp))
     {
         return oWp;
     }
 
-    return DL_ResolveEffectiveWaypointForNpc(
+    return DL_GetNpcCachedWaypointByTagInArea(oNpc, sCacheLocal, sFallbackTag, oArea);
+}
+object DL_ResolveNpcWaypointWithFallbackTagInArea(
+    object oNpc,
+    string sCacheLocal,
+    object oArea,
+    string sPersonalPrefix,
+    string sPersonalSuffix,
+    string sFallbackTag
+)
+{
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oArea))
+    {
+        return OBJECT_INVALID;
+    }
+
+    string sNpcTag = GetTag(oNpc);
+    object oWp = DL_GetNpcCachedWaypointByTagInArea(
         oNpc,
-        DL_GetNpcCachedWaypointByTag(oNpc, sCacheLocal, sFallbackTag)
+        sCacheLocal,
+        sPersonalPrefix + sNpcTag + sPersonalSuffix,
+        oArea
     );
+    if (GetIsObjectValid(oWp))
+    {
+        return oWp;
+    }
+
+    return DL_GetNpcCachedWaypointByTagInArea(oNpc, sCacheLocal, sFallbackTag, oArea);
 }
 object DL_GetNpcAreaByTagCached(object oNpc, string sAreaTagLocal, string sAreaCacheLocal)
 {
@@ -173,37 +245,42 @@ object DL_GetAreaAnchorWaypoint(object oNpc, object oArea, string sAnchorLocal, 
         return OBJECT_INVALID;
     }
 
-    object oWp = DL_GetNpcCachedWaypointByTag(oNpc, sCacheLocal, sWpTag);
-    if (!GetIsObjectValid(oWp))
+    object oWp = DL_GetNpcCachedWaypointByTagInArea(oNpc, sCacheLocal, sWpTag, oArea);
+    if (GetIsObjectValid(oWp))
+    {
+        return oWp;
+    }
+
+    // Backward-compatible transition handoff: an anchor may still point to an
+    // entry waypoint in another area when that entry's exit lands in the target area.
+    object oLegacyWp = DL_GetNpcCachedWaypointByTag(oNpc, sCacheLocal, sWpTag);
+    if (GetIsObjectValid(oLegacyWp) && DL_WaypointHasTransition(oLegacyWp))
+    {
+        object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oLegacyWp);
+        if (GetIsObjectValid(oExitWp) && GetArea(oExitWp) == oArea)
+        {
+            return oExitWp;
+        }
+    }
+
+    if (!GetIsObjectValid(oLegacyWp))
     {
         DL_LogMarkupIssueOnce(
             oNpc,
             "missing_wp_" + GetTag(oArea) + "_" + sAnchorLocal + "_" + sWpTag,
             "Area " + GetTag(oArea) + " anchor '" + sAnchorLocal + "' points to missing waypoint '" + sWpTag + "'."
         );
-        return OBJECT_INVALID;
     }
-
-    if (GetArea(oWp) != oArea)
+    else
     {
-        if (DL_WaypointHasTransition(oWp))
-        {
-            object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oWp);
-            if (GetIsObjectValid(oExitWp) && GetArea(oExitWp) == oArea)
-            {
-                return oExitWp;
-            }
-        }
-
         DL_LogMarkupIssueOnce(
             oNpc,
             "foreign_wp_" + GetTag(oArea) + "_" + sAnchorLocal + "_" + sWpTag,
             "Area " + GetTag(oArea) + " anchor '" + sAnchorLocal + "' points to foreign area waypoint '" + sWpTag + "'."
         );
-        return OBJECT_INVALID;
     }
 
-    return oWp;
+    return OBJECT_INVALID;
 }
 object DL_GetHomeArea(object oNpc)
 {
