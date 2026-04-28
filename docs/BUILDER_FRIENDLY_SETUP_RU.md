@@ -1,17 +1,31 @@
 # Builder-friendly Daily Life setup (RU)
 
-> Обновлено: **2026-04-27**
+> Обновлено: **2026-04-28**
 
-## Цель
+## Главное правило по waypoint tags
 
-Снизить ручную настройку NPC в Toolset. Для обычного NPC в одной area должно быть достаточно:
+Одинаковые waypoint tags можно использовать в разных area.
+
+Например, в каждой кузнице или доме можно иметь свои:
 
 ```text
-NPC local:
-dl_profile_id = blacksmith
+dl_work_forge
+dl_work_craft
+dl_sleep_approach_1
+dl_sleep_bed_1
+wp_stairs_down
+wp_stairs_up
 ```
 
-И стандартных waypoint tags в той же area.
+Runtime ищет waypoint сначала в нужной area:
+
+```text
+если задан dl_work_area_tag  -> ищет work-точки в этой area
+если задан dl_home_area_tag  -> ищет sleep-точки в этой area
+если area tag не задан       -> ищет в текущей area NPC
+```
+
+Внутри одной area одинаковые tags всё ещё использовать не надо. Если в одной area два `dl_sleep_bed_1`, результат будет неоднозначным.
 
 ## Минимальная настройка кузнеца
 
@@ -80,8 +94,6 @@ Area anchors всё ещё поддерживаются и имеют приор
 ```text
 нижний waypoint:
 dl_transition_exit_tag = tag_верхнего_waypoint
-
-'tag верхнего waypoint' должен существовать как waypoint
 ```
 
 Для двустороннего перехода:
