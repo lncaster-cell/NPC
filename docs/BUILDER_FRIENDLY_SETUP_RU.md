@@ -13,6 +13,7 @@ dl_work_forge
 dl_work_craft
 dl_sleep_approach_1
 dl_sleep_bed_1
+dl_chill_seat_1
 wp_stairs_down
 wp_stairs_up
 ```
@@ -21,7 +22,7 @@ Runtime ищет waypoint сначала в нужной area:
 
 ```text
 если задан dl_work_area_tag  -> ищет work-точки в этой area
-если задан dl_home_area_tag  -> ищет sleep-точки в этой area
+если задан dl_home_area_tag  -> ищет sleep/chill-точки в этой area
 если area tag не задан       -> ищет в текущей area NPC
 ```
 
@@ -39,7 +40,8 @@ WORK
 MEAL
 SOCIAL
 PUBLIC
-будущий CHILL / GUARD / SEARCH
+CHILL
+будущий GUARD / SEARCH
 ```
 
 Минимальная пара перехода внутри одной area:
@@ -151,6 +153,42 @@ Area anchors всё ещё поддерживаются и имеют приор
 
 Если спальня за локальным переходом внутри той же area, sleep-route local больше не нужен. Достаточно общей пары перехода и sleep-точек за переходом.
 
+## Минимальная настройка CHILL / сидения
+
+`CHILL` — это простое вечернее сидение. Без еды, без питья, без `siteat` и без `sitdrink`.
+
+Для обычного NPC достаточно поставить waypoint:
+
+```text
+dl_chill_seat_1
+```
+
+NPC вечером после работы пойдёт к этой точке, повернётся по facing waypoint и запустит loop-анимацию:
+
+```text
+sitidle
+```
+
+Если у NPC другой home slot:
+
+```text
+dl_home_slot = 2
+```
+
+то точка сидения:
+
+```text
+dl_chill_seat_2
+```
+
+Рекомендуемая постановка:
+
+```text
+dl_chill_seat_1 = точка посадки на стул/кресло
+```
+
+Если кресло мешает коллизией, можно конвертировать его в Environment Object и сделать Bake area.
+
 ## Дефолтное расписание
 
 Для обычных NPC не нужно вручную задавать:
@@ -180,8 +218,9 @@ dl_home_slot    = 1
 06:00–07:00  MEAL / breakfast window
 08:00–16:00  WORK
 примерно 12:00 MEAL / lunch window, если shift_length >= 8
+примерно 17:30–20:30 CHILL, если есть dl_chill_seat_1
 вечером       MEAL / dinner window перед сном
-после работы  SOCIAL или PUBLIC, если есть соответствующие точки
+после работы  SOCIAL или PUBLIC, если нет CHILL-точки или другое окно
 остальное     NONE / idle
 ```
 
@@ -234,12 +273,13 @@ dl_weekend_shift_length = 4
 2. MEAL breakfast
 3. MEAL lunch
 4. MEAL dinner
-5. SOCIAL / PUBLIC вне работы
-6. WORK
-7. NONE
+5. CHILL вечернее сидение, если есть seat-точка
+6. SOCIAL / PUBLIC вне работы
+7. WORK
+8. NONE
 ```
 
-Сон всегда важнее работы. Поэтому ночью NPC должен спать даже если рабочая смена длинная.
+Сон всегда важнее работы. Еда важнее сидения. `CHILL` не заменяет сон и не заменяет окна еды.
 
 ## Практический минимум для теста кузнеца
 
@@ -283,7 +323,13 @@ dl_sleep_approach_1
 dl_sleep_bed_1
 ```
 
-6. Если сон на втором этаже внутри этой же area, добавить общую пару перехода:
+6. Chill waypoint:
+
+```text
+dl_chill_seat_1
+```
+
+7. Если сон/chill на втором этаже внутри этой же area, добавить общую пару перехода:
 
 ```text
 wp_stairs_down:
