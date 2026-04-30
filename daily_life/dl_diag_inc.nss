@@ -27,6 +27,10 @@ string DL_GetDirectiveLabel(int nDirective)
     {
         return "public";
     }
+    if (nDirective == DL_DIR_CHILL)
+    {
+        return "chill";
+    }
     return "none";
 }
 
@@ -81,7 +85,10 @@ string DL_GetNpcProblemSummary(object oNpc)
     }
 
     string sFocusStatus = GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS);
-    if (sFocusStatus != "")
+    if (sFocusStatus != "" &&
+        sFocusStatus != "on_chill_anchor" &&
+        sFocusStatus != "on_public_anchor" &&
+        GetStringLeft(sFocusStatus, 15) != "on_meal_anchor")
     {
         return "focus:" + sFocusStatus;
     }
