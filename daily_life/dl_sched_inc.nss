@@ -5,6 +5,8 @@ const int DL_SCHED_MAX_SLEEP_HOURS = 10;
 const int DL_SCHED_DEFAULT_SHIFT_START = 8;
 const int DL_SCHED_DEFAULT_SHIFT_LENGTH = 8;
 const int DL_SCHED_DEFAULT_WEEKEND_SHIFT_LENGTH = 6;
+const int DL_SCHED_DEFAULT_CHILL_DELAY_MINUTES = 90;
+const int DL_SCHED_DEFAULT_CHILL_DURATION_MINUTES = 180;
 
 int DL_NormalizeHour(int nHour)
 {
@@ -229,6 +231,7 @@ int DL_ResolveNpcDirectiveAtMinute(object oNpc, int nNow)
     int nShiftStartHour = DL_GetNpcShiftStart(oNpc);
     int nShiftStart = nShiftStartHour * 60;
     int nShiftEnd = DL_NormalizeMinuteOfDay(nShiftStart + (nShiftLen * 60));
+    int nChillStart = DL_NormalizeMinuteOfDay(nShiftEnd + DL_SCHED_DEFAULT_CHILL_DELAY_MINUTES);
     string sTag = GetTag(oNpc);
 
     int nBreakfastStart = DL_NormalizeMinuteOfDay((nWake * 60) + DL_GetTagDeterministicOffset(sTag, 21, 10));
@@ -237,6 +240,7 @@ int DL_ResolveNpcDirectiveAtMinute(object oNpc, int nNow)
     int nSocialStart = DL_NormalizeMinuteOfDay(nShiftEnd + 10 + DL_GetTagDeterministicOffset(sTag, 31, 15));
     int nPublicStart = DL_NormalizeMinuteOfDay((nWake * 60) + 180 + DL_GetTagDeterministicOffset(sTag, 41, 20));
     int nPublicLate = DL_NormalizeMinuteOfDay(nDinnerStart - 120 + DL_GetTagDeterministicOffset(sTag, 31, 15));
+    int bInWorkWindow = bHasWorkWindow && DL_MinuteInWindow(nNow, nShiftStart, nShiftLen * 60);
 
     if (DL_MinuteInWindow(nNow, nSleepStart, nSleepHours * 60))
     {
@@ -258,7 +262,13 @@ int DL_ResolveNpcDirectiveAtMinute(object oNpc, int nNow)
         return DL_DIR_MEAL;
     }
 
-    int bInWorkWindow = bHasWorkWindow && DL_MinuteInWindow(nNow, nShiftStart, nShiftLen * 60);
+    if (bHasWorkWindow && !bInWorkWindow &&
+        DL_MinuteInWindow(nNow, nChillStart, DL_SCHED_DEFAULT_CHILL_DURATION_MINUTES) &&
+        GetIsObjectValid(DL_ResolveChillWaypoint(oNpc)))
+    {
+        return DL_DIR_CHILL;
+    }
+
     if (bWeekend && GetLocalString(oNpc, DL_L_NPC_WEEKEND_MODE) == DL_WEEKEND_MODE_OFF_PUBLIC)
     {
         if (DL_MinuteInWindow(nNow, nSocialStart, 75))

@@ -1,5 +1,6 @@
 const string DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ = "dl_cache_social_partner_obj";
 const int DL_SOCIAL_PARTNER_TAG_SEARCH_CAP = 32;
+const string DL_CHILL_ANIM_SIT_IDLE = "sitidle";
 
 void DL_ClearFocusExecutionState(object oNpc)
 {
@@ -119,6 +120,7 @@ int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus
     DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
     SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, sOnAnchorStatus);
     SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oTarget));
+    AssignCommand(oNpc, SetFacing(GetFacing(oTarget)));
     if (sAnim != "")
     {
         PlayCustomAnimation(oNpc, sAnim, TRUE);
@@ -222,6 +224,24 @@ object DL_ResolvePublicWaypoint(object oNpc)
     }
     return DL_GetAreaAnchorWaypoint(oNpc, oArea, "dl_anchor_public", DL_L_NPC_CACHE_PUBLIC, TRUE);
 }
+object DL_ResolveChillWaypoint(object oNpc)
+{
+    object oArea = DL_GetHomeArea(oNpc);
+    if (!GetIsObjectValid(oArea))
+    {
+        return OBJECT_INVALID;
+    }
+
+    int nSlot = DL_GetNpcHomeSlot(oNpc);
+    return DL_ResolveNpcWaypointWithFallbackTagInArea(
+        oNpc,
+        DL_L_NPC_CACHE_CHILL_SEAT,
+        oArea,
+        "dl_chill_",
+        "_seat",
+        "dl_chill_seat_" + IntToString(nSlot)
+    );
+}
 void DL_ExecuteMealDirective(object oNpc)
 {
     string sMealKind = DL_ResolveMealKind(oNpc);
@@ -248,6 +268,22 @@ void DL_ExecuteMealDirective(object oNpc)
         "target dir=MEAL area=" + GetTag(GetArea(oMeal)) + " anchor=" + GetTag(oMeal) + " kind=" + sMealKind
     );
     DL_ProgressFocusAtTarget(oNpc, oMeal, "on_meal_anchor_" + sMealKind, sAnim);
+}
+void DL_ExecuteChillDirective(object oNpc)
+{
+    object oSeat = DL_ResolveChillWaypoint(oNpc);
+    if (!GetIsObjectValid(oSeat))
+    {
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "missing_chill_seat");
+        return;
+    }
+
+    DL_LogChatDebugEvent(
+        oNpc,
+        "target_chill",
+        "target dir=CHILL area=" + GetTag(GetArea(oSeat)) + " anchor=" + GetTag(oSeat)
+    );
+    DL_ProgressFocusAtTarget(oNpc, oSeat, "on_chill_anchor", DL_CHILL_ANIM_SIT_IDLE);
 }
 void DL_ExecutePublicDirective(object oNpc)
 {

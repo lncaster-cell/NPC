@@ -33,6 +33,7 @@ const string DL_L_NPC_CACHE_MEAL = "dl_cache_meal";
 const string DL_L_NPC_CACHE_SOCIAL_A = "dl_cache_social_a";
 const string DL_L_NPC_CACHE_SOCIAL_B = "dl_cache_social_b";
 const string DL_L_NPC_CACHE_PUBLIC = "dl_cache_public";
+const string DL_L_NPC_CACHE_CHILL_SEAT = "dl_cache_chill_seat";
 const string DL_L_NPC_CACHE_WORK_PRIMARY = "dl_cache_work_primary";
 const string DL_L_NPC_CACHE_WORK_SECONDARY = "dl_cache_work_secondary";
 const string DL_L_NPC_CACHE_WORK_FETCH = "dl_cache_work_fetch";
@@ -78,6 +79,7 @@ const string DL_STATE_WORK = "work";
 const string DL_STATE_SOCIAL = "social";
 const string DL_STATE_MEAL = "meal";
 const string DL_STATE_PUBLIC = "public";
+const string DL_STATE_CHILL = "chill";
 
 const string DL_DIALOGUE_IDLE = "idle";
 const string DL_DIALOGUE_SLEEP = "sleep";
@@ -92,6 +94,7 @@ const string DL_MAT_WORK = "work";
 const string DL_MAT_SOCIAL = "social";
 const string DL_MAT_MEAL = "meal";
 const string DL_MAT_PUBLIC = "public";
+const string DL_MAT_CHILL = "chill";
 
 const int DL_DIR_NONE = 0;
 const int DL_DIR_SLEEP = 1;
@@ -99,6 +102,7 @@ const int DL_DIR_WORK = 2;
 const int DL_DIR_SOCIAL = 3;
 const int DL_DIR_MEAL = 4;
 const int DL_DIR_PUBLIC = 5;
+const int DL_DIR_CHILL = 6;
 const int DL_SLEEP_PHASE_NONE = 0;
 const int DL_SLEEP_PHASE_MOVING = 1;
 const int DL_SLEEP_PHASE_JUMPING = 2;
@@ -129,6 +133,7 @@ int DL_IsActivePipelineNpc(object oNpc);
 int DL_IsAreaObject(object oObject);
 object DL_GetHomeArea(object oNpc);
 object DL_GetWorkArea(object oNpc);
+object DL_ResolveChillWaypoint(object oNpc);
 int DL_ShouldFallbackSocialToPublic(object oNpc);
 
 #include "dl_sched_inc"
@@ -174,6 +179,10 @@ string DL_GetDirectiveDebugLabel(int nDirective)
     if (nDirective == DL_DIR_PUBLIC)
     {
         return "PUBLIC";
+    }
+    if (nDirective == DL_DIR_CHILL)
+    {
+        return "CHILL";
     }
     return "NONE";
 }
@@ -233,7 +242,7 @@ void DL_LogStuckState(object oNpc, int nDirective)
             sTarget = GetLocalString(oNpc, DL_L_NPC_WORK_TARGET);
         }
     }
-    else if (nDirective == DL_DIR_MEAL || nDirective == DL_DIR_SOCIAL || nDirective == DL_DIR_PUBLIC)
+    else if (nDirective == DL_DIR_MEAL || nDirective == DL_DIR_SOCIAL || nDirective == DL_DIR_PUBLIC || nDirective == DL_DIR_CHILL)
     {
         sState = GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS);
         if (sState == "moving_to_anchor")
@@ -338,6 +347,13 @@ void DL_ApplyMaterializationSkeleton(object oNpc, int nDirective)
         return;
     }
 
+    if (nDirective == DL_DIR_CHILL)
+    {
+        SetLocalInt(oNpc, DL_L_NPC_MAT_REQ, TRUE);
+        SetLocalString(oNpc, DL_L_NPC_MAT_TAG, DL_MAT_CHILL);
+        return;
+    }
+
     DeleteLocalInt(oNpc, DL_L_NPC_MAT_REQ);
     DeleteLocalString(oNpc, DL_L_NPC_MAT_TAG);
 }
@@ -411,6 +427,12 @@ int DL_ShouldUseDirectiveFastPath(object oNpc, int nEffectiveDirective)
                GetLocalString(oNpc, DL_L_NPC_WORK_TARGET) != "";
     }
 
+    if (nEffectiveDirective == DL_DIR_CHILL)
+    {
+        return GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) == "on_chill_anchor" &&
+               GetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET) != "";
+    }
+
     return FALSE;
 }
 
@@ -482,6 +504,15 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
         DL_ExecutePublicDirective(oNpc);
+        DL_ClearActivityPresentation(oNpc);
+    }
+    else if (nEffectiveDirective == DL_DIR_CHILL)
+    {
+        DL_ClearSleepExecutionState(oNpc);
+        DL_ClearWorkExecutionState(oNpc);
+        SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_CHILL);
+        DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
+        DL_ExecuteChillDirective(oNpc);
         DL_ClearActivityPresentation(oNpc);
     }
     else
