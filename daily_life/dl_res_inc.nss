@@ -375,7 +375,7 @@ int DL_IsProfileServiceAvailable(string sProfile)
 }
 void DL_ApplyIdleLikeDirectiveState(object oNpc, int bSocial)
 {
-    SetLocalString(oNpc, bSocial ? DL_STATE_SOCIAL : DL_STATE_IDLE);
+    SetLocalString(oNpc, DL_L_NPC_STATE, bSocial ? DL_STATE_SOCIAL : DL_STATE_IDLE);
     DL_SetInteractionModes(
         oNpc,
         bSocial ? DL_DIALOGUE_SOCIAL : DL_DIALOGUE_IDLE,
