@@ -2,7 +2,7 @@
 // Shows current module time and nearest Daily Life NPC runtime state.
 // Intended for builder/runtime smoke tests only.
 
-#include "dl_runtime_contract_inc"
+#include "dl_core_inc"
 
 const float DL_DBG_NPC_SCAN_RADIUS = 30.0;
 
@@ -82,9 +82,13 @@ object DL_DbgFindNearestDailyLifeNpc(object oUser)
     return oBest;
 }
 
-void DL_DbgSay(object oPC, string sText)
+void DL_DbgChat(object oPC, string sText)
 {
     SendMessageToPC(oPC, sText);
+}
+
+void DL_DbgFloat(object oPC, string sText)
+{
     FloatingTextStringOnCreature(sText, oPC, FALSE);
 }
 
@@ -103,12 +107,13 @@ void main()
 
     string sTime = "[DL DEBUG] time=" + DL_DbgPad2(GetTimeHour()) + ":" + DL_DbgPad2(GetTimeMinute()) + ":" + DL_DbgPad2(GetTimeSecond()) +
                    " date=" + IntToString(GetCalendarYear()) + "/" + IntToString(GetCalendarMonth()) + "/" + IntToString(GetCalendarDay());
-    DL_DbgSay(oPC, sTime);
+    DL_DbgChat(oPC, sTime);
 
     object oNpc = DL_DbgFindNearestDailyLifeNpc(oPC);
     if (!GetIsObjectValid(oNpc))
     {
-        DL_DbgSay(oPC, "[DL DEBUG] nearest_npc=NONE within " + FloatToString(DL_DBG_NPC_SCAN_RADIUS, 1, 1) + "m");
+        DL_DbgChat(oPC, "[DL DEBUG] nearest_npc=NONE within " + FloatToString(DL_DBG_NPC_SCAN_RADIUS, 1, 1) + "m");
+        DL_DbgFloat(oPC, "[DL DEBUG] time=" + DL_DbgPad2(GetTimeHour()) + ":" + DL_DbgPad2(GetTimeMinute()) + " npc=NONE");
         return;
     }
 
@@ -119,31 +124,40 @@ void main()
                   " tag=" + GetTag(oNpc) +
                   " profile=" + GetLocalString(oNpc, DL_L_NPC_PROFILE_ID) +
                   " dist=" + FloatToString(GetDistanceBetween(oPC, oNpc), 1, 1);
-    DL_DbgSay(oPC, sNpc);
+    DL_DbgChat(oPC, sNpc);
 
     string sDirective = "[DL DEBUG] now_dir=" + DL_DbgDirectiveLabel(nNowDirective) +
                         " stored_dir=" + DL_DbgDirectiveLabel(nStoredDirective) +
                         " state=" + GetLocalString(oNpc, DL_L_NPC_STATE) +
                         " problem=" + DL_GetNpcProblemSummary(oNpc);
-    DL_DbgSay(oPC, sDirective);
+    DL_DbgChat(oPC, sDirective);
 
     string sSleep = "[DL DEBUG] sleep_status=" + GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS) +
                     " sleep_target=" + GetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET) +
                     " sleep_diag=" + GetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC);
-    DL_DbgSay(oPC, sSleep);
+    DL_DbgChat(oPC, sSleep);
 
     string sWork = "[DL DEBUG] work_status=" + GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) +
                    " work_target=" + GetLocalString(oNpc, DL_L_NPC_WORK_TARGET) +
                    " work_diag=" + GetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC);
-    DL_DbgSay(oPC, sWork);
+    DL_DbgChat(oPC, sWork);
 
     string sFocus = "[DL DEBUG] focus_status=" + GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) +
                     " focus_target=" + GetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET) +
                     " focus_diag=" + GetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
-    DL_DbgSay(oPC, sFocus);
+    DL_DbgChat(oPC, sFocus);
 
     string sTransition = "[DL DEBUG] transition_status=" + GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) +
                          " transition_target=" + GetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET) +
                          " transition_diag=" + GetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC);
-    DL_DbgSay(oPC, sTransition);
+    DL_DbgChat(oPC, sTransition);
+
+    DL_DbgFloat(
+        oPC,
+        "[DL DEBUG] " + DL_DbgPad2(GetTimeHour()) + ":" + DL_DbgPad2(GetTimeMinute()) +
+            " npc=" + GetTag(oNpc) +
+            " now=" + DL_DbgDirectiveLabel(nNowDirective) +
+            " stored=" + DL_DbgDirectiveLabel(nStoredDirective) +
+            " problem=" + DL_GetNpcProblemSummary(oNpc)
+    );
 }
