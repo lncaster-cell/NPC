@@ -34,6 +34,7 @@ const string DL_L_NPC_CACHE_SOCIAL_A = "dl_cache_social_a";
 const string DL_L_NPC_CACHE_SOCIAL_B = "dl_cache_social_b";
 const string DL_L_NPC_CACHE_PUBLIC = "dl_cache_public";
 const string DL_L_NPC_CACHE_CHILL_SEAT = "dl_cache_chill_seat";
+const string DL_L_NPC_CACHE_CHILL_SEAT_MISSING_UNTIL = "dl_cache_chill_seat_missing_until";
 const string DL_L_NPC_CACHE_WORK_PRIMARY = "dl_cache_work_primary";
 const string DL_L_NPC_CACHE_WORK_SECONDARY = "dl_cache_work_secondary";
 const string DL_L_NPC_CACHE_WORK_FETCH = "dl_cache_work_fetch";
@@ -67,6 +68,12 @@ const string DL_L_NPC_CHAT_LAST_EVENT_SIG = "dl_chat_last_event_sig";
 const string DL_L_NPC_CHAT_STUCK_SIG = "dl_chat_stuck_sig";
 const string DL_L_NPC_CHAT_STUCK_SINCE = "dl_chat_stuck_since";
 const string DL_L_NPC_CHAT_STUCK_LAST_LOG = "dl_chat_stuck_last_log";
+const string DL_L_MODULE_CACHE_EPOCH = "dl_cache_epoch";
+const string DL_L_MODULE_FORCE_CACHE_RESET = "dl_force_cache_reset";
+const string DL_L_AREA_CACHE_EPOCH = "dl_area_cache_epoch";
+const string DL_L_AREA_FORCE_CACHE_RESET = "dl_force_area_cache_reset";
+const string DL_L_NPC_CACHE_EPOCH = "dl_npc_cache_epoch";
+const string DL_L_NPC_FORCE_CACHE_RESET = "dl_force_npc_cache_reset";
 
 const string DL_PROFILE_BLACKSMITH = "blacksmith";
 const string DL_PROFILE_GATE_POST = "gate_post";
@@ -135,6 +142,8 @@ object DL_GetHomeArea(object oNpc);
 object DL_GetWorkArea(object oNpc);
 object DL_ResolveChillWaypoint(object oNpc);
 int DL_ShouldFallbackSocialToPublic(object oNpc);
+void DL_MaybeRefreshNpcCachesForEpoch(object oNpc);
+void DL_MaybeRefreshAreaCachesForEpoch(object oArea);
 
 #include "dl_sched_inc"
 
@@ -364,6 +373,131 @@ void DL_ApplyMaterializationSkeleton(object oNpc, int nDirective)
 #include "dl_work_inc"
 #include "dl_focus_inc"
 
+int DL_GetModuleCacheEpoch()
+{
+    object oModule = GetModule();
+    int nEpoch = GetLocalInt(oModule, DL_L_MODULE_CACHE_EPOCH);
+    if (nEpoch <= 0)
+    {
+        nEpoch = 1;
+        SetLocalInt(oModule, DL_L_MODULE_CACHE_EPOCH, nEpoch);
+    }
+    return nEpoch;
+}
+void DL_ConsumeModuleCacheResetRequest()
+{
+    object oModule = GetModule();
+    if (GetLocalInt(oModule, DL_L_MODULE_FORCE_CACHE_RESET) != TRUE)
+    {
+        return;
+    }
+
+    int nEpoch = DL_GetModuleCacheEpoch() + 1;
+    SetLocalInt(oModule, DL_L_MODULE_CACHE_EPOCH, nEpoch);
+    DeleteLocalInt(oModule, DL_L_MODULE_FORCE_CACHE_RESET);
+}
+void DL_ClearAreaNavigationCache(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    int i = 0;
+    while (i < DL_AREA_NAV_ROUTE_CAP)
+    {
+        DeleteLocalObject(oArea, DL_GetAreaNavigationSlotKey(i));
+        i = i + 1;
+    }
+    DeleteLocalInt(oArea, DL_L_AREA_NAV_READY);
+    DeleteLocalInt(oArea, DL_L_AREA_NAV_COUNT);
+}
+void DL_MaybeRefreshAreaCachesForEpoch(object oArea)
+{
+    if (!GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    DL_ConsumeModuleCacheResetRequest();
+    int nEpoch = DL_GetModuleCacheEpoch();
+    if (GetLocalInt(oArea, DL_L_AREA_FORCE_CACHE_RESET) == TRUE ||
+        GetLocalInt(oArea, DL_L_AREA_CACHE_EPOCH) != nEpoch)
+    {
+        DL_ClearAreaNavigationCache(oArea);
+        SetLocalInt(oArea, DL_L_AREA_CACHE_EPOCH, nEpoch);
+        DeleteLocalInt(oArea, DL_L_AREA_FORCE_CACHE_RESET);
+    }
+}
+void DL_ClearNpcWaypointCaches(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SLEEP_APPROACH);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SLEEP_BED);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_FORGE);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_CRAFT);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_POST);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_TRADE);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_PRIMARY);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_SECONDARY);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_FETCH);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_MEAL);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_A);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_B);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_PUBLIC);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_CHILL_SEAT);
+    DeleteLocalInt(oNpc, DL_L_NPC_CACHE_CHILL_SEAT_MISSING_UNTIL);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+}
+void DL_ClearNpcAreaCaches(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_HOME_AREA);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_AREA);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_MEAL_AREA);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_AREA);
+    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_PUBLIC_AREA);
+}
+void DL_ClearNpcRuntimeCaches(object oNpc)
+{
+    DL_ClearNpcWaypointCaches(oNpc);
+    DL_ClearNpcAreaCaches(oNpc);
+}
+void DL_MaybeRefreshNpcCachesForEpoch(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    object oArea = GetArea(oNpc);
+    if (GetIsObjectValid(oArea))
+    {
+        DL_MaybeRefreshAreaCachesForEpoch(oArea);
+    }
+    else
+    {
+        DL_ConsumeModuleCacheResetRequest();
+    }
+
+    int nEpoch = DL_GetModuleCacheEpoch();
+    if (GetLocalInt(oNpc, DL_L_NPC_FORCE_CACHE_RESET) == TRUE ||
+        GetLocalInt(oNpc, DL_L_NPC_CACHE_EPOCH) != nEpoch)
+    {
+        DL_ClearNpcRuntimeCaches(oNpc);
+        SetLocalInt(oNpc, DL_L_NPC_CACHE_EPOCH, nEpoch);
+        DeleteLocalInt(oNpc, DL_L_NPC_FORCE_CACHE_RESET);
+    }
+}
+
 void DL_SetInteractionModes(object oNpc, string sDialogue, string sService)
 {
     SetLocalString(oNpc, DL_L_NPC_DIALOGUE_MODE, sDialogue);
@@ -442,6 +576,8 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
     {
         return;
     }
+
+    DL_MaybeRefreshNpcCachesForEpoch(oNpc);
 
     int nEffectiveDirective = DL_ResolveEffectiveDirective(oNpc, nDirective);
     int nPrevDirective = GetLocalInt(oNpc, DL_L_NPC_DIRECTIVE);
