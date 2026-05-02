@@ -195,64 +195,7 @@ object DL_FindCrossAreaNavEntry(object oNpc, object oTarget, string sFromZone, s
 
 int DL_TryExecuteCrossAreaTransitionEntryWaypoint(object oNpc, object oEntryWp)
 {
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oEntryWp))
-    {
-        return FALSE;
-    }
-
-    if (!DL_WaypointHasTransition(oEntryWp))
-    {
-        return FALSE;
-    }
-
-    string sKind = DL_GetWaypointTransitionKind(oEntryWp);
-    string sTransitionId = DL_GetWaypointTransitionId(oEntryWp);
-    string sDriver = DL_GetWaypointTransitionDriver(oEntryWp);
-
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_KIND, sKind);
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_ID, sTransitionId);
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET, GetTag(oEntryWp));
-
-    if (GetDistanceBetweenLocations(GetLocation(oNpc), GetLocation(oEntryWp)) > DL_TRANSITION_ENTRY_RADIUS)
-    {
-        if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
-        {
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "moving_to_entry");
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "moving_to_cross_area_transition_entry");
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionMoveToLocation(GetLocation(oEntryWp), TRUE));
-        }
-        return TRUE;
-    }
-
-    object oExitWp = DL_ResolveCrossAreaTransitionExitWaypointFromEntry(oEntryWp);
-    if (!GetIsObjectValid(oExitWp))
-    {
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "cross_exit_missing");
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_valid_cross_area_transition_exit_waypoint");
-        return TRUE;
-    }
-
-    location lExit = GetLocation(oExitWp);
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "transitioning");
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "cross_area_transition_in_progress");
-    DL_SetNpcNavZoneFromWaypoint(oNpc, oExitWp);
-
-    if (sDriver == DL_TRANSITION_DRIVER_DOOR)
-    {
-        object oDoor = DL_ResolveTransitionDriverObject(oEntryWp);
-        AssignCommand(oNpc, ClearAllActions(TRUE));
-        if (GetIsObjectValid(oDoor) && GetObjectType(oDoor) == OBJECT_TYPE_DOOR && GetIsDoorActionPossible(oDoor, DOOR_ACTION_OPEN))
-        {
-            AssignCommand(oNpc, DoDoorAction(oDoor, DOOR_ACTION_OPEN));
-        }
-        AssignCommand(oNpc, ActionJumpToLocation(lExit));
-        return TRUE;
-    }
-
-    AssignCommand(oNpc, ClearAllActions(TRUE));
-    AssignCommand(oNpc, ActionJumpToLocation(lExit));
-    return TRUE;
+    return DL_ExecuteTransitionViaEntryWaypoint(oNpc, oEntryWp, "cross_area");
 }
 
 int DL_TryUseCrossAreaNavigationRouteToTarget(object oNpc, object oTarget)
