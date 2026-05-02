@@ -15,7 +15,8 @@ void main()
         return;
     }
 
-    DeleteLocalInt(oArea, DL_L_AREA_TIER);
+    // Reset policy: area tier is explicit state; reset via canonical value, not key deletion.
+    SetLocalInt(oArea, DL_L_AREA_TIER, DL_TIER_WARM);
     DL_BootstrapAreaTier(oArea);
 
     SetLocalInt(oArea, "dl_smk_tier_value", DL_GetAreaTier(oArea));
