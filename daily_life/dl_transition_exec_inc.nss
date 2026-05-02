@@ -1,12 +1,14 @@
 // Daily Life canonical Transition Executor.
 //
 // Contract:
+// - Canonical executor for all transition driver paths (routed + cross-area).
 // - Executes exactly one transition entry selected by Nav Router.
 // - Does not choose routes.
 // - Supports same-area and cross-area exit resolution.
 // - Uses existing transition metadata and driver semantics.
 
-int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp)
+
+int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sDiagPrefix)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oEntryWp))
     {
@@ -39,7 +41,7 @@ int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp)
         if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
         {
             SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "moving_to_entry");
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "moving_to_routed_transition_entry");
+            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "moving_to_" + sDiagPrefix + "_transition_entry");
             AssignCommand(oNpc, ClearAllActions(TRUE));
             AssignCommand(oNpc, ActionMoveToLocation(GetLocation(oEntryWp), TRUE));
         }
@@ -49,14 +51,14 @@ int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp)
     object oExitWp = DL_ResolveCrossAreaTransitionExitWaypointFromEntry(oEntryWp);
     if (!GetIsObjectValid(oExitWp))
     {
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "exit_missing");
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_valid_routed_transition_exit_waypoint");
+        SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, sDiagPrefix + "_exit_missing");
+        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_valid_" + sDiagPrefix + "_transition_exit_waypoint");
         return TRUE;
     }
 
     location lExit = GetLocation(oExitWp);
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "transitioning");
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "routed_transition_in_progress");
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, sDiagPrefix + "_transition_in_progress");
     DL_SetNpcNavZoneFromWaypoint(oNpc, oExitWp);
 
     if (sDriver == "" || sDriver == DL_TRANSITION_DRIVER_NONE || sDriver == DL_TRANSITION_DRIVER_TRIGGER)
@@ -87,4 +89,9 @@ int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp)
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "driver_unknown");
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "unknown_transition_driver");
     return TRUE;
+}
+
+int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp)
+{
+    return DL_ExecuteTransitionViaEntryWaypoint(oNpc, oEntryWp, "routed");
 }
