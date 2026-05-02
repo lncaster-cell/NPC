@@ -620,6 +620,16 @@ dl_social_theater_2
 - NWN Lexicon: `SignalEvent` — модель исполнения событийного сигнала.<br>
   https://nwnlexicon.com/SignalEvent
 
+
+### 9.6 Guard-order policy (runtime area domains)
+
+- Для всех area-domain веток (worker/resync/warm/city-response/transition) используется единый guard-order:
+  1) runtime gate (`DL_IsRuntimeEnabled` через `DL_CanRunRuntimeForArea`),
+  2) object validity (`GetIsObjectValid`/`DL_IsAreaObject` внутри helper),
+  3) domain toggle/tier (например, HOT/WARM или area-local domain flag).
+- Inline guard-цепочки в рабочих ветках считаются anti-pattern: использовать только канонические helper API `DL_CanRun*ForArea`.
+- Цель policy: исключить рассинхрон precondition-порядка между доменами и уменьшить риск дрейфа проверок при дальнейших refactor-итерациях.
+
 ### 9.5 Применено в runtime (2026-04-14)
 
 - В `dl_worker_inc.nss` оптимизирован `DL_RunAreaNpcRoundRobinPass`:

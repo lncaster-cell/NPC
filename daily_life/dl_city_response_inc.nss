@@ -22,23 +22,7 @@ int DL_CR_IsDetainPending(object oPc);
 
 int DL_CR_IsEnabledForArea(object oArea)
 {
-    if (!DL_IsRuntimeEnabled())
-    {
-        return FALSE;
-    }
-
-    object oModule = GetModule();
-    if (GetLocalInt(oModule, DL_L_MODULE_CR_ENABLED) != TRUE)
-    {
-        return FALSE;
-    }
-
-    if (!DL_IsValidAreaObject(oArea))
-    {
-        return FALSE;
-    }
-
-    return GetLocalInt(oArea, DL_L_AREA_CR_ENABLED) == TRUE;
+    return DL_CanRunCityResponseForArea(oArea);
 }
 
 int DL_CR_GetLevelByHeat(int nHeat)

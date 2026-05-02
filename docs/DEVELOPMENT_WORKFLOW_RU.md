@@ -19,7 +19,7 @@
 8. После **каждого этапа унификации** запускать статический поиск неиспользуемых функций/констант в `daily_life/*.nss` (`rg` по имени + ручная call-site проверка).
 9. Deprecated-функции удалять в **том же PR**, где введён replacement (долгое сосуществование старого и нового пути запрещено).
 10. Если временное сосуществование неизбежно, оставлять явный маркер `remove-by: <YYYY-MM-DD|version>; owner: <name>` рядом с transitional-кодом.
-11. Для каждого заменённого API/ключа добавлять явную запись в `docs/DEPRECATION_REGISTRY_RU.md` со схемой: `old`, `replacement`, `remove_by`.
+11. Для area-domain guard-проверок соблюдать единый порядок: `runtime gate -> object validity -> area/tier/domain toggle`; использовать только канонические helper’ы `DL_CanRun*ForArea`, без inline-дубликатов.
 
 
 
