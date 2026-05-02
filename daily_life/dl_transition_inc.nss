@@ -737,7 +737,7 @@ int DL_JumpNpcToTransitionExit(object oNpc, location lExit, string sStatus = "",
 }
 
 
-int DL_ExecuteTransitionDriver(object oNpc, object oEntryWp, location lExit, object oExitWp, string sJumpDiagnostic = "transition_in_progress")
+int DL_ExecuteTransitionDriver(object oNpc, object oEntryWp, location lExit, object oExitWp, string sJumpDiagnostic = DL_TRANSITION_DIAG_IN_PROGRESS)
 {
     if (!DL_IsValidNpcObject(oNpc) || !DL_IsValidWaypointObject(oEntryWp))
     {
@@ -807,7 +807,7 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
 
     if (GetDistanceBetweenLocations(GetLocation(oNpc), GetLocation(oEntryWp)) > DL_TRANSITION_ENTRY_RADIUS)
     {
-        if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
+        if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != DL_TRANSITION_STATUS_MOVING_TO_ENTRY)
         {
             DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_MOVING_TO_ENTRY, DL_TRANSITION_DIAG_MOVING_TO_ENTRY, "");
             AssignCommand(oNpc, ClearAllActions(TRUE));
@@ -826,8 +826,8 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
 
     location lExit = GetLocation(oExitWp);
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_TRANSITION_STATUS_TRANSITIONING);
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "transition_in_progress");
-    return DL_ExecuteTransitionDriver(oNpc, oEntryWp, lExit, oExitWp, "transition_in_progress");
+    DL_SetReasonAndDiagnostic(oNpc, DL_FB_DOMAIN_TRANSITION, DL_FB_REASON_TRANSITION_IN_PROGRESS, DL_L_NPC_TRANSITION_DIAGNOSTIC, DL_TRANSITION_DIAG_IN_PROGRESS);
+    return DL_ExecuteTransitionDriver(oNpc, oEntryWp, lExit, oExitWp, DL_TRANSITION_DIAG_IN_PROGRESS);
 }
 
 int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oTargetWp)
