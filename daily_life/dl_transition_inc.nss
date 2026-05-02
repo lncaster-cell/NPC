@@ -1,4 +1,6 @@
 // Daily Life interzone transition helper layer.
+// Adapter policy: add wrappers only for explicit API contract compatibility;
+// no new pass-through adapters when canonical implementation exists.
 // Backward compatible modes:
 // 1) simple explicit mode: entry waypoint stores explicit exit tag in `dl_transition_exit_tag`
 // 2) builder-friendly nav mode: waypoint tag is `dl_nav_<from_zone>_to_<to_zone>`;
@@ -76,6 +78,8 @@ const int DL_NAV_TAG_SEPARATOR_LENGTH = 4;
 // Forward declarations for helpers provided by other include units.
 int DL_ClampInt(int nValue, int nMin, int nMax);
 int DL_GetAreaTick(object oArea);
+int DL_TryRouteToTarget(object oNpc, object oTarget);
+int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp);
 
 string DL_GetAreaNavigationSlotKey(int nSlot)
 {
@@ -898,39 +902,6 @@ object DL_FindTwoHopNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
     return oBestEntry;
 }
 
-int DL_TryUseNavZoneRouteToTarget(object oNpc, object oTarget)
-{
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
-    {
-        return FALSE;
-    }
-
-    string sTargetZone = DL_GetWaypointNavZone(oTarget);
-    if (sTargetZone == "")
-    {
-        return FALSE;
-    }
-
-    string sCurrentZone = DL_InferNpcNavZoneFromAreaRoutes(oNpc);
-    if (sCurrentZone == "" || sCurrentZone == sTargetZone)
-    {
-        return FALSE;
-    }
-
-    object oEntry = DL_FindDirectNavZoneEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
-    if (!GetIsObjectValid(oEntry))
-    {
-        oEntry = DL_FindTwoHopNavZoneEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
-    }
-
-    if (!GetIsObjectValid(oEntry))
-    {
-        return FALSE;
-    }
-
-    return DL_TryExecuteTransitionEntryWaypoint(oNpc, oEntry);
-}
-
 int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
@@ -944,7 +915,7 @@ int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
         return FALSE;
     }
 
-    if (DL_TryUseNavZoneRouteToTarget(oNpc, oTarget))
+    if (DL_TryRouteToTarget(oNpc, oTarget))
     {
         return TRUE;
     }
@@ -978,5 +949,5 @@ int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
         return FALSE;
     }
 
-    return DL_TryExecuteTransitionEntryWaypoint(oNpc, oBestEntry);
+    return DL_TryExecuteRoutedTransitionEntryWaypoint(oNpc, oBestEntry);
 }
