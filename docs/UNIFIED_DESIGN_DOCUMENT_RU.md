@@ -90,7 +90,283 @@
 
 ---
 
-## 4) Минимальная целевая архитектура (vNext)
+## 4) Минимальная целевая архитектура Daily Life vNext
+
+Канонический pipeline Daily Life:
+
+```text
+Schedule
+→ Directive
+→ Activity / Scene
+→ Destination Resolver
+→ Nav Router
+→ Transition Executor
+→ Action / Animation
+```
+
+Этот pipeline является целевым контрактом. Новые runtime-правки должны приводить текущий код к этому разделению, а не добавлять параллельные частные механизмы.
+
+### 4.1 Schedule
+
+**Ответственность:** определить, что NPC должен делать сейчас по игровому времени.
+
+Schedule возвращает только верхнеуровневую директиву и не знает конкретных waypoint, дверей, переходов, театров, таверн или кроватей.
+
+Разрешённые директивы Daily Life:
+
+```text
+SLEEP
+WORK
+MEAL
+SOCIAL
+PUBLIC
+CHILL
+```
+
+### 4.2 Directive
+
+**Ответственность:** выразить намерение NPC.
+
+Директива не должна быть жёсткой связкой `waypoint + animation`. Она только выбирает тип поведения, а конкретика уходит ниже — в activity/scene и destination resolver.
+
+Примеры:
+
+- `SLEEP` — ночной период сна;
+- `WORK` — рабочая активность профиля;
+- `MEAL` — завтрак/обед/ужин;
+- `SOCIAL` — социальный досуг или социальная сцена;
+- `PUBLIC` — общественное присутствие без конкретного досуга;
+- `CHILL` — личный отдых дома.
+
+### 4.3 Activity / Scene
+
+**Ответственность:** выбрать конкретный небольшой сценарий внутри директивы.
+
+Примеры целевых сцен:
+
+```text
+SOCIAL + theater      -> theater_visit
+SOCIAL + tavern       -> tavern_visit
+SOCIAL + paired_chat  -> paired_chat_scene
+MEAL + breakfast      -> breakfast_at_home
+CHILL + home          -> sit_at_home
+WORK + blacksmith     -> blacksmith_work_cycle
+```
+
+Сцена — это управляемый эпизод поведения: найти цель, дойти, занять место, выполнить действие/анимацию, корректно завершить и освободить ресурсы. Это не полноценная психологическая симуляция NPC.
+
+### 4.4 Destination Resolver
+
+**Ответственность:** определить конкретную цель сцены.
+
+Примеры:
+
+- `SLEEP`: найти `sleep_approach` и `sleep_bed` по `home_slot`;
+- `MEAL`: найти meal anchor в home/meal area;
+- `SOCIAL + theater`: найти свободную точку из пула `dl_social_theater_*`;
+- `SOCIAL + tavern`: найти свободную точку из пула `dl_social_tavern_*`;
+- `CHILL`: найти seat/chair домашнего отдыха.
+
+Если цель является shared-place, resolver может резервировать её:
+
+```text
+театр seat
+таверна spot
+social anchor
+chair/seat
+```
+
+Резервация должна быть bounded и самоистекающей, чтобы застрявший, умерший или удалённый NPC не блокировал место навсегда.
+
+### 4.5 Nav Router
+
+**Ответственность:** выбрать следующий transition entry на пути к цели.
+
+Nav Router не телепортирует NPC, не открывает двери и не проигрывает анимации. Он только отвечает:
+
+```text
+где NPC сейчас?
+где находится цель?
+какой следующий переход нужно выполнить?
+```
+
+Каноническая модель узла маршрута:
+
+```text
+area_tag:nav_zone
+```
+
+Пример:
+
+```text
+blacksmith_house:hall
+city_street:street
+theater:audience
+```
+
+Пример маршрута:
+
+```text
+blacksmith_house:hall
+→ city_street:street
+→ theater:audience
+```
+
+Маршрутизация должна быть bounded: ограниченная глубина поиска, ограниченное число transition-кандидатов, без полного поиска мира в hot path.
+
+### 4.6 Transition Executor
+
+**Ответственность:** выполнить один выбранный переход.
+
+Это низкоуровневый исполнитель, а не отдельная навигационная система. Его задача:
+
+```text
+подойти к transition waypoint
+открыть дверь/активировать driver, если задан
+переместить NPC к exit waypoint
+обновить dl_npc_nav_zone
+вернуть управление верхнему pipeline
+```
+
+Существующий transition layer сохраняется именно как `Transition Executor`. Новая маршрутизация должна вызывать executor, а не дублировать его механику и не конкурировать с ним.
+
+### 4.7 Action / Animation
+
+**Ответственность:** нижний NWScript/NWN2 слой действий.
+
+Базовые допустимые механики:
+
+```text
+ActionMoveToLocation
+ActionJumpToLocation
+ActionSit
+DoDoorAction
+SetFacing
+PlayCustomAnimation
+ClearAllActions
+```
+
+Приоритет — штатные действия движка. Кастомная логика допускается только как тонкий адаптер над штатным действием.
+
+### 4.8 Builder-friendly разметка
+
+Разметка должна принадлежать location/area, а не конкретному NPC.
+
+Плохо:
+
+```text
+blacksmith01_bed
+blacksmith01_theater_spot
+```
+
+Хорошо:
+
+```text
+dl_sleep_bed_1
+dl_social_theater_1
+dl_social_theater_2
+dl_social_tavern_1
+```
+
+NPC должен получать профиль/слот/area tags и переиспользовать существующую разметку:
+
+```text
+dl_profile_id = blacksmith
+dl_home_slot = 1
+dl_home_area_tag = blacksmith_house
+dl_social_area_tag = theater_area
+dl_social_kind = theater
+```
+
+### 4.9 Shared location contract
+
+`dl_nav_zone` — это физико-навигационный фрагмент, а не семантическое назначение комнаты.
+
+Одна зона может содержать разные activity anchors. Например боковая комната дома кузнеца может одновременно содержать:
+
+```text
+meal anchor для кузнеца
+sleep slot дочери
+social/chill spot
+```
+
+Поэтому запрещено проектировать зоны как `mealroom = только еда` или `bedroom = только сон`. Семантика принадлежит activity anchors, а не nav-zone.
+
+### 4.10 SOCIAL как social destination/activity layer
+
+`SOCIAL` не ограничивается парным разговором. Целевые виды:
+
+```text
+paired_chat
+theater
+tavern
+public
+```
+
+`paired_chat` остаётся сценой разговора с партнёром. `theater` и `tavern` — это social destination-сцены, где NPC идёт в общественное место и занимает свободную pooled-точку.
+
+### 4.11 Меж-area SOCIAL маршрут
+
+Целевой контракт для похода в театр/таверну:
+
+```text
+SOCIAL kind = theater
+→ Destination Resolver резервирует свободную dl_social_theater_*
+→ Nav Router строит bounded путь area:zone → area:zone
+→ Transition Executor выполняет один переход за раз
+→ NPC доходит до зарезервированного места
+→ сцена удерживает место/анимацию
+→ при смене директивы reservation очищается
+```
+
+Пример разметки:
+
+```text
+// Дом кузнеца
+dl_nav_hall_to_street
+  dl_nav_to_area_tag = city_street
+
+// Улица у дома
+dl_nav_street_to_hall
+  dl_nav_to_area_tag = blacksmith_house
+
+// Улица у театра
+dl_nav_street_to_audience
+  dl_nav_to_area_tag = theater_area
+
+// Театр
+dl_nav_audience_to_street
+  dl_nav_to_area_tag = city_street
+
+dl_social_theater_1
+  dl_nav_zone = audience
+
+dl_social_theater_2
+  dl_nav_zone = audience
+```
+
+### 4.12 Запреты и разрешённые адаптеры
+
+Запрещено:
+
+- делать отдельный ручной маршрут на каждого NPC;
+- заставлять NPC сканировать весь модуль/area каждый тик;
+- смешивать route planner и transition executor в одном монолите;
+- делать SOCIAL как полноценную психологическую симуляцию отношений на этом этапе;
+- строить новые костыли, если NWScript/NWN2 уже даёт штатный механизм.
+
+Разрешено:
+
+- bounded route search;
+- area-level cache;
+- pooled anchors;
+- reservation TTL;
+- fallback в `PUBLIC`/`CHILL`/idle при битой разметке;
+- advanced overrides для особых переходов.
+
+---
+
+## 5) Runtime Core / Event Bus / Domain Adapters / Ops Layer
 
 1. **Runtime Core**: registry, resolver pipeline, materialization, resync.
 2. **Event Bus**: маршрутизация пользовательских и системных событий.
@@ -99,7 +375,7 @@
 
 ---
 
-## 5) Правила разработки и документации
+## 6) Правила разработки и документации
 
 - Этот файл — единственный дизайн-док.
 - Любые изменения в архитектуре фиксируются только здесь.
@@ -111,16 +387,26 @@
 
 ---
 
-## 6) Ближайший фокус реализации
+## 7) Ближайший фокус реализации
 
-1. Держать Daily Life как главный активный runtime-контур.
-2. Стандартизировать входы внешних инцидентов через единый контракт.
-3. Довести интеграционные handoff-точки с city/legal/clan/property/trade/travel.
-4. Сохранять производительность через bounded execution и наблюдаемость.
+1. Привести Daily Life runtime-код к pipeline-контракту из раздела 4.
+2. Сохранить Daily Life как главный активный runtime-контур.
+3. Стандартизировать входы внешних инцидентов через единый контракт.
+4. Довести интеграционные handoff-точки с city/legal/clan/property/trade/travel.
+5. Сохранять производительность через bounded execution и наблюдаемость.
 
 ---
 
-## 7) Runtime Truth / Activity Journal (Daily Life)
+## 8) Runtime Truth / Activity Journal (Daily Life)
+
+### 2026-05-02 — фиксация Daily Life vNext pipeline-контракта
+
+- Зафиксирован канонический pipeline: `Schedule -> Directive -> Activity / Scene -> Destination Resolver -> Nav Router -> Transition Executor -> Action / Animation`.
+- Старый transition layer переопределён как низкоуровневый `Transition Executor`, а не как конкурирующая навигационная система.
+- `SOCIAL` зафиксирован как social destination/activity layer: `paired_chat`, `theater`, `tavern`, `public`.
+- Разметка должна принадлежать location/area, а не конкретному NPC; замена NPC не должна требовать перестановки waypoint-разметки.
+- `dl_nav_zone` трактуется как физико-навигационный фрагмент, а не назначение комнаты.
+- Следующий runtime-фокус: привести include-слой к строгому разделению `Destination Resolver` / `Nav Router` / `Transition Executor`.
 
 ### 2026-04-21 — фиксация канонического статуса Legal (City Response)
 
@@ -204,11 +490,11 @@
 
 ---
 
-## 8) Архитектурная оптимизация (best practices + справка NWN Lexicon)
+## 9) Архитектурная оптимизация (best practices + справка NWN Lexicon)
 
 Ниже — зафиксированный набор практик, который используем как baseline для оптимизации runtime-кода.
 
-### 8.1 Проверенные практики из NWN Lexicon
+### 9.1 Проверенные практики из NWN Lexicon
 
 1. **Минимизировать частые полные обходы area-объектов**<br>
    `GetFirstObjectInArea`/`GetNextObjectInArea` полезны, но их не рекомендуют гонять слишком часто в крупных/населённых локациях. Следствие: worker-контур должен оставаться quota-based, а тяжёлые массовые обходы — только по событию/по необходимости.
@@ -222,7 +508,7 @@
 4. **Фильтровать типы объектов при area-итерациях**<br>
    Вызовы обхода area должны всегда использовать object-filter (например, `OBJECT_TYPE_CREATURE`) для снижения стоимости перебора.
 
-### 8.2 Практические рекомендации для vNext
+### 9.2 Практические рекомендации для vNext
 
 1. **Area worker: переход к registry-driven итерации (приоритет P1)**<br>
    Цель: уйти от регулярного полного area-scan в тиках hot-tier.<br>
@@ -247,19 +533,40 @@
 6. **Adaptive backpressure (P1, внедрено v1)**<br>
    На уровне module budget поддерживать флаг pressure-режима, который автоматически снижает cap worker/resync budgets в hot-контуре до безопасного минимума, пока не восстановится устойчивый запас minute-budget.
 
-### 8.3 Decision policy (обязательная)
+### 9.3 Decision policy (обязательная)
 
 - Если есть встроенный механизм NWScript/NWN2 и он покрывает задачу — используем его.
 - Если встроенный механизм частично покрывает задачу — применяем тонкую адаптацию, не ломая runtime-контракты.
 - Если механизма нет — расширяем через явный контракт + диагностику + bounded execution.
 
-### 8.4 Sources of truth (внешние ссылки)
+### 9.4 Sources of truth (внешние ссылки)
+
+- NWN Lexicon: `GetFirstObjectInArea` — рекомендации по частоте обходов и фильтрам.<br>
+  https://nwnlexicon.com/GetFirstObjectInArea
+- NWN Lexicon: `DelayCommand` — ограничения/подводные камни и влияние на производительность.<br>
+  https://www.nwnlexicon.com/DelayCommand
+- NWN Lexicon: `SignalEvent` — модель исполнения событийного сигнала.<br>
+  https://nwnlexicon.com/SignalEvent
+
+### 9.5 Применено в runtime (2026-04-14)
+
+- В `dl_worker_inc.nss` оптимизирован `DL_RunAreaNpcRoundRobinPass`:
+  - добавлен fast-path раннего выхода из area-обхода после выполнения бюджета в логическом окне `cursor + budget`;
+  - `DL_L_AREA_REG_COUNT` используется как registry-backed источник размера активного набора NPC для вычисления `pass_last_seen`, чтобы не требовать полного досканирования area каждый тик.
+- Дополнительно усилен registry-first подход:
+  - если `DL_L_AREA_REG_COUNT == 0`, включается throttled bounded registry-reconcile (редкий и лимитированный scan), чтобы восстановиться после пропущенных lifecycle/register событий;
+  - при успешном reconcile worker возвращается к registry-driven pass без полного area-scan;
+  - `pass_last_seen` фиксируется из реестра (`DL_L_AREA_REG_COUNT`) как стабильный размер логического окна round-robin, без перехода к scan-derived значению;
+  - меж-area миграция уже зарегистрированного активного NPC теперь корректирует `DL_L_AREA_REG_COUNT` и `DL_L_AREA_REG_SEQ` в обеих area (old/new) через reconcile-path, с защитой от двойного декремента ниже нуля.
+- Это следует практикам NWN Lexicon:
+  - избегать частых полных area-обходов (`GetFirstObjectInArea` / `GetNextObjectInArea`);
+  - оставлять event/registry-driven модель как приоритет над «сканировать всё каждый тик».
 
 ---
 
-## 9) Daily Life canonical extension: shared home + residence slots + domestic profile
+## 10) Daily Life canonical extension: shared home + residence slots + domestic profile
 
-### 9.1 Короткий канонический дизайн-блок
+### 10.1 Короткий канонический дизайн-блок
 
 - `home` в Daily Life трактуется как **общая area проживания** для нескольких NPC, а не «личный дом на одного NPC».
 - Привязка NPC к проживанию канонически задаётся парой:
@@ -271,7 +578,7 @@
   - meal/public anchors — **общие** для жильцов.
 - Для бытовой дневной занятости вводится профиль `domestic_worker`: cooking/craft/fetch и прочие домашние задачи без привязки к семейной роли.
 
-### 9.2 Словарь local variables и anchor names
+### 10.2 Словарь local variables и anchor names
 
 #### NPC locals
 
@@ -292,7 +599,7 @@
 - `dl_anchor_sleep_approach_2`
 - `dl_anchor_sleep_bed_2`
 
-### 9.3 Почему семейные роли не используются как profile id
+### 10.3 Почему семейные роли не используются как profile id
 
 - Явно запрещено вводить profile id вида:
   - `wife_of_blacksmith`
@@ -303,14 +610,14 @@
 - Родство — это не тип runtime-поведения; оно живёт в отдельном слое социальных/семейных данных.
 - `domestic_worker` переиспользуется для жены/брата/сестры/взрослого ребёнка/домашней прислуги без дублирования кода и без жёсткой привязки к одному «главному» NPC.
 
-### 9.4 Новый канонический профиль: `domestic_worker`
+### 10.4 Новый канонический профиль: `domestic_worker`
 
 - Назначение: основной дневной труд по дому.
 - Типичные задачи: cooking / craft / fetch (через существующие Daily Life окна и anchors).
 - Не привязывается к роли «жена/брат/ребёнок»; это именно профиль runtime-поведения.
 - Может использоваться в любом составе жильцов, где нужен бытовой цикл внутри общего дома.
 
-### 9.5 Короткие канонические примеры
+### 10.5 Короткие канонические примеры
 
 1. **Кузнец + жена в одной кузнице/доме**
    - Оба NPC имеют `dl_home_area_tag=smithy_home`.
@@ -327,24 +634,3 @@
    - `home area` и anchor-структура сохраняются прежними.
    - Убывший NPC удаляется из состава жильцов, новый NPC получает тот же `dl_home_area_tag` и нужный `dl_home_slot`.
    - Переиспользуются существующие `dl_anchor_sleep_approach_<slot>` / `dl_anchor_sleep_bed_<slot>` и общие meal/public anchors без рефакторинга структуры дома.
-
-- NWN Lexicon: `GetFirstObjectInArea` — рекомендации по частоте обходов и фильтрам.<br>
-  https://nwnlexicon.com/GetFirstObjectInArea
-- NWN Lexicon: `DelayCommand` — ограничения/подводные камни и влияние на производительность.<br>
-  https://www.nwnlexicon.com/DelayCommand
-- NWN Lexicon: `SignalEvent` — модель исполнения событийного сигнала.<br>
-  https://nwnlexicon.com/SignalEvent
-
-### 8.5 Применено в runtime (2026-04-14)
-
-- В `dl_worker_inc.nss` оптимизирован `DL_RunAreaNpcRoundRobinPass`:
-  - добавлен fast-path раннего выхода из area-обхода после выполнения бюджета в логическом окне `cursor + budget`;
-  - `DL_L_AREA_REG_COUNT` используется как registry-backed источник размера активного набора NPC для вычисления `pass_last_seen`, чтобы не требовать полного досканирования area каждый тик.
-- Дополнительно усилен registry-first подход:
-  - если `DL_L_AREA_REG_COUNT == 0`, включается throttled bounded registry-reconcile (редкий и лимитированный scan), чтобы восстановиться после пропущенных lifecycle/register событий;
-  - при успешном reconcile worker возвращается к registry-driven pass без полного area-scan;
-  - `pass_last_seen` фиксируется из реестра (`DL_L_AREA_REG_COUNT`) как стабильный размер логического окна round-robin, без перехода к scan-derived значению.
-  - меж-area миграция уже зарегистрированного активного NPC теперь корректирует `DL_L_AREA_REG_COUNT` и `DL_L_AREA_REG_SEQ` в обеих area (old/new) через reconcile-path, с защитой от двойного декремента ниже нуля.
-- Это следует практикам NWN Lexicon:
-  - избегать частых полных area-обходов (`GetFirstObjectInArea` / `GetNextObjectInArea`);
-  - оставлять event/registry-driven модель как приоритет над «сканировать всё каждый тик».
