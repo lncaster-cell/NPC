@@ -1,5 +1,6 @@
 #include "dl_activity_archive_anim_inc"
 #include "dl_cache_helpers_inc"
+#include "dl_directive_pipeline_inc"
 #include "dl_transition_inc"
 #include "dl_transition_engine_inc"
 #include "dl_cross_area_nav_inc"
@@ -199,22 +200,38 @@ string DL_GetDirectiveDebugLabel(int nDirective)
     }
     return "NONE";
 }
-void DL_LogChatDebugEvent(object oNpc, string sKind, string sPayload)
+void DL_LogDomainDebugEvent(object oNpc, string sDomain, string sEventCode, string sKeyContext)
 {
     if (!GetIsObjectValid(oNpc) || !DL_IsChatDebugEnabledForNpc(oNpc))
     {
         return;
     }
 
-    string sSig = sKind + "|" + sPayload;
+    string sNpcTag = GetTag(oNpc);
+    string sPayload = "domain=" + sDomain + " event_code=" + sEventCode + " npc_tag=" + sNpcTag + " key_context=" + sKeyContext;
+    string sSig = sDomain + "|" + sEventCode + "|" + sNpcTag + "|" + sKeyContext;
     if (GetLocalString(oNpc, DL_L_NPC_CHAT_LAST_EVENT_SIG) == sSig)
     {
         return;
     }
 
     SetLocalString(oNpc, DL_L_NPC_CHAT_LAST_EVENT_SIG, sSig);
-    DL_LogChat("npc=" + GetTag(oNpc) + " " + sPayload);
+    DL_LogChat(sPayload);
 }
+
+void DL_LogTransitionEvent(object oNpc, string sEventCode, string sKeyContext)
+{
+    DL_LogDomainDebugEvent(oNpc, "transition", sEventCode, sKeyContext);
+}
+void DL_LogSocialEvent(object oNpc, string sEventCode, string sKeyContext)
+{
+    DL_LogDomainDebugEvent(oNpc, "social", sEventCode, sKeyContext);
+}
+void DL_LogCrimeEvent(object oNpc, string sEventCode, string sKeyContext)
+{
+    DL_LogDomainDebugEvent(oNpc, "crime", sEventCode, sKeyContext);
+}
+
 void DL_LogDirectiveChange(object oNpc, int nPrevDirective, int nDirective)
 {
     if (nDirective == nPrevDirective)
@@ -222,7 +239,7 @@ void DL_LogDirectiveChange(object oNpc, int nPrevDirective, int nDirective)
         return;
     }
 
-    DL_LogChatDebugEvent(
+    DL_LogTransitionEvent(
         oNpc,
         "directive",
         "dir=" + DL_GetDirectiveDebugLabel(nDirective) +
@@ -290,10 +307,7 @@ void DL_LogStuckState(object oNpc, int nDirective)
     }
 
     SetLocalInt(oNpc, DL_L_NPC_CHAT_STUCK_LAST_LOG, nNowAbsMin);
-    DL_LogChat("npc=" + GetTag(oNpc) +
-              " stuck dir=" + DL_GetDirectiveDebugLabel(nDirective) +
-              " state=" + sState +
-              " target=" + sTarget);
+    DL_LogTransitionEvent(oNpc, "stuck_state", "dir=" + DL_GetDirectiveDebugLabel(nDirective) + " state=" + sState + " target=" + sTarget);
 }
 void DL_LogMarkupIssueOnce(object oNpc, string sKey, string sMessage)
 {
@@ -533,10 +547,6 @@ int DL_ShouldFallbackSocialToPublic(object oNpc)
 {
     return FALSE;
 }
-int DL_ShouldRunSocialFallbackToPublicLocal(object oNpc)
-{
-    return GetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC) == "social_fallback_to_public";
-}
 int DL_ShouldUseDirectiveFastPath(object oNpc, int nEffectiveDirective)
 {
     if (!GetIsObjectValid(oNpc))
@@ -644,13 +654,6 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
         DL_ExecuteSocialDirective(oNpc);
-        if (DL_ShouldRunSocialFallbackToPublicLocal(oNpc))
-        {
-            SetLocalInt(oNpc, DL_L_NPC_DIRECTIVE, DL_DIR_PUBLIC);
-            SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
-            DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
-            DL_ExecutePublicDirective(oNpc);
-        }
         DL_ClearActivityPresentation(oNpc);
     }
     else if (nEffectiveDirective == DL_DIR_PUBLIC)
