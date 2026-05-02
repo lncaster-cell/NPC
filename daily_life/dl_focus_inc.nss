@@ -445,8 +445,8 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
     DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
     DL_SetRuntimeState(oNpc, DL_L_NPC_FOCUS_STATUS, DL_STATUS_SITTING_CHILL_ATTEMPT, "", "");
     SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oSeat));
-    DL_SetMinuteCooldown(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL, DL_CHILL_SIT_RETRY_MINUTES);
-    AssignCommand(oNpc, ClearAllActions(TRUE));
+    SetLocalInt(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL, nNowAbs + DL_CHILL_SIT_RETRY_MINUTES);
+    DL_OrchestrateRuntimeAction(oNpc, DL_ORCH_ACT_NONE, OBJECT_INVALID, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_social_action", "chill_sit_attempt", nNowAbs);
     AssignCommand(oNpc, ActionSit(oChair));
     DL_LogSocialEvent(oNpc, "sitting_chill_attempt", "chair=" + GetTag(oChair));
     return TRUE;

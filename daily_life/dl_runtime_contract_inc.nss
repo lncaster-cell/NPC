@@ -188,6 +188,100 @@ void DL_LogRuntime(string sLog)
     // Temporary: global runtime logging is disabled.
 }
 
+
+const string DL_L_NPC_ORCH_LAST_STATE = "dl_orch_last_state";
+const string DL_L_NPC_ORCH_LAST_WINDOW = "dl_orch_last_window";
+
+const int DL_ORCH_ACT_NONE = 0;
+const int DL_ORCH_ACT_MOVE_OBJECT = 1;
+const int DL_ORCH_ACT_MOVE_LOCATION = 2;
+const int DL_ORCH_ACT_JUMP_LOCATION = 3;
+const int DL_ORCH_ACT_START_CONVERSATION = 4;
+const int DL_ORCH_ACT_ATTACK = 5;
+
+int DL_OrchestrateRuntimeAction(
+    object oActor,
+    int nActionKind,
+    object oTarget = OBJECT_INVALID,
+    location lTarget = LOCATION_INVALID,
+    string sDialogResRef = "",
+    int bResetQueue = TRUE,
+    string sPreStatusKey = "",
+    string sPreStatus = "",
+    string sPreDiagKey = "",
+    string sPreDiag = "",
+    string sPostStatusKey = "",
+    string sPostStatus = "",
+    string sPostDiagKey = "",
+    string sPostDiag = "",
+    string sNoopStateKey = "",
+    string sNoopStateValue = "",
+    int nExecutionWindow = -1,
+    int bRun = TRUE,
+    float fRange = 1.0,
+    int bPrivateConversation = TRUE,
+    int bPlayHello = TRUE
+)
+{
+    if (!GetIsObjectValid(oActor))
+    {
+        return FALSE;
+    }
+
+    if (sNoopStateKey != "" && sNoopStateValue != "" && nExecutionWindow >= 0)
+    {
+        if (GetLocalString(oActor, sNoopStateKey) == sNoopStateValue &&
+            GetLocalInt(oActor, DL_L_NPC_ORCH_LAST_WINDOW) == nExecutionWindow &&
+            GetLocalString(oActor, DL_L_NPC_ORCH_LAST_STATE) == sNoopStateValue)
+        {
+            return FALSE;
+        }
+    }
+
+    DL_SetRuntimeState(oActor, sPreStatusKey, sPreStatus, sPreDiagKey, sPreDiag);
+    if (bResetQueue)
+    {
+        AssignCommand(oActor, ClearAllActions(TRUE));
+    }
+
+    if (nActionKind == DL_ORCH_ACT_NONE)
+    {
+        // queue/state orchestration only
+    }
+    else if (nActionKind == DL_ORCH_ACT_MOVE_OBJECT)
+    {
+        DL_CommandMoveToObject(oActor, oTarget, bRun, fRange);
+    }
+    else if (nActionKind == DL_ORCH_ACT_MOVE_LOCATION)
+    {
+        DL_CommandMoveToLocation(oActor, lTarget, bRun);
+    }
+    else if (nActionKind == DL_ORCH_ACT_JUMP_LOCATION)
+    {
+        DL_CommandJumpToLocation(oActor, lTarget);
+    }
+    else if (nActionKind == DL_ORCH_ACT_START_CONVERSATION)
+    {
+        DL_CommandStartConversation(oActor, oTarget, sDialogResRef, bPrivateConversation, bPlayHello);
+    }
+    else if (nActionKind == DL_ORCH_ACT_ATTACK)
+    {
+        DL_CommandAttack(oActor, oTarget);
+    }
+    else
+    {
+        return FALSE;
+    }
+
+    DL_SetRuntimeState(oActor, sPostStatusKey, sPostStatus, sPostDiagKey, sPostDiag);
+    if (nExecutionWindow >= 0)
+    {
+        SetLocalInt(oActor, DL_L_NPC_ORCH_LAST_WINDOW, nExecutionWindow);
+        SetLocalString(oActor, DL_L_NPC_ORCH_LAST_STATE, sNoopStateValue);
+    }
+
+    return TRUE;
+}
 void DL_CommandMoveToObject(object oActor, object oTarget, int bRun = TRUE, float fRange = 1.0)
 {
     AssignCommand(oActor, ActionMoveToObject(oTarget, bRun, fRange));

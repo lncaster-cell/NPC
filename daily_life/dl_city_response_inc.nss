@@ -181,12 +181,32 @@ int DL_CR_StartDetainInteraction(object oGuard, object oOffender, string sDialog
 
     if (bForceApproach)
     {
-        DL_CommandMoveToObjectResetQueue(oGuard, oOffender, TRUE, 2.0);
-        DL_CommandStartConversation(oGuard, oOffender, sDialogResRef, TRUE, TRUE);
+        DL_OrchestrateRuntimeAction(
+            oGuard,
+            DL_ORCH_ACT_MOVE_OBJECT,
+            oOffender,
+            LOCATION_INVALID,
+            "",
+            TRUE,
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "dl_cr_action",
+            "guard_approach_offender",
+            DL_GetAbsoluteMinute(),
+            TRUE,
+            2.0
+        );
+        DL_OrchestrateRuntimeAction(oGuard, DL_ORCH_ACT_START_CONVERSATION, oOffender, LOCATION_INVALID, sDialogResRef, FALSE);
     }
     else
     {
-        DL_CommandStartConversationResetQueue(oGuard, oOffender, sDialogResRef, TRUE, TRUE);
+        DL_OrchestrateRuntimeAction(oGuard, DL_ORCH_ACT_START_CONVERSATION, oOffender, LOCATION_INVALID, sDialogResRef, TRUE);
     }
     return TRUE;
 }
@@ -341,7 +361,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
 
     if (nLevel >= 3)
     {
-        DL_CommandAttackResetQueue(oGuard, oSeen);
+        DL_OrchestrateRuntimeAction(oGuard, DL_ORCH_ACT_ATTACK, oSeen, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_attack_seen", DL_GetAbsoluteMinute());
         return;
     }
 

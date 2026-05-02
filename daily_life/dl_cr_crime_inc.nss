@@ -341,7 +341,7 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
         SetLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD, oBestA);
         if (nLevel >= 3)
         {
-            DL_PipelineDispatchCommand(oBestA, 1, oOffender, OBJECT_INVALID);
+            DL_OrchestrateRuntimeAction(oBestA, DL_ORCH_ACT_ATTACK, oOffender, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_attack_primary", DL_GetAbsoluteMinute());
         }
         else
         {
@@ -355,11 +355,11 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
         SetLocalInt(oBestB, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
         if (nLevel >= 3)
         {
-            DL_PipelineDispatchCommand(oBestB, 1, oOffender, OBJECT_INVALID);
+            DL_OrchestrateRuntimeAction(oBestB, DL_ORCH_ACT_ATTACK, oOffender, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_attack_secondary", DL_GetAbsoluteMinute());
         }
         else
         {
-            DL_PipelineDispatchCommand(oBestB, 2, oOffender, OBJECT_INVALID);
+            DL_OrchestrateRuntimeAction(oBestB, DL_ORCH_ACT_MOVE_OBJECT, oOffender, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_move_secondary", DL_GetAbsoluteMinute(), TRUE, 2.0);
         }
     }
 }
@@ -595,7 +595,7 @@ int DL_CR_TeleportToJail(object oPc)
     }
 
     // Crime flow intentionally uses a direct player jump to avoid transition-state side effects on PCs.
-    DL_CommandJumpToLocationResetQueue(oPc, GetLocation(oWp));
+    DL_OrchestrateRuntimeAction(oPc, DL_ORCH_ACT_JUMP_LOCATION, OBJECT_INVALID, GetLocation(oWp), "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "pc_jail_jump", DL_GetAbsoluteMinute());
     return TRUE;
 }
 
@@ -616,7 +616,7 @@ void DL_CR_HandleDetainAccepted(object oPc, object oGuard)
 
     if (GetIsObjectValid(oGuard))
     {
-        AssignCommand(oGuard, ClearAllActions(TRUE));
+        DL_OrchestrateRuntimeAction(oGuard, DL_ORCH_ACT_NONE, OBJECT_INVALID, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_queue_reset_only", DL_GetAbsoluteMinute());
     }
 }
 
@@ -633,6 +633,6 @@ void DL_CR_HandleDetainRefused(object oPc, object oGuard)
 
     if (GetIsObjectValid(oGuard))
     {
-        DL_CommandAttackResetQueue(oGuard, oPc);
+        DL_OrchestrateRuntimeAction(oGuard, DL_ORCH_ACT_ATTACK, oPc, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_attack_refused", DL_GetAbsoluteMinute());
     }
 }
