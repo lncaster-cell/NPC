@@ -881,7 +881,7 @@ void DL_UnregisterNpc(object oNpc)
                 if (GetLocalInt(oNpc, DL_L_NPC_REG_FALLBACK_UNREG_DIAG) != TRUE)
                 {
                     SetLocalInt(oNpc, DL_L_NPC_REG_FALLBACK_UNREG_DIAG, TRUE);
-                    DL_LogRuntime("[DL][REG] fallback unregister invalid slot npc=" + GetName(oNpc) + " slot=" + IntToString(nNpcSlot) + " last=" + IntToString(nLastSlot));
+                    DL_ReportFallback(oNpc, DL_FB_DOMAIN_REGISTRY, DL_FB_REASON_REGISTRY_UNREGISTER_SLOT_INVALID, DL_FB_NEXT_RECOVER_REGISTRY);
                 }
 
                 SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nLastSlot);
