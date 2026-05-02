@@ -26,16 +26,15 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
 {
     if (!GetIsObjectValid(oNpc) || sPartnerTag == "")
     {
-        DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+        DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
         return OBJECT_INVALID;
     }
 
-    object oCached = GetLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
-    if (GetIsObjectValid(oCached) &&
-        oCached != oNpc &&
-        GetTag(oCached) == sPartnerTag &&
-        DL_IsActivePipelineNpc(oCached) &&
-        GetArea(oCached) == GetArea(oNpc))
+    object oArea = GetArea(oNpc);
+    int nTier = DL_GetAreaTier(oArea);
+    int nLifecycleSeq = GetLocalInt(oNpc, DL_L_NPC_EVENT_SEQ);
+    object oCached = DL_GetCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ, sPartnerTag, OBJECT_TYPE_CREATURE, oArea, nTier, nLifecycleSeq);
+    if (GetIsObjectValid(oCached) && oCached != oNpc && DL_IsActivePipelineNpc(oCached))
     {
         return oCached;
     }
@@ -73,7 +72,7 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
 
     if (!GetIsObjectValid(oPartner))
     {
-        DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+        DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
         if (bTagFoundOutsideArea)
         {
             DL_LogSocialEvent(
@@ -93,7 +92,7 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
         return OBJECT_INVALID;
     }
 
-    SetLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ, oPartner);
+    DL_SetCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ, oPartner, sPartnerTag, OBJECT_TYPE_CREATURE, oArea, nTier, nLifecycleSeq);
     return oPartner;
 }
 object DL_GetNpcCachedPlaceableByTagInArea(object oNpc, string sCacheLocal, string sTag, object oArea)
@@ -103,18 +102,20 @@ object DL_GetNpcCachedPlaceableByTagInArea(object oNpc, string sCacheLocal, stri
         return OBJECT_INVALID;
     }
 
-    object oCached = GetLocalObject(oNpc, sCacheLocal);
-    if (DL_IsCachedObjectValidForTagInArea(oCached, sTag, OBJECT_TYPE_PLACEABLE, oArea))
+    int nTier = DL_GetAreaTier(oArea);
+    int nLifecycleSeq = GetLocalInt(oNpc, DL_L_NPC_EVENT_SEQ);
+    object oCached = DL_GetCachedObject(oNpc, sCacheLocal, sTag, OBJECT_TYPE_PLACEABLE, oArea, nTier, nLifecycleSeq);
+    if (GetIsObjectValid(oCached))
     {
         DL_RecordCacheMetric(oArea, "anchor", TRUE);
         return oCached;
     }
-    DeleteLocalObject(oNpc, sCacheLocal);
+    DL_InvalidateCachedObject(oNpc, sCacheLocal);
 
     object oResolved = DL_FindObjectByTagInAreaDeterministic(sTag, OBJECT_TYPE_PLACEABLE, oArea, DL_WAYPOINT_TAG_SEARCH_CAP);
     if (GetIsObjectValid(oResolved))
     {
-        SetLocalObject(oNpc, sCacheLocal, oResolved);
+        DL_SetCachedObject(oNpc, sCacheLocal, oResolved, sTag, OBJECT_TYPE_PLACEABLE, oArea, nTier, nLifecycleSeq);
         DL_RecordCacheMetric(oArea, "anchor", FALSE);
         return oResolved;
     }
