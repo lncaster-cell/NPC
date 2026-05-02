@@ -1,4 +1,5 @@
 const string DL_L_MODULE_CACHE_METRIC_PREFIX = "dl_metric_cache_";
+const string DL_L_CACHE_CTX_PREFIX = "dl_cache_ctx_";
 
 const int DL_TAG_ENUM_DEFAULT_CAP = 32;
 
@@ -91,6 +92,79 @@ int DL_IsCachedObjectValidForTagInArea(object oCached, string sTag, int nObjectT
         GetTag(oCached) == sTag &&
         GetObjectType(oCached) == nObjectType &&
         GetArea(oCached) == oArea;
+}
+
+string DL_GetCachedObjectContextKey(string sCacheLocal, string sSuffix)
+{
+    return DL_L_CACHE_CTX_PREFIX + sCacheLocal + "_" + sSuffix;
+}
+
+void DL_SetCachedObject(object oOwner, string sCacheLocal, object oValue, string sTag, int nObjectType, object oArea, int nTier, int nLifecycleSeq)
+{
+    if (!GetIsObjectValid(oOwner) || sCacheLocal == "")
+    {
+        return;
+    }
+
+    if (!GetIsObjectValid(oValue))
+    {
+        DL_InvalidateCachedObject(oOwner, sCacheLocal);
+        return;
+    }
+
+    SetLocalObject(oOwner, sCacheLocal, oValue);
+    SetLocalString(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "tag"), sTag);
+    SetLocalInt(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "type"), nObjectType);
+    SetLocalObject(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "area"), oArea);
+    SetLocalInt(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "tier"), nTier);
+    SetLocalInt(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "life"), nLifecycleSeq);
+}
+
+void DL_InvalidateCachedObject(object oOwner, string sCacheLocal)
+{
+    if (!GetIsObjectValid(oOwner) || sCacheLocal == "")
+    {
+        return;
+    }
+
+    DeleteLocalObject(oOwner, sCacheLocal);
+    DeleteLocalString(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "tag"));
+    DeleteLocalInt(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "type"));
+    DeleteLocalObject(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "area"));
+    DeleteLocalInt(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "tier"));
+    DeleteLocalInt(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "life"));
+}
+
+int DL_IsCachedObjectValid(object oOwner, string sCacheLocal, string sExpectedTag, int nExpectedObjectType, object oExpectedArea, int nExpectedTier, int nExpectedLifecycleSeq)
+{
+    if (!GetIsObjectValid(oOwner) || sCacheLocal == "")
+    {
+        return FALSE;
+    }
+
+    object oCached = GetLocalObject(oOwner, sCacheLocal);
+    if (!GetIsObjectValid(oCached))
+    {
+        return FALSE;
+    }
+
+    if (GetLocalString(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "tag")) != sExpectedTag) return FALSE;
+    if (GetLocalInt(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "type")) != nExpectedObjectType) return FALSE;
+    if (GetLocalObject(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "area")) != oExpectedArea) return FALSE;
+    if (GetLocalInt(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "tier")) != nExpectedTier) return FALSE;
+    if (GetLocalInt(oOwner, DL_GetCachedObjectContextKey(sCacheLocal, "life")) != nExpectedLifecycleSeq) return FALSE;
+
+    return GetTag(oCached) == sExpectedTag && GetObjectType(oCached) == nExpectedObjectType && GetArea(oCached) == oExpectedArea;
+}
+
+object DL_GetCachedObject(object oOwner, string sCacheLocal, string sExpectedTag, int nExpectedObjectType, object oExpectedArea, int nExpectedTier, int nExpectedLifecycleSeq)
+{
+    if (!DL_IsCachedObjectValid(oOwner, sCacheLocal, sExpectedTag, nExpectedObjectType, oExpectedArea, nExpectedTier, nExpectedLifecycleSeq))
+    {
+        return OBJECT_INVALID;
+    }
+
+    return GetLocalObject(oOwner, sCacheLocal);
 }
 
 object DL_FindObjectByTagInAreaDeterministic(string sTag, int nObjectType, object oArea, int nSearchCap)

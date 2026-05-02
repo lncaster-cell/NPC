@@ -441,22 +441,22 @@ void DL_ClearNpcWaypointCaches(object oNpc)
         return;
     }
 
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SLEEP_APPROACH);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SLEEP_BED);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_FORGE);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_CRAFT);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_POST);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_TRADE);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_PRIMARY);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_SECONDARY);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_FETCH);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_MEAL);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_A);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_B);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_PUBLIC);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_CHILL_SEAT);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SLEEP_APPROACH);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SLEEP_BED);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_FORGE);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_CRAFT);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_POST);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_TRADE);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_PRIMARY);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_SECONDARY);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_FETCH);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_MEAL);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_A);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_B);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_PUBLIC);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_CHILL_SEAT);
     DeleteLocalInt(oNpc, DL_L_NPC_CACHE_CHILL_SEAT_MISSING_UNTIL);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
     DL_ClearNpcSocialReservation(oNpc);
 }
 void DL_ClearNpcAreaCaches(object oNpc)
@@ -466,11 +466,11 @@ void DL_ClearNpcAreaCaches(object oNpc)
         return;
     }
 
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_HOME_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_MEAL_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_PUBLIC_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_HOME_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_MEAL_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_PUBLIC_AREA);
 }
 void DL_ClearNpcRuntimeCaches(object oNpc)
 {
