@@ -38,8 +38,7 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
         if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
         {
             DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_MOVING_TO_ENTRY, DL_TRANSITION_DIAG_MOVING_TO_ENTRY, sDiagPrefix);
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionMoveToLocation(GetLocation(oEntryWp), TRUE));
+            DL_CommandMoveToLocationResetQueue(oNpc, GetLocation(oEntryWp), TRUE);
         }
         return TRUE;
     }

@@ -122,8 +122,7 @@ void DL_SetSleepTargetState(object oNpc, object oBed)
 }
 void DL_QueueMoveAction(object oNpc, location lTarget, int bRun)
 {
-    AssignCommand(oNpc, ClearAllActions(TRUE));
-    AssignCommand(oNpc, ActionMoveToLocation(lTarget, bRun));
+    DL_CommandMoveToLocationResetQueue(oNpc, lTarget, bRun);
 }
 int DL_QueueJumpAction(object oNpc, location lTarget)
 {
@@ -139,8 +138,7 @@ int DL_QueueJumpAction(object oNpc, location lTarget)
         return FALSE;
     }
 
-    AssignCommand(oNpc, ClearAllActions(TRUE));
-    AssignCommand(oNpc, ActionJumpToLocation(lTarget));
+    DL_CommandJumpToLocationResetQueue(oNpc, lTarget);
     return TRUE;
 }
 void DL_MarkSleepNavigationInProgress(object oNpc, string sTargetTag)
