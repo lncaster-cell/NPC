@@ -192,13 +192,13 @@ int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
 
     if (DL_WaypointHasTransition(oTarget))
     {
-        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oTarget))
+        if (DL_TryExecuteRoutedTransitionEntryWaypoint(oNpc, oTarget))
         {
             return TRUE;
         }
     }
 
-    if (DL_TryUseNavigationRouteToTarget(oNpc, oTarget))
+    if (DL_TryRouteToTarget(oNpc, oTarget))
     {
         return TRUE;
     }
