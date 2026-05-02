@@ -145,7 +145,6 @@ int DL_IsAreaObject(object oObject);
 object DL_GetHomeArea(object oNpc);
 object DL_GetWorkArea(object oNpc);
 object DL_ResolveChillWaypoint(object oNpc);
-int DL_ShouldFallbackSocialToPublic(object oNpc);
 void DL_MaybeRefreshNpcCachesForEpoch(object oNpc);
 void DL_MaybeRefreshAreaCachesForEpoch(object oArea);
 
@@ -527,14 +526,15 @@ void DL_ApplyIdleLikeDirectiveState(object oNpc, int bSocial)
     DL_ClearNpcSocialReservation(oNpc);
     DL_ClearActivityPresentation(oNpc);
 }
-int DL_ResolveEffectiveDirective(object oNpc, int nDirective)
+// Deprecated: legacy external fallback predicate; SOCIAL fallback now runs
+// atomically inside SOCIAL execution branch.
+int DL_ShouldFallbackSocialToPublic(object oNpc)
 {
-    if (nDirective == DL_DIR_SOCIAL && DL_ShouldFallbackSocialToPublic(oNpc))
-    {
-        return DL_DIR_PUBLIC;
-    }
-
-    return nDirective;
+    return FALSE;
+}
+int DL_ShouldRunSocialFallbackToPublicLocal(object oNpc)
+{
+    return GetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC) == "social_fallback_to_public";
 }
 int DL_ShouldUseDirectiveFastPath(object oNpc, int nEffectiveDirective)
 {
@@ -586,7 +586,7 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
 
     DL_MaybeRefreshNpcCachesForEpoch(oNpc);
 
-    int nEffectiveDirective = DL_ResolveEffectiveDirective(oNpc, nDirective);
+    int nEffectiveDirective = nDirective;
     int nPrevDirective = GetLocalInt(oNpc, DL_L_NPC_DIRECTIVE);
 
     if (nPrevDirective != nEffectiveDirective)
@@ -643,6 +643,13 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
         DL_ExecuteSocialDirective(oNpc);
+        if (DL_ShouldRunSocialFallbackToPublicLocal(oNpc))
+        {
+            SetLocalInt(oNpc, DL_L_NPC_DIRECTIVE, DL_DIR_PUBLIC);
+            SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
+            DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
+            DL_ExecutePublicDirective(oNpc);
+        }
         DL_ClearActivityPresentation(oNpc);
     }
     else if (nEffectiveDirective == DL_DIR_PUBLIC)

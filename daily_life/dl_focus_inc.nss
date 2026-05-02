@@ -490,7 +490,7 @@ void DL_ExecutePublicDirective(object oNpc)
     );
     DL_ProgressFocusAtTarget(oNpc, oPublic, "on_public_anchor", sAnim);
 }
-int DL_ShouldFallbackSocialToPublic(object oNpc)
+int DL_ShouldFallbackSocialToPublicLocal(object oNpc)
 {
     string sKind = DL_GetNpcSocialKind(oNpc);
     if (DL_IsStandaloneSocialKind(sKind))
@@ -544,16 +544,15 @@ void DL_ExecuteSocialDirective(object oNpc)
         return;
     }
 
-    object oMe = DL_ResolveSocialWaypoint(oNpc);
-    string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
-    object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
-    object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
-
-    if (!GetIsObjectValid(oMe) || !GetIsObjectValid(oPartner) || !GetIsObjectValid(oPartnerWp))
+    if (DL_ShouldFallbackSocialToPublicLocal(oNpc))
     {
         SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "social_fallback_to_public");
         return;
     }
+    object oMe = DL_ResolveSocialWaypoint(oNpc);
+    string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
+    object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
+    object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
 
     int bMeOnAnchor = GetDistanceBetween(oNpc, oMe) <= DL_WORK_ANCHOR_RADIUS;
     int bPartnerOnAnchor = GetDistanceBetween(oPartner, oPartnerWp) <= DL_WORK_ANCHOR_RADIUS;
