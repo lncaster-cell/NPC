@@ -1,9 +1,3 @@
-const string DL_CR_EVT_PICKPOCKET = "pickpocket";
-const string DL_CR_EVT_CONTAINER_THEFT = "container_theft";
-const string DL_CR_EVT_DOOR_LOCKPICK = "door_lockpick";
-const string DL_CR_EVT_PLACEABLE_LOCKPICK = "placeable_lockpick";
-const string DL_CR_EVT_RESTRICTED_ENTRY = "restricted_entry";
-
 const string DL_L_MODULE_CR_WITNESS_RADIUS = "dl_cr_witness_radius";
 const string DL_L_MODULE_CR_GUARD_ALERT_RADIUS = "dl_cr_guard_alert_radius";
 const string DL_L_AREA_CR_RESTRICTED = "dl_cr_restricted";
@@ -269,23 +263,23 @@ void DL_CR_WitnessShout(object oWitness, object oOffender)
 
 int DL_CR_GetCrimeHeat(string sKind)
 {
-    if (sKind == DL_CR_EVT_PICKPOCKET)
+    if (sKind == DL_LG_CASE_KIND_PICKPOCKET)
     {
         return 15;
     }
-    if (sKind == DL_CR_EVT_CONTAINER_THEFT)
+    if (sKind == DL_LG_CASE_KIND_CONTAINER_THEFT)
     {
         return 20;
     }
-    if (sKind == DL_CR_EVT_DOOR_LOCKPICK)
+    if (sKind == DL_LG_CASE_KIND_DOOR_LOCKPICK)
     {
         return 25;
     }
-    if (sKind == DL_CR_EVT_PLACEABLE_LOCKPICK)
+    if (sKind == DL_LG_CASE_KIND_PLACEABLE_LOCKPICK)
     {
         return 20;
     }
-    if (sKind == DL_CR_EVT_RESTRICTED_ENTRY)
+    if (sKind == DL_LG_CASE_KIND_RESTRICTED_ENTRY)
     {
         return 15;
     }

@@ -33,6 +33,24 @@ const string DL_L_MODULE_LAST_EVENT_ACTOR = "dl_module_last_event_actor";
 const string DL_L_MODULE_SPAWN_COUNT = "dl_module_spawn_count";
 const string DL_L_MODULE_DEATH_COUNT = "dl_module_death_count";
 
+// Canonical legal/crime contract values.
+const string DL_LG_CASE_KIND_KILL = "kill";
+const string DL_LG_CASE_KIND_ATTACK = "attack";
+const string DL_LG_CASE_KIND_DOOR_LOCKPICK = "door_lockpick";
+const string DL_LG_CASE_KIND_RESTRICTED_ENTRY = "restricted_entry";
+const string DL_LG_CASE_KIND_CONTAINER_THEFT = "container_theft";
+const string DL_LG_CASE_KIND_PICKPOCKET = "pickpocket";
+const string DL_LG_CASE_KIND_PLACEABLE_LOCKPICK = "placeable_lockpick";
+const string DL_LG_CASE_KIND_DETAIN_REFUSAL = "detain_refusal";
+
+const string DL_LG_CASE_RESOLUTION_FINE = "fine";
+const string DL_LG_CASE_RESOLUTION_DETAIN_COMPLETE = "detain_complete";
+
+const string DL_CR_DIAG_STATUS_DETAIN_PENDING = "detain_pending";
+const string DL_CR_DIAG_STATUS_DETAIN_ACCEPTED = "detain_accepted";
+const string DL_CR_DIAG_STATUS_DETAIN_REFUSED = "detain_refused";
+const string DL_CR_DIAG_STATUS_CRIME_WITNESSED = "crime_witnessed";
+
 int DL_IsRuntimeEnabled()
 {
     object oModule = GetModule();
