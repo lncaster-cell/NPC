@@ -185,5 +185,7 @@
 
 ## 7) Legacy cleanup log (remove-in-same-PR policy)
 
+- 2026-05-02: введён канонический `docs/DEPRECATION_REGISTRY_RU.md` (поля `old/replacement/remove_by`) и обязательный pre-merge `rg`-чек по `docs/deprecation/deprecated_identifiers_rg.txt` для контроля legacy идентификаторов.
+- 2026-05-02: закреплено правило, что legacy-path допускается только как thin compatibility adapters без развития старой ветки; удаление adapters планируется в течение одного релизного цикла (текущий дедлайн: 2026-06-30).
 - 2026-05-02: зафиксировано merge-правило «без необоснованного дублирования старого и нового пути»; для переходных случаев обязателен маркер `remove-by` + owner (процессное ужесточение, runtime-удалений в этом коммите нет).
 - 2026-05-02: добавлен обязательный post-unification `rg`-sweep неиспользуемых функций/констант в `daily_life/*.nss` с call-site проверкой и обязательной фиксацией удалённого legacy в этом статус-файле.
