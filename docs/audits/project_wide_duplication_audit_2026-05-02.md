@@ -1,3 +1,6 @@
+> [!NOTE]
+> Этот документ закрыт и переведён в архивный контекст. См. `docs/audits/audit_artifacts_closure_2026-05-02.md`
+
 # Project-wide duplication audit (codebase-wide)
 
 Дата: 2026-05-02  

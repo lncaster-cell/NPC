@@ -18,6 +18,9 @@ const string DL_L_WP_TRANSITION_DRIVER_OBJ = "dl_transition_driver_obj";
 const string DL_L_WP_TRANSITION_DRIVER_MISS_TICK = "dl_transition_driver_miss_tick";
 const string DL_L_WP_NAV_ZONE = "dl_nav_zone";
 
+const string DL_L_WP_NAV_TO_AREA_TAG = "dl_nav_to_area_tag";
+const int DL_CROSS_AREA_TAG_SEARCH_CAP = 32;
+
 const string DL_L_NPC_TRANSITION_KIND = "dl_npc_transition_kind";
 const string DL_L_NPC_TRANSITION_ID = "dl_npc_transition_id";
 const string DL_L_NPC_TRANSITION_TARGET = "dl_npc_transition_target";
@@ -166,24 +169,9 @@ object DL_GetTransitionWaypointByTagInArea(string sTag, object oArea)
         return OBJECT_INVALID;
     }
 
-    int nNth = 0;
-    while (nNth < DL_TRANSITION_TAG_SEARCH_CAP)
-    {
-        object oCandidate = GetObjectByTag(sTag, nNth);
-        if (!GetIsObjectValid(oCandidate))
-        {
-            break;
-        }
-
-        if (GetObjectType(oCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oCandidate) == oArea)
-        {
-            return oCandidate;
-        }
-
-        nNth = nNth + 1;
-    }
-
-    return OBJECT_INVALID;
+    object oResolved = DL_FindObjectByTagInAreaDeterministic(sTag, OBJECT_TYPE_WAYPOINT, oArea, DL_TRANSITION_TAG_SEARCH_CAP);
+    DL_RecordCacheMetric(oArea, "nav", GetIsObjectValid(oResolved));
+    return oResolved;
 }
 
 string DL_GetWaypointTransitionKind(object oWp)
@@ -490,7 +478,54 @@ int DL_IsValidTransitionWaypointForTag(object oWp, string sExpectedTag)
     return DL_WaypointHasTransition(oWp);
 }
 
-object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
+object DL_GetCrossNavAreaByTag(string sAreaTag)
+{
+    if (sAreaTag == "")
+    {
+        return OBJECT_INVALID;
+    }
+
+    int nNth = 0;
+    while (nNth < DL_CROSS_AREA_TAG_SEARCH_CAP)
+    {
+        object oCandidate = GetObjectByTag(sAreaTag, nNth);
+        if (!GetIsObjectValid(oCandidate))
+        {
+            break;
+        }
+
+        if (DL_IsAreaObject(oCandidate))
+        {
+            return oCandidate;
+        }
+
+        nNth = nNth + 1;
+    }
+
+    return OBJECT_INVALID;
+}
+
+object DL_GetTransitionExitSearchAreaFromEntry(object oEntryWp)
+{
+    if (!GetIsObjectValid(oEntryWp))
+    {
+        return OBJECT_INVALID;
+    }
+
+    string sToAreaTag = GetLocalString(oEntryWp, DL_L_WP_NAV_TO_AREA_TAG);
+    if (sToAreaTag != "")
+    {
+        object oTargetArea = DL_GetCrossNavAreaByTag(sToAreaTag);
+        if (GetIsObjectValid(oTargetArea))
+        {
+            return oTargetArea;
+        }
+    }
+
+    return GetArea(oEntryWp);
+}
+
+object DL_ResolveTransitionExitWaypointFromEntrySimple(object oEntryWp)
 {
     if (!GetIsObjectValid(oEntryWp))
     {
@@ -534,6 +569,29 @@ object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
     }
 
     return OBJECT_INVALID;
+}
+
+object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
+{
+    if (!GetIsObjectValid(oEntryWp))
+    {
+        return OBJECT_INVALID;
+    }
+
+    string sResolvedTag = DL_GetResolvedTransitionExitTag(oEntryWp);
+    if (sResolvedTag == "")
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oSearchArea = DL_GetTransitionExitSearchAreaFromEntry(oEntryWp);
+    object oExit = DL_GetTransitionWaypointByTagInArea(sResolvedTag, oSearchArea);
+    if (GetIsObjectValid(oExit))
+    {
+        return oExit;
+    }
+
+    return DL_ResolveTransitionExitWaypointFromEntrySimple(oEntryWp);
 }
 
 int DL_IsBidirectionalTransitionPair(object oWpA, object oWpB)

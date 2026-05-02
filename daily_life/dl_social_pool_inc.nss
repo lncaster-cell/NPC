@@ -90,24 +90,9 @@ object DL_FindSocialPoolWaypointByTagInArea(string sTag, object oArea)
         return OBJECT_INVALID;
     }
 
-    int nNth = 0;
-    while (nNth < DL_WAYPOINT_TAG_SEARCH_CAP)
-    {
-        object oCandidate = GetObjectByTag(sTag, nNth);
-        if (!GetIsObjectValid(oCandidate))
-        {
-            break;
-        }
-
-        if (GetObjectType(oCandidate) == OBJECT_TYPE_WAYPOINT && GetArea(oCandidate) == oArea)
-        {
-            return oCandidate;
-        }
-
-        nNth = nNth + 1;
-    }
-
-    return OBJECT_INVALID;
+    object oResolved = DL_FindObjectByTagInAreaDeterministic(sTag, OBJECT_TYPE_WAYPOINT, oArea, DL_WAYPOINT_TAG_SEARCH_CAP);
+    DL_RecordCacheMetric(oArea, "social", GetIsObjectValid(oResolved));
+    return oResolved;
 }
 
 void DL_ClearSocialWaypointReservation(object oWp)

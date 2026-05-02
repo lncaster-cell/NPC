@@ -1,86 +1,4 @@
-const string DL_L_WP_NAV_TO_AREA_TAG = "dl_nav_to_area_tag";
-const int DL_CROSS_AREA_TAG_SEARCH_CAP = 32;
 const int DL_CROSS_AREA_ROUTE_DEPTH = 4;
-
-string DL_GetWaypointNavToAreaTag(object oWp)
-{
-    if (!GetIsObjectValid(oWp))
-    {
-        return "";
-    }
-
-    return GetLocalString(oWp, DL_L_WP_NAV_TO_AREA_TAG);
-}
-
-object DL_GetCrossNavAreaByTag(string sAreaTag)
-{
-    if (sAreaTag == "")
-    {
-        return OBJECT_INVALID;
-    }
-
-    int nNth = 0;
-    while (nNth < DL_CROSS_AREA_TAG_SEARCH_CAP)
-    {
-        object oCandidate = GetObjectByTag(sAreaTag, nNth);
-        if (!GetIsObjectValid(oCandidate))
-        {
-            break;
-        }
-
-        if (DL_IsAreaObject(oCandidate))
-        {
-            return oCandidate;
-        }
-
-        nNth = nNth + 1;
-    }
-
-    return OBJECT_INVALID;
-}
-
-object DL_GetCrossAreaExitSearchArea(object oEntryWp)
-{
-    if (!GetIsObjectValid(oEntryWp))
-    {
-        return OBJECT_INVALID;
-    }
-
-    string sToAreaTag = DL_GetWaypointNavToAreaTag(oEntryWp);
-    if (sToAreaTag != "")
-    {
-        object oTargetArea = DL_GetCrossNavAreaByTag(sToAreaTag);
-        if (GetIsObjectValid(oTargetArea))
-        {
-            return oTargetArea;
-        }
-    }
-
-    return GetArea(oEntryWp);
-}
-
-object DL_ResolveCrossAreaTransitionExitWaypointFromEntry(object oEntryWp)
-{
-    if (!GetIsObjectValid(oEntryWp))
-    {
-        return OBJECT_INVALID;
-    }
-
-    string sResolvedTag = DL_GetResolvedTransitionExitTag(oEntryWp);
-    if (sResolvedTag == "")
-    {
-        return OBJECT_INVALID;
-    }
-
-    object oSearchArea = DL_GetCrossAreaExitSearchArea(oEntryWp);
-    object oExit = DL_GetTransitionWaypointByTagInArea(sResolvedTag, oSearchArea);
-    if (GetIsObjectValid(oExit))
-    {
-        return oExit;
-    }
-
-    return DL_ResolveTransitionExitWaypointFromEntry(oEntryWp);
-}
 
 int DL_CrossNavEntryMatchesZone(object oEntry, string sFromZone)
 {
@@ -116,7 +34,7 @@ int DL_AreaCanReachTargetZoneWithinDepth(object oArea, string sFromZone, object 
         object oEntry = DL_GetAreaNavigationRouteAtSlot(oArea, i);
         if (DL_CrossNavEntryMatchesZone(oEntry, sFromZone))
         {
-            object oExit = DL_ResolveCrossAreaTransitionExitWaypointFromEntry(oEntry);
+            object oExit = DL_ResolveTransitionExitWaypointFromEntry(oEntry);
             if (GetIsObjectValid(oExit))
             {
                 object oExitArea = GetArea(oExit);
@@ -165,7 +83,7 @@ object DL_FindCrossAreaNavEntry(object oNpc, object oTarget, string sFromZone, s
         object oEntry = DL_GetAreaNavigationRouteAtSlot(oCurrentArea, i);
         if (DL_CrossNavEntryMatchesZone(oEntry, sFromZone))
         {
-            object oExit = DL_ResolveCrossAreaTransitionExitWaypointFromEntry(oEntry);
+            object oExit = DL_ResolveTransitionExitWaypointFromEntry(oEntry);
             if (GetIsObjectValid(oExit))
             {
                 object oExitArea = GetArea(oExit);
@@ -202,31 +120,31 @@ int DL_TryUseCrossAreaNavigationRouteToTarget(object oNpc, object oTarget)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
     {
-        return FALSE;
+        return OBJECT_INVALID;
     }
 
     string sTargetZone = DL_GetWaypointNavZone(oTarget);
     if (sTargetZone == "")
     {
-        return FALSE;
+        return OBJECT_INVALID;
     }
 
     string sCurrentZone = DL_InferNpcNavZoneFromAreaRoutes(oNpc);
     if (sCurrentZone == "")
     {
-        return FALSE;
+        return OBJECT_INVALID;
     }
 
     if (GetArea(oNpc) == GetArea(oTarget) && sCurrentZone == sTargetZone)
     {
-        return FALSE;
+        return OBJECT_INVALID;
     }
 
-    object oEntry = DL_FindCrossAreaNavEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
-    if (!GetIsObjectValid(oEntry))
-    {
-        return FALSE;
-    }
+    return DL_FindCrossAreaNavEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
+}
 
-    return DL_TryExecuteCrossAreaTransitionEntryWaypoint(oNpc, oEntry);
+int DL_TryUseCrossAreaNavigationRouteToTarget(object oNpc, object oTarget)
+{
+    object oEntry = DL_FindCrossAreaNavigationRouteEntryToTarget(oNpc, oTarget);
+    return GetIsObjectValid(oEntry);
 }

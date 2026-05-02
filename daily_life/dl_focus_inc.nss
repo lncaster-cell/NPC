@@ -101,33 +101,22 @@ object DL_GetNpcCachedPlaceableByTagInArea(object oNpc, string sCacheLocal, stri
     }
 
     object oCached = GetLocalObject(oNpc, sCacheLocal);
-    if (GetIsObjectValid(oCached) &&
-        GetTag(oCached) == sTag &&
-        GetObjectType(oCached) == OBJECT_TYPE_PLACEABLE &&
-        GetArea(oCached) == oArea)
+    if (DL_IsCachedObjectValidForTagInArea(oCached, sTag, OBJECT_TYPE_PLACEABLE, oArea))
     {
+        DL_RecordCacheMetric(oArea, "anchor", TRUE);
         return oCached;
     }
     DeleteLocalObject(oNpc, sCacheLocal);
 
-    int nNth = 0;
-    while (nNth < DL_WAYPOINT_TAG_SEARCH_CAP)
+    object oResolved = DL_FindObjectByTagInAreaDeterministic(sTag, OBJECT_TYPE_PLACEABLE, oArea, DL_WAYPOINT_TAG_SEARCH_CAP);
+    if (GetIsObjectValid(oResolved))
     {
-        object oCandidate = GetObjectByTag(sTag, nNth);
-        if (!GetIsObjectValid(oCandidate))
-        {
-            break;
-        }
-
-        if (GetObjectType(oCandidate) == OBJECT_TYPE_PLACEABLE && GetArea(oCandidate) == oArea)
-        {
-            SetLocalObject(oNpc, sCacheLocal, oCandidate);
-            return oCandidate;
-        }
-
-        nNth = nNth + 1;
+        SetLocalObject(oNpc, sCacheLocal, oResolved);
+        DL_RecordCacheMetric(oArea, "anchor", FALSE);
+        return oResolved;
     }
 
+    DL_RecordCacheMetric(oArea, "anchor", FALSE);
     return OBJECT_INVALID;
 }
 int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus, string sAnim)
