@@ -115,24 +115,39 @@ void DL_InitModuleContract()
     }
 }
 
+
+// Canonical object validators for Daily Life modules.
+// NWScript object handles are typeless at compile time, so callers MUST validate
+// both handle validity (OBJECT_INVALID guard via GetIsObjectValid) and expected
+// runtime type before using type-specific APIs.
+int DL_IsValidDoorObject(object oObj)
+{
+    return GetIsObjectValid(oObj) && GetObjectType(oObj) == OBJECT_TYPE_DOOR;
+}
+
+int DL_IsValidNpcObject(object oObj)
+{
+    return GetIsObjectValid(oObj) && GetObjectType(oObj) == OBJECT_TYPE_CREATURE;
+}
+
+int DL_IsValidWaypointObject(object oObj)
+{
+    return GetIsObjectValid(oObj) && GetObjectType(oObj) == OBJECT_TYPE_WAYPOINT;
+}
+
+int DL_IsValidAreaObject(object oObj)
+{
+    return GetIsObjectValid(oObj) && GetObjectType(oObj) == OBJECT_TYPE_AREA;
+}
+
 int DL_IsAreaObject(object oObject)
 {
-    if (!GetIsObjectValid(oObject))
-    {
-        return FALSE;
-    }
-
-    return GetArea(oObject) == oObject;
+    return DL_IsValidAreaObject(oObject);
 }
 
 int DL_IsPipelineNpc(object oNpc)
 {
-    if (!GetIsObjectValid(oNpc))
-    {
-        return FALSE;
-    }
-
-    if (GetObjectType(oNpc) != OBJECT_TYPE_CREATURE)
+    if (!DL_IsValidNpcObject(oNpc))
     {
         return FALSE;
     }
@@ -167,7 +182,7 @@ int DL_IsActivePipelineNpc(object oNpc)
 
 int DL_IsRuntimePlayer(object oCreature)
 {
-    if (!GetIsObjectValid(oCreature))
+    if (!DL_IsValidNpcObject(oCreature))
     {
         return FALSE;
     }

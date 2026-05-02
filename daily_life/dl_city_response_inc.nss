@@ -34,7 +34,7 @@ int DL_CR_IsEnabledForArea(object oArea)
         return FALSE;
     }
 
-    if (!GetIsObjectValid(oArea))
+    if (!DL_IsValidAreaObject(oArea))
     {
         return FALSE;
     }
@@ -93,7 +93,7 @@ void DL_CR_ApplyLazyDecay()
 
 object DL_CR_ResolveResponsibleActor(object oActor)
 {
-    if (!GetIsObjectValid(oActor))
+    if (!DL_IsValidNpcObject(oActor))
     {
         return OBJECT_INVALID;
     }
@@ -114,7 +114,7 @@ object DL_CR_ResolveResponsibleActor(object oActor)
 
 string DL_CR_GetOffenderIdentityKey(object oOffender)
 {
-    if (!GetIsObjectValid(oOffender))
+    if (!DL_IsValidNpcObject(oOffender))
     {
         return DL_CR_KEY_UNKNOWN_IDENTITY;
     }
@@ -164,7 +164,7 @@ string DL_CR_GetDetainDialogResRef()
 
 int DL_CR_StartDetainInteraction(object oGuard, object oOffender, string sDialogResRef, int bForceApproach)
 {
-    if (!GetIsObjectValid(oGuard) || !GetIsObjectValid(oOffender))
+    if (!DL_IsValidNpcObject(oGuard) || !DL_IsValidNpcObject(oOffender))
     {
         return FALSE;
     }
@@ -288,7 +288,7 @@ int DL_CR_IsOffenderActive(object oCreature)
 
 void DL_CR_HandleGuardPerception(object oGuard)
 {
-    if (!GetIsObjectValid(oGuard))
+    if (!DL_IsValidNpcObject(oGuard))
     {
         return;
     }

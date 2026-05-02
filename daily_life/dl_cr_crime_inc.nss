@@ -164,17 +164,12 @@ void DL_CR_ClearDetainPending(object oPc, string sResolution)
 
 int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
 {
-    if (!GetIsObjectValid(oWitness) || !GetIsObjectValid(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsValidNpcObject(oWitness) || !DL_IsValidNpcObject(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return FALSE;
     }
 
     if (oWitness == oOffender)
-    {
-        return FALSE;
-    }
-
-    if (GetObjectType(oWitness) != OBJECT_TYPE_CREATURE)
     {
         return FALSE;
     }
@@ -194,7 +189,7 @@ int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
 
 object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return OBJECT_INVALID;
     }
@@ -245,7 +240,7 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
 
 void DL_CR_WitnessShout(object oWitness, object oOffender)
 {
-    if (!GetIsObjectValid(oWitness) || !DL_IsRuntimePlayer(oOffender))
+    if (!DL_IsValidNpcObject(oWitness) || !DL_IsRuntimePlayer(oOffender))
     {
         return;
     }
@@ -288,7 +283,7 @@ int DL_CR_GetCrimeHeat(string sKind)
 
 void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return;
     }
@@ -390,7 +385,7 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
 
 void DL_CR_RecordCrimeEvent(object oOffender, object oArea, string sKind, int bWitnessed)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return;
     }
@@ -402,7 +397,7 @@ void DL_CR_RecordCrimeEvent(object oOffender, object oArea, string sKind, int bW
 
 void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, int bWitnessed, object oWitness)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return;
     }
@@ -423,7 +418,7 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
 
 void DL_CR_HandleDisturbed(object oDisturbed)
 {
-    if (!GetIsObjectValid(oDisturbed))
+    if (!DL_IsValidNpcObject(oDisturbed))
     {
         return;
     }
@@ -472,7 +467,7 @@ void DL_CR_MarkPendingLockpick(object oTarget, object oActor)
 
 int DL_CR_ConsumePendingLockpick(object oTarget, object oOffender)
 {
-    if (!GetIsObjectValid(oTarget) || !DL_IsRuntimePlayer(oOffender))
+    if (!DL_IsValidDoorObject(oTarget) || !DL_IsRuntimePlayer(oOffender))
     {
         return FALSE;
     }
@@ -602,7 +597,7 @@ int DL_CR_TeleportToJail(object oPc)
     }
 
     object oWp = GetWaypointByTag(DL_CR_GetJailWaypointTag());
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return FALSE;
     }
