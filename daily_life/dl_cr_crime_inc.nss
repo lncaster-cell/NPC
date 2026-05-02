@@ -303,8 +303,10 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     int nMaxResponders = DL_CR_GetGuardRespondersMax();
     object oBestA = OBJECT_INVALID;
     object oBestB = OBJECT_INVALID;
-    float fBestA = DL_CR_DISTANCE_INF;
-    float fBestB = DL_CR_DISTANCE_INF;
+    int nBestA = DL_SELECTION_SCORE_INF;
+    int nBestB = DL_SELECTION_SCORE_INF;
+    string sBestTieA = "";
+    string sBestTieB = "";
 
     location lCenter = GetLocation(oOffender);
     object oObj = GetFirstObjectInShape(
@@ -330,17 +332,22 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
                 float fDist = GetDistanceBetween(oObj, oOffender);
                 if (fDist <= fRadius)
                 {
-                    if (fDist < fBestA)
+                    int nScore = FloatToInt(fDist * 100.0);
+                    string sTie = DL_SelectionBuildTieKey(oObj, oOffender, nChecked);
+                    if (DL_SelectionCompare(nScore, nBestA, sTie, sBestTieA))
                     {
                         oBestB = oBestA;
-                        fBestB = fBestA;
+                        nBestB = nBestA;
+                        sBestTieB = sBestTieA;
                         oBestA = oObj;
-                        fBestA = fDist;
+                        nBestA = nScore;
+                        sBestTieA = sTie;
                     }
-                    else if (fDist < fBestB)
+                    else if (DL_SelectionCompare(nScore, nBestB, sTie, sBestTieB))
                     {
                         oBestB = oObj;
-                        fBestB = fDist;
+                        nBestB = nScore;
+                        sBestTieB = sTie;
                     }
                 }
             }
