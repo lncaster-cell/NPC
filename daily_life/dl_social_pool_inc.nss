@@ -11,27 +11,24 @@ const string DL_SOCIAL_KIND_PUBLIC = "public";
 const int DL_SOCIAL_POOL_SEARCH_CAP = 32;
 const int DL_SOCIAL_RESERVATION_TTL_MINUTES = 90;
 
-int DL_GetSocialReservationAbsMin(object oWp)
+void DL_SocialSetReservation(object oNpc, object oWp, int nUntilAbsMin)
 {
-    if (!GetIsObjectValid(oWp))
-    {
-        return 0;
-    }
+    SetLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY, oNpc);
+    SetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_UNTIL, nUntilAbsMin);
+    SetLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP, oWp);
+}
 
-    int nAbsMin = GetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_ABS_MIN);
-    if (nAbsMin > 0)
+void DL_SocialClearReservation(object oNpc, object oWp)
+{
+    if (GetIsObjectValid(oWp))
     {
-        return nAbsMin;
+        DeleteLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY);
+        DeleteLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_UNTIL);
     }
-
-    // COMPAT(temporary): migrate legacy key and immediately delete alias.
-    nAbsMin = GetLocalInt(oWp, "dl_social_reserved_until");
-    if (nAbsMin > 0)
+    if (GetIsObjectValid(oNpc))
     {
-        SetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_ABS_MIN, nAbsMin);
+        DeleteLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP);
     }
-    DeleteLocalInt(oWp, "dl_social_reserved_until");
-    return nAbsMin;
 }
 
 string DL_GetNpcSocialKind(object oNpc)
@@ -125,8 +122,7 @@ void DL_ClearSocialWaypointReservation(object oWp)
         return;
     }
 
-    DeleteLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY);
-    DeleteLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_ABS_MIN);
+    DL_SocialClearReservation(OBJECT_INVALID, oWp);
 }
 
 int DL_IsSocialWaypointReservedByOther(object oNpc, object oWp)
@@ -175,9 +171,7 @@ void DL_ReserveSocialWaypointForNpc(object oNpc, object oWp)
         return;
     }
 
-    SetLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY, oNpc);
-    SetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_ABS_MIN, DL_GetAbsoluteMinute() + DL_SOCIAL_RESERVATION_TTL_MINUTES);
-    SetLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP, oWp);
+    DL_SocialSetReservation(oNpc, oWp, DL_GetAbsoluteMinute() + DL_SOCIAL_RESERVATION_TTL_MINUTES);
 }
 
 void DL_ClearNpcSocialReservation(object oNpc)
@@ -197,7 +191,7 @@ void DL_ClearNpcSocialReservation(object oNpc)
         }
     }
 
-    DeleteLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP);
+    DL_SocialClearReservation(oNpc, OBJECT_INVALID);
 }
 
 object DL_GetNpcReservedStandaloneSocialWaypoint(object oNpc, string sKind, object oArea)

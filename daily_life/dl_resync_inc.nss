@@ -9,6 +9,28 @@ const int DL_RESYNC_SPAWN = 1;
 const int DL_RESYNC_USER = 2;
 const int DL_RESYNC_AREA_ENTER = 3;
 
+void DL_SetNpcResyncState(object oNpc, int bPending, int nReason)
+{
+    SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, bPending == TRUE ? TRUE : FALSE);
+    if (bPending == TRUE)
+    {
+        SetLocalInt(oNpc, DL_L_NPC_RESYNC_REASON, nReason);
+        return;
+    }
+
+    DeleteLocalInt(oNpc, DL_L_NPC_RESYNC_REASON);
+}
+
+int DL_IsNpcResyncPending(object oNpc)
+{
+    return GetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING) == TRUE;
+}
+
+int DL_GetNpcResyncReason(object oNpc)
+{
+    return GetLocalInt(oNpc, DL_L_NPC_RESYNC_REASON);
+}
+
 void DL_RequestResync(object oNpc, int nReason)
 {
     if (!DL_IsPipelineNpc(oNpc))
@@ -21,8 +43,7 @@ void DL_RequestResync(object oNpc, int nReason)
         nReason = DL_RESYNC_USER;
     }
 
-    SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, TRUE);
-    SetLocalInt(oNpc, DL_L_NPC_RESYNC_REASON, nReason);
+    DL_SetNpcResyncState(oNpc, TRUE, nReason);
 
     object oModule = GetModule();
     SetLocalInt(oModule, DL_L_MODULE_RESYNC_REQ, GetLocalInt(oModule, DL_L_MODULE_RESYNC_REQ) + 1);
@@ -42,12 +63,12 @@ void DL_ProcessResync(object oNpc)
 
     DL_ReconcileNpcAreaRegistration(oNpc);
 
-    if (GetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING) != TRUE)
+    if (!DL_IsNpcResyncPending(oNpc))
     {
         return;
     }
 
-    int nReason = GetLocalInt(oNpc, DL_L_NPC_RESYNC_REASON);
+    int nReason = DL_GetNpcResyncReason(oNpc);
     if (nReason == DL_RESYNC_SPAWN || nReason == DL_RESYNC_USER || nReason == DL_RESYNC_AREA_ENTER)
     {
         int nDirective = DL_ResolveNpcDirective(oNpc);
@@ -55,5 +76,5 @@ void DL_ProcessResync(object oNpc)
         DL_MaybeLogNpcDiagnostic(oNpc, "resync", TRUE);
     }
 
-    SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, FALSE);
+    DL_SetNpcResyncState(oNpc, FALSE, DL_RESYNC_NONE);
 }
