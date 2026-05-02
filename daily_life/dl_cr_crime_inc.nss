@@ -9,16 +9,12 @@ const string DL_L_MODULE_CR_JAIL_WP_TAG = "dl_cr_jail_wp_tag";
 const string DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN = "dl_cr_lockpick_mark_abs_min";
 const string DL_L_OBJ_CR_LOCKPICK_MARK_BY = "dl_cr_lockpick_mark_by";
 
-const float DL_CR_WITNESS_RADIUS_DEFAULT = 10.0;
-const float DL_CR_GUARD_ALERT_RADIUS_DEFAULT = 20.0;
-const int DL_CR_GUARD_RESPONDERS_MAX_DEFAULT = 2;
 const int DL_CR_GUARD_RESPONDERS_MAX_CAP = 2;
 const int DL_CR_INVESTIGATE_TTL_MIN = 3;
 const int DL_CR_SHOUT_COOLDOWN_MIN = 1;
 const int DL_CR_WITNESS_SCAN_CAP = 24;
 const int DL_CR_GUARD_SCAN_CAP = 24;
 const string DL_CR_KEY_PREFIX_SHOUT_CD = "dl_cr_shout_cd_";
-const string DL_CR_JAIL_WP_TAG_DEFAULT = "dl_jail_entry_wp";
 const float DL_CR_DISTANCE_INF = 1000000.0;
 const int DL_CR_LOCKPICK_MARK_TTL_MIN = 1;
 
@@ -46,58 +42,27 @@ int DL_CR_IsDetainPending(object oPc);
 
 float DL_CR_GetWitnessRadius()
 {
-    float fRaw = GetLocalFloat(GetModule(), DL_L_MODULE_CR_WITNESS_RADIUS);
-    if (fRaw > 0.0)
-    {
-        return fRaw;
-    }
-
-    int nLegacyRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_WITNESS_RADIUS);
-    if (nLegacyRaw <= 0)
-    {
-        return DL_CR_WITNESS_RADIUS_DEFAULT;
-    }
-    return IntToFloat(nLegacyRaw);
+    return DL_GetConfigFloat(DL_L_MODULE_CR_WITNESS_RADIUS, DL_CFG_CR_WITNESS_RADIUS_DEFAULT);
 }
 
 float DL_CR_GetGuardAlertRadius()
 {
-    float fRaw = GetLocalFloat(GetModule(), DL_L_MODULE_CR_GUARD_ALERT_RADIUS);
-    if (fRaw > 0.0)
-    {
-        return fRaw;
-    }
-
-    int nLegacyRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_GUARD_ALERT_RADIUS);
-    if (nLegacyRaw <= 0)
-    {
-        return DL_CR_GUARD_ALERT_RADIUS_DEFAULT;
-    }
-    return IntToFloat(nLegacyRaw);
+    return DL_GetConfigFloat(DL_L_MODULE_CR_GUARD_ALERT_RADIUS, DL_CFG_CR_GUARD_ALERT_RADIUS_DEFAULT);
 }
 
 int DL_CR_GetGuardRespondersMax()
 {
-    int nRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_GUARD_RESPONDERS_MAX);
-    if (nRaw <= 0)
-    {
-        return DL_CR_GUARD_RESPONDERS_MAX_DEFAULT;
-    }
-    if (nRaw > DL_CR_GUARD_RESPONDERS_MAX_CAP)
-    {
-        return DL_CR_GUARD_RESPONDERS_MAX_CAP;
-    }
-    return nRaw;
+    return DL_GetConfigInt(
+        DL_L_MODULE_CR_GUARD_RESPONDERS_MAX,
+        DL_CFG_CR_GUARD_RESPONDERS_MAX_DEFAULT,
+        1,
+        DL_CR_GUARD_RESPONDERS_MAX_CAP
+    );
 }
 
 string DL_CR_GetJailWaypointTag()
 {
-    string sTag = GetLocalString(GetModule(), DL_L_MODULE_CR_JAIL_WP_TAG);
-    if (sTag == "")
-    {
-        return DL_CR_JAIL_WP_TAG_DEFAULT;
-    }
-    return sTag;
+    return DL_GetConfigString(DL_L_MODULE_CR_JAIL_WP_TAG, DL_CFG_CR_JAIL_WP_TAG_DEFAULT);
 }
 
 void DL_CR_ClearPursuitState(object oPc)
