@@ -376,7 +376,7 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
         SetLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD, oBestA);
         if (nLevel >= 3)
         {
-            DL_CommandAttackResetQueue(oBestA, oOffender);
+            DL_PipelineDispatchCommand(oBestA, 1, oOffender, OBJECT_INVALID);
         }
         else
         {
@@ -390,11 +390,11 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
         SetLocalInt(oBestB, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
         if (nLevel >= 3)
         {
-            DL_CommandAttackResetQueue(oBestB, oOffender);
+            DL_PipelineDispatchCommand(oBestB, 1, oOffender, OBJECT_INVALID);
         }
         else
         {
-            DL_CommandMoveToObjectResetQueue(oBestB, oOffender, TRUE, 2.0);
+            DL_PipelineDispatchCommand(oBestB, 2, oOffender, OBJECT_INVALID);
         }
     }
 }
@@ -413,12 +413,20 @@ void DL_CR_RecordCrimeEvent(object oOffender, object oArea, string sKind, int bW
 
 void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, int bWitnessed, object oWitness)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
+    // Validate
+    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
     {
         return;
     }
 
-    DL_CR_RecordCrimeEvent(oOffender, oArea, sKind, bWitnessed);
+    // Resolve
+    string sResolvedKind = sKind;
+
+    // Prepare
+    DL_PipelineUpdateDiagnostic(oOffender, DL_L_EVT_CR_KIND, "");
+
+    // Execute
+    DL_CR_RecordCrimeEvent(oOffender, oArea, sResolvedKind, bWitnessed);
     if (!bWitnessed)
     {
         return;
@@ -430,6 +438,9 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
     int nHeat = DL_CR_GetCrimeHeat(sKind);
     DL_CR_RegisterIncident(oOffender, nHeat);
     DL_CR_AlertNearbyGuards(oOffender, oArea);
+
+    // Finalize
+    DL_PipelineUpdateDiagnostic(oOffender, DL_L_EVT_CR_KIND, sResolvedKind);
 }
 
 void DL_CR_HandleDisturbed(object oDisturbed)

@@ -522,13 +522,23 @@ int DL_ShouldFallbackSocialToPublicLocal(object oNpc)
 }
 void DL_ExecuteSocialDirective(object oNpc)
 {
+    // Validate
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    // Resolve
     string sKind = DL_GetNpcSocialKind(oNpc);
+
+    // Prepare
+    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_FOCUS_STATUS, DL_PIPE_STEP_PREPARE);
     if (DL_IsStandaloneSocialKind(sKind))
     {
         object oSocial = DL_ResolveStandaloneSocialWaypoint(oNpc, sKind);
         if (!GetIsObjectValid(oSocial))
         {
-            SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_MISSING_SOCIAL_POOL_PREFIX + sKind);
+            DL_PipelineUpdateDiagnostic(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_MISSING_SOCIAL_POOL_PREFIX + sKind);
             return;
         }
 
@@ -552,7 +562,7 @@ void DL_ExecuteSocialDirective(object oNpc)
     object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
     if (!GetIsObjectValid(oPartnerWp))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
+        DL_PipelineUpdateDiagnostic(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
         return;
     }
     object oMe = DL_ResolveSocialWaypoint(oNpc);
@@ -581,5 +591,9 @@ void DL_ExecuteSocialDirective(object oNpc)
             " slot=" + GetLocalString(oNpc, DL_L_NPC_SOCIAL_SLOT) +
             " partner=" + sPartnerTag
     );
+    // Execute
     DL_ProgressFocusAtTarget(oNpc, oMe, sStatus, sAnim);
+
+    // Finalize
+    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_FOCUS_STATUS, DL_PIPE_STEP_FINALIZE);
 }
