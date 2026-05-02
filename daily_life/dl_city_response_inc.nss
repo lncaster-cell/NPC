@@ -159,6 +159,39 @@ string DL_CR_GetDetainDialogResRef()
     return sDialogResRef;
 }
 
+
+int DL_CR_StartDetainInteraction(object oGuard, object oOffender, string sDialogResRef, int bForceApproach)
+{
+    if (!GetIsObjectValid(oGuard) || !GetIsObjectValid(oOffender))
+    {
+        return FALSE;
+    }
+
+    if (!DL_IsActivePipelineNpc(oGuard) || !DL_IsRuntimePlayer(oOffender))
+    {
+        return FALSE;
+    }
+
+    if (GetIsInConversation(oGuard) || GetIsInConversation(oOffender) ||
+        GetIsInCombat(oGuard) || GetIsInCombat(oOffender))
+    {
+        return FALSE;
+    }
+
+    if (sDialogResRef == "")
+    {
+        sDialogResRef = DL_CR_GetDetainDialogResRef();
+    }
+
+    AssignCommand(oGuard, ClearAllActions(TRUE));
+    if (bForceApproach)
+    {
+        AssignCommand(oGuard, ActionMoveToObject(oOffender, TRUE, 2.0));
+    }
+    AssignCommand(oGuard, ActionStartConversation(oOffender, sDialogResRef, TRUE, TRUE));
+    return TRUE;
+}
+
 int DL_CR_IsGuardVictim(object oVictim)
 {
     return GetLocalString(oVictim, DL_L_NPC_PROFILE_ID) == DL_PROFILE_GATE_POST;
@@ -315,8 +348,5 @@ void DL_CR_HandleGuardPerception(object oGuard)
         return;
     }
 
-    string sDialogResRef = DL_CR_GetDetainDialogResRef();
-    AssignCommand(oGuard, ClearAllActions(TRUE));
-    AssignCommand(oGuard, ActionMoveToObject(oSeen, TRUE, 2.0));
-    AssignCommand(oGuard, ActionStartConversation(oSeen, sDialogResRef, TRUE, TRUE));
+    DL_CR_StartDetainInteraction(oGuard, oSeen, "", TRUE);
 }
