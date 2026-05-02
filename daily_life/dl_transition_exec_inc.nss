@@ -20,13 +20,13 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
     string sResolvedPrefix = sDiagPrefix;
 
     // Prepare
-    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_PIPE_STEP_PREPARE);
+    DL_OnNpcActionDispatched(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_PIPE_STEP_PREPARE, "", "", "dl_tm_transition_dispatch_count");
 
     // Execute
     int bExecuted = DL_ExecuteTransitionEngine(oNpc, oEntryWp, sResolvedPrefix);
 
     // Finalize
-    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_PIPE_STEP_FINALIZE);
+    DL_OnNpcActionDispatched(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_PIPE_STEP_FINALIZE);
     return bExecuted;
 }
 

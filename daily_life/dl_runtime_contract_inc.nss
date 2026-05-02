@@ -199,6 +199,47 @@ const int DL_ORCH_ACT_JUMP_LOCATION = 3;
 const int DL_ORCH_ACT_START_CONVERSATION = 4;
 const int DL_ORCH_ACT_ATTACK = 5;
 
+
+void DL_OnNpcActionDispatched(
+    object oActor,
+    string sStatusKey = "",
+    string sStatusValue = "",
+    string sDiagKey = "",
+    string sDiagValue = "",
+    string sTelemetryKey = "",
+    int nExecutionWindow = -1,
+    string sNoopStateKey = "",
+    string sNoopStateValue = ""
+)
+{
+    if (!GetIsObjectValid(oActor))
+    {
+        return;
+    }
+
+    if (sNoopStateKey != "" && sNoopStateValue != "" && nExecutionWindow >= 0)
+    {
+        if (GetLocalString(oActor, sNoopStateKey) == sNoopStateValue &&
+            GetLocalInt(oActor, DL_L_NPC_ORCH_LAST_WINDOW) == nExecutionWindow &&
+            GetLocalString(oActor, DL_L_NPC_ORCH_LAST_STATE) == sNoopStateValue)
+        {
+            return;
+        }
+    }
+
+    DL_SetRuntimeState(oActor, sStatusKey, sStatusValue, sDiagKey, sDiagValue);
+    if (sTelemetryKey != "")
+    {
+        SetLocalInt(oActor, sTelemetryKey, GetLocalInt(oActor, sTelemetryKey) + 1);
+    }
+
+    if (nExecutionWindow >= 0)
+    {
+        SetLocalInt(oActor, DL_L_NPC_ORCH_LAST_WINDOW, nExecutionWindow);
+        SetLocalString(oActor, DL_L_NPC_ORCH_LAST_STATE, sNoopStateValue);
+    }
+}
+
 int DL_OrchestrateRuntimeAction(
     object oActor,
     int nActionKind,
@@ -273,12 +314,17 @@ int DL_OrchestrateRuntimeAction(
         return FALSE;
     }
 
-    DL_SetRuntimeState(oActor, sPostStatusKey, sPostStatus, sPostDiagKey, sPostDiag);
-    if (nExecutionWindow >= 0)
-    {
-        SetLocalInt(oActor, DL_L_NPC_ORCH_LAST_WINDOW, nExecutionWindow);
-        SetLocalString(oActor, DL_L_NPC_ORCH_LAST_STATE, sNoopStateValue);
-    }
+    DL_OnNpcActionDispatched(
+        oActor,
+        sPostStatusKey,
+        sPostStatus,
+        sPostDiagKey,
+        sPostDiag,
+        "",
+        nExecutionWindow,
+        sNoopStateKey,
+        sNoopStateValue
+    );
 
     return TRUE;
 }
