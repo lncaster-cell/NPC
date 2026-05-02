@@ -139,13 +139,13 @@ int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus
 
     if (DL_WaypointHasTransition(oTarget))
     {
-        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oTarget))
+        if (DL_TryExecuteRoutedTransitionEntryWaypoint(oNpc, oTarget))
         {
             return TRUE;
         }
     }
 
-    if (DL_TryUseNavigationRouteToTarget(oNpc, oTarget))
+    if (DL_TryRouteToTarget(oNpc, oTarget))
     {
         return TRUE;
     }
@@ -391,13 +391,13 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
 
     if (DL_WaypointHasTransition(oSeat))
     {
-        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oSeat))
+        if (DL_TryExecuteRoutedTransitionEntryWaypoint(oNpc, oSeat))
         {
             return TRUE;
         }
     }
 
-    if (DL_TryUseNavigationRouteToTarget(oNpc, oSeat))
+    if (DL_TryRouteToTarget(oNpc, oSeat))
     {
         return TRUE;
     }
