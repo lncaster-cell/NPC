@@ -5,41 +5,69 @@
 
 ## Короткий ответ на главный вопрос
 
-**Да, дублирование сейчас есть.** Не «полные две системы навигации», но есть **параллельные исполнители переходов** (executor-логика в нескольких местах), из-за чего растут риски рассинхронизации поведения и диагностики.
+**Да, дублирование есть и в execution, и в routing-API.**  
+Это не «две независимые большие системы», но есть несколько параллельных входов с пересекающейся логикой, что увеличивает стоимость поддержки.
 
-## Что уже хорошо (контракт соблюдён на уровне новой ветки)
+## Что уже хорошо (контракт целевой архитектуры)
 
-- Контракт в design doc фиксирует `Nav Router -> Transition Executor` и запрещает конкурирующую навигацию внутри executor.
-- `DL_TryRouteToTarget` выбирает entry и делегирует выполнение в `DL_TryExecuteRoutedTransitionEntryWaypoint`.
-- Новый executor выполняет ровно один переход: подойти к entry → разрешить exit/driver → jump → обновить `dl_npc_nav_zone`.
+- Контракт в unified doc фиксирует pipeline `Nav Router -> Transition Executor`.
+- Новый путь `DL_TryRouteToTarget -> DL_TryExecuteRoutedTransitionEntryWaypoint` уже реализован и соответствует контракту.
 
-## Где именно дублирование
+## Карта дублирования (продолжение поиска)
 
-### 1) Legacy transition executor в `dl_transition_inc.nss`
+### A. Дублирование execution-path (выполнение одного перехода)
 
-В `dl_transition_inc.nss` остаётся «старый» исполняющий путь перехода с теми же шагами (подход, проверка exit, driver, door open, jump, статусы/diag), что функционально пересекается с новым canonical executor.
+1. **Canonical executor**: `DL_TryExecuteRoutedTransitionEntryWaypoint` (`dl_transition_exec_inc.nss`).
+2. **Legacy executor**: `DL_TryExecuteTransitionEntryWaypoint` (`dl_transition_inc.nss`).
+3. **Cross-area executor**: `DL_TryExecuteCrossAreaTransitionEntryWaypoint` (`dl_cross_area_nav_inc.nss`).
 
-### 2) Отдельная cross-area execution ветка в `dl_cross_area_nav_inc.nss`
+У всех трёх пересекается одна и та же базовая схема:
+- distance-gate до entry;
+- resolve exit waypoint;
+- set transition status/diag;
+- door handling (`DoDoorAction`) + jump (`ActionJumpToLocation`).
 
-В `dl_cross_area_nav_inc.nss` есть ещё один самостоятельный путь исполнения перехода (moving_to_cross_area_transition_entry, cross_area_transition_in_progress, door/jump), что снова дублирует executor-механику.
+### B. Дублирование routing entry points (выбор и запуск маршрута)
 
-### 3) Диагностика и статусы размножены по слоям
+Сейчас одновременно существуют несколько публичных «попробовать маршрут» функций:
+1. `DL_TryRouteToTarget` (новый canonical router).
+2. `DL_TryUseNavZoneRouteToTarget` (legacy nav-zone route).
+3. `DL_TryUseCrossAreaNavigationRouteToTarget` (legacy cross-area route).
+4. `DL_TryUseNavigationRouteToTarget` (комбинированный legacy wrapper).
 
-Разные ветки пишут похожие, но не полностью одинаковые статусы/diagnostic строки. Это усложняет наблюдаемость и отладку.
+Функционально это пересекающиеся API одного назначения (довести NPC к target через transitions), что создаёт риск разных call-sites и разного поведения в edge-case.
 
-## Вывод по «переусложнению»
+### C. Дублирование диагностических состояний
 
-- Ваше ощущение **обосновано**: сложность возникает не от самого разделения `Nav Router`/`Transition Executor`, а от того, что рядом ещё живут legacy/cross-area исполняющие ветки.
-- То есть проблема не в концепции разделения, а в **неполной миграции к единому executor**.
+Статусы схожие, но с разными строками:
+- `moving_to_transition_entry` vs `moving_to_cross_area_transition_entry` vs `moving_to_routed_transition_entry`;
+- `transition_in_progress` vs `cross_area_transition_in_progress` vs `routed_transition_in_progress`;
+- разные формулировки для exit-missing.
 
-## Рекомендованный план упрощения (без ломки текущих профилей)
+Это усложняет агрегированную telemetry/алерты и делает сравнение профилей менее надёжным.
 
-1. **Single execution path:** оставить один канонический исполнитель `DL_TryExecuteRoutedTransitionEntryWaypoint`.
-2. **Adapter-only для legacy/cross-area:** старые входы не исполняют переход сами, а нормализуют вход и вызывают canonical executor.
-3. **Единый словарь transition diagnostics/status:** константы + helper-setter вместо строковых вариаций.
-4. **Telemetry migration gate:** считать долю legacy-вызовов, и только после падения до целевого порога удалять старые исполняющие ветки.
+## Вывод
+
+Ваше ощущение корректное: **дублирование действительно есть**, и оно уже выходит за рамки «временной совместимости», потому что касается не только legacy-metadata, но и публичных routing/execution точек входа.
+
+## Рекомендованный план с минимальным риском
+
+1. **Single execution core**
+   - Оставить единственным исполняющим ядром `DL_TryExecuteRoutedTransitionEntryWaypoint`.
+   - Legacy/cross-area executor-функции превратить в тонкие adapters, которые только нормализуют вход и вызывают canonical executor.
+
+2. **Single routing facade**
+   - Зафиксировать `DL_TryRouteToTarget` как единственный публичный entry point для нового pipeline.
+   - Legacy routing API оставить как deprecated wrappers с явной телеметрией использования.
+
+3. **Unify diagnostics contract**
+   - Вынести status/diag коды в константы и helper-setter (единый словарь), чтобы избежать строковых вариаций.
+
+4. **Migration by metrics, not by guess**
+   - Добавить счётчики вызовов legacy routing/execution adapters.
+   - Удалять legacy ветки только после стабильного низкого usage.
 
 ## Практический verdict
 
-- **Дублирование есть, но оно локализовано** и решается без тотальной переписи.
-- Текущий этап разработки логично завершить так: «один executor, остальные слои — только маршрутизация/адаптация».
+- Дублирование локализовано и управляемо.
+- Следующий правильный шаг: не расширять новые ветки, пока не завершена консолидация к **одному router API + одному executor core**.
