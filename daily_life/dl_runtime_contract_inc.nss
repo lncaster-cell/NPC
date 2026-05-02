@@ -116,6 +116,8 @@ const string DL_L_NPC_FALLBACK_LAST_EVENT = "dl_npc_fallback_last_event";
 
 const string DL_FB_DOMAIN_SOCIAL = "social";
 const string DL_FB_DOMAIN_TRANSITION = "transition";
+const string DL_FB_DOMAIN_CRIME = "crime";
+const string DL_FB_DOMAIN_WORKER = "worker";
 const string DL_FB_DOMAIN_REGISTRY = "registry";
 
 const string DL_FB_SEVERITY_INFO = "info";
@@ -130,7 +132,13 @@ const string DL_FB_REASON_SOCIAL_PARTNER_NOT_SOCIAL = "social_partner_not_social
 const string DL_FB_REASON_SOCIAL_PARTNER_ANCHOR_MISSING = "social_partner_anchor_missing";
 const string DL_FB_REASON_TRANSITION_EXIT_MISSING = "transition_exit_missing";
 const string DL_FB_REASON_TRANSITION_DRIVER_MISSING = "transition_driver_missing";
+const string DL_FB_REASON_TRANSITION_IN_PROGRESS = "transition_in_progress";
 const string DL_FB_REASON_REGISTRY_UNREGISTER_SLOT_INVALID = "registry_unregister_slot_invalid";
+const string DL_FB_REASON_CRIME_DETAIN_PENDING_WITNESSED = "crime_detain_pending_witnessed";
+const string DL_FB_REASON_CRIME_DETAIN_REFUSED = "crime_detain_refused";
+const string DL_FB_REASON_WORKER_REGISTRY_RECOVERY = "worker_registry_recovery";
+const string DL_FB_REASON_FOCUS_MISSING_MEAL_AREA = "focus_missing_meal_area";
+const string DL_FB_REASON_FOCUS_MISSING_MEAL_AND_WORK_AREA = "focus_missing_meal_and_work_area";
 
 string DL_GetFallbackSeverityByDomain(string sDomain)
 {
@@ -160,6 +168,27 @@ void DL_ReportFallback(object oActor, string sDomain, string sReasonCode, string
         "fallback",
         "fallback domain=" + sDomain + " reason_code=" + sReasonCode + " severity=" + sSeverity + " next_action=" + sNextAction
     );
+}
+
+void DL_SetReasonAndDiagnostic(
+    object oActor,
+    string sDomain,
+    string sReasonCode,
+    string sDiagnosticLocal,
+    string sDiagnosticCode
+)
+{
+    if (!GetIsObjectValid(oActor))
+    {
+        return;
+    }
+
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_DOMAIN, sDomain);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_REASON_CODE, sReasonCode);
+    if (sDiagnosticLocal != "")
+    {
+        SetLocalString(oActor, sDiagnosticLocal, sDiagnosticCode);
+    }
 }
 
 int DL_IsRuntimeEnabled()

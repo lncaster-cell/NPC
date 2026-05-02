@@ -398,7 +398,7 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
     }
 
     DL_LG_OnWitnessedIncident(oOffender, sKind, oArea, oWitness);
-    DL_CR_SetDetainPending(oOffender, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, "witnessed_incident");
+    DL_CR_SetDetainPending(oOffender, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, DL_FB_REASON_CRIME_DETAIN_PENDING_WITNESSED);
 
     int nHeat = DL_CR_GetCrimeHeat(sKind);
     DL_CR_RegisterIncident(oOffender, nHeat);
@@ -627,7 +627,7 @@ void DL_CR_HandleDetainRefused(object oPc, object oGuard)
         return;
     }
 
-    DL_CR_SetDetainPending(oPc, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, "detain_refused");
+    DL_CR_SetDetainPending(oPc, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, DL_FB_REASON_CRIME_DETAIN_REFUSED);
     DL_CR_RegisterIncident(oPc, 10);
     DL_LG_OnRefusedDetain(oPc, oGuard);
 
