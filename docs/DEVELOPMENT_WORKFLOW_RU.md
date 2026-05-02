@@ -98,3 +98,17 @@ PR с runtime-правками **не считается завершённым*
 - Перед реализацией новой логики всегда делаем проверку: существует ли штатная функция/событие/паттерн в NWScript.
 - Если найдено несколько вариантов, выбираем тот, который снижает runtime-нагрузку и упрощает поддержку.
 - Если приходится делать адаптер, в PR/коммите кратко фиксируем, почему встроенный механизм не подошёл.
+
+## Static check: reset-policy consistency (rg gate)
+
+Добавлен обязательный grep-gate для обнаружения новых несогласованных reset-паттернов в lifecycle/worker/registry/resync.
+
+Команда:
+
+```bash
+rg -n "DeleteLocal(Int|String|Object)\\(.*DL_L_AREA_(TIER|ENTER_RESYNC_(PENDING|CURSOR)|RESYNC_LAST_PROCESSED)|DeleteLocalInt\\(.*DL_L_NPC_RESYNC_PENDING" daily_life/dl_{lifecycle,worker,registry,resync}_inc.nss daily_life/dl_smk_tier.nss
+```
+
+Ожидаемое поведение:
+- пустой вывод (`exit 1`) — PASS (новых запрещённых reset-паттернов нет);
+- непустой вывод — FAIL, требуется приведение к политике из `UNIFIED_DESIGN_DOCUMENT_RU.md` (раздел reset-политики) или явный `COMPAT`-комментарий с планом удаления.
