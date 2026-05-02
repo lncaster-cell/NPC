@@ -16,10 +16,11 @@
 5. Каждый новый `docs/audits/post_refactor_audit_pass*.md` считается завершённым только после обновления `docs/audits/risk_register.md` в том же коммите.
 6. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
 7. Новые diagnostic-коды вводить только через contract-константы (канонический словарь в профильном `*_contract_inc.nss`), без raw-строк в runtime-логике.
-8. После **каждого этапа унификации** запускать статический поиск неиспользуемых функций/констант в `daily_life/*.nss` (`rg` по имени + ручная call-site проверка).
-9. Deprecated-функции удалять в **том же PR**, где введён replacement (долгое сосуществование старого и нового пути запрещено).
-10. Если временное сосуществование неизбежно, оставлять явный маркер `remove-by: <YYYY-MM-DD|version>; owner: <name>` рядом с transitional-кодом.
-11. Для area-domain guard-проверок соблюдать единый порядок: `runtime gate -> object validity -> area/tier/domain toggle`; использовать только канонические helper’ы `DL_CanRun*ForArea`, без inline-дубликатов.
+8. Любой новый action dispatch обязан завершаться через единый post-action hook `DL_OnNpcActionDispatched(...)` (без локальных inline post-action блоков).
+9. После **каждого этапа унификации** запускать статический поиск неиспользуемых функций/констант в `daily_life/*.nss` (`rg` по имени + ручная call-site проверка).
+10. Deprecated-функции удалять в **том же PR**, где введён replacement (долгое сосуществование старого и нового пути запрещено).
+11. Если временное сосуществование неизбежно, оставлять явный маркер `remove-by: <YYYY-MM-DD|version>; owner: <name>` рядом с transitional-кодом.
+12. Для каждого заменённого API/ключа добавлять явную запись в `docs/DEPRECATION_REGISTRY_RU.md` со схемой: `old`, `replacement`, `remove_by`.
 
 
 

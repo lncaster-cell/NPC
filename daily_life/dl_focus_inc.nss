@@ -533,7 +533,7 @@ void DL_ExecuteSocialDirective(object oNpc)
     string sKind = DL_GetNpcSocialKind(oNpc);
 
     // Prepare
-    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_FOCUS_STATUS, DL_PIPE_STEP_PREPARE);
+    DL_OnNpcActionDispatched(oNpc, DL_L_NPC_FOCUS_STATUS, DL_PIPE_STEP_PREPARE, "", "", "dl_tm_social_dispatch_count");
     if (DL_IsStandaloneSocialKind(sKind))
     {
         object oSocial = DL_ResolveStandaloneSocialWaypoint(oNpc, sKind);
@@ -597,5 +597,5 @@ void DL_ExecuteSocialDirective(object oNpc)
     DL_ProgressFocusAtTarget(oNpc, oMe, sStatus, sAnim);
 
     // Finalize
-    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_FOCUS_STATUS, DL_PIPE_STEP_FINALIZE);
+    DL_OnNpcActionDispatched(oNpc, DL_L_NPC_FOCUS_STATUS, DL_PIPE_STEP_FINALIZE);
 }
