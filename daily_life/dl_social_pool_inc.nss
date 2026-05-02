@@ -1,7 +1,7 @@
 const string DL_L_NPC_SOCIAL_KIND = "dl_social_kind";
 const string DL_L_NPC_SOCIAL_RESERVED_WP = "dl_social_reserved_wp";
 const string DL_L_WP_SOCIAL_RESERVED_BY = "dl_social_reserved_by";
-const string DL_L_WP_SOCIAL_RESERVED_UNTIL = "dl_social_reserved_until";
+const string DL_L_WP_SOCIAL_RESERVED_ABS_MIN = "dl_social_reserved_abs_min";
 
 const string DL_SOCIAL_KIND_PAIRED_CHAT = "paired_chat";
 const string DL_SOCIAL_KIND_THEATER = "theater";
@@ -10,6 +10,29 @@ const string DL_SOCIAL_KIND_PUBLIC = "public";
 
 const int DL_SOCIAL_POOL_SEARCH_CAP = 32;
 const int DL_SOCIAL_RESERVATION_TTL_MINUTES = 90;
+
+int DL_GetSocialReservationAbsMin(object oWp)
+{
+    if (!GetIsObjectValid(oWp))
+    {
+        return 0;
+    }
+
+    int nAbsMin = GetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_ABS_MIN);
+    if (nAbsMin > 0)
+    {
+        return nAbsMin;
+    }
+
+    // COMPAT(temporary): migrate legacy key and immediately delete alias.
+    nAbsMin = GetLocalInt(oWp, "dl_social_reserved_until");
+    if (nAbsMin > 0)
+    {
+        SetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_ABS_MIN, nAbsMin);
+    }
+    DeleteLocalInt(oWp, "dl_social_reserved_until");
+    return nAbsMin;
+}
 
 string DL_GetNpcSocialKind(object oNpc)
 {
@@ -103,7 +126,7 @@ void DL_ClearSocialWaypointReservation(object oWp)
     }
 
     DeleteLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY);
-    DeleteLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_UNTIL);
+    DeleteLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_ABS_MIN);
 }
 
 int DL_IsSocialWaypointReservedByOther(object oNpc, object oWp)
@@ -113,7 +136,7 @@ int DL_IsSocialWaypointReservedByOther(object oNpc, object oWp)
         return TRUE;
     }
 
-    int nUntil = GetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_UNTIL);
+    int nUntil = DL_GetSocialReservationAbsMin(oWp);
     object oReservedBy = GetLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY);
     if (nUntil <= DL_GetAbsoluteMinute())
     {
@@ -153,7 +176,7 @@ void DL_ReserveSocialWaypointForNpc(object oNpc, object oWp)
     }
 
     SetLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY, oNpc);
-    SetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_UNTIL, DL_GetAbsoluteMinute() + DL_SOCIAL_RESERVATION_TTL_MINUTES);
+    SetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_ABS_MIN, DL_GetAbsoluteMinute() + DL_SOCIAL_RESERVATION_TTL_MINUTES);
     SetLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP, oWp);
 }
 
