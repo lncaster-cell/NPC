@@ -636,16 +636,4 @@ dl_social_theater_2
    - Убывший NPC удаляется из состава жильцов, новый NPC получает тот же `dl_home_area_tag` и нужный `dl_home_slot`.
    - Переиспользуются существующие `dl_anchor_sleep_approach_<slot>` / `dl_anchor_sleep_bed_<slot>` и общие meal/public anchors без рефакторинга структуры дома.
 
-## Canonical cache invalidation policy (anchor/social/nav)
-
-Единый протокол для кэшей резолверов `GetObjectByTag(..., nNth)`:
-
-- **Cache key naming convention:** `dl_cache_<domain>_<role>` для object-cache на NPC; метрики в `dl_metric_cache_<scope>_<kind>` (`scope`: `module_*`/`area_*`, `kind`: `hit`/`miss`).
-- **Cache-hit fast path:** сначала берётся cached object и проверяется валидность по трём условиям: `GetIsObjectValid`, ожидаемый `GetTag`, ожидаемые `GetObjectType + GetArea`.
-- **Deterministic fallback scan:** при miss/invalid cache выполняется bounded-скан `GetObjectByTag(tag, nNth)` с фиксированным cap и deterministic-порядком `nNth=0..cap-1`.
-- **Controlled refresh:** при успешном fallback объект перезаписывает cache-key; при неуспехе cache-key очищается (без хранения битых ссылок).
-- **Invalidation lifecycle rules:**
-  - module-level reset через `dl_force_cache_reset` инкрементирует `dl_cache_epoch`;
-  - area-level reset через `dl_force_area_cache_reset` чистит area nav-cache и синхронизирует `dl_area_cache_epoch`;
-  - npc-level reset через `dl_force_npc_cache_reset` чистит runtime object/area caches и синхронизирует `dl_npc_cache_epoch`.
-- **Observability:** на каждом lookup фиксировать lightweight hit/miss counters на module + current area, чтобы проверять реальный perf-эффект оптимизаций.
+- Transition primitives централизованы в модуле `daily_life/dl_transition_inc.nss`; модуль `daily_life/dl_cross_area_nav_inc.nss` содержит только route-selection логику для межзональной навигации.

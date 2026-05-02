@@ -48,7 +48,7 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
         return TRUE;
     }
 
-    object oExitWp = DL_ResolveCrossAreaTransitionExitWaypointFromEntry(oEntryWp);
+    object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oEntryWp);
     if (!GetIsObjectValid(oExitWp))
     {
         SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, sDiagPrefix + "_exit_missing");
