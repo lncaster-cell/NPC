@@ -63,7 +63,7 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
 
     if (sDriver == "" || sDriver == DL_TRANSITION_DRIVER_NONE || sDriver == DL_TRANSITION_DRIVER_TRIGGER)
     {
-        DL_JumpNpcToTransitionExit(oNpc, lExit);
+        DL_JumpNpcToTransitionExit(oNpc, lExit, "transitioning", "routed_transition_in_progress");
         return TRUE;
     }
 
@@ -82,7 +82,7 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
         {
             AssignCommand(oNpc, DoDoorAction(oDoor, DOOR_ACTION_OPEN));
         }
-        AssignCommand(oNpc, ActionJumpToLocation(lExit));
+        DL_JumpNpcToTransitionExit(oNpc, lExit, "transitioning", "routed_transition_in_progress");
         return TRUE;
     }
 

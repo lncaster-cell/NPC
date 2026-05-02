@@ -5,6 +5,8 @@ const string DL_L_MODULE_RESYNC_LAST_PROCESSED = "dl_module_resync_last_processe
 const string DL_L_AREA_WORKER_LAST_PROCESSED = "dl_area_worker_last_processed";
 const string DL_L_AREA_RESYNC_LAST_PROCESSED = "dl_area_resync_last_processed";
 const string DL_L_NPC_LAST_TOUCH_TICK = "dl_npc_last_touch_tick";
+const string DL_L_NPC_AREA_TICK_RESYNC_TOUCH = "dl_npc_area_tick_resync_touch";
+const string DL_L_AREA_WORKER_SKIP_RESYNC_TICK = "dl_area_worker_skip_resync_tick";
 
 const int DL_AREA_PASS_MODE_WORKER = 1;
 const int DL_AREA_PASS_MODE_RESYNC = 2;
@@ -243,7 +245,7 @@ int DL_RunAreaRegistryFallbackRecovery(object oArea, int nTickStamp, int nScanBu
     return GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
 }
 
-int DL_ProcessAreaNpcByPassMode(object oNpc, int nPassMode, int nTickStamp)
+int DL_ProcessAreaNpcByPassMode(object oArea, object oNpc, int nPassMode, int nTickStamp)
 {
     if ((nPassMode == DL_AREA_PASS_MODE_WORKER || nPassMode == DL_AREA_PASS_MODE_WARM) &&
         GetLocalInt(oNpc, DL_L_NPC_LAST_TOUCH_TICK) == nTickStamp)
@@ -255,6 +257,7 @@ int DL_ProcessAreaNpcByPassMode(object oNpc, int nPassMode, int nTickStamp)
     {
         DL_RequestResync(oNpc, DL_RESYNC_AREA_ENTER);
         DL_ProcessResync(oNpc);
+        SetLocalInt(oNpc, DL_L_NPC_AREA_TICK_RESYNC_TOUCH, nTickStamp);
         SetLocalInt(oNpc, DL_L_NPC_LAST_TOUCH_TICK, nTickStamp);
         return TRUE;
     }
@@ -273,6 +276,15 @@ int DL_ProcessAreaNpcByPassMode(object oNpc, int nPassMode, int nTickStamp)
 
         SetLocalInt(oNpc, DL_L_NPC_LAST_TOUCH_TICK, nTickStamp);
         return TRUE;
+    }
+
+    if (nPassMode == DL_AREA_PASS_MODE_WORKER &&
+        DL_GetAreaTier(oArea) == DL_TIER_HOT &&
+        GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING) == TRUE &&
+        GetLocalInt(oNpc, DL_L_NPC_AREA_TICK_RESYNC_TOUCH) == nTickStamp)
+    {
+        SetLocalInt(oArea, DL_L_AREA_WORKER_SKIP_RESYNC_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_SKIP_RESYNC_TICK) + 1);
+        return FALSE;
     }
 
     DL_WorkerTouchNpc(oNpc);
@@ -336,7 +348,7 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
                 GetLocalInt(oCandidate, DL_L_NPC_REG_SLOT) == nSlot &&
                 DL_IsActivePipelineNpc(oCandidate))
             {
-                if (DL_ProcessAreaNpcByPassMode(oCandidate, nPassMode, nTickStamp))
+                if (DL_ProcessAreaNpcByPassMode(oArea, oCandidate, nPassMode, nTickStamp))
                 {
                     nNpcProcessed = nNpcProcessed + 1;
                 }

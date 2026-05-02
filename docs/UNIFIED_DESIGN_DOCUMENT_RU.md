@@ -407,6 +407,7 @@ dl_social_theater_2
 - Разметка должна принадлежать location/area, а не конкретному NPC; замена NPC не должна требовать перестановки waypoint-разметки.
 - `dl_nav_zone` трактуется как физико-навигационный фрагмент, а не назначение комнаты.
 - Следующий runtime-фокус: привести include-слой к строгому разделению `Destination Resolver` / `Nav Router` / `Transition Executor`.
+- В runtime CR tuning зафиксированы cooldown-параметры в `daily_life/dl_city_response_inc.nss`: `DL_CR_EPISODE_COOLDOWN_MIN` и `DL_CR_GUARD_REACTION_COOLDOWN_MIN` (убран hardcoded `+ 1` для guard perception cooldown).
 
 ### 2026-04-21 — фиксация канонического статуса Legal (City Response)
 
