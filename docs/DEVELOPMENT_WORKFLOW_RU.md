@@ -14,6 +14,12 @@
    - оперативный прогресс: `docs/DEVELOPMENT_STATUS_RU.md`.
 5. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
 
+
+## Mandatory gate перед merge
+
+- Перед merge изменений в runtime-скриптах обязательно пройти policy: `docs/NWN_SCRIPTING_POLICY_RU.md`.
+- PR считается неготовым, если любой из mandatory review gates policy не выполнен.
+
 ## Минимальный Definition of Done
 
 - [ ] Нет ad-hoc костылей при наличии встроенного механизма NWScript/NWN2.
