@@ -256,6 +256,23 @@ blacksmith_house:hall
 
 ### 4.7 Action / Animation
 
+### 4.8 Ownership-матрица доменов (обязательный gate)
+
+Это обязательный архитектурный gate для любого изменения Daily Life/Legal runtime.
+
+| Домен | Owner-модуль | Что разрешено owner | Что в не-owner только как адаптер |
+|---|---|---|---|
+| Transition Engine (execution) | `daily_life/dl_transition_engine_inc.nss` | Исполнение перехода: подход к entry, driver (door/trigger/none), jump, sync `dl_npc_nav_zone`, transition status/diag. | `dl_transition_exec_inc.nss` — thin wrapper вызова engine; `dl_transition_inc.nss` — metadata/lookup helpers, без исполнения `Action*`/`AssignCommand`. |
+| Nav (route discovery) | `daily_life/dl_nav_router_inc.nss` + `daily_life/dl_cross_area_nav_inc.nss` | Route planning/validation: выбор следующего entry (same-area/cross-area), bounded поиск, без side effects исполнения. | Остальные модули могут только запрашивать route entry; нельзя дублировать route search/перебор переходов. |
+| Social (pairing + behavior) | `daily_life/dl_focus_inc.nss` + `daily_life/dl_social_pool_inc.nss` | Pairing, social pool reservation, SOCIAL execution и fallback `SOCIAL -> PUBLIC`. | В `dl_res_inc.nss` и других — только вызов `DL_ExecuteSocialDirective`; без локальных fallback-предикатов и без дублирования reservation logic. |
+| Crime / CityResponse (law enforcement flow) | `daily_life/dl_cr_crime_inc.nss` + `daily_life/dl_city_response_inc.nss` + `daily_life/dl_legal_inc.nss` | Crime qualification, heat/escalation, detain pending lifecycle, legal handoff/resolution. | Другие домены отправляют только сигнал/контекст события; без прямой записи legal/crime state ключей. |
+
+Gate-правила (обязательно перед merge):
+- Любой helper для status setters / driver handlers / fallback checks должен существовать в owner-домене; кросс-доменные копии запрещены.
+- Include-зависимости направлены от orchestration к owner API; циклические «исторические» include-связи запрещены.
+- Новые public API фиксируются здесь (таблица ownership) в том же коммите, где меняется runtime-код.
+
+
 **Ответственность:** нижний NWScript/NWN2 слой действий.
 
 Базовые допустимые механики:
