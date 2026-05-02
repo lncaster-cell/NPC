@@ -56,9 +56,6 @@ const string DL_TRANSITION_DRIVER_DOOR = "door";
 const string DL_TRANSITION_DRIVER_TRIGGER = "trigger";
 
 const float DL_TRANSITION_ENTRY_RADIUS = 1.60;
-const int DL_TRANSITION_DRIVER_LOOKUP_CAP = 4;
-const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MIN = 1;
-const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MAX = 16;
 const string DL_L_TRANSITION_DRIVER_LOOKUP_CAP = "dl_transition_driver_lookup_cap";
 
 const string DL_L_AREA_NAV_READY = "dl_area_nav_ready";
@@ -154,7 +151,7 @@ object DL_GetTransitionWaypointByTag(string sTag)
     }
 
     object oWp = GetWaypointByTag(sTag);
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return OBJECT_INVALID;
     }
@@ -176,7 +173,7 @@ object DL_GetTransitionWaypointByTagInArea(string sTag, object oArea)
 
 string DL_GetWaypointTransitionKind(object oWp)
 {
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return "";
     }
@@ -186,7 +183,7 @@ string DL_GetWaypointTransitionKind(object oWp)
 
 string DL_GetWaypointTransitionId(object oWp)
 {
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return "";
     }
@@ -196,7 +193,7 @@ string DL_GetWaypointTransitionId(object oWp)
 
 string DL_GetWaypointTransitionExitTag(object oWp)
 {
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return "";
     }
@@ -206,7 +203,7 @@ string DL_GetWaypointTransitionExitTag(object oWp)
 
 string DL_GetWaypointTransitionDriver(object oWp)
 {
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return "";
     }
@@ -216,7 +213,7 @@ string DL_GetWaypointTransitionDriver(object oWp)
 
 string DL_GetWaypointTransitionDriverTag(object oWp)
 {
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return "";
     }
@@ -226,7 +223,7 @@ string DL_GetWaypointTransitionDriverTag(object oWp)
 
 string DL_GetWaypointNavZone(object oWp)
 {
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return "";
     }
@@ -263,7 +260,7 @@ void DL_SetNpcNavZoneFromWaypoint(object oNpc, object oWp)
 // Any new transition branches must set status/diagnostic only through this helper.
 void DL_SetTransitionState(object oNpc, string sStatus, string sDiagnostic, string sDiagContext)
 {
-    if (!GetIsObjectValid(oNpc))
+    if (!DL_IsValidNpcObject(oNpc))
     {
         return;
     }
@@ -284,7 +281,7 @@ void DL_SetTransitionState(object oNpc, string sStatus, string sDiagnostic, stri
 
 string DL_GetResolvedTransitionExitTag(object oEntryWp)
 {
-    if (!GetIsObjectValid(oEntryWp))
+    if (!DL_IsValidWaypointObject(oEntryWp))
     {
         return "";
     }
@@ -327,7 +324,7 @@ void DL_ClearTransitionExecutionState(object oNpc)
 
 int DL_WaypointHasTransition(object oWp)
 {
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return FALSE;
     }
@@ -410,7 +407,7 @@ object DL_GetAreaNavigationRouteAtSlot(object oArea, int nSlot)
 
 string DL_InferNpcNavZoneFromAreaRoutes(object oNpc)
 {
-    if (!GetIsObjectValid(oNpc))
+    if (!DL_IsValidNpcObject(oNpc))
     {
         return "";
     }
@@ -459,7 +456,7 @@ string DL_InferNpcNavZoneFromAreaRoutes(object oNpc)
 
 int DL_IsValidTransitionWaypointForTag(object oWp, string sExpectedTag)
 {
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return FALSE;
     }
@@ -495,7 +492,7 @@ object DL_GetCrossNavAreaByTag(string sAreaTag)
 
 object DL_GetTransitionExitSearchAreaFromEntry(object oEntryWp)
 {
-    if (!GetIsObjectValid(oEntryWp))
+    if (!DL_IsValidWaypointObject(oEntryWp))
     {
         return OBJECT_INVALID;
     }
@@ -515,7 +512,7 @@ object DL_GetTransitionExitSearchAreaFromEntry(object oEntryWp)
 
 object DL_ResolveTransitionExitWaypointFromEntrySimple(object oEntryWp)
 {
-    if (!GetIsObjectValid(oEntryWp))
+    if (!DL_IsValidWaypointObject(oEntryWp))
     {
         return OBJECT_INVALID;
     }
@@ -528,7 +525,7 @@ object DL_ResolveTransitionExitWaypointFromEntrySimple(object oEntryWp)
 
     object oCached = GetLocalObject(oEntryWp, DL_L_WP_TRANSITION_EXIT_OBJ);
     if (GetIsObjectValid(oCached) &&
-        GetObjectType(oCached) == OBJECT_TYPE_WAYPOINT &&
+        DL_IsValidWaypointObject(oCached) &&
         GetTag(oCached) == sResolvedTag)
     {
         return oCached;
@@ -550,7 +547,7 @@ object DL_ResolveTransitionExitWaypointFromEntrySimple(object oEntryWp)
         }
     }
 
-    if (GetIsObjectValid(oExit) && GetObjectType(oExit) == OBJECT_TYPE_WAYPOINT)
+    if (DL_IsValidWaypointObject(oExit))
     {
         SetLocalObject(oEntryWp, DL_L_WP_TRANSITION_EXIT_OBJ, oExit);
         return oExit;
@@ -561,7 +558,7 @@ object DL_ResolveTransitionExitWaypointFromEntrySimple(object oEntryWp)
 
 object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
 {
-    if (!GetIsObjectValid(oEntryWp))
+    if (!DL_IsValidWaypointObject(oEntryWp))
     {
         return OBJECT_INVALID;
     }
@@ -584,24 +581,13 @@ object DL_ResolveTransitionExitWaypointFromEntry(object oEntryWp)
 
 int DL_IsBidirectionalTransitionPair(object oWpA, object oWpB)
 {
-    if (!GetIsObjectValid(oWpA) || !GetIsObjectValid(oWpB))
-    {
-        return FALSE;
-    }
-
-    if (GetObjectType(oWpA) != OBJECT_TYPE_WAYPOINT ||
-        GetObjectType(oWpB) != OBJECT_TYPE_WAYPOINT)
+    if (!DL_IsValidWaypointObject(oWpA) || !DL_IsValidWaypointObject(oWpB))
     {
         return FALSE;
     }
 
     object oBack = DL_ResolveTransitionExitWaypointFromEntry(oWpB);
-    if (!GetIsObjectValid(oBack))
-    {
-        return FALSE;
-    }
-
-    if (GetObjectType(oBack) != OBJECT_TYPE_WAYPOINT)
+    if (!DL_IsValidWaypointObject(oBack))
     {
         return FALSE;
     }
@@ -642,12 +628,12 @@ int DL_IsTransitionDriverTypeMatch(string sDriverKind, object oDriver)
 
 int DL_GetTransitionDriverLookupCap()
 {
-    int nCap = GetLocalInt(GetModule(), DL_L_TRANSITION_DRIVER_LOOKUP_CAP);
-    if (nCap <= 0)
-    {
-        return DL_TRANSITION_DRIVER_LOOKUP_CAP;
-    }
-    return DL_ClampInt(nCap, DL_TRANSITION_DRIVER_LOOKUP_CAP_MIN, DL_TRANSITION_DRIVER_LOOKUP_CAP_MAX);
+    return DL_GetConfigInt(
+        DL_L_TRANSITION_DRIVER_LOOKUP_CAP,
+        DL_CFG_TRANSITION_DRIVER_LOOKUP_CAP_DEFAULT,
+        DL_CFG_TRANSITION_DRIVER_LOOKUP_CAP_MIN,
+        DL_CFG_TRANSITION_DRIVER_LOOKUP_CAP_MAX
+    );
 }
 
 object DL_ResolveTransitionDriverObject(object oEntryWp)
@@ -722,14 +708,125 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
     return OBJECT_INVALID;
 }
 
+int DL_JumpNpcToTransitionExit(object oNpc, location lExit, string sStatus = "", string sDiagnostic = "")
+{
+    if (!DL_IsValidNpcObject(oNpc))
+    {
+        return FALSE;
+    }
+
+    object oExitArea = GetAreaFromLocation(lExit);
+    if (!DL_IsValidAreaObject(oExitArea))
+    {
+        if (sStatus != "")
+        {
+            DL_SetTransitionState(oNpc, sStatus, sDiagnostic, "");
+        }
+        return FALSE;
+    }
+
+    AssignCommand(oNpc, ClearAllActions(TRUE));
+    AssignCommand(oNpc, ActionJumpToLocation(lExit));
+    return TRUE;
+}
+
+
+int DL_ExecuteTransitionDriver(object oNpc, object oEntryWp, location lExit, object oExitWp, string sJumpDiagnostic = "transition_in_progress")
+{
+    if (!DL_IsValidNpcObject(oNpc) || !DL_IsValidWaypointObject(oEntryWp))
+    {
+        return FALSE;
+    }
+
+    string sDriver = DL_GetWaypointTransitionDriver(oEntryWp);
+
+    // single source of truth: all transition driver execution paths must go through this helper.
+    if (sDriver == "" || sDriver == DL_TRANSITION_DRIVER_NONE || sDriver == DL_TRANSITION_DRIVER_TRIGGER)
+    {
+        DL_SetNpcNavZoneFromWaypoint(oNpc, oExitWp);
+        DL_JumpNpcToTransitionExit(oNpc, lExit, DL_TRANSITION_STATUS_TRANSITIONING, sJumpDiagnostic);
+        return TRUE;
+    }
+
+    if (sDriver == DL_TRANSITION_DRIVER_DOOR)
+    {
+        object oDoor = DL_ResolveTransitionDriverObject(oEntryWp);
+        if (!DL_IsValidDoorObject(oDoor))
+        {
+            SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_TRANSITION_STATUS_DRIVER_MISSING);
+            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, DL_TRANSITION_DIAG_DRIVER_REQUIRED);
+            return TRUE;
+        }
+
+        DL_SetNpcNavZoneFromWaypoint(oNpc, oExitWp);
+        AssignCommand(oNpc, ClearAllActions(TRUE));
+        if (GetIsDoorActionPossible(oDoor, DOOR_ACTION_OPEN))
+        {
+            AssignCommand(oNpc, DoDoorAction(oDoor, DOOR_ACTION_OPEN));
+        }
+        DL_JumpNpcToTransitionExit(oNpc, lExit, DL_TRANSITION_STATUS_TRANSITIONING, sJumpDiagnostic);
+        return TRUE;
+    }
+
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_TRANSITION_STATUS_DRIVER_UNKNOWN);
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, DL_TRANSITION_DIAG_DRIVER_UNKNOWN);
+    return TRUE;
+}
+
 int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
 {
-    return DL_ExecuteTransitionEngine(oNpc, oEntryWp, "");
+    if (!DL_IsValidNpcObject(oNpc) || !DL_IsValidWaypointObject(oEntryWp))
+    {
+        return FALSE;
+    }
+
+    string sKind = DL_GetWaypointTransitionKind(oEntryWp);
+    string sTransitionId = DL_GetWaypointTransitionId(oEntryWp);
+    string sExitTag = DL_GetWaypointTransitionExitTag(oEntryWp);
+    if (!DL_WaypointHasTransition(oEntryWp))
+    {
+        DL_ClearTransitionExecutionState(oNpc);
+        return FALSE;
+    }
+
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_KIND, sKind);
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_ID, sTransitionId);
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET, GetTag(oEntryWp));
+
+    if (sExitTag == "" && (sKind == "" || sTransitionId == "") && !DL_IsAutoNavTag(GetTag(oEntryWp)))
+    {
+        DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_METADATA_MISSING, DL_TRANSITION_DIAG_METADATA_REQUIRED, "");
+        return TRUE;
+    }
+
+    if (GetDistanceBetweenLocations(GetLocation(oNpc), GetLocation(oEntryWp)) > DL_TRANSITION_ENTRY_RADIUS)
+    {
+        if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
+        {
+            DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_MOVING_TO_ENTRY, DL_TRANSITION_DIAG_MOVING_TO_ENTRY, "");
+            AssignCommand(oNpc, ClearAllActions(TRUE));
+            AssignCommand(oNpc, ActionMoveToLocation(GetLocation(oEntryWp), TRUE));
+        }
+        return TRUE;
+    }
+
+    object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oEntryWp);
+    if (!GetIsObjectValid(oExitWp))
+    {
+        DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_EXIT_MISSING, DL_TRANSITION_DIAG_EXIT_REQUIRED, "");
+        DL_ReportFallback(oNpc, DL_FB_DOMAIN_TRANSITION, DL_FB_REASON_TRANSITION_EXIT_MISSING, DL_FB_NEXT_WAIT_RETRY);
+        return TRUE;
+    }
+
+    location lExit = GetLocation(oExitWp);
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_TRANSITION_STATUS_TRANSITIONING);
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "transition_in_progress");
+    return DL_ExecuteTransitionDriver(oNpc, oEntryWp, lExit, oExitWp, "transition_in_progress");
 }
 
 int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oTargetWp)
 {
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTargetWp))
+    if (!DL_IsValidNpcObject(oNpc) || !DL_IsValidWaypointObject(oTargetWp))
     {
         return FALSE;
     }

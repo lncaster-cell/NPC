@@ -7,7 +7,7 @@
 
 object DL_FindNextTransitionEntryToTarget(object oNpc, object oTarget)
 {
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
+    if (!DL_IsValidNpcObject(oNpc) || !DL_IsValidWaypointObject(oTarget))
     {
         return OBJECT_INVALID;
     }
@@ -41,13 +41,13 @@ object DL_FindNextTransitionEntryToTarget(object oNpc, object oTarget)
 
 int DL_TryRouteToTarget(object oNpc, object oTarget)
 {
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
+    if (!DL_IsValidNpcObject(oNpc) || !DL_IsValidWaypointObject(oTarget))
     {
         return FALSE;
     }
 
     object oEntry = DL_FindNextTransitionEntryToTarget(oNpc, oTarget);
-    if (!GetIsObjectValid(oEntry))
+    if (!DL_IsValidWaypointObject(oEntry))
     {
         return FALSE;
     }

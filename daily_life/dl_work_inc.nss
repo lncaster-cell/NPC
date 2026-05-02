@@ -218,7 +218,7 @@ int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
     DL_FaceWorkTargetOrientation(oNpc, oTarget);
     DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
     DL_PlayWorkAnimation(oNpc);
-    DL_LogChatDebugEvent(oNpc, "on_work_anchor", "on_work_anchor anchor=" + GetTag(oTarget));
+    DL_LogTransitionEvent(oNpc, "on_work_anchor", "anchor=" + GetTag(oTarget));
     return TRUE;
 }
 void DL_ExecuteWorkDirective(object oNpc)
@@ -271,7 +271,7 @@ void DL_ExecuteWorkDirective(object oNpc)
         }
 
         DL_SetWorkTargetState(oNpc, sKind, oTarget);
-        DL_LogChatDebugEvent(
+        DL_LogTransitionEvent(
             oNpc,
             "target_work",
             "target dir=WORK area=" + GetTag(GetArea(oTarget)) + " anchor=" + GetTag(oTarget) + " kind=" + sKind
@@ -291,7 +291,7 @@ void DL_ExecuteWorkDirective(object oNpc)
         }
 
         DL_SetWorkTargetState(oNpc, DL_WORK_KIND_POST, oPost);
-        DL_LogChatDebugEvent(
+        DL_LogTransitionEvent(
             oNpc,
             "target_work",
             "target dir=WORK area=" + GetTag(GetArea(oPost)) + " anchor=" + GetTag(oPost) + " kind=" + DL_WORK_KIND_POST
@@ -325,7 +325,7 @@ void DL_ExecuteWorkDirective(object oNpc)
         }
 
         DL_SetWorkTargetState(oNpc, sKind, oHomeWork);
-        DL_LogChatDebugEvent(
+        DL_LogTransitionEvent(
             oNpc,
             "target_work",
             "target dir=WORK area=" + GetTag(GetArea(oHomeWork)) + " anchor=" + GetTag(oHomeWork) + " kind=" + sKind
@@ -343,7 +343,7 @@ void DL_ExecuteWorkDirective(object oNpc)
     }
 
     DL_SetWorkTargetState(oNpc, DL_WORK_KIND_TRADE, oTrade);
-    DL_LogChatDebugEvent(
+    DL_LogTransitionEvent(
         oNpc,
         "target_work",
         "target dir=WORK area=" + GetTag(GetArea(oTrade)) + " anchor=" + GetTag(oTrade) + " kind=" + DL_WORK_KIND_TRADE

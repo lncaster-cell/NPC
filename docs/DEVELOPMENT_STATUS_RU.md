@@ -59,6 +59,7 @@
   - сигнатурный дедуп диагностик;
   - чат-debug фильтрация (`dl_chat_debug`, `dl_chat_debug_npc_tag`);
   - problem summary и markup/stuck сигнализация без log spam.
+  - fallback protocol v1: введён единый отчёт `DL_ReportFallback(domain, reason_code, severity, next_action)` с actor-local telemetry, а ключевые ветки (social fallback, transition missing exit/driver, registry fallback recovery) переведены на contract reason-codes без raw-строк причин в runtime-логике.
 - Smoke-скрипты и вспомогательные проверки присутствуют (`dl_smk_tier`, `dl_smk_sync`, `dl_smk_work`, `dl_smoke_ev`).
 
 ### 1.5 City Response + Legal v1 (текущий реализованный объём)
