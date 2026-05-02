@@ -145,7 +145,7 @@ int DL_IsAreaObject(object oObject);
 object DL_GetHomeArea(object oNpc);
 object DL_GetWorkArea(object oNpc);
 object DL_ResolveChillWaypoint(object oNpc);
-int DL_ShouldFallbackSocialToPublic(object oNpc);
+void DL_ExecuteSocialOrFallbackPublic(object oNpc);
 void DL_MaybeRefreshNpcCachesForEpoch(object oNpc);
 void DL_MaybeRefreshAreaCachesForEpoch(object oArea);
 
@@ -529,11 +529,6 @@ void DL_ApplyIdleLikeDirectiveState(object oNpc, int bSocial)
 }
 int DL_ResolveEffectiveDirective(object oNpc, int nDirective)
 {
-    if (nDirective == DL_DIR_SOCIAL && DL_ShouldFallbackSocialToPublic(oNpc))
-    {
-        return DL_DIR_PUBLIC;
-    }
-
     return nDirective;
 }
 int DL_ShouldUseDirectiveFastPath(object oNpc, int nEffectiveDirective)
@@ -642,7 +637,7 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         DL_ClearWorkExecutionState(oNpc);
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
-        DL_ExecuteSocialDirective(oNpc);
+        DL_ExecuteSocialOrFallbackPublic(oNpc);
         DL_ClearActivityPresentation(oNpc);
     }
     else if (nEffectiveDirective == DL_DIR_PUBLIC)
