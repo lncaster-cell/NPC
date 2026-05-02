@@ -64,6 +64,24 @@ const int DL_MODULE_BUDGET_RELIEF_TRIGGER = 4;
 const int DL_MODULE_WORKER_PRESSURE_CAP = 3;
 const int DL_MODULE_RESYNC_PRESSURE_CAP = 1;
 
+
+int DL_IncLocalInt(object oTarget, string sKey)
+{
+    return DL_AddLocalInt(oTarget, sKey, 1);
+}
+
+int DL_AddLocalInt(object oTarget, string sKey, int nDelta)
+{
+    int nValue = GetLocalInt(oTarget, sKey) + nDelta;
+    SetLocalInt(oTarget, sKey, nValue);
+    return nValue;
+}
+
+void DL_ResetLocalInt(object oTarget, string sKey, int nValue)
+{
+    SetLocalInt(oTarget, sKey, nValue);
+}
+
 // Forward declarations for mutually-recursive registration helpers.
 void DL_ReconcileNpcAreaRegistration(object oNpc);
 void DL_UnregisterNpc(object oNpc);
@@ -305,7 +323,8 @@ int DL_ConsumeModuleNpcBudget(int nRequested)
     int nLeft = GetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_LEFT);
     if (nLeft <= 0)
     {
-        SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK, GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) + 1);
+        // Tracks consecutive budget-starvation minutes to enter pressure mode deterministically.
+        DL_IncLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK);
         SetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK, 0);
         if (GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) >= DL_MODULE_BUDGET_PRESSURE_TRIGGER)
         {
@@ -324,7 +343,8 @@ int DL_ConsumeModuleNpcBudget(int nRequested)
 
     if (nGranted < nRequested)
     {
-        SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK, GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) + 1);
+        // Tracks consecutive budget-starvation minutes to enter pressure mode deterministically.
+        DL_IncLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK);
         SetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK, 0);
         if (GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) >= DL_MODULE_BUDGET_PRESSURE_TRIGGER)
         {
@@ -334,8 +354,8 @@ int DL_ConsumeModuleNpcBudget(int nRequested)
     else
     {
         SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK, 0);
-        int nRelief = GetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK) + 1;
-        SetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK, nRelief);
+        // Tracks consecutive recovered minutes so pressure mode can be removed without oscillation.
+        int nRelief = DL_IncLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK);
         if (nRelief >= DL_MODULE_BUDGET_RELIEF_TRIGGER)
         {
             SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_ACTIVE, FALSE);
@@ -495,6 +515,48 @@ void DL_SetAreaWorkerCursor(object oArea, int nCursor)
     SetLocalInt(oArea, DL_L_AREA_WORKER_CURSOR, nCursor);
 }
 
+
+/*
+Tier -> required locals
+HOT    -> last_player_seen_tick=now; last_hot_tick=now; warm_since/frozen_since cleared;
+          worker/resync budgets set to HOT; enter_resync_pending/cursor managed by caller contract.
+WARM   -> warm_since_tick=now; last_player_seen_tick=now; last_warm_maint_tick=now-interval;
+          frozen_since cleared; enter_resync_pending=FALSE; enter_resync_cursor=0;
+          worker/resync budgets set to WARM.
+FROZEN -> frozen_since_tick=now; enter_resync_pending=FALSE; enter_resync_cursor=0.
+*/
+void DL_EnterHotState(object oArea, int nTickStamp)
+{
+    DL_SetAreaTier(oArea, DL_TIER_HOT);
+    SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
+    SetLocalInt(oArea, DL_L_AREA_LAST_HOT_TICK, nTickStamp);
+    DeleteLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK);
+    DeleteLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK);
+    DL_SetAreaWorkerBudget(oArea, DL_WORKER_BUDGET_HOT);
+    DL_SetAreaResyncBudget(oArea, DL_RESYNC_BUDGET_HOT);
+}
+
+void DL_EnterWarmState(object oArea, int nTickStamp)
+{
+    DL_SetAreaTier(oArea, DL_TIER_WARM);
+    SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nTickStamp);
+    SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
+    SetLocalInt(oArea, DL_L_AREA_LAST_WARM_MAINT_TICK, nTickStamp - DL_WARM_MAINTENANCE_INTERVAL_TICKS);
+    DeleteLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK);
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+    DL_SetAreaWorkerBudget(oArea, DL_WORKER_BUDGET_WARM);
+    DL_SetAreaResyncBudget(oArea, DL_RESYNC_BUDGET_WARM);
+}
+
+void DL_EnterFrozenState(object oArea, int nTickStamp)
+{
+    DL_SetAreaTier(oArea, DL_TIER_FROZEN);
+    SetLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK, nTickStamp);
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+}
+
 void DL_BootstrapAreaTier(object oArea)
 {
     if (!DL_IsAreaObject(oArea))
@@ -508,9 +570,7 @@ void DL_BootstrapAreaTier(object oArea)
     int nTier = DL_GetAreaTier(oArea);
     if (DL_GetAreaPlayerCount(oArea) > 0)
     {
-        DL_SetAreaTier(oArea, DL_TIER_HOT);
-        SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
-        SetLocalInt(oArea, DL_L_AREA_LAST_HOT_TICK, nTickStamp);
+        DL_EnterHotState(oArea, nTickStamp);
     }
     else if (nTier == DL_TIER_FROZEN)
     {
@@ -522,8 +582,7 @@ void DL_BootstrapAreaTier(object oArea)
     }
     else
     {
-        DL_SetAreaTier(oArea, DL_TIER_WARM);
-        SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nTickStamp);
+        DL_EnterWarmState(oArea, nTickStamp);
     }
 
     if (GetLocalInt(oArea, DL_L_AREA_WORKER_CURSOR) < 0)
@@ -558,13 +617,7 @@ void DL_TransitionAreaToHot(object oArea, int bRequestEnterResync)
     }
 
     int nTickStamp = DL_GetAreaTick(oArea);
-    DL_SetAreaTier(oArea, DL_TIER_HOT);
-    SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
-    SetLocalInt(oArea, DL_L_AREA_LAST_HOT_TICK, nTickStamp);
-    DeleteLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK);
-    DeleteLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK);
-    DL_SetAreaWorkerBudget(oArea, DL_WORKER_BUDGET_HOT);
-    DL_SetAreaResyncBudget(oArea, DL_RESYNC_BUDGET_HOT);
+    DL_EnterHotState(oArea, nTickStamp);
 
     if (bRequestEnterResync)
     {
@@ -587,15 +640,7 @@ void DL_TransitionAreaToWarm(object oArea)
     }
 
     int nTickStamp = DL_GetAreaTick(oArea);
-    DL_SetAreaTier(oArea, DL_TIER_WARM);
-    SetLocalInt(oArea, DL_L_AREA_WARM_SINCE_TICK, nTickStamp);
-    SetLocalInt(oArea, DL_L_AREA_LAST_PLAYER_SEEN_TICK, nTickStamp);
-    SetLocalInt(oArea, DL_L_AREA_LAST_WARM_MAINT_TICK, nTickStamp - DL_WARM_MAINTENANCE_INTERVAL_TICKS);
-    DeleteLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK);
-    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
-    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
-    DL_SetAreaWorkerBudget(oArea, DL_WORKER_BUDGET_WARM);
-    DL_SetAreaResyncBudget(oArea, DL_RESYNC_BUDGET_WARM);
+    DL_EnterWarmState(oArea, nTickStamp);
 }
 
 void DL_TransitionAreaToFrozen(object oArea)
@@ -606,10 +651,7 @@ void DL_TransitionAreaToFrozen(object oArea)
     }
 
     int nTickStamp = DL_GetAreaTick(oArea);
-    DL_SetAreaTier(oArea, DL_TIER_FROZEN);
-    SetLocalInt(oArea, DL_L_AREA_FROZEN_SINCE_TICK, nTickStamp);
-    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
-    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
+    DL_EnterFrozenState(oArea, nTickStamp);
 
     DL_FreezeAreaRuntime(oArea);
 }
@@ -740,7 +782,7 @@ void DL_RegisterNpc(object oNpc)
         SetLocalInt(oNpc, DL_L_NPC_REG_SLOT, nSlot);
         SetLocalObject(oNpc, DL_L_NPC_REG_AREA, oArea);
         SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nSlot + 1);
-        SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
+        DL_IncLocalInt(oArea, DL_L_AREA_REG_SEQ);
     }
 }
 
@@ -845,7 +887,7 @@ void DL_UnregisterNpc(object oNpc)
                 SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nLastSlot);
             }
         }
-        SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
+        DL_IncLocalInt(oArea, DL_L_AREA_REG_SEQ);
     }
 
     DeleteLocalObject(oNpc, DL_L_NPC_REG_AREA);

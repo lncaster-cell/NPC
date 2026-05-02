@@ -80,7 +80,7 @@ void DL_RepairAreaRegistrySlot(object oArea, int nSlot, int nCount)
     }
 
     SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nLastSlot);
-    SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
+    DL_IncLocalInt(oArea, DL_L_AREA_REG_SEQ);
 }
 
 int DL_RunAreaRegistryFallbackIntegrityRepair(object oArea, int nRepairBudget)
@@ -158,9 +158,11 @@ int DL_RunAreaRegistryFallbackCatchupScan(object oArea, int nTickStamp, int nSca
     }
 
     SetLocalInt(oArea, DL_L_AREA_PASS_FALLBACK_LAST_TICK, nTickStamp);
-    SetLocalInt(oArea, DL_L_AREA_PASS_FALLBACK_COUNT, GetLocalInt(oArea, DL_L_AREA_PASS_FALLBACK_COUNT) + 1);
+    // Counts fallback recovery activations to detect registry degradation in hot paths.
+    DL_IncLocalInt(oArea, DL_L_AREA_PASS_FALLBACK_COUNT);
     object oModule = GetModule();
-    SetLocalInt(oModule, DL_L_MODULE_PASS_FALLBACK_COUNT, GetLocalInt(oModule, DL_L_MODULE_PASS_FALLBACK_COUNT) + 1);
+    // Module-wide fallback pressure metric for cross-area registry health tracking.
+    DL_IncLocalInt(oModule, DL_L_MODULE_PASS_FALLBACK_COUNT);
 
     int nObjCursor = GetLocalInt(oArea, DL_L_AREA_REGISTRY_REBUILD_OBJ_CURSOR);
     if (nObjCursor < 0)
@@ -283,7 +285,8 @@ int DL_ProcessAreaNpcByPassMode(object oArea, object oNpc, int nPassMode, int nT
         GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING) == TRUE &&
         GetLocalInt(oNpc, DL_L_NPC_AREA_TICK_RESYNC_TOUCH) == nTickStamp)
     {
-        SetLocalInt(oArea, DL_L_AREA_WORKER_SKIP_RESYNC_TICK, GetLocalInt(oArea, DL_L_AREA_WORKER_SKIP_RESYNC_TICK) + 1);
+        // Counts skipped worker touches during resync to tune hot-area budgets.
+        DL_IncLocalInt(oArea, DL_L_AREA_WORKER_SKIP_RESYNC_TICK);
         return FALSE;
     }
 
@@ -397,9 +400,8 @@ void DL_WorkerTouchNpc(object oNpc)
     }
 
     object oModule = GetModule();
-    int nWorkerSeq = GetLocalInt(oModule, DL_L_MODULE_WORKER_SEQ) + 1;
-    SetLocalInt(oModule, DL_L_MODULE_WORKER_SEQ, nWorkerSeq);
-    SetLocalInt(oNpc, DL_L_NPC_WORKER_SEQ, nWorkerSeq);
+    int nWorkerSeq = DL_IncLocalInt(oModule, DL_L_MODULE_WORKER_SEQ);
+    DL_ResetLocalInt(oNpc, DL_L_NPC_WORKER_SEQ, nWorkerSeq);
 
     int nDirective = DL_ResolveNpcDirective(oNpc);
     DL_ApplyDirectiveSkeleton(oNpc, nDirective);
@@ -460,7 +462,7 @@ void DL_RunAreaEnterResyncTick(object oArea)
     {
         SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_CURSOR, 0);
         SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
-        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE, GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE) + 1);
+        DL_IncLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE);
         return;
     }
 
@@ -472,7 +474,7 @@ void DL_RunAreaEnterResyncTick(object oArea)
     if (nNextCursor == 0)
     {
         SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_PENDING, FALSE);
-        SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE, GetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE) + 1);
+        DL_IncLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_DONE);
     }
 }
 
@@ -566,7 +568,8 @@ void DL_RunAreaWorkerTick(object oArea)
     if (nBudget <= 0)
     {
         object oModuleNoBudget = GetModule();
-        SetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_TICKS, GetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_TICKS) + 1);
+        // Heartbeat-level tick counter for worker scheduler throughput and idle-budget diagnostics.
+        DL_IncLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_TICKS);
         SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, 0);
         SetLocalInt(oModuleNoBudget, DL_L_MODULE_WORKER_LAST_PROCESSED, 0);
         return;
@@ -589,7 +592,8 @@ void DL_RunAreaWorkerTick(object oArea)
     }
 
     object oModule = GetModule();
-    SetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS, GetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS) + 1);
+    // Heartbeat-level tick counter for worker scheduler throughput and idle-budget diagnostics.
+    DL_IncLocalInt(oModule, DL_L_MODULE_WORKER_TICKS);
     SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, nNpcProcessed);
     SetLocalInt(oModule, DL_L_MODULE_WORKER_LAST_PROCESSED, nNpcProcessed);
 }

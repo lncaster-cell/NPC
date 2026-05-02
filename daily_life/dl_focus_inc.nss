@@ -550,10 +550,25 @@ void DL_ExecuteSocialDirective(object oNpc)
 
     object oMe = DL_ResolveSocialWaypoint(oNpc);
     string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
-    object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
-    object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
+    if (!GetIsObjectValid(oMe) || sPartnerTag == "")
+    {
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "social_fallback_to_public");
+        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=missing_social_anchor_or_partner");
+        DL_ExecutePublicDirective(oNpc);
+        return;
+    }
 
-    if (!GetIsObjectValid(oMe) || !GetIsObjectValid(oPartner) || !GetIsObjectValid(oPartnerWp))
+    object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
+    if (!GetIsObjectValid(oPartner) || GetLocalInt(oPartner, DL_L_NPC_DIRECTIVE) != DL_DIR_SOCIAL)
+    {
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "social_fallback_to_public");
+        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_not_social");
+        DL_ExecutePublicDirective(oNpc);
+        return;
+    }
+
+    object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
+    if (!GetIsObjectValid(oPartnerWp))
     {
         SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
         return;

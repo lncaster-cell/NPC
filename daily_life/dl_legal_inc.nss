@@ -31,19 +31,19 @@ int DL_LG_GetDefaultFine()
 
 int DL_LG_GetSeverityByKind(string sKind)
 {
-    if (sKind == "kill")
+    if (sKind == DL_LG_CASE_KIND_KILL)
     {
         return 5;
     }
-    if (sKind == "attack")
+    if (sKind == DL_LG_CASE_KIND_ATTACK)
     {
         return 3;
     }
-    if (sKind == "door_lockpick" || sKind == "restricted_entry")
+    if (sKind == DL_LG_CASE_KIND_DOOR_LOCKPICK || sKind == DL_LG_CASE_KIND_RESTRICTED_ENTRY)
     {
         return 3;
     }
-    if (sKind == "container_theft" || sKind == "pickpocket" || sKind == "placeable_lockpick")
+    if (sKind == DL_LG_CASE_KIND_CONTAINER_THEFT || sKind == DL_LG_CASE_KIND_PICKPOCKET || sKind == DL_LG_CASE_KIND_PLACEABLE_LOCKPICK)
     {
         return 2;
     }
@@ -120,7 +120,7 @@ void DL_LG_OnRefusedDetain(object oOffender, object oGuard)
         DeleteLocalInt(oOffender, DL_L_PC_LG_CASE_FINE);
     }
 
-    SetLocalString(oOffender, DL_L_PC_LG_CASE_KIND, "detain_refusal");
+    SetLocalString(oOffender, DL_L_PC_LG_CASE_KIND, DL_LG_CASE_KIND_DETAIN_REFUSAL);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_SEVERITY,
         GetLocalInt(oOffender, DL_L_PC_LG_CASE_SEVERITY) + 1);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, nNowAbsMin);
@@ -146,7 +146,7 @@ void DL_LG_ResolveCaseFine(object oOffender, int nFine)
     DL_CR_ClearPursuitState(oOffender);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_STATE, DL_LG_CASE_STATE_RESOLVED);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, DL_GetAbsoluteMinute());
-    SetLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION, "fine");
+    SetLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION, DL_LG_CASE_RESOLUTION_FINE);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_FINE, nFine);
 
     if (nFine > 0)
@@ -165,6 +165,6 @@ void DL_LG_ResolveCaseDetainComplete(object oOffender)
     DL_CR_ClearPursuitState(oOffender);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_STATE, DL_LG_CASE_STATE_RESOLVED);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, DL_GetAbsoluteMinute());
-    SetLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION, "detain_complete");
+    SetLocalString(oOffender, DL_L_PC_LG_CASE_RESOLUTION, DL_LG_CASE_RESOLUTION_DETAIN_COMPLETE);
     SetLocalInt(oOffender, DL_L_PC_LG_CASE_FINE, 0);
 }

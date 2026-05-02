@@ -82,6 +82,23 @@
 - Если нет — вводим тонкую обертку, но не ломаем контракт ядра.
 - Любой новый контур проходит проверку: bounded / idempotent / observable.
 
+### 3.4 Политика reset локальных ключей (DeleteLocal* vs SetLocal*=zero)
+
+Единое правило для локальных ключей runtime-контракта:
+
+- Используем `DeleteLocalInt/DeleteLocalString/DeleteLocalObject`, когда **отсутствие ключа семантически значимо** (tri-state/absence meaningful):
+  - нужно различать `никогда не инициализировалось` vs `явно 0/""/OBJECT_INVALID`;
+  - ключ управляет lazy-init, one-shot bootstrap, совместимостью миграций.
+- Используем `SetLocal*` в каноническое «пустое» значение (`0`, `""`, `OBJECT_INVALID`), когда **само значение является состоянием** (explicit value meaningful):
+  - флаги активного runtime-цикла (`pending`, `cursor`, `last_processed`);
+  - числовые/строковые метрики, которые читаются как всегда определённые значения.
+
+Правило выбора:
+1) Если чтение кода зависит от `наличия` ключа — `DeleteLocal*`.
+2) Если чтение кода зависит только от `значения` ключа — `SetLocal*` в канонический reset.
+
+Временный переходный режим допускает dual-style только с явным `COMPAT`-комментарием рядом с кодом и с планом удаления legacy-ветки.
+
 ### 3.3 Рекомендуемая событийная архитектура
 
 - Центральный dispatcher на модуле + адаптеры событий на уровне area/NPC.
@@ -418,6 +435,21 @@ dl_social_theater_2
 - Устранён конфликт формулировок между документами по стадии Legal.
 - Канонический факт: `legal witness lifecycle v1 scaffold` уже реализован (witnessed handoff + переходы `active -> detained/resolved`).
 - Полный судебный/расследовательский legal-контур зафиксирован как следующий этап, не входящий в текущий v1 runtime.
+
+### 2026-05-02 — canonical API для `detain pending` (crime/legal handoff)
+
+- Для флага `DL_L_PC_CR_DETAIN_PENDING` канонизирован единый helper-набор:
+  - `DL_CR_SetDetainPending(oPc, nUntilAbsMin, sReason)`;
+  - `DL_CR_ClearDetainPending(oPc, sResolution)`;
+  - `DL_CR_IsDetainPending(oPc)`.
+- Прямые записи/очистки `SetLocalInt/DeleteLocalInt` этого флага в crime flow заменяются на helper API.
+- Helper API синхронизирует legal-handoff поля:
+  - обновляет `DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN`;
+  - ведёт диагностические метки причины/резолюции (`DL_L_PC_CR_DETAIN_PENDING_REASON`, `DL_L_PC_CR_DETAIN_PENDING_RESOLUTION`);
+  - очищает/ведёт `DL_L_NPC_CR_OFFENDER_UNTIL` как TTL pending-состояния.
+- Закреплено требование идемпотентности:
+  - повторный `set` с тем же/менее строгим TTL и той же причиной не даёт дублирующего эффекта;
+  - повторный `clear` при уже очищенном состоянии — no-op.
 
 ### 2026-04-21 — процессная синхронизация документации (README + docs)
 
