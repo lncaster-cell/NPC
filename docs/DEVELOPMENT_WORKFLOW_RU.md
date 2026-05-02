@@ -12,7 +12,8 @@
 4. Синхронизировать документацию:
    - архитектурный контекст: `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`;
    - оперативный прогресс: `docs/DEVELOPMENT_STATUS_RU.md`.
-5. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
+5. Каждый новый `docs/audits/post_refactor_audit_pass*.md` считается завершённым только после обновления `docs/audits/risk_register.md` в том же коммите.
+6. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
 
 
 ## Mandatory gate перед merge
@@ -40,6 +41,7 @@
 - [ ] README синхронизирован с фактическими runtime-контрактами (скрипты, локалки, wiring).
 - [ ] `docs/DEVELOPMENT_STATUS_RU.md` обновлён текущей датой и кратким changelog.
 - [ ] Неподтверждённые owner-run сценарии помечены как `⏳ validation pending`.
+- [ ] Для нового audit pass обновлён `docs/audits/risk_register.md` (статусы рисков + regression check).
 - [ ] Архитектурные изменения (если есть) отражены в `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`.
 
 
