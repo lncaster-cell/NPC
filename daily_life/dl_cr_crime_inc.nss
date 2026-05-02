@@ -6,21 +6,35 @@ const string DL_L_EVT_CR_WITNESSED = "dl_cr_evt_witnessed";
 const string DL_L_EVT_CR_AREA_TAG = "dl_cr_evt_area_tag";
 const string DL_L_MODULE_CR_GUARD_RESPONDERS_MAX = "dl_cr_guard_responders_max";
 const string DL_L_MODULE_CR_JAIL_WP_TAG = "dl_cr_jail_wp_tag";
-const string DL_L_OBJ_CR_LOCKPICK_MARK_UNTIL = "dl_cr_lockpick_mark_until";
+const string DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN = "dl_cr_lockpick_mark_abs_min";
 const string DL_L_OBJ_CR_LOCKPICK_MARK_BY = "dl_cr_lockpick_mark_by";
 
-const float DL_CR_WITNESS_RADIUS_DEFAULT = 10.0;
-const float DL_CR_GUARD_ALERT_RADIUS_DEFAULT = 20.0;
-const int DL_CR_GUARD_RESPONDERS_MAX_DEFAULT = 2;
 const int DL_CR_GUARD_RESPONDERS_MAX_CAP = 2;
 const int DL_CR_INVESTIGATE_TTL_MIN = 3;
 const int DL_CR_SHOUT_COOLDOWN_MIN = 1;
 const int DL_CR_WITNESS_SCAN_CAP = 24;
 const int DL_CR_GUARD_SCAN_CAP = 24;
 const string DL_CR_KEY_PREFIX_SHOUT_CD = "dl_cr_shout_cd_";
-const string DL_CR_JAIL_WP_TAG_DEFAULT = "dl_jail_entry_wp";
 const float DL_CR_DISTANCE_INF = 1000000.0;
 const int DL_CR_LOCKPICK_MARK_TTL_MIN = 1;
+
+int DL_CR_GetLockpickMarkAbsMin(object oTarget)
+{
+    int nAbsMin = GetLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN);
+    if (nAbsMin > 0)
+    {
+        return nAbsMin;
+    }
+
+    // COMPAT(temporary): migrate legacy key and immediately delete alias.
+    nAbsMin = GetLocalInt(oTarget, "dl_cr_lockpick_mark_until");
+    if (nAbsMin > 0)
+    {
+        SetLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN, nAbsMin);
+    }
+    DeleteLocalInt(oTarget, "dl_cr_lockpick_mark_until");
+    return nAbsMin;
+}
 
 void DL_CR_SetDetainPending(object oPc, int nUntilAbsMin, string sReason);
 void DL_CR_ClearDetainPending(object oPc, string sResolution);
@@ -28,58 +42,27 @@ int DL_CR_IsDetainPending(object oPc);
 
 float DL_CR_GetWitnessRadius()
 {
-    float fRaw = GetLocalFloat(GetModule(), DL_L_MODULE_CR_WITNESS_RADIUS);
-    if (fRaw > 0.0)
-    {
-        return fRaw;
-    }
-
-    int nLegacyRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_WITNESS_RADIUS);
-    if (nLegacyRaw <= 0)
-    {
-        return DL_CR_WITNESS_RADIUS_DEFAULT;
-    }
-    return IntToFloat(nLegacyRaw);
+    return DL_GetConfigFloat(DL_L_MODULE_CR_WITNESS_RADIUS, DL_CFG_CR_WITNESS_RADIUS_DEFAULT);
 }
 
 float DL_CR_GetGuardAlertRadius()
 {
-    float fRaw = GetLocalFloat(GetModule(), DL_L_MODULE_CR_GUARD_ALERT_RADIUS);
-    if (fRaw > 0.0)
-    {
-        return fRaw;
-    }
-
-    int nLegacyRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_GUARD_ALERT_RADIUS);
-    if (nLegacyRaw <= 0)
-    {
-        return DL_CR_GUARD_ALERT_RADIUS_DEFAULT;
-    }
-    return IntToFloat(nLegacyRaw);
+    return DL_GetConfigFloat(DL_L_MODULE_CR_GUARD_ALERT_RADIUS, DL_CFG_CR_GUARD_ALERT_RADIUS_DEFAULT);
 }
 
 int DL_CR_GetGuardRespondersMax()
 {
-    int nRaw = GetLocalInt(GetModule(), DL_L_MODULE_CR_GUARD_RESPONDERS_MAX);
-    if (nRaw <= 0)
-    {
-        return DL_CR_GUARD_RESPONDERS_MAX_DEFAULT;
-    }
-    if (nRaw > DL_CR_GUARD_RESPONDERS_MAX_CAP)
-    {
-        return DL_CR_GUARD_RESPONDERS_MAX_CAP;
-    }
-    return nRaw;
+    return DL_GetConfigInt(
+        DL_L_MODULE_CR_GUARD_RESPONDERS_MAX,
+        DL_CFG_CR_GUARD_RESPONDERS_MAX_DEFAULT,
+        1,
+        DL_CR_GUARD_RESPONDERS_MAX_CAP
+    );
 }
 
 string DL_CR_GetJailWaypointTag()
 {
-    string sTag = GetLocalString(GetModule(), DL_L_MODULE_CR_JAIL_WP_TAG);
-    if (sTag == "")
-    {
-        return DL_CR_JAIL_WP_TAG_DEFAULT;
-    }
-    return sTag;
+    return DL_GetConfigString(DL_L_MODULE_CR_JAIL_WP_TAG, DL_CFG_CR_JAIL_WP_TAG_DEFAULT);
 }
 
 void DL_CR_ClearPursuitState(object oPc)
@@ -164,17 +147,12 @@ void DL_CR_ClearDetainPending(object oPc, string sResolution)
 
 int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
 {
-    if (!GetIsObjectValid(oWitness) || !GetIsObjectValid(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsValidNpcObject(oWitness) || !DL_IsValidNpcObject(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return FALSE;
     }
 
     if (oWitness == oOffender)
-    {
-        return FALSE;
-    }
-
-    if (GetObjectType(oWitness) != OBJECT_TYPE_CREATURE)
     {
         return FALSE;
     }
@@ -194,7 +172,7 @@ int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
 
 object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return OBJECT_INVALID;
     }
@@ -245,18 +223,18 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
 
 void DL_CR_WitnessShout(object oWitness, object oOffender)
 {
-    if (!GetIsObjectValid(oWitness) || !DL_IsRuntimePlayer(oOffender))
+    if (!DL_IsValidNpcObject(oWitness) || !DL_IsRuntimePlayer(oOffender))
     {
         return;
     }
 
     string sKey = DL_CR_KEY_PREFIX_SHOUT_CD + DL_CR_GetOffenderIdentityKey(oOffender);
     int nNowAbsMin = DL_GetAbsoluteMinute();
-    if (GetLocalInt(oWitness, sKey) > nNowAbsMin)
+    if (DL_IsMinuteCooldownActive(oWitness, sKey))
     {
         return;
     }
-    SetLocalInt(oWitness, sKey, nNowAbsMin + DL_CR_SHOUT_COOLDOWN_MIN);
+    DL_SetMinuteCooldown(oWitness, sKey, DL_CR_SHOUT_COOLDOWN_MIN);
 
     AssignCommand(oWitness, SpeakString("Помогите! Меня обокрали!", TALKVOLUME_SHOUT));
 }
@@ -288,7 +266,7 @@ int DL_CR_GetCrimeHeat(string sKind)
 
 void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return;
     }
@@ -388,7 +366,7 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
 
 void DL_CR_RecordCrimeEvent(object oOffender, object oArea, string sKind, int bWitnessed)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return;
     }
@@ -400,12 +378,20 @@ void DL_CR_RecordCrimeEvent(object oOffender, object oArea, string sKind, int bW
 
 void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, int bWitnessed, object oWitness)
 {
+    // Validate
     if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
     {
         return;
     }
 
-    DL_CR_RecordCrimeEvent(oOffender, oArea, sKind, bWitnessed);
+    // Resolve
+    string sResolvedKind = sKind;
+
+    // Prepare
+    DL_PipelineUpdateDiagnostic(oOffender, DL_L_EVT_CR_KIND, "");
+
+    // Execute
+    DL_CR_RecordCrimeEvent(oOffender, oArea, sResolvedKind, bWitnessed);
     if (!bWitnessed)
     {
         return;
@@ -417,11 +403,14 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
     int nHeat = DL_CR_GetCrimeHeat(sKind);
     DL_CR_RegisterIncident(oOffender, nHeat);
     DL_CR_AlertNearbyGuards(oOffender, oArea);
+
+    // Finalize
+    DL_PipelineUpdateDiagnostic(oOffender, DL_L_EVT_CR_KIND, sResolvedKind);
 }
 
 void DL_CR_HandleDisturbed(object oDisturbed)
 {
-    if (!GetIsObjectValid(oDisturbed))
+    if (!DL_IsValidNpcObject(oDisturbed))
     {
         return;
     }
@@ -464,18 +453,18 @@ void DL_CR_MarkPendingLockpick(object oTarget, object oActor)
     }
 
     int nNowAbsMin = DL_GetAbsoluteMinute();
-    SetLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_UNTIL, nNowAbsMin + DL_CR_LOCKPICK_MARK_TTL_MIN);
+    SetLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN, nNowAbsMin + DL_CR_LOCKPICK_MARK_TTL_MIN);
     SetLocalString(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_BY, DL_CR_GetOffenderIdentityKey(oOffender));
 }
 
 int DL_CR_ConsumePendingLockpick(object oTarget, object oOffender)
 {
-    if (!GetIsObjectValid(oTarget) || !DL_IsRuntimePlayer(oOffender))
+    if (!DL_IsValidDoorObject(oTarget) || !DL_IsRuntimePlayer(oOffender))
     {
         return FALSE;
     }
 
-    int nUntilAbsMin = GetLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_UNTIL);
+    int nUntilAbsMin = DL_CR_GetLockpickMarkAbsMin(oTarget);
     if (nUntilAbsMin <= 0)
     {
         return FALSE;
@@ -484,7 +473,7 @@ int DL_CR_ConsumePendingLockpick(object oTarget, object oOffender)
     int nNowAbsMin = DL_GetAbsoluteMinute();
     if (nUntilAbsMin < nNowAbsMin)
     {
-        DeleteLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_UNTIL);
+        DeleteLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN);
         DeleteLocalString(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_BY);
         return FALSE;
     }
@@ -495,7 +484,7 @@ int DL_CR_ConsumePendingLockpick(object oTarget, object oOffender)
         return FALSE;
     }
 
-    DeleteLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_UNTIL);
+    DeleteLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN);
     DeleteLocalString(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_BY);
     return TRUE;
 }
@@ -600,7 +589,7 @@ int DL_CR_TeleportToJail(object oPc)
     }
 
     object oWp = GetWaypointByTag(DL_CR_GetJailWaypointTag());
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return FALSE;
     }

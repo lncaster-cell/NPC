@@ -17,7 +17,6 @@ const int DL_CR_DECAY_PER_STEP = 10;
 const string DL_CR_KEY_PREFIX_EPISODE = "dl_cr_cd_";
 const string DL_CR_KEY_PREFIX_GUARD_REACT = "dl_cr_guard_react_";
 const string DL_CR_KEY_UNKNOWN_IDENTITY = "unknown";
-const string DL_CR_DETAIN_DIALOG_DEFAULT = "dl_cr_guard_detain";
 
 int DL_CR_IsDetainPending(object oPc);
 
@@ -34,7 +33,7 @@ int DL_CR_IsEnabledForArea(object oArea)
         return FALSE;
     }
 
-    if (!GetIsObjectValid(oArea))
+    if (!DL_IsValidAreaObject(oArea))
     {
         return FALSE;
     }
@@ -93,7 +92,7 @@ void DL_CR_ApplyLazyDecay()
 
 object DL_CR_ResolveResponsibleActor(object oActor)
 {
-    if (!GetIsObjectValid(oActor))
+    if (!DL_IsValidNpcObject(oActor))
     {
         return OBJECT_INVALID;
     }
@@ -114,7 +113,7 @@ object DL_CR_ResolveResponsibleActor(object oActor)
 
 string DL_CR_GetOffenderIdentityKey(object oOffender)
 {
-    if (!GetIsObjectValid(oOffender))
+    if (!DL_IsValidNpcObject(oOffender))
     {
         return DL_CR_KEY_UNKNOWN_IDENTITY;
     }
@@ -153,18 +152,13 @@ string DL_CR_GetGuardReactionCooldownKey(object oOffender)
 
 string DL_CR_GetDetainDialogResRef()
 {
-    string sDialogResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
-    if (sDialogResRef == "")
-    {
-        return DL_CR_DETAIN_DIALOG_DEFAULT;
-    }
-    return sDialogResRef;
+    return DL_GetConfigString(DL_L_MODULE_CR_DETAIN_DIALOG, DL_CFG_CR_DETAIN_DIALOG_DEFAULT);
 }
 
 
 int DL_CR_StartDetainInteraction(object oGuard, object oOffender, string sDialogResRef, int bForceApproach)
 {
-    if (!GetIsObjectValid(oGuard) || !GetIsObjectValid(oOffender))
+    if (!DL_IsValidNpcObject(oGuard) || !DL_IsValidNpcObject(oOffender))
     {
         return FALSE;
     }
@@ -263,13 +257,12 @@ void DL_CR_HandleNpcDamaged(object oVictim)
 
     string sCooldownKey = DL_CR_GetEpisodeCooldownKey(oOffender);
     int nNowAbsMin = DL_GetAbsoluteMinute();
-    int nCooldownUntil = GetLocalInt(oVictim, sCooldownKey);
-    if (nCooldownUntil > nNowAbsMin)
+    if (DL_IsMinuteCooldownActive(oVictim, sCooldownKey))
     {
         return;
     }
 
-    SetLocalInt(oVictim, sCooldownKey, nNowAbsMin + DL_CR_EPISODE_COOLDOWN_MIN);
+    DL_SetMinuteCooldown(oVictim, sCooldownKey, DL_CR_EPISODE_COOLDOWN_MIN);
 
     int nHeatDelta = DL_CR_IsGuardVictim(oVictim) ? 25 : 15;
     DL_CR_RegisterIncident(oOffender, nHeatDelta);
@@ -306,12 +299,12 @@ int DL_CR_IsOffenderActive(object oCreature)
         return FALSE;
     }
 
-    return GetLocalInt(oCreature, DL_L_NPC_CR_OFFENDER_UNTIL) > DL_GetAbsoluteMinute();
+    return DL_IsMinuteCooldownActive(oCreature, DL_L_NPC_CR_OFFENDER_UNTIL);
 }
 
 void DL_CR_HandleGuardPerception(object oGuard)
 {
-    if (!GetIsObjectValid(oGuard))
+    if (!DL_IsValidNpcObject(oGuard))
     {
         return;
     }
@@ -360,11 +353,11 @@ void DL_CR_HandleGuardPerception(object oGuard)
     }
 
     string sCooldownKey = DL_CR_GetGuardReactionCooldownKey(oSeen);
-    if (GetLocalInt(oGuard, sCooldownKey) > nNowAbsMin)
+    if (DL_IsMinuteCooldownActive(oGuard, sCooldownKey))
     {
         return;
     }
-    SetLocalInt(oGuard, sCooldownKey, nNowAbsMin + DL_CR_GUARD_REACTION_COOLDOWN_MIN);
+    DL_SetMinuteCooldown(oGuard, sCooldownKey, DL_CR_GUARD_REACTION_COOLDOWN_MIN);
 
     if (nLevel >= 3)
     {
