@@ -64,6 +64,24 @@ const int DL_MODULE_BUDGET_RELIEF_TRIGGER = 4;
 const int DL_MODULE_WORKER_PRESSURE_CAP = 3;
 const int DL_MODULE_RESYNC_PRESSURE_CAP = 1;
 
+
+int DL_IncLocalInt(object oTarget, string sKey)
+{
+    return DL_AddLocalInt(oTarget, sKey, 1);
+}
+
+int DL_AddLocalInt(object oTarget, string sKey, int nDelta)
+{
+    int nValue = GetLocalInt(oTarget, sKey) + nDelta;
+    SetLocalInt(oTarget, sKey, nValue);
+    return nValue;
+}
+
+void DL_ResetLocalInt(object oTarget, string sKey, int nValue)
+{
+    SetLocalInt(oTarget, sKey, nValue);
+}
+
 // Forward declarations for mutually-recursive registration helpers.
 void DL_ReconcileNpcAreaRegistration(object oNpc);
 void DL_UnregisterNpc(object oNpc);
@@ -305,7 +323,8 @@ int DL_ConsumeModuleNpcBudget(int nRequested)
     int nLeft = GetLocalInt(oModule, DL_L_MODULE_NPC_BUDGET_LEFT);
     if (nLeft <= 0)
     {
-        SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK, GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) + 1);
+        // Tracks consecutive budget-starvation minutes to enter pressure mode deterministically.
+        DL_IncLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK);
         SetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK, 0);
         if (GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) >= DL_MODULE_BUDGET_PRESSURE_TRIGGER)
         {
@@ -324,7 +343,8 @@ int DL_ConsumeModuleNpcBudget(int nRequested)
 
     if (nGranted < nRequested)
     {
-        SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK, GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) + 1);
+        // Tracks consecutive budget-starvation minutes to enter pressure mode deterministically.
+        DL_IncLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK);
         SetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK, 0);
         if (GetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK) >= DL_MODULE_BUDGET_PRESSURE_TRIGGER)
         {
@@ -334,8 +354,8 @@ int DL_ConsumeModuleNpcBudget(int nRequested)
     else
     {
         SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_STREAK, 0);
-        int nRelief = GetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK) + 1;
-        SetLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK, nRelief);
+        // Tracks consecutive recovered minutes so pressure mode can be removed without oscillation.
+        int nRelief = DL_IncLocalInt(oModule, DL_L_MODULE_BUDGET_RELIEF_STREAK);
         if (nRelief >= DL_MODULE_BUDGET_RELIEF_TRIGGER)
         {
             SetLocalInt(oModule, DL_L_MODULE_BUDGET_PRESSURE_ACTIVE, FALSE);
@@ -740,7 +760,7 @@ void DL_RegisterNpc(object oNpc)
         SetLocalInt(oNpc, DL_L_NPC_REG_SLOT, nSlot);
         SetLocalObject(oNpc, DL_L_NPC_REG_AREA, oArea);
         SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nSlot + 1);
-        SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
+        DL_IncLocalInt(oArea, DL_L_AREA_REG_SEQ);
     }
 }
 
@@ -845,7 +865,7 @@ void DL_UnregisterNpc(object oNpc)
                 SetLocalInt(oArea, DL_L_AREA_REG_COUNT, nLastSlot);
             }
         }
-        SetLocalInt(oArea, DL_L_AREA_REG_SEQ, GetLocalInt(oArea, DL_L_AREA_REG_SEQ) + 1);
+        DL_IncLocalInt(oArea, DL_L_AREA_REG_SEQ);
     }
 
     DeleteLocalObject(oNpc, DL_L_NPC_REG_AREA);
