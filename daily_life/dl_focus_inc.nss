@@ -506,21 +506,21 @@ int DL_ShouldFallbackSocialToPublicLocal(object oNpc)
     string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
     if (!GetIsObjectValid(oMe) || sPartnerTag == "")
     {
-        DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=missing_social_anchor_or_partner");
+        DL_ReportFallback(oNpc, DL_FB_DOMAIN_SOCIAL, DL_FB_REASON_SOCIAL_ANCHOR_OR_PARTNER_MISSING, DL_FB_NEXT_PUBLIC);
         return TRUE;
     }
 
     object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
     if (!GetIsObjectValid(oPartner) || GetLocalInt(oPartner, DL_L_NPC_DIRECTIVE) != DL_DIR_SOCIAL)
     {
-        DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=partner_not_social");
+        DL_ReportFallback(oNpc, DL_FB_DOMAIN_SOCIAL, DL_FB_REASON_SOCIAL_PARTNER_NOT_SOCIAL, DL_FB_NEXT_PUBLIC);
         return TRUE;
     }
 
     object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
     if (!GetIsObjectValid(oPartnerWp))
     {
-        DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=partner_missing_social_anchor");
+        DL_ReportFallback(oNpc, DL_FB_DOMAIN_SOCIAL, DL_FB_REASON_SOCIAL_PARTNER_ANCHOR_MISSING, DL_FB_NEXT_PUBLIC);
         return TRUE;
     }
 
@@ -550,8 +550,7 @@ void DL_ExecuteSocialDirective(object oNpc)
 
     if (DL_ShouldFallbackSocialToPublicLocal(oNpc))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "social_fallback_to_public");
-        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_not_social");
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
         DL_ExecutePublicDirective(oNpc);
         return;
     }

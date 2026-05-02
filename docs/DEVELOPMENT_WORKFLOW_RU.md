@@ -15,6 +15,7 @@
 5. Каждый новый `docs/audits/post_refactor_audit_pass*.md` считается завершённым только после обновления `docs/audits/risk_register.md` в том же коммите.
 6. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
 7. Новые diagnostic-коды вводить только через contract-константы (канонический словарь в профильном `*_contract_inc.nss`), без raw-строк в runtime-логике.
+8. Любой новый fallback-путь обязан использовать единый протокол `DL_ReportFallback(...)` с полями `domain/reason_code/severity/next_action`; прямые локалки/сырые строки fallback-причин в бизнес-ветках запрещены.
 
 
 

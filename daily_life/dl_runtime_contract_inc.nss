@@ -69,6 +69,61 @@ const string DL_CR_DIAG_STATUS_DETAIN_ACCEPTED = "detain_accepted";
 const string DL_CR_DIAG_STATUS_DETAIN_REFUSED = "detain_refused";
 const string DL_CR_DIAG_STATUS_CRIME_WITNESSED = "crime_witnessed";
 
+// Unified fallback protocol contract.
+const string DL_L_NPC_FALLBACK_DOMAIN = "dl_npc_fallback_domain";
+const string DL_L_NPC_FALLBACK_REASON_CODE = "dl_npc_fallback_reason_code";
+const string DL_L_NPC_FALLBACK_SEVERITY = "dl_npc_fallback_severity";
+const string DL_L_NPC_FALLBACK_NEXT_ACTION = "dl_npc_fallback_next_action";
+const string DL_L_NPC_FALLBACK_LAST_EVENT = "dl_npc_fallback_last_event";
+
+const string DL_FB_DOMAIN_SOCIAL = "social";
+const string DL_FB_DOMAIN_TRANSITION = "transition";
+const string DL_FB_DOMAIN_REGISTRY = "registry";
+
+const string DL_FB_SEVERITY_INFO = "info";
+const string DL_FB_SEVERITY_WARN = "warn";
+
+const string DL_FB_NEXT_PUBLIC = "switch_public";
+const string DL_FB_NEXT_WAIT_RETRY = "wait_retry";
+const string DL_FB_NEXT_RECOVER_REGISTRY = "recover_registry";
+
+const string DL_FB_REASON_SOCIAL_ANCHOR_OR_PARTNER_MISSING = "social_anchor_or_partner_missing";
+const string DL_FB_REASON_SOCIAL_PARTNER_NOT_SOCIAL = "social_partner_not_social";
+const string DL_FB_REASON_SOCIAL_PARTNER_ANCHOR_MISSING = "social_partner_anchor_missing";
+const string DL_FB_REASON_TRANSITION_EXIT_MISSING = "transition_exit_missing";
+const string DL_FB_REASON_TRANSITION_DRIVER_MISSING = "transition_driver_missing";
+const string DL_FB_REASON_REGISTRY_UNREGISTER_SLOT_INVALID = "registry_unregister_slot_invalid";
+
+string DL_GetFallbackSeverityByDomain(string sDomain)
+{
+    if (sDomain == DL_FB_DOMAIN_REGISTRY)
+    {
+        return DL_FB_SEVERITY_WARN;
+    }
+    return DL_FB_SEVERITY_INFO;
+}
+
+void DL_ReportFallback(object oActor, string sDomain, string sReasonCode, string sNextAction)
+{
+    if (!GetIsObjectValid(oActor))
+    {
+        return;
+    }
+
+    string sSeverity = DL_GetFallbackSeverityByDomain(sDomain);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_DOMAIN, sDomain);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_REASON_CODE, sReasonCode);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_SEVERITY, sSeverity);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_NEXT_ACTION, sNextAction);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_LAST_EVENT, sDomain + ":" + sReasonCode + ":" + sSeverity + ":" + sNextAction);
+
+    DL_LogChatDebugEvent(
+        oActor,
+        "fallback",
+        "fallback domain=" + sDomain + " reason_code=" + sReasonCode + " severity=" + sSeverity + " next_action=" + sNextAction
+    );
+}
+
 int DL_IsRuntimeEnabled()
 {
     object oModule = GetModule();
