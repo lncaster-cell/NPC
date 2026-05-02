@@ -363,8 +363,7 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
         SetLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD, oBestA);
         if (nLevel >= 3)
         {
-            AssignCommand(oBestA, ClearAllActions(TRUE));
-            AssignCommand(oBestA, ActionAttack(oOffender));
+            DL_CommandAttackResetQueue(oBestA, oOffender);
         }
         else
         {
@@ -376,14 +375,13 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     {
         SetLocalObject(oBestB, DL_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
         SetLocalInt(oBestB, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
-        AssignCommand(oBestB, ClearAllActions(TRUE));
         if (nLevel >= 3)
         {
-            AssignCommand(oBestB, ActionAttack(oOffender));
+            DL_CommandAttackResetQueue(oBestB, oOffender);
         }
         else
         {
-            AssignCommand(oBestB, ActionMoveToObject(oOffender, TRUE, 2.0));
+            DL_CommandMoveToObjectResetQueue(oBestB, oOffender, TRUE, 2.0);
         }
     }
 }
@@ -608,8 +606,7 @@ int DL_CR_TeleportToJail(object oPc)
     }
 
     // Crime flow intentionally uses a direct player jump to avoid transition-state side effects on PCs.
-    AssignCommand(oPc, ClearAllActions(TRUE));
-    AssignCommand(oPc, ActionJumpToLocation(GetLocation(oWp)));
+    DL_CommandJumpToLocationResetQueue(oPc, GetLocation(oWp));
     return TRUE;
 }
 
@@ -647,7 +644,6 @@ void DL_CR_HandleDetainRefused(object oPc, object oGuard)
 
     if (GetIsObjectValid(oGuard))
     {
-        AssignCommand(oGuard, ClearAllActions(TRUE));
-        AssignCommand(oGuard, ActionAttack(oPc));
+        DL_CommandAttackResetQueue(oGuard, oPc);
     }
 }
