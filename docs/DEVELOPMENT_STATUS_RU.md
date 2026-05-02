@@ -87,8 +87,8 @@
   - ✅ legal v1.1 simple finalizer добавлен: `fine`/`detain_complete` резолв кейса без ввода полного суда.
   - ✅ cooldown key normalization v1: anti-spam ключи инцидентов/реакции guard переведены на `GetPCPublicCDKey` (с fallback на tag), устранены multiplayer-коллизии при одинаковом PC tag.
   - ✅ cooldown key contract hardening: введены единые prefix-константы и специализированные helper-функции для incident/guard reaction ключей, чтобы исключить дрейф форматов.
-  - ✅ identity normalization hardening: fallback-chain уточнён (`GetPCPublicCDKey(..., TRUE)` -> `ObjectToString` -> tag/unknown), при этом built-in public key остаётся каноническим без модификации.
-  - ✅ audit pass12 alignment: runtime-вызов `GetPCPublicCDKey` синхронизирован с документированным контрактом через явный параметр `TRUE`, устранён drift между статус-документацией и кодом.
+  - ✅ identity normalization hardening: fallback-chain уточнён (`GetPCPublicCDKey(...)` -> `ObjectToString` -> tag/unknown) с NWN2-совместимой сигнатурой, при этом built-in public key остаётся каноническим без модификации.
+  - ✅ audit pass13 compatibility fix: убран не-NWN2 совместимый второй аргумент у `GetPCPublicCDKey`; контракт identity-цепочки синхронизирован с реальной сигнатурой NWN2.
   - ✅ city-response constants cleanup: магические строки legal/detain local keys вынесены в именованные константы для безопасного сопровождения без изменения runtime-поведения.
   - ✅ witness shout anti-spam hardening: cooldown ключ witness-shout переведён с `GetTag` на нормализованный offender identity chain (public cd key/object id/tag fallback), устранён риск коллизий в multiplayer.
   - ✅ include-scope dedupe cleanup: `dl_cr_crime_inc` переиспользует `DL_CR_GetOffenderIdentityKey` из `dl_city_response_inc`, устранено дублирование identity-helper/констант в общем include-графе `dl_core_inc`.
@@ -172,3 +172,4 @@
 - `docs/audits/post_refactor_audit_pass10.md`
 - `docs/audits/post_refactor_audit_pass11.md`
 - `docs/audits/post_refactor_audit_pass12.md`
+- `docs/audits/post_refactor_audit_pass13.md`
