@@ -635,3 +635,5 @@ dl_social_theater_2
    - `home area` и anchor-структура сохраняются прежними.
    - Убывший NPC удаляется из состава жильцов, новый NPC получает тот же `dl_home_area_tag` и нужный `dl_home_slot`.
    - Переиспользуются существующие `dl_anchor_sleep_approach_<slot>` / `dl_anchor_sleep_bed_<slot>` и общие meal/public anchors без рефакторинга структуры дома.
+
+- Transition primitives централизованы в модуле `daily_life/dl_transition_inc.nss`; модуль `daily_life/dl_cross_area_nav_inc.nss` содержит только route-selection логику для межзональной навигации.
