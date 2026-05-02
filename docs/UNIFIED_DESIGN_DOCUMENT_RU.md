@@ -97,6 +97,20 @@
 1) Если чтение кода зависит от `наличия` ключа — `DeleteLocal*`.
 2) Если чтение кода зависит только от `значения` ключа — `SetLocal*` в канонический reset.
 
+### 3.5 Canonical runtime key taxonomy (worker/resync/transition/social/crime/legal)
+
+- **State:** `*_STATE`.
+- **Flag:** `*_PENDING`, `*_ACTIVE`.
+- **Counters/sequence:** `*_COUNT`, `*_SEQ`.
+- **Timestamps:** `*_ABS_MIN`, `*_TICK`.
+
+Применённые уточнения доменов:
+- `worker`: `..._WORKER_TICKS` → `..._WORKER_TICK_COUNT`; `..._LAST_PROCESSED` → `..._LAST_PROCESSED_TICK`.
+- `social`: `..._RESERVED_UNTIL` → `..._RESERVED_ABS_MIN`.
+- `crime`: `..._LOCKPICK_MARK_UNTIL` → `..._LOCKPICK_MARK_ABS_MIN`.
+
+Совместимость миграции — короткоживущая: на этапе перехода допускается одноразовая перекладка legacy key в canonical key с последующим `DeleteLocal*` legacy-ключа.
+
 Временный переходный режим допускает dual-style только с явным `COMPAT`-комментарием рядом с кодом и с планом удаления legacy-ветки.
 
 ### 3.3 Рекомендуемая событийная архитектура
@@ -426,6 +440,7 @@ dl_social_theater_2
 ### 2026-05-02 — фиксация Daily Life vNext pipeline-контракта
 
 - Зафиксирован канонический pipeline: `Schedule -> Directive -> Activity / Scene -> Destination Resolver -> Nav Router -> Transition Executor -> Action / Animation`.
+- Для runtime-директив обязателен внутренний шаблон шагов: `Validate -> Resolve -> Prepare -> Execute -> Finalize`; новые директивы не должны вводить локальные mini-state-machine вне этого шаблона.
 - Старый transition layer переопределён как низкоуровневый `Transition Executor`, а не как конкурирующая навигационная система.
 - `SOCIAL` зафиксирован как social destination/activity layer: `paired_chat`, `theater`, `tavern`, `public`.
 - Разметка должна принадлежать location/area, а не конкретному NPC; замена NPC не должна требовать перестановки waypoint-разметки.

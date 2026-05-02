@@ -264,9 +264,7 @@ object DL_ResolvePublicWaypoint(object oNpc)
 }
 object DL_ResolveChillWaypoint(object oNpc)
 {
-    int nNowAbs = DL_GetAbsoluteMinute();
-    int nMissingUntil = GetLocalInt(oNpc, DL_L_NPC_CACHE_CHILL_SEAT_MISSING_UNTIL);
-    if (nMissingUntil > nNowAbs)
+    if (DL_IsMinuteCooldownActive(oNpc, DL_L_NPC_CACHE_CHILL_SEAT_MISSING_UNTIL))
     {
         return OBJECT_INVALID;
     }
@@ -293,7 +291,7 @@ object DL_ResolveChillWaypoint(object oNpc)
         return oSeat;
     }
 
-    SetLocalInt(oNpc, DL_L_NPC_CACHE_CHILL_SEAT_MISSING_UNTIL, nNowAbs + DL_CHILL_MISSING_CACHE_TTL_MINUTES);
+    DL_SetMinuteCooldown(oNpc, DL_L_NPC_CACHE_CHILL_SEAT_MISSING_UNTIL, DL_CHILL_MISSING_CACHE_TTL_MINUTES);
     return OBJECT_INVALID;
 }
 object DL_ResolveChillChairObject(object oNpc, object oSeat)
@@ -303,9 +301,7 @@ object DL_ResolveChillChairObject(object oNpc, object oSeat)
         return OBJECT_INVALID;
     }
 
-    int nNowAbs = DL_GetAbsoluteMinute();
-    int nMissingUntil = GetLocalInt(oNpc, DL_L_NPC_CACHE_CHILL_CHAIR_MISSING_UNTIL);
-    if (nMissingUntil > nNowAbs)
+    if (DL_IsMinuteCooldownActive(oNpc, DL_L_NPC_CACHE_CHILL_CHAIR_MISSING_UNTIL))
     {
         return OBJECT_INVALID;
     }
@@ -344,7 +340,7 @@ object DL_ResolveChillChairObject(object oNpc, object oSeat)
         return oChair;
     }
 
-    SetLocalInt(oNpc, DL_L_NPC_CACHE_CHILL_CHAIR_MISSING_UNTIL, nNowAbs + DL_CHILL_MISSING_CACHE_TTL_MINUTES);
+    DL_SetMinuteCooldown(oNpc, DL_L_NPC_CACHE_CHILL_CHAIR_MISSING_UNTIL, DL_CHILL_MISSING_CACHE_TTL_MINUTES);
     return OBJECT_INVALID;
 }
 void DL_ExecuteMealDirective(object oNpc)
@@ -440,9 +436,8 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
         return TRUE;
     }
 
-    int nNowAbs = DL_GetAbsoluteMinute();
-    int nRetryUntil = GetLocalInt(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL);
-    if (GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) == DL_STATUS_SITTING_CHILL_ATTEMPT && nRetryUntil > nNowAbs)
+    if (GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) == "sitting_chill_attempt" &&
+        DL_IsMinuteCooldownActive(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL))
     {
         return TRUE;
     }
@@ -450,7 +445,7 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
     DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
     DL_SetRuntimeState(oNpc, DL_L_NPC_FOCUS_STATUS, DL_STATUS_SITTING_CHILL_ATTEMPT, "", "");
     SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oSeat));
-    SetLocalInt(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL, nNowAbs + DL_CHILL_SIT_RETRY_MINUTES);
+    DL_SetMinuteCooldown(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL, DL_CHILL_SIT_RETRY_MINUTES);
     AssignCommand(oNpc, ClearAllActions(TRUE));
     AssignCommand(oNpc, ActionSit(oChair));
     DL_LogSocialEvent(oNpc, "sitting_chill_attempt", "chair=" + GetTag(oChair));
@@ -527,13 +522,23 @@ int DL_ShouldFallbackSocialToPublicLocal(object oNpc)
 }
 void DL_ExecuteSocialDirective(object oNpc)
 {
+    // Validate
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    // Resolve
     string sKind = DL_GetNpcSocialKind(oNpc);
+
+    // Prepare
+    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_FOCUS_STATUS, DL_PIPE_STEP_PREPARE);
     if (DL_IsStandaloneSocialKind(sKind))
     {
         object oSocial = DL_ResolveStandaloneSocialWaypoint(oNpc, sKind);
         if (!GetIsObjectValid(oSocial))
         {
-            SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_MISSING_SOCIAL_POOL_PREFIX + sKind);
+            DL_PipelineUpdateDiagnostic(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_MISSING_SOCIAL_POOL_PREFIX + sKind);
             return;
         }
 
@@ -558,7 +563,7 @@ void DL_ExecuteSocialDirective(object oNpc)
     object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
     if (!GetIsObjectValid(oPartnerWp))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
+        DL_PipelineUpdateDiagnostic(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
         return;
     }
     object oMe = DL_ResolveSocialWaypoint(oNpc);
@@ -587,5 +592,9 @@ void DL_ExecuteSocialDirective(object oNpc)
             " slot=" + GetLocalString(oNpc, DL_L_NPC_SOCIAL_SLOT) +
             " partner=" + sPartnerTag
     );
+    // Execute
     DL_ProgressFocusAtTarget(oNpc, oMe, sStatus, sAnim);
+
+    // Finalize
+    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_FOCUS_STATUS, DL_PIPE_STEP_FINALIZE);
 }

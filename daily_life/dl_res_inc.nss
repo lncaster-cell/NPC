@@ -1,5 +1,6 @@
 #include "dl_activity_archive_anim_inc"
 #include "dl_cache_helpers_inc"
+#include "dl_directive_pipeline_inc"
 #include "dl_transition_inc"
 #include "dl_transition_engine_inc"
 #include "dl_cross_area_nav_inc"
