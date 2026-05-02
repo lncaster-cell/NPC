@@ -467,17 +467,7 @@ void DL_WorkerTouchNpc(object oNpc)
 
 void DL_RunAreaEnterResyncTick(object oArea)
 {
-    if (!DL_IsAreaObject(oArea))
-    {
-        return;
-    }
-
-    if (!DL_IsRuntimeEnabled())
-    {
-        return;
-    }
-
-    if (DL_GetAreaTier(oArea) != DL_TIER_HOT)
+    if (!DL_CanRunResyncForArea(oArea))
     {
         return;
     }
@@ -524,17 +514,7 @@ void DL_RunAreaEnterResyncTick(object oArea)
 
 void DL_RunAreaWarmMaintenanceTick(object oArea)
 {
-    if (!DL_IsAreaObject(oArea))
-    {
-        return;
-    }
-
-    if (!DL_IsRuntimeEnabled())
-    {
-        return;
-    }
-
-    if (DL_GetAreaTier(oArea) != DL_TIER_WARM)
+    if (!DL_CanRunWarmMaintenanceForArea(oArea))
     {
         return;
     }
@@ -575,12 +555,7 @@ void DL_RunAreaWarmMaintenanceTick(object oArea)
 
 void DL_RunAreaWorkerTick(object oArea)
 {
-    if (!DL_IsAreaObject(oArea))
-    {
-        return;
-    }
-
-    if (!DL_IsRuntimeEnabled())
+    if (!DL_CanRunWorkerForArea(oArea))
     {
         return;
     }

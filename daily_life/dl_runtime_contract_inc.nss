@@ -112,6 +112,73 @@ int DL_IsRuntimeEnabled()
     return GetLocalString(oModule, DL_L_MODULE_CONTRACT_VERSION) == DL_CONTRACT_VERSION_A0;
 }
 
+
+int DL_CanRunRuntimeForArea(object oArea)
+{
+    if (!DL_IsRuntimeEnabled())
+    {
+        return FALSE;
+    }
+
+    if (!GetIsObjectValid(oArea))
+    {
+        return FALSE;
+    }
+
+    return DL_IsAreaObject(oArea);
+}
+
+int DL_CanRunWorkerForArea(object oArea)
+{
+    if (!DL_CanRunRuntimeForArea(oArea))
+    {
+        return FALSE;
+    }
+
+    int nTier = DL_GetAreaTier(oArea);
+    return nTier == DL_TIER_HOT || nTier == DL_TIER_WARM;
+}
+
+int DL_CanRunWarmMaintenanceForArea(object oArea)
+{
+    if (!DL_CanRunRuntimeForArea(oArea))
+    {
+        return FALSE;
+    }
+
+    return DL_GetAreaTier(oArea) == DL_TIER_WARM;
+}
+
+int DL_CanRunResyncForArea(object oArea)
+{
+    if (!DL_CanRunRuntimeForArea(oArea))
+    {
+        return FALSE;
+    }
+
+    return DL_GetAreaTier(oArea) == DL_TIER_HOT;
+}
+
+int DL_CanRunCityResponseForArea(object oArea)
+{
+    if (!DL_CanRunRuntimeForArea(oArea))
+    {
+        return FALSE;
+    }
+
+    object oModule = GetModule();
+    if (GetLocalInt(oModule, "dl_city_response_enabled") != TRUE)
+    {
+        return FALSE;
+    }
+
+    return GetLocalInt(oArea, "dl_city_response_enabled") == TRUE;
+}
+
+int DL_CanRunTransitionForArea(object oArea)
+{
+    return DL_CanRunRuntimeForArea(oArea);
+}
 int DL_IsRuntimeLogEnabled()
 {
     return GetLocalInt(GetModule(), DL_L_MODULE_RUNTIME_LOG) == TRUE;
