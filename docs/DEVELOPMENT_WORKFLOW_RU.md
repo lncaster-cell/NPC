@@ -14,8 +14,7 @@
    - оперативный прогресс: `docs/DEVELOPMENT_STATUS_RU.md`.
 5. Каждый новый `docs/audits/post_refactor_audit_pass*.md` считается завершённым только после обновления `docs/audits/risk_register.md` в том же коммите.
 6. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
-7. Новые `case kind` / `case resolution` / detain-crime diagnostic status строки добавлять только через contract-слой (`daily_life/dl_runtime_contract_inc.nss` или специализированный `*_contract_inc`) и затем использовать только константы.
-8. Для контрактных status-строк обязателен статический контроль: `rg` по raw literal не должен находить вхождений вне contract-файла.
+7. Новые diagnostic-коды вводить только через contract-константы (канонический словарь в профильном `*_contract_inc.nss`), без raw-строк в runtime-логике.
 
 
 
@@ -78,6 +77,7 @@ PR с runtime-правками **не считается завершённым*
 - [ ] Worker/resync остаются в квотах и без unbounded fan-out.
 - [ ] Добавлена/обновлена краткая запись в `docs/DEVELOPMENT_STATUS_RU.md`.
 - [ ] При изменении архитектурных правил обновлён unified-документ.
+- [ ] Новые diagnostic-коды/сообщения добавлены в канонический contract include, а не разбросаны raw-строками по runtime-веткам.
 
 ## Политика документации
 
