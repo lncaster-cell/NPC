@@ -8,12 +8,7 @@
 // - Uses existing transition metadata and driver semantics.
 
 
-int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sDiagPrefix)
-{
-    return DL_ExecuteTransitionEngine(oNpc, oEntryWp, sDiagPrefix);
-}
-
 int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp)
 {
-    return DL_ExecuteTransitionViaEntryWaypoint(oNpc, oEntryWp, DL_DIAG_CTX_ROUTED);
+    return DL_ExecuteTransitionEngine(oNpc, oEntryWp, DL_DIAG_CTX_ROUTED);
 }

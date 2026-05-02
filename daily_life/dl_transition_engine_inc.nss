@@ -12,7 +12,7 @@ int DL_JumpNpcToTransitionExit(object oNpc, location lExit, string sStatus = "",
     }
 
     object oExitArea = GetAreaFromLocation(lExit);
-    if (!GetIsObjectValid(oExitArea) || GetObjectType(oExitArea) != OBJECT_TYPE_AREA)
+    if (!DL_CanRunTransitionForArea(oExitArea))
     {
         if (sStatus != "")
         {

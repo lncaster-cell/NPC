@@ -29,18 +29,20 @@ object DL_GetNpcCachedWaypointByTagInArea(object oNpc, string sCacheLocal, strin
         return OBJECT_INVALID;
     }
 
-    object oCached = GetLocalObject(oNpc, sCacheLocal);
-    if (DL_IsCachedObjectValidForTagInArea(oCached, sTag, OBJECT_TYPE_WAYPOINT, oArea))
+    int nTier = DL_GetAreaTier(oArea);
+    int nLifecycleSeq = GetLocalInt(oNpc, DL_L_NPC_EVENT_SEQ);
+    object oCached = DL_GetCachedObject(oNpc, sCacheLocal, sTag, OBJECT_TYPE_WAYPOINT, oArea, nTier, nLifecycleSeq);
+    if (GetIsObjectValid(oCached))
     {
         DL_RecordCacheMetric(oArea, "anchor", TRUE);
         return oCached;
     }
 
-    DeleteLocalObject(oNpc, sCacheLocal);
+    DL_InvalidateCachedObject(oNpc, sCacheLocal);
     object oResolved = DL_FindObjectByTagInAreaDeterministic(sTag, OBJECT_TYPE_WAYPOINT, oArea, DL_WAYPOINT_TAG_SEARCH_CAP);
     if (GetIsObjectValid(oResolved))
     {
-        SetLocalObject(oNpc, sCacheLocal, oResolved);
+        DL_SetCachedObject(oNpc, sCacheLocal, oResolved, sTag, OBJECT_TYPE_WAYPOINT, oArea, nTier, nLifecycleSeq);
         DL_RecordCacheMetric(oArea, "anchor", FALSE);
         return oResolved;
     }
@@ -145,8 +147,10 @@ object DL_GetNpcAreaByTagCached(object oNpc, string sAreaTagLocal, string sAreaC
         return OBJECT_INVALID;
     }
 
-    object oCached = GetLocalObject(oNpc, sAreaCacheLocal);
-    if (GetIsObjectValid(oCached) && GetTag(oCached) == sAreaTag)
+    int nTier = 0;
+    int nLifecycleSeq = GetLocalInt(oNpc, DL_L_NPC_EVENT_SEQ);
+    object oCached = DL_GetCachedObject(oNpc, sAreaCacheLocal, sAreaTag, OBJECT_TYPE_AREA, OBJECT_INVALID, nTier, nLifecycleSeq);
+    if (GetIsObjectValid(oCached))
     {
         return oCached;
     }
@@ -167,7 +171,7 @@ object DL_GetNpcAreaByTagCached(object oNpc, string sAreaTagLocal, string sAreaC
         return OBJECT_INVALID;
     }
 
-    SetLocalObject(oNpc, sAreaCacheLocal, oArea);
+    DL_SetCachedObject(oNpc, sAreaCacheLocal, oArea, sAreaTag, OBJECT_TYPE_AREA, OBJECT_INVALID, nTier, nLifecycleSeq);
     return oArea;
 }
 object DL_GetNpcCurrentAreaFallback(object oNpc)

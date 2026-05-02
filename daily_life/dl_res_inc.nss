@@ -1,5 +1,6 @@
 #include "dl_activity_archive_anim_inc"
 #include "dl_cache_helpers_inc"
+#include "dl_directive_pipeline_inc"
 #include "dl_transition_inc"
 #include "dl_transition_engine_inc"
 #include "dl_cross_area_nav_inc"
@@ -199,22 +200,38 @@ string DL_GetDirectiveDebugLabel(int nDirective)
     }
     return "NONE";
 }
-void DL_LogChatDebugEvent(object oNpc, string sKind, string sPayload)
+void DL_LogDomainDebugEvent(object oNpc, string sDomain, string sEventCode, string sKeyContext)
 {
     if (!GetIsObjectValid(oNpc) || !DL_IsChatDebugEnabledForNpc(oNpc))
     {
         return;
     }
 
-    string sSig = sKind + "|" + sPayload;
+    string sNpcTag = GetTag(oNpc);
+    string sPayload = "domain=" + sDomain + " event_code=" + sEventCode + " npc_tag=" + sNpcTag + " key_context=" + sKeyContext;
+    string sSig = sDomain + "|" + sEventCode + "|" + sNpcTag + "|" + sKeyContext;
     if (GetLocalString(oNpc, DL_L_NPC_CHAT_LAST_EVENT_SIG) == sSig)
     {
         return;
     }
 
     SetLocalString(oNpc, DL_L_NPC_CHAT_LAST_EVENT_SIG, sSig);
-    DL_LogChat("npc=" + GetTag(oNpc) + " " + sPayload);
+    DL_LogChat(sPayload);
 }
+
+void DL_LogTransitionEvent(object oNpc, string sEventCode, string sKeyContext)
+{
+    DL_LogDomainDebugEvent(oNpc, "transition", sEventCode, sKeyContext);
+}
+void DL_LogSocialEvent(object oNpc, string sEventCode, string sKeyContext)
+{
+    DL_LogDomainDebugEvent(oNpc, "social", sEventCode, sKeyContext);
+}
+void DL_LogCrimeEvent(object oNpc, string sEventCode, string sKeyContext)
+{
+    DL_LogDomainDebugEvent(oNpc, "crime", sEventCode, sKeyContext);
+}
+
 void DL_LogDirectiveChange(object oNpc, int nPrevDirective, int nDirective)
 {
     if (nDirective == nPrevDirective)
@@ -222,7 +239,7 @@ void DL_LogDirectiveChange(object oNpc, int nPrevDirective, int nDirective)
         return;
     }
 
-    DL_LogChatDebugEvent(
+    DL_LogTransitionEvent(
         oNpc,
         "directive",
         "dir=" + DL_GetDirectiveDebugLabel(nDirective) +
@@ -290,10 +307,7 @@ void DL_LogStuckState(object oNpc, int nDirective)
     }
 
     SetLocalInt(oNpc, DL_L_NPC_CHAT_STUCK_LAST_LOG, nNowAbsMin);
-    DL_LogChat("npc=" + GetTag(oNpc) +
-              " stuck dir=" + DL_GetDirectiveDebugLabel(nDirective) +
-              " state=" + sState +
-              " target=" + sTarget);
+    DL_LogTransitionEvent(oNpc, "stuck_state", "dir=" + DL_GetDirectiveDebugLabel(nDirective) + " state=" + sState + " target=" + sTarget);
 }
 void DL_LogMarkupIssueOnce(object oNpc, string sKey, string sMessage)
 {
@@ -372,6 +386,7 @@ void DL_ApplyMaterializationSkeleton(object oNpc, int nDirective)
 }
 
 #include "dl_anchor_cache_inc"
+#include "dl_selection_inc"
 #include "dl_social_pool_inc"
 #include "dl_presentation_inc"
 #include "dl_sleep_inc"
@@ -441,22 +456,22 @@ void DL_ClearNpcWaypointCaches(object oNpc)
         return;
     }
 
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SLEEP_APPROACH);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SLEEP_BED);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_FORGE);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_CRAFT);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_POST);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_TRADE);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_PRIMARY);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_SECONDARY);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_FETCH);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_MEAL);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_A);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_B);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_PUBLIC);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_CHILL_SEAT);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SLEEP_APPROACH);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SLEEP_BED);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_FORGE);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_CRAFT);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_POST);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_TRADE);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_PRIMARY);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_SECONDARY);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_FETCH);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_MEAL);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_A);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_B);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_PUBLIC);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_CHILL_SEAT);
     DeleteLocalInt(oNpc, DL_L_NPC_CACHE_CHILL_SEAT_MISSING_UNTIL);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
     DL_ClearNpcSocialReservation(oNpc);
 }
 void DL_ClearNpcAreaCaches(object oNpc)
@@ -466,11 +481,11 @@ void DL_ClearNpcAreaCaches(object oNpc)
         return;
     }
 
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_HOME_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_MEAL_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_PUBLIC_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_HOME_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_MEAL_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_PUBLIC_AREA);
 }
 void DL_ClearNpcRuntimeCaches(object oNpc)
 {
@@ -532,10 +547,6 @@ void DL_ApplyIdleLikeDirectiveState(object oNpc, int bSocial)
 int DL_ShouldFallbackSocialToPublic(object oNpc)
 {
     return FALSE;
-}
-int DL_ShouldRunSocialFallbackToPublicLocal(object oNpc)
-{
-    return GetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC) == "social_fallback_to_public";
 }
 int DL_ShouldUseDirectiveFastPath(object oNpc, int nEffectiveDirective)
 {
@@ -644,13 +655,6 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
         DL_ExecuteSocialDirective(oNpc);
-        if (DL_ShouldRunSocialFallbackToPublicLocal(oNpc))
-        {
-            SetLocalInt(oNpc, DL_L_NPC_DIRECTIVE, DL_DIR_PUBLIC);
-            SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
-            DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
-            DL_ExecutePublicDirective(oNpc);
-        }
         DL_ClearActivityPresentation(oNpc);
     }
     else if (nEffectiveDirective == DL_DIR_PUBLIC)
