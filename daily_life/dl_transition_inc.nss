@@ -632,15 +632,30 @@ object DL_ResolveTransitionDriverObject(object oEntryWp)
     return OBJECT_INVALID;
 }
 
-void DL_JumpNpcToTransitionExit(object oNpc, location lExit)
+int DL_JumpNpcToTransitionExit(object oNpc, location lExit, string sStatus = "", string sDiagnostic = "")
 {
     if (!GetIsObjectValid(oNpc))
     {
-        return;
+        return FALSE;
+    }
+
+    object oExitArea = GetAreaFromLocation(lExit);
+    if (!GetIsObjectValid(oExitArea) || GetObjectType(oExitArea) != OBJECT_TYPE_AREA)
+    {
+        if (sStatus != "")
+        {
+            SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, sStatus);
+        }
+        if (sDiagnostic != "")
+        {
+            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, sDiagnostic);
+        }
+        return FALSE;
     }
 
     AssignCommand(oNpc, ClearAllActions(TRUE));
     AssignCommand(oNpc, ActionJumpToLocation(lExit));
+    return TRUE;
 }
 
 int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
@@ -699,7 +714,7 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
     if (sDriver == "" || sDriver == DL_TRANSITION_DRIVER_NONE || sDriver == DL_TRANSITION_DRIVER_TRIGGER)
     {
         DL_SetNpcNavZoneFromWaypoint(oNpc, oExitWp);
-        DL_JumpNpcToTransitionExit(oNpc, lExit);
+        DL_JumpNpcToTransitionExit(oNpc, lExit, "transitioning", "transition_in_progress");
         return TRUE;
     }
 
@@ -719,7 +734,7 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
         {
             AssignCommand(oNpc, DoDoorAction(oDoor, DOOR_ACTION_OPEN));
         }
-        AssignCommand(oNpc, ActionJumpToLocation(lExit));
+        DL_JumpNpcToTransitionExit(oNpc, lExit, "transitioning", "transition_in_progress");
         return TRUE;
     }
 

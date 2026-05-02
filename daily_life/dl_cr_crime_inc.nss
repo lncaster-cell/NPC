@@ -543,6 +543,7 @@ int DL_CR_TeleportToJail(object oPc)
         return FALSE;
     }
 
+    // Crime flow intentionally uses a direct player jump to avoid transition-state side effects on PCs.
     AssignCommand(oPc, ClearAllActions(TRUE));
     AssignCommand(oPc, ActionJumpToLocation(GetLocation(oWp)));
     return TRUE;
