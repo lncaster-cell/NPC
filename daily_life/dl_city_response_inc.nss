@@ -240,13 +240,12 @@ void DL_CR_HandleNpcDamaged(object oVictim)
 
     string sCooldownKey = DL_CR_GetEpisodeCooldownKey(oOffender);
     int nNowAbsMin = DL_GetAbsoluteMinute();
-    int nCooldownUntil = GetLocalInt(oVictim, sCooldownKey);
-    if (nCooldownUntil > nNowAbsMin)
+    if (DL_IsMinuteCooldownActive(oVictim, sCooldownKey))
     {
         return;
     }
 
-    SetLocalInt(oVictim, sCooldownKey, nNowAbsMin + DL_CR_EPISODE_COOLDOWN_MIN);
+    DL_SetMinuteCooldown(oVictim, sCooldownKey, DL_CR_EPISODE_COOLDOWN_MIN);
 
     int nHeatDelta = DL_CR_IsGuardVictim(oVictim) ? 25 : 15;
     DL_CR_RegisterIncident(oOffender, nHeatDelta);
@@ -283,7 +282,7 @@ int DL_CR_IsOffenderActive(object oCreature)
         return FALSE;
     }
 
-    return GetLocalInt(oCreature, DL_L_NPC_CR_OFFENDER_UNTIL) > DL_GetAbsoluteMinute();
+    return DL_IsMinuteCooldownActive(oCreature, DL_L_NPC_CR_OFFENDER_UNTIL);
 }
 
 void DL_CR_HandleGuardPerception(object oGuard)
@@ -337,11 +336,11 @@ void DL_CR_HandleGuardPerception(object oGuard)
     }
 
     string sCooldownKey = DL_CR_GetGuardReactionCooldownKey(oSeen);
-    if (GetLocalInt(oGuard, sCooldownKey) > nNowAbsMin)
+    if (DL_IsMinuteCooldownActive(oGuard, sCooldownKey))
     {
         return;
     }
-    SetLocalInt(oGuard, sCooldownKey, nNowAbsMin + DL_CR_GUARD_REACTION_COOLDOWN_MIN);
+    DL_SetMinuteCooldown(oGuard, sCooldownKey, DL_CR_GUARD_REACTION_COOLDOWN_MIN);
 
     if (nLevel >= 3)
     {

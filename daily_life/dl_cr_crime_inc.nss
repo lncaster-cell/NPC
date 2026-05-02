@@ -252,11 +252,11 @@ void DL_CR_WitnessShout(object oWitness, object oOffender)
 
     string sKey = DL_CR_KEY_PREFIX_SHOUT_CD + DL_CR_GetOffenderIdentityKey(oOffender);
     int nNowAbsMin = DL_GetAbsoluteMinute();
-    if (GetLocalInt(oWitness, sKey) > nNowAbsMin)
+    if (DL_IsMinuteCooldownActive(oWitness, sKey))
     {
         return;
     }
-    SetLocalInt(oWitness, sKey, nNowAbsMin + DL_CR_SHOUT_COOLDOWN_MIN);
+    DL_SetMinuteCooldown(oWitness, sKey, DL_CR_SHOUT_COOLDOWN_MIN);
 
     AssignCommand(oWitness, SpeakString("Помогите! Меня обокрали!", TALKVOLUME_SHOUT));
 }

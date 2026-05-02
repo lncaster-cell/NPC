@@ -37,3 +37,15 @@
 - [ ] Проверен Lexicon/штатный NWScript путь и зафиксирован выбор built-in механики.
 - [ ] Не добавлены дублирующие local-state keys при наличии canonical helper.
 - [ ] Все fallback-ветки детерминированы и задокументированы.
+
+## Canonical time-gates (обязательно к применению)
+
+- **Minute-based cooldown (gameplay / межсобытийная логика)**:
+  - Проверка: `DL_IsMinuteCooldownActive(oTarget, sKey)`.
+  - Установка: `DL_SetMinuteCooldown(oTarget, sKey, nDurationMinutes)`.
+  - Применять для gameplay state, где важен абсолютный момент времени (например, реакция охраны, повтор эпизода, retry-окна поведения NPC).
+- **Area tick interval (worker scheduling / планировщик)**:
+  - Проверка интервала: `DL_ShouldRunByAreaTickInterval(nNowTick, nLastTick, nInterval)`.
+  - Применять только в worker/resync-пайплайне и прочем tick-driven scheduling.
+
+Запрещено дублировать inline-формулы вида `GetLocalInt(...) > now` и `tick - lastTick < interval` вне этих helper-функций.
