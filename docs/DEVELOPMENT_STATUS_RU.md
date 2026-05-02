@@ -173,10 +173,5 @@
 - `docs/audits/post_refactor_audit_pass11.md`
 - `docs/audits/post_refactor_audit_pass12.md`
 - `docs/audits/post_refactor_audit_pass13.md`
-
-
-## 7) Runtime Regression Pass (Daily Life Gates)
-
-- Последний пройденный pass: **PASS-13** (`docs/audits/post_refactor_audit_pass13.md`).
-- Обязательная синхронизация для runtime PR: в отчёте указывать статус 4 gate’ов из `docs/DEVELOPMENT_WORKFLOW_RU.md` + ссылку на последний pass.
-
+- `docs/audits/post_refactor_audit_pass14.md`
+- `docs/audits/audit_artifacts_closure_2026-05-02.md`
