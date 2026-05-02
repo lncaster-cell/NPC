@@ -9,6 +9,10 @@ const int DL_CHILL_MISSING_CACHE_TTL_MINUTES = 10;
 const int DL_CHILL_SIT_RETRY_MINUTES = 1;
 const string DL_CHILL_ANIM_SIT_IDLE = "sitidle";
 
+const string DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC = "fallback_social_public";
+const string DL_EVT_FOCUS_SOCIAL_PARTNER_LOOKUP = "social_partner_lookup";
+const string DL_FOCUS_STATUS_MOVING_TO_ANCHOR = "moving_to_anchor";
+
 void DL_ClearFocusExecutionState(object oNpc)
 {
     DL_ClearNpcSocialReservation(oNpc);
@@ -47,8 +51,8 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
 
         if (oCandidate == oNpc)
         {
-            SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "social_partner_self");
-            DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=social_partner_self");
+            SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
+            DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=" + DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
         }
         else if (!DL_IsActivePipelineNpc(oCandidate))
         {
@@ -75,16 +79,16 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
         {
             DL_LogChatDebugEvent(
                 oNpc,
-                "social_partner_lookup",
-                "social partner lookup tag=" + sPartnerTag + " result=found_outside_area"
+                DL_EVT_FOCUS_SOCIAL_PARTNER_LOOKUP,
+                DL_MSG_FOCUS_SOCIAL_PARTNER_LOOKUP + " tag=" + sPartnerTag + " result=" + DL_MSG_RESULT_FOUND_OUTSIDE_AREA
             );
         }
         else if (!bTagFound)
         {
             DL_LogChatDebugEvent(
                 oNpc,
-                "social_partner_lookup",
-                "social partner lookup tag=" + sPartnerTag + " result=tag_not_found"
+                DL_EVT_FOCUS_SOCIAL_PARTNER_LOOKUP,
+                DL_MSG_FOCUS_SOCIAL_PARTNER_LOOKUP + " tag=" + sPartnerTag + " result=" + DL_MSG_RESULT_TAG_NOT_FOUND
             );
         }
         return OBJECT_INVALID;
@@ -142,9 +146,9 @@ int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus
     if (GetDistanceBetween(oNpc, oTarget) > DL_WORK_ANCHOR_RADIUS)
     {
         DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
-        if (GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) != "moving_to_anchor")
+        if (GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) != DL_FOCUS_STATUS_MOVING_TO_ANCHOR)
         {
-            SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, "moving_to_anchor");
+            SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, DL_FOCUS_STATUS_MOVING_TO_ANCHOR);
             SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oTarget));
             DL_QueueMoveAction(oNpc, GetLocation(oTarget), TRUE);
         }
@@ -207,7 +211,7 @@ object DL_ResolveMealWaypoint(object oNpc, string sMealKind)
                 DL_LogChatDebugEvent(
                     oNpc,
                     "fallback_meal_work",
-                    "fallback meal->work reason=missing_meal_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
+                    DL_MSG_FOCUS_FALLBACK_MEAL_WORK + " reason=missing_meal_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
                 );
             }
         }
@@ -221,7 +225,7 @@ object DL_ResolveMealWaypoint(object oNpc, string sMealKind)
             DL_LogChatDebugEvent(
                 oNpc,
                 "fallback_meal_home",
-                "fallback meal->home reason=missing_meal_and_work_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
+                DL_MSG_FOCUS_FALLBACK_MEAL_HOME + " reason=missing_meal_and_work_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
             );
         }
     }
@@ -253,7 +257,7 @@ object DL_ResolvePublicWaypoint(object oNpc)
         DL_LogMarkupIssueOnce(
             oNpc,
             "missing_public_area",
-            "NPC " + GetTag(oNpc) + " has no public/social area for PUBLIC directive."
+            "NPC " + GetTag(oNpc) + " " + DL_MSG_FOCUS_MISSING_PUBLIC_AREA
         );
         return OBJECT_INVALID;
     }
@@ -350,7 +354,7 @@ void DL_ExecuteMealDirective(object oNpc)
     object oMeal = DL_ResolveMealWaypoint(oNpc, sMealKind);
     if (!GetIsObjectValid(oMeal))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "missing_meal_anchor");
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_MISSING_MEAL_ANCHOR);
         return;
     }
 
@@ -394,9 +398,9 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
     if (GetDistanceBetween(oNpc, oSeat) > DL_WORK_ANCHOR_RADIUS)
     {
         DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
-        if (GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) != "moving_to_anchor")
+        if (GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) != DL_FOCUS_STATUS_MOVING_TO_ANCHOR)
         {
-            SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, "moving_to_anchor");
+            SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, DL_FOCUS_STATUS_MOVING_TO_ANCHOR);
             SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oSeat));
             DL_QueueMoveAction(oNpc, GetLocation(oSeat), TRUE);
         }
@@ -412,9 +416,9 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
     object oChair = DL_ResolveChillChairObject(oNpc, oSeat);
     if (!GetIsObjectValid(oChair))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, "missing_chill_chair");
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, DL_DIAG_FOCUS_MISSING_CHILL_CHAIR);
         SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oSeat));
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "missing_chill_chair");
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_MISSING_CHILL_CHAIR);
         return TRUE;
     }
 
@@ -431,9 +435,9 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
 
     if (GetIsObjectValid(oSitter) && oSitter != oNpc)
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, "chill_chair_occupied");
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, DL_DIAG_FOCUS_CHILL_CHAIR_OCCUPIED);
         SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oSeat));
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "chill_chair_occupied");
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_CHILL_CHAIR_OCCUPIED);
         return TRUE;
     }
 
@@ -458,7 +462,7 @@ void DL_ExecuteChillDirective(object oNpc)
     object oSeat = DL_ResolveChillWaypoint(oNpc);
     if (!GetIsObjectValid(oSeat))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "missing_chill_seat");
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_MISSING_CHILL_SEAT);
         return;
     }
 
@@ -474,7 +478,7 @@ void DL_ExecutePublicDirective(object oNpc)
     object oPublic = DL_ResolvePublicWaypoint(oNpc);
     if (!GetIsObjectValid(oPublic))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "missing_public_anchor");
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_MISSING_PUBLIC_ANCHOR);
         return;
     }
 
@@ -502,21 +506,21 @@ int DL_ShouldFallbackSocialToPublic(object oNpc)
     string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
     if (!GetIsObjectValid(oMe) || sPartnerTag == "")
     {
-        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=missing_social_anchor_or_partner");
+        DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=missing_social_anchor_or_partner");
         return TRUE;
     }
 
     object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
     if (!GetIsObjectValid(oPartner) || GetLocalInt(oPartner, DL_L_NPC_DIRECTIVE) != DL_DIR_SOCIAL)
     {
-        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_not_social");
+        DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=partner_not_social");
         return TRUE;
     }
 
     object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
     if (!GetIsObjectValid(oPartnerWp))
     {
-        DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_missing_social_anchor");
+        DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=partner_missing_social_anchor");
         return TRUE;
     }
 
@@ -530,7 +534,7 @@ void DL_ExecuteSocialDirective(object oNpc)
         object oSocial = DL_ResolveStandaloneSocialWaypoint(oNpc, sKind);
         if (!GetIsObjectValid(oSocial))
         {
-            SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "missing_social_pool_" + sKind);
+            SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_MISSING_SOCIAL_POOL_PREFIX + sKind);
             return;
         }
 
@@ -551,7 +555,7 @@ void DL_ExecuteSocialDirective(object oNpc)
 
     if (!GetIsObjectValid(oMe) || !GetIsObjectValid(oPartner) || !GetIsObjectValid(oPartnerWp))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "social_fallback_to_public");
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
         return;
     }
 

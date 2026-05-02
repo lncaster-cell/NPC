@@ -7,6 +7,24 @@ const string DL_L_MODULE_CHAT_LOG = "dl_chat_log";
 const string DL_L_MODULE_CHAT_LOG_INIT = "dl_chat_log_init";
 const string DL_L_MODULE_RUNTIME_LOG = "dl_runtime_log";
 
+// Focus diagnostics contract (stable machine codes + canonical human messages).
+const string DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF = "social_partner_self";
+const string DL_DIAG_FOCUS_MISSING_MEAL_ANCHOR = "missing_meal_anchor";
+const string DL_DIAG_FOCUS_MISSING_CHILL_CHAIR = "missing_chill_chair";
+const string DL_DIAG_FOCUS_CHILL_CHAIR_OCCUPIED = "chill_chair_occupied";
+const string DL_DIAG_FOCUS_MISSING_CHILL_SEAT = "missing_chill_seat";
+const string DL_DIAG_FOCUS_MISSING_PUBLIC_ANCHOR = "missing_public_anchor";
+const string DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC = "social_fallback_to_public";
+const string DL_DIAG_FOCUS_MISSING_SOCIAL_POOL_PREFIX = "missing_social_pool_";
+
+const string DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC = "fallback social->public";
+const string DL_MSG_FOCUS_SOCIAL_PARTNER_LOOKUP = "social partner lookup";
+const string DL_MSG_FOCUS_FALLBACK_MEAL_WORK = "fallback meal->work";
+const string DL_MSG_FOCUS_FALLBACK_MEAL_HOME = "fallback meal->home";
+const string DL_MSG_FOCUS_MISSING_PUBLIC_AREA = "has no public/social area for PUBLIC directive.";
+const string DL_MSG_RESULT_FOUND_OUTSIDE_AREA = "found_outside_area";
+const string DL_MSG_RESULT_TAG_NOT_FOUND = "tag_not_found";
+
 // Shared City Response / Legal v1 contract locals (cross-include canonical symbols).
 const string DL_L_MODULE_CR_DETAIN_DIALOG = "dl_cr_detain_dialog";
 const string DL_L_MODULE_TRANSITION_DRIVER_LOOKUP_CAP = "dl_transition_driver_lookup_cap";
