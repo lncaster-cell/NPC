@@ -426,6 +426,7 @@ dl_social_theater_2
 ### 2026-05-02 — фиксация Daily Life vNext pipeline-контракта
 
 - Зафиксирован канонический pipeline: `Schedule -> Directive -> Activity / Scene -> Destination Resolver -> Nav Router -> Transition Executor -> Action / Animation`.
+- Для runtime-директив обязателен внутренний шаблон шагов: `Validate -> Resolve -> Prepare -> Execute -> Finalize`; новые директивы не должны вводить локальные mini-state-machine вне этого шаблона.
 - Старый transition layer переопределён как низкоуровневый `Transition Executor`, а не как конкурирующая навигационная система.
 - `SOCIAL` зафиксирован как social destination/activity layer: `paired_chat`, `theater`, `tavern`, `public`.
 - Разметка должна принадлежать location/area, а не конкретному NPC; замена NPC не должна требовать перестановки waypoint-разметки.

@@ -10,7 +10,24 @@
 
 int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sDiagPrefix)
 {
-    return DL_ExecuteTransitionEngine(oNpc, oEntryWp, sDiagPrefix);
+    // Validate
+    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oEntryWp))
+    {
+        return FALSE;
+    }
+
+    // Resolve
+    string sResolvedPrefix = sDiagPrefix;
+
+    // Prepare
+    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_PIPE_STEP_PREPARE);
+
+    // Execute
+    int bExecuted = DL_ExecuteTransitionEngine(oNpc, oEntryWp, sResolvedPrefix);
+
+    // Finalize
+    DL_PipelineUpdateStatus(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_PIPE_STEP_FINALIZE);
+    return bExecuted;
 }
 
 int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp)
