@@ -9,6 +9,7 @@ const string DL_L_AREA_CR_ENABLED = "dl_city_response_enabled";
 const int DL_CR_HEAT_MIN = 0;
 const int DL_CR_HEAT_MAX = 100;
 const int DL_CR_EPISODE_COOLDOWN_MIN = 1; // one heat increment per attacker->victim combat episode
+const int DL_CR_GUARD_REACTION_COOLDOWN_MIN = 1; // minimum delay between repeated guard reaction attempts per offender
 const int DL_CR_OFFENDER_TTL_MIN = 5;
 const int DL_CR_DECAY_INTERVAL_MIN = 5;
 const int DL_CR_DECAY_PER_STEP = 10;
@@ -305,7 +306,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
     {
         return;
     }
-    SetLocalInt(oGuard, sCooldownKey, nNowAbsMin + 1);
+    SetLocalInt(oGuard, sCooldownKey, nNowAbsMin + DL_CR_GUARD_REACTION_COOLDOWN_MIN);
 
     if (nLevel >= 3)
     {
