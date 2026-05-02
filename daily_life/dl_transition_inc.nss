@@ -56,9 +56,6 @@ const string DL_TRANSITION_DRIVER_DOOR = "door";
 const string DL_TRANSITION_DRIVER_TRIGGER = "trigger";
 
 const float DL_TRANSITION_ENTRY_RADIUS = 1.60;
-const int DL_TRANSITION_DRIVER_LOOKUP_CAP = 4;
-const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MIN = 1;
-const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MAX = 16;
 const string DL_L_TRANSITION_DRIVER_LOOKUP_CAP = "dl_transition_driver_lookup_cap";
 
 const string DL_L_AREA_NAV_READY = "dl_area_nav_ready";
@@ -642,12 +639,12 @@ int DL_IsTransitionDriverTypeMatch(string sDriverKind, object oDriver)
 
 int DL_GetTransitionDriverLookupCap()
 {
-    int nCap = GetLocalInt(GetModule(), DL_L_TRANSITION_DRIVER_LOOKUP_CAP);
-    if (nCap <= 0)
-    {
-        return DL_TRANSITION_DRIVER_LOOKUP_CAP;
-    }
-    return DL_ClampInt(nCap, DL_TRANSITION_DRIVER_LOOKUP_CAP_MIN, DL_TRANSITION_DRIVER_LOOKUP_CAP_MAX);
+    return DL_GetConfigInt(
+        DL_L_TRANSITION_DRIVER_LOOKUP_CAP,
+        DL_CFG_TRANSITION_DRIVER_LOOKUP_CAP_DEFAULT,
+        DL_CFG_TRANSITION_DRIVER_LOOKUP_CAP_MIN,
+        DL_CFG_TRANSITION_DRIVER_LOOKUP_CAP_MAX
+    );
 }
 
 object DL_ResolveTransitionDriverObject(object oEntryWp)

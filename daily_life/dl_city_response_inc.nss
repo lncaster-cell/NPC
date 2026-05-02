@@ -17,7 +17,6 @@ const int DL_CR_DECAY_PER_STEP = 10;
 const string DL_CR_KEY_PREFIX_EPISODE = "dl_cr_cd_";
 const string DL_CR_KEY_PREFIX_GUARD_REACT = "dl_cr_guard_react_";
 const string DL_CR_KEY_UNKNOWN_IDENTITY = "unknown";
-const string DL_CR_DETAIN_DIALOG_DEFAULT = "dl_cr_guard_detain";
 
 int DL_CR_IsDetainPending(object oPc);
 
@@ -153,12 +152,7 @@ string DL_CR_GetGuardReactionCooldownKey(object oOffender)
 
 string DL_CR_GetDetainDialogResRef()
 {
-    string sDialogResRef = GetLocalString(GetModule(), DL_L_MODULE_CR_DETAIN_DIALOG);
-    if (sDialogResRef == "")
-    {
-        return DL_CR_DETAIN_DIALOG_DEFAULT;
-    }
-    return sDialogResRef;
+    return DL_GetConfigString(DL_L_MODULE_CR_DETAIN_DIALOG, DL_CFG_CR_DETAIN_DIALOG_DEFAULT);
 }
 
 
