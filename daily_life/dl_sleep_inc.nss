@@ -172,14 +172,14 @@ void DL_ExecuteSleepDirective(object oNpc)
 
     if (!bCommittedToBed && bMayUseNavigation && DL_WaypointHasTransition(oApproach))
     {
-        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oApproach))
+        if (DL_TryExecuteRoutedTransitionEntryWaypoint(oNpc, oApproach))
         {
             DL_MarkSleepNavigationInProgress(oNpc, GetTag(oApproach));
             return;
         }
     }
 
-    if (!bCommittedToBed && bMayUseNavigation && DL_TryUseNavigationRouteToTarget(oNpc, oApproach))
+    if (!bCommittedToBed && bMayUseNavigation && DL_TryRouteToTarget(oNpc, oApproach))
     {
         DL_MarkSleepNavigationInProgress(oNpc, GetTag(oApproach));
         return;
@@ -206,14 +206,14 @@ void DL_ExecuteSleepDirective(object oNpc)
 
     if (bMayUseNavigation && DL_WaypointHasTransition(oBed))
     {
-        if (DL_TryExecuteTransitionAtWaypoint(oNpc, oBed))
+        if (DL_TryExecuteRoutedTransitionEntryWaypoint(oNpc, oBed))
         {
             DL_MarkSleepNavigationInProgress(oNpc, GetTag(oBed));
             return;
         }
     }
 
-    if (bMayUseNavigation && DL_TryUseNavigationRouteToTarget(oNpc, oBed))
+    if (bMayUseNavigation && DL_TryRouteToTarget(oNpc, oBed))
     {
         DL_MarkSleepNavigationInProgress(oNpc, GetTag(oBed));
         return;
