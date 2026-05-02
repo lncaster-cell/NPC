@@ -718,3 +718,10 @@ dl_social_theater_2
    - Переиспользуются существующие `dl_anchor_sleep_approach_<slot>` / `dl_anchor_sleep_bed_<slot>` и общие meal/public anchors без рефакторинга структуры дома.
 
 - Transition execution primitives централизованы в модуле `daily_life/dl_transition_engine_inc.nss` (single source of truth); `daily_life/dl_cross_area_nav_inc.nss` содержит только route-discovery логику для межзональной навигации.
+
+## Unified Selection Policy (Deterministic)
+- В проекте используется единый helper-слой `dl_selection_inc.nss` для selection/scoring с domain-адаптерами (social/nav/crime).
+- Базовый приоритет: минимальный `score` выигрывает.
+- Tie-break: лексикографический `tie key` (обычно `entryTag|exitTag|ordinal`), что гарантирует детерминизм.
+- Для стабильности в тик-окне score строится из стабильных сигналов (дистанция/offset/slot), без случайности и без зависимостей от порядка обхода движка.
+- Локальные ad-hoc loops отбора удаляются; домены должны только считать score/tie и делегировать сравнение в общий helper.

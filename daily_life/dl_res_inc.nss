@@ -386,6 +386,7 @@ void DL_ApplyMaterializationSkeleton(object oNpc, int nDirective)
 }
 
 #include "dl_anchor_cache_inc"
+#include "dl_selection_inc"
 #include "dl_social_pool_inc"
 #include "dl_presentation_inc"
 #include "dl_sleep_inc"

@@ -77,7 +77,8 @@ object DL_FindCrossAreaNavEntry(object oNpc, object oTarget, string sFromZone, s
 
     int nCount = DL_GetAreaNavigationRouteCount(oCurrentArea);
     object oBestEntry = OBJECT_INVALID;
-    int nBestScore = 1000000;
+    int nBestScore = DL_SELECTION_SCORE_INF;
+    string sBestTie = "";
     int i = 0;
     while (i < nCount)
     {
@@ -97,10 +98,12 @@ object DL_FindCrossAreaNavEntry(object oNpc, object oTarget, string sFromZone, s
                     {
                         nScore = nScore + FloatToInt(GetDistanceBetween(oExit, oTarget) * 100.0);
                     }
-                    if (!GetIsObjectValid(oBestEntry) || nScore < nBestScore)
+                    string sTie = DL_SelectionBuildTieKey(oEntry, oExit, i);
+                    if (DL_SelectionCompare(nScore, nBestScore, sTie, sBestTie))
                     {
                         oBestEntry = oEntry;
                         nBestScore = nScore;
+                        sBestTie = sTie;
                     }
                 }
             }

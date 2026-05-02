@@ -259,6 +259,9 @@ object DL_ResolveStandaloneSocialWaypoint(object oNpc, string sKind)
 
     string sPrefix = DL_GetSocialPoolTagPrefix(sKind);
     int nStart = DL_GetTagDeterministicOffset(GetTag(oNpc), DL_SOCIAL_POOL_SEARCH_CAP, 0);
+    object oBest = OBJECT_INVALID;
+    int nBestScore = DL_SELECTION_SCORE_INF;
+    string sBestTie = "";
     int i = 0;
     while (i < DL_SOCIAL_POOL_SEARCH_CAP)
     {
@@ -266,10 +269,22 @@ object DL_ResolveStandaloneSocialWaypoint(object oNpc, string sKind)
         object oCandidate = DL_FindSocialPoolWaypointByTagInArea(sPrefix + IntToString(nIndex), oArea);
         if (GetIsObjectValid(oCandidate) && DL_IsSocialWaypointAvailableForNpc(oNpc, oCandidate))
         {
-            DL_ReserveSocialWaypointForNpc(oNpc, oCandidate);
-            return oCandidate;
+            int nScore = i;
+            string sTie = DL_SelectionBuildTieKey(oCandidate, OBJECT_INVALID, nIndex);
+            if (DL_SelectionCompare(nScore, nBestScore, sTie, sBestTie))
+            {
+                oBest = oCandidate;
+                nBestScore = nScore;
+                sBestTie = sTie;
+            }
         }
         i = i + 1;
+    }
+
+    if (GetIsObjectValid(oBest))
+    {
+        DL_ReserveSocialWaypointForNpc(oNpc, oBest);
+        return oBest;
     }
 
     string sAnchorTag = GetLocalString(oArea, DL_GetSocialAnchorLocalForKind(sKind));

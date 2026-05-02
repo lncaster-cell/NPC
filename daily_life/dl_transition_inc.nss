@@ -926,7 +926,8 @@ object DL_FindDirectNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
 
     int nCount = DL_GetAreaNavigationRouteCount(oNpcArea);
     object oBestEntry = OBJECT_INVALID;
-    int nBestScore = 1000000;
+    int nBestScore = DL_SELECTION_SCORE_INF;
+    string sBestTie = "";
     int i = 0;
     while (i < nCount)
     {
@@ -939,10 +940,12 @@ object DL_FindDirectNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
             {
                 nScore = nScore + FloatToInt(GetDistanceBetween(oExit, oTarget) * 100.0);
             }
-            if (!GetIsObjectValid(oBestEntry) || nScore < nBestScore)
+            string sTie = DL_SelectionBuildTieKey(oEntry, oExit, i);
+            if (DL_SelectionCompare(nScore, nBestScore, sTie, sBestTie))
             {
                 oBestEntry = oEntry;
                 nBestScore = nScore;
+                sBestTie = sTie;
             }
         }
         i = i + 1;
@@ -961,7 +964,8 @@ object DL_FindTwoHopNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
 
     int nCount = DL_GetAreaNavigationRouteCount(oNpcArea);
     object oBestEntry = OBJECT_INVALID;
-    int nBestScore = 1000000;
+    int nBestScore = DL_SELECTION_SCORE_INF;
+    string sBestTie = "";
     int i = 0;
     while (i < nCount)
     {
@@ -984,10 +988,12 @@ object DL_FindTwoHopNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
                     {
                         nScore = nScore + FloatToInt(GetDistanceBetween(oExitB, oTarget) * 100.0);
                     }
-                    if (!GetIsObjectValid(oBestEntry) || nScore < nBestScore)
+                    string sTie = DL_SelectionBuildTieKey(oEntryA, oEntryB, i);
+                    if (DL_SelectionCompare(nScore, nBestScore, sTie, sBestTie))
                     {
                         oBestEntry = oEntryA;
                         nBestScore = nScore;
+                        sBestTie = sTie;
                     }
                 }
                 j = j + 1;
@@ -1019,7 +1025,8 @@ int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
 
     int nCount = DL_GetAreaNavigationRouteCount(oNpcArea);
     object oBestEntry = OBJECT_INVALID;
-    int nBestScore = 1000000;
+    int nBestScore = DL_SELECTION_SCORE_INF;
+    string sBestTie = "";
     int i = 0;
     while (i < nCount)
     {
@@ -1031,10 +1038,12 @@ int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
             {
                 int nScore = FloatToInt(GetDistanceBetween(oNpc, oEntry) * 100.0) +
                              FloatToInt(GetDistanceBetween(oExit, oTarget) * 100.0);
-                if (!GetIsObjectValid(oBestEntry) || nScore < nBestScore)
+                string sTie = DL_SelectionBuildTieKey(oEntry, oExit, i);
+                if (DL_SelectionCompare(nScore, nBestScore, sTie, sBestTie))
                 {
                     oBestEntry = oEntry;
                     nBestScore = nScore;
+                    sBestTie = sTie;
                 }
             }
         }
