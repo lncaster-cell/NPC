@@ -12,6 +12,12 @@ object DL_FindNextTransitionEntryToTarget(object oNpc, object oTarget)
         return OBJECT_INVALID;
     }
 
+    object oEntry = DL_FindCrossAreaNavigationRouteEntryToTarget(oNpc, oTarget);
+    if (GetIsObjectValid(oEntry))
+    {
+        return oEntry;
+    }
+
     string sTargetZone = DL_GetWaypointNavZone(oTarget);
     if (sTargetZone == "")
     {
@@ -22,12 +28,6 @@ object DL_FindNextTransitionEntryToTarget(object oNpc, object oTarget)
     if (sCurrentZone == "")
     {
         return OBJECT_INVALID;
-    }
-
-    object oEntry = DL_FindCrossAreaNavEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
-    if (GetIsObjectValid(oEntry))
-    {
-        return oEntry;
     }
 
     oEntry = DL_FindDirectNavZoneEntry(oNpc, oTarget, sCurrentZone, sTargetZone);

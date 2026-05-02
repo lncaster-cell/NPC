@@ -16,6 +16,54 @@
 6. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
 
 
+
+## Runtime Regression Gates (Daily Life)
+
+Минимальные runtime-gates обязательны для любой PR с правками `daily_life/*.nss` (worker/resync/lifecycle/city-response/legal).
+
+### Gate 1 — Worker/Resync cursor progression при `nNpcProcessed == 0`
+
+**Цель:** исключить stall курсора и повторное «залипание» на одном слоте в bounded round-robin, даже если за тик не обработано ни одного NPC.
+
+**Что смотреть:**
+- area-local курсор worker/resync до/после тика (`dl_cursor`, `dl_resync_cursor` или актуальные area-local ключи курсора в runtime-контракте);
+- `nNpcProcessed`, `nNpcSeen`, рассчитанный шаг advance (через diagnostics/trace, где доступно);
+- area/module last_processed метрики и отсутствие долгого plateau при живом тике.
+
+### Gate 2 — No same-tick duplicate processing в HOT+resync window
+
+**Цель:** один и тот же NPC не должен повторно проходить materialization/transition в пределах одного tick-window из-за пересечения hot worker и area-enter resync.
+
+**Что смотреть:**
+- tick-stamp ключи на area/NPC (`dl_area_tick`, `dl_last_tick_processed`, `dl_last_resync_tick` и эквивалентные diagnostics-контракты);
+- счётчики skipped/guarded повторов за тот же tick (anti-duplicate guards);
+- diag/log маркеры, подтверждающие single-pass на NPC в пределах одного тика.
+
+### Gate 3 — Уникальность offender cooldown key для multiplayer PC
+
+**Цель:** anti-spam/cooldown ключи инцидентов и guard reaction не коллидируют между разными игроками с одинаковым tag.
+
+**Что смотреть:**
+- итоговые offender identity/cooldown ключи (`GetPCPublicCDKey` chain, incident/reaction prefixes);
+- local cooldown state (`dl_cr_offender_until`, incident/reaction timestamp keys);
+- диагностику коллизий: два разных PC в одинаковом сценарии должны получать разные cooldown keys.
+
+### Gate 4 — Корректность SOCIAL partner cache invalidation
+
+**Цель:** partner cache не удерживает stale-ссылки при смерти/деспавне/смене area/невалидном partner и корректно уходит в fallback (обычно PUBLIC).
+
+**Что смотреть:**
+- partner cache locals на NPC (partner object/tag + cached tick/time keys);
+- invalidation события lifecycle (spawn/death/blocked/area-enter) и их след в diagnostics;
+- факт очистки stale partner и корректный fallback directive без loop/flip-flop.
+
+### Правило готовности PR
+
+PR с runtime-правками **не считается завершённым**, пока в описании PR/комментарии ревью нет явного отчёта по всем 4 gate’ам:
+- статус каждого gate: `PASS` / `FAIL` / `N/A (обосновано)`;
+- короткий evidence-блок: какие ключи/счётчики/диагностика проверялись;
+- ссылка на последний regression pass в `docs/DEVELOPMENT_STATUS_RU.md`.
+
 ## Mandatory gate перед merge
 
 - Перед merge изменений в runtime-скриптах обязательно пройти policy: `docs/NWN_SCRIPTING_POLICY_RU.md`.

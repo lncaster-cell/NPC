@@ -1,3 +1,6 @@
+> [!NOTE]
+> Этот документ закрыт и переведён в архивный контекст. См. `docs/audits/audit_artifacts_closure_2026-05-02.md`
+
 # Dead / legacy code candidates audit
 
 Дата: 2026-05-02  

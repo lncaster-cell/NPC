@@ -29,8 +29,7 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
 
     if (sExitTag == "" && (sKind == "" || sTransitionId == "") && !DL_IsAutoNavTag(GetTag(oEntryWp)))
     {
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "metadata_missing");
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_transition_exit_tag_or_kind_id_on_entry_waypoint");
+        DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_METADATA_MISSING, DL_TRANSITION_DIAG_METADATA_REQUIRED, sDiagPrefix);
         return TRUE;
     }
 
@@ -38,19 +37,17 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
     {
         if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
         {
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "moving_to_entry");
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "moving_to_" + sDiagPrefix + "_transition_entry");
+            DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_MOVING_TO_ENTRY, DL_TRANSITION_DIAG_MOVING_TO_ENTRY, sDiagPrefix);
             AssignCommand(oNpc, ClearAllActions(TRUE));
             AssignCommand(oNpc, ActionMoveToLocation(GetLocation(oEntryWp), TRUE));
         }
         return TRUE;
     }
 
-    object oExitWp = DL_ResolveCrossAreaTransitionExitWaypointFromEntry(oEntryWp);
+    object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oEntryWp);
     if (!GetIsObjectValid(oExitWp))
     {
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, sDiagPrefix + "_exit_missing");
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_valid_" + sDiagPrefix + "_transition_exit_waypoint");
+        DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_EXIT_MISSING, DL_TRANSITION_DIAG_EXIT_REQUIRED, sDiagPrefix);
         return TRUE;
     }
 
@@ -62,5 +59,5 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
 
 int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp)
 {
-    return DL_ExecuteTransitionViaEntryWaypoint(oNpc, oEntryWp, "routed");
+    return DL_ExecuteTransitionViaEntryWaypoint(oNpc, oEntryWp, DL_DIAG_CTX_ROUTED);
 }
