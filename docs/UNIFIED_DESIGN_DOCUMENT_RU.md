@@ -676,3 +676,12 @@ dl_social_theater_2
    - Переиспользуются существующие `dl_anchor_sleep_approach_<slot>` / `dl_anchor_sleep_bed_<slot>` и общие meal/public anchors без рефакторинга структуры дома.
 
 - Transition execution primitives централизованы в модуле `daily_life/dl_transition_engine_inc.nss` (single source of truth); `daily_life/dl_cross_area_nav_inc.nss` содержит только route-discovery логику для межзональной навигации.
+
+## 11) Runtime local keys schema (single source of truth)
+
+- Каноническая схема runtime local keys находится в `daily_life/dl_runtime_contract_inc.nss` в секции `Runtime local keys schema`.
+- Для каждого критичного ключа зафиксированы: `key`, `type`, `owner module`, `lifecycle`, `reset policy`.
+- Критичные домены, которые **обязаны** соответствовать схеме: `worker`, `resync`, `transition`, `social`, `crime`, `legal`.
+- Любой новый ключ в этих доменах сначала добавляется в schema-секцию контракта, затем в код.
+- Прямые («свободные») обращения к ключам вне helper/accessor API считаются исключением и допустимы только когда accessor технически невозможен.
+- При инвентаризации пересекающихся ключей приоритет имеет ключ из runtime-contract; дубликаты строковых литералов в функциональных include должны удаляться или заменяться на canonical symbol.

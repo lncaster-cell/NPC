@@ -11,6 +11,26 @@ const string DL_SOCIAL_KIND_PUBLIC = "public";
 const int DL_SOCIAL_POOL_SEARCH_CAP = 32;
 const int DL_SOCIAL_RESERVATION_TTL_MINUTES = 90;
 
+void DL_SocialSetReservation(object oNpc, object oWp, int nUntilAbsMin)
+{
+    SetLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY, oNpc);
+    SetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_UNTIL, nUntilAbsMin);
+    SetLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP, oWp);
+}
+
+void DL_SocialClearReservation(object oNpc, object oWp)
+{
+    if (GetIsObjectValid(oWp))
+    {
+        DeleteLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY);
+        DeleteLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_UNTIL);
+    }
+    if (GetIsObjectValid(oNpc))
+    {
+        DeleteLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP);
+    }
+}
+
 string DL_GetNpcSocialKind(object oNpc)
 {
     if (!GetIsObjectValid(oNpc))
@@ -102,8 +122,7 @@ void DL_ClearSocialWaypointReservation(object oWp)
         return;
     }
 
-    DeleteLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY);
-    DeleteLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_UNTIL);
+    DL_SocialClearReservation(OBJECT_INVALID, oWp);
 }
 
 int DL_IsSocialWaypointReservedByOther(object oNpc, object oWp)
@@ -152,9 +171,7 @@ void DL_ReserveSocialWaypointForNpc(object oNpc, object oWp)
         return;
     }
 
-    SetLocalObject(oWp, DL_L_WP_SOCIAL_RESERVED_BY, oNpc);
-    SetLocalInt(oWp, DL_L_WP_SOCIAL_RESERVED_UNTIL, DL_GetAbsoluteMinute() + DL_SOCIAL_RESERVATION_TTL_MINUTES);
-    SetLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP, oWp);
+    DL_SocialSetReservation(oNpc, oWp, DL_GetAbsoluteMinute() + DL_SOCIAL_RESERVATION_TTL_MINUTES);
 }
 
 void DL_ClearNpcSocialReservation(object oNpc)
@@ -174,7 +191,7 @@ void DL_ClearNpcSocialReservation(object oNpc)
         }
     }
 
-    DeleteLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP);
+    DL_SocialClearReservation(oNpc, OBJECT_INVALID);
 }
 
 object DL_GetNpcReservedStandaloneSocialWaypoint(object oNpc, string sKind, object oArea)
