@@ -40,36 +40,35 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
         return oCached;
     }
 
-    int bTagFound = FALSE;
+    int bTagFound = GetIsObjectValid(GetObjectByTag(sPartnerTag, 0));
     int bTagFoundOutsideArea = FALSE;
-    object oPartner = OBJECT_INVALID;
-    int nTagIndex = 0;
-    object oCandidate = GetObjectByTag(sPartnerTag, nTagIndex);
-    while (GetIsObjectValid(oCandidate) && nTagIndex < DL_SOCIAL_PARTNER_TAG_SEARCH_CAP)
+
+    object oSelfCandidate = DL_FindObjectByTagWithChecks(sPartnerTag, DL_SOCIAL_PARTNER_TAG_SEARCH_CAP, OBJECT_TYPE_CREATURE, OBJECT_INVALID, OBJECT_INVALID, FALSE);
+    if (GetIsObjectValid(oSelfCandidate) && oSelfCandidate == oNpc)
     {
-        bTagFound = TRUE;
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
+        DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=" + DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
+    }
 
-        if (oCandidate == oNpc)
-        {
-            SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
-            DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=" + DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
-        }
-        else if (!DL_IsActivePipelineNpc(oCandidate))
-        {
-            // Keep scanning for a suitable active pipeline NPC.
-        }
-        else if (GetArea(oCandidate) == GetArea(oNpc))
-        {
-            oPartner = oCandidate;
-            break;
-        }
-        else
-        {
-            bTagFoundOutsideArea = TRUE;
-        }
-
-        nTagIndex = nTagIndex + 1;
-        oCandidate = GetObjectByTag(sPartnerTag, nTagIndex);
+    object oPartner = DL_FindObjectByTagWithChecks(
+        sPartnerTag,
+        DL_SOCIAL_PARTNER_TAG_SEARCH_CAP,
+        OBJECT_TYPE_CREATURE,
+        GetArea(oNpc),
+        oNpc,
+        TRUE
+    );
+    if (!GetIsObjectValid(oPartner) && bTagFound)
+    {
+        object oAnyAreaPartner = DL_FindObjectByTagWithChecks(
+            sPartnerTag,
+            DL_SOCIAL_PARTNER_TAG_SEARCH_CAP,
+            OBJECT_TYPE_CREATURE,
+            OBJECT_INVALID,
+            oNpc,
+            TRUE
+        );
+        bTagFoundOutsideArea = GetIsObjectValid(oAnyAreaPartner);
     }
 
     if (!GetIsObjectValid(oPartner))
