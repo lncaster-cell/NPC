@@ -9,14 +9,58 @@
 1. **Проверить штатные механики** NWN2/NWScript (NWN Lexicon) для задачи.
 2. Внести изменение в `daily_life/*.nss` минимальным безопасным диффом.
 3. Проверить инварианты: bounded execution, idempotent transitions, observability.
-4. Синхронизировать документацию:
+4. **Legacy Cleanup Pass (remove old paths)** — обязательный этап сразу после реализации.
+5. Синхронизировать документацию:
    - архитектурный контекст: `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`;
    - оперативный прогресс: `docs/DEVELOPMENT_STATUS_RU.md`.
-5. Каждый новый `docs/audits/post_refactor_audit_pass*.md` считается завершённым только после обновления `docs/audits/risk_register.md` в том же коммите.
-6. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
-7. Новые diagnostic-коды вводить только через contract-константы (канонический словарь в профильном `*_contract_inc.nss`), без raw-строк в runtime-логике.
+6. Каждый новый `docs/audits/post_refactor_audit_pass*.md` считается завершённым только после обновления `docs/audits/risk_register.md` в том же коммите.
+7. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
+8. Новые diagnostic-коды вводить только через contract-константы (канонический словарь в профильном `*_contract_inc.nss`), без raw-строк в runtime-логике.
 
 
+
+## Legacy Cleanup Pass (remove old paths)
+
+Этап обязателен для каждого PR с новой реализацией runtime-логики и выполняется **до merge**.
+
+### Чек-лист cleanup-pass
+
+- [ ] Нет дублирующих entrypoints с одинаковой ролью (старый и новый путь не живут параллельно без явной причины).
+- [ ] Нет raw literal-диагностик вне contract-слоя (`*_contract_inc.nss` / централизованный diag-contract).
+- [ ] Нет inline reset action-queue, если в проекте уже есть канонический helper для этого reset-сценария.
+
+### Merge-правило для новой реализации
+
+- Если в PR добавляется новый runtime-путь/реализация, старый путь должен быть:
+  1) удалён в том же PR, **или**
+  2) явно помечен как legacy с дедлайном удаления (конкретная дата) и задачей на удаление в backlog.
+
+PR без выполнения одного из этих условий считается неготовым к merge.
+
+### Обязательная фиксация cleanup-pass в статусе
+
+Для каждого cleanup-pass нужно обновить `docs/DEVELOPMENT_STATUS_RU.md` и перечислить:
+- какие legacy-функции/ветки удалены;
+- что временно оставлено как legacy и до какой даты будет удалено (если применимо).
+
+## Static grep-checks: legacy patterns (rg gate)
+
+Перед merge выполнить набор `rg`-проверок на типовые legacy-паттерны:
+
+```bash
+# 1) Потенциальные дубли entrypoint-ролей/legacy-теней
+rg -n "(legacy|old|deprecated).*(spawn|death|blocked|userdef|worker|resync)|\b(dl_spawn_old|dl_death_old|dl_worker_old|dl_resync_old)\b" daily_life
+
+# 2) Raw literal diagnostics вне contract-слоя
+rg -n "(WriteTimestampedLogEntry|SendMessageToPC|FloatingTextStringOnCreature)\(\s*"[A-Za-z0-9_:-]+" daily_life --glob "*.nss" --glob "!**/*contract*.nss"
+
+# 3) Inline action-queue reset при наличии канонического helper
+rg -n "\b(ClearAllActions|AssignCommand\(.*ClearAllActions|ActionDoCommand\(.*ClearAllActions)\b" daily_life --glob "*.nss"
+```
+
+Интерпретация:
+- пустой вывод (`exit 1`) — PASS;
+- непустой вывод — обязательный cleanup/refactor перед merge или документированное исключение с дедлайном удаления legacy.
 
 ## Runtime Regression Gates (Daily Life)
 

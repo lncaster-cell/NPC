@@ -185,12 +185,15 @@ int DL_CR_StartDetainInteraction(object oGuard, object oOffender, string sDialog
         sDialogResRef = DL_CR_GetDetainDialogResRef();
     }
 
-    AssignCommand(oGuard, ClearAllActions(TRUE));
     if (bForceApproach)
     {
-        AssignCommand(oGuard, ActionMoveToObject(oOffender, TRUE, 2.0));
+        DL_CommandMoveToObjectResetQueue(oGuard, oOffender, TRUE, 2.0);
+        DL_CommandStartConversation(oGuard, oOffender, sDialogResRef, TRUE, TRUE);
     }
-    AssignCommand(oGuard, ActionStartConversation(oOffender, sDialogResRef, TRUE, TRUE));
+    else
+    {
+        DL_CommandStartConversationResetQueue(oGuard, oOffender, sDialogResRef, TRUE, TRUE);
+    }
     return TRUE;
 }
 
@@ -345,8 +348,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
 
     if (nLevel >= 3)
     {
-        AssignCommand(oGuard, ClearAllActions(TRUE));
-        AssignCommand(oGuard, ActionAttack(oSeen));
+        DL_CommandAttackResetQueue(oGuard, oSeen);
         return;
     }
 
