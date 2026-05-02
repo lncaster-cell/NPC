@@ -1,5 +1,3 @@
-#include "dl_cross_area_nav_inc"
-
 const string DL_L_NPC_SOCIAL_KIND = "dl_social_kind";
 const string DL_L_NPC_SOCIAL_RESERVED_WP = "dl_social_reserved_wp";
 const string DL_L_WP_SOCIAL_RESERVED_BY = "dl_social_reserved_by";
@@ -194,29 +192,6 @@ void DL_ClearNpcSocialReservation(object oNpc)
     DeleteLocalObject(oNpc, DL_L_NPC_SOCIAL_RESERVED_WP);
 }
 
-object DL_GetStandaloneSocialTravelTarget(object oNpc, object oReservedTarget)
-{
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oReservedTarget))
-    {
-        return OBJECT_INVALID;
-    }
-
-    if (GetArea(oNpc) == GetArea(oReservedTarget))
-    {
-        return oReservedTarget;
-    }
-
-    string sCurrentZone = DL_InferNpcNavZoneFromAreaRoutes(oNpc);
-    string sTargetZone = DL_GetWaypointNavZone(oReservedTarget);
-    object oEntry = DL_FindCrossAreaNavEntry(oNpc, oReservedTarget, sCurrentZone, sTargetZone);
-    if (GetIsObjectValid(oEntry))
-    {
-        return oEntry;
-    }
-
-    return oReservedTarget;
-}
-
 object DL_GetNpcReservedStandaloneSocialWaypoint(object oNpc, string sKind, object oArea)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oArea) || sKind == "")
@@ -244,7 +219,7 @@ object DL_GetNpcReservedStandaloneSocialWaypoint(object oNpc, string sKind, obje
     }
 
     DL_ReserveSocialWaypointForNpc(oNpc, oWp);
-    return DL_GetStandaloneSocialTravelTarget(oNpc, oWp);
+    return oWp;
 }
 
 object DL_ResolveStandaloneSocialWaypoint(object oNpc, string sKind)
@@ -284,7 +259,7 @@ object DL_ResolveStandaloneSocialWaypoint(object oNpc, string sKind)
         if (GetIsObjectValid(oCandidate) && DL_IsSocialWaypointAvailableForNpc(oNpc, oCandidate))
         {
             DL_ReserveSocialWaypointForNpc(oNpc, oCandidate);
-            return DL_GetStandaloneSocialTravelTarget(oNpc, oCandidate);
+            return oCandidate;
         }
         i = i + 1;
     }
@@ -294,7 +269,7 @@ object DL_ResolveStandaloneSocialWaypoint(object oNpc, string sKind)
     if (GetIsObjectValid(oAnchor) && DL_IsSocialWaypointAvailableForNpc(oNpc, oAnchor))
     {
         DL_ReserveSocialWaypointForNpc(oNpc, oAnchor);
-        return DL_GetStandaloneSocialTravelTarget(oNpc, oAnchor);
+        return oAnchor;
     }
 
     return OBJECT_INVALID;
