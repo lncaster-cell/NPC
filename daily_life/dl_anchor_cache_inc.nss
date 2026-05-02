@@ -151,24 +151,10 @@ object DL_GetNpcAreaByTagCached(object oNpc, string sAreaTagLocal, string sAreaC
         return oCached;
     }
 
-    int nNth = 0;
-    int nSearchCap = 32;
-    object oArea = OBJECT_INVALID;
-    while (nNth < nSearchCap)
+    object oArea = DL_FindObjectByTagWithChecks(sAreaTag, 32, -1, OBJECT_INVALID, OBJECT_INVALID, FALSE);
+    if (GetIsObjectValid(oArea) && !DL_IsAreaObject(oArea))
     {
-        object oCandidate = GetObjectByTag(sAreaTag, nNth);
-        if (!GetIsObjectValid(oCandidate))
-        {
-            break;
-        }
-
-        if (DL_IsAreaObject(oCandidate))
-        {
-            oArea = oCandidate;
-            break;
-        }
-
-        nNth++;
+        oArea = OBJECT_INVALID;
     }
 
     if (!GetIsObjectValid(oArea))

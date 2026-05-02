@@ -265,7 +265,8 @@ blacksmith_house:hall
 
 Существующий transition layer сохраняется именно как `Transition Executor`. Новая маршрутизация должна вызывать executor, а не дублировать его механику и не конкурировать с ним.
 
-Жёсткий контракт слоя: фактическое исполнение перехода (подход, door driver, jump/teleport, очистка action queue) выполняется только в `dl_transition_exec_inc.nss` / `dl_transition_inc.nss`.
+Жёсткий контракт слоя: фактическое исполнение перехода (подход, door driver, jump/teleport, очистка action queue, sync nav-zone) выполняется только в `dl_transition_engine_inc.nss`.
+`dl_transition_exec_inc.nss` — только thin adapter к Engine (routing-context), `dl_transition_inc.nss` — только API/metadata helpers и backward-compatible adapter-вход.
 
 ### 4.7 Action / Animation
 
@@ -688,4 +689,4 @@ dl_social_theater_2
    - Убывший NPC удаляется из состава жильцов, новый NPC получает тот же `dl_home_area_tag` и нужный `dl_home_slot`.
    - Переиспользуются существующие `dl_anchor_sleep_approach_<slot>` / `dl_anchor_sleep_bed_<slot>` и общие meal/public anchors без рефакторинга структуры дома.
 
-- Transition primitives централизованы в модуле `daily_life/dl_transition_inc.nss`; модуль `daily_life/dl_cross_area_nav_inc.nss` содержит только route-selection логику для межзональной навигации.
+- Transition execution primitives централизованы в модуле `daily_life/dl_transition_engine_inc.nss` (single source of truth); `daily_life/dl_cross_area_nav_inc.nss` содержит только route-discovery логику для межзональной навигации.

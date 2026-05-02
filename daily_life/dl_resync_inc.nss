@@ -57,25 +57,3 @@ void DL_ProcessResync(object oNpc)
 
     SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, FALSE);
 }
-
-void DL_CleanupNpcRuntimeState(object oNpc)
-{
-    if (!GetIsObjectValid(oNpc))
-    {
-        return;
-    }
-
-    DL_UnregisterNpc(oNpc);
-
-    DeleteLocalInt(oNpc, DL_L_NPC_EVENT_KIND);
-    DeleteLocalInt(oNpc, DL_L_NPC_EVENT_SEQ);
-    SetLocalInt(oNpc, DL_L_NPC_RESYNC_PENDING, FALSE);
-    SetLocalInt(oNpc, DL_L_NPC_RESYNC_REASON, DL_RESYNC_NONE);
-    // COMPAT(dual-style, remove after 2026-Q3): legacy scripts may still branch on key absence during cleanup.
-    // Standard target: explicit reset (SetLocal*=0/FALSE) for resync runtime keys.
-    DeleteLocalInt(oNpc, DL_L_NPC_RESYNC_REASON);
-    DeleteLocalInt(oNpc, DL_L_NPC_WORKER_SEQ);
-
-    object oModule = GetModule();
-    SetLocalInt(oModule, DL_L_MODULE_CLEANUP_CNT, GetLocalInt(oModule, DL_L_MODULE_CLEANUP_CNT) + 1);
-}

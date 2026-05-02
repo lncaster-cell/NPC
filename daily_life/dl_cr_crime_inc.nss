@@ -182,17 +182,12 @@ void DL_CR_ClearDetainPending(object oPc, string sResolution)
 
 int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
 {
-    if (!GetIsObjectValid(oWitness) || !GetIsObjectValid(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsValidNpcObject(oWitness) || !DL_IsValidNpcObject(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return FALSE;
     }
 
     if (oWitness == oOffender)
-    {
-        return FALSE;
-    }
-
-    if (GetObjectType(oWitness) != OBJECT_TYPE_CREATURE)
     {
         return FALSE;
     }
@@ -212,7 +207,7 @@ int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
 
 object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return OBJECT_INVALID;
     }
@@ -263,18 +258,18 @@ object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
 
 void DL_CR_WitnessShout(object oWitness, object oOffender)
 {
-    if (!GetIsObjectValid(oWitness) || !DL_IsRuntimePlayer(oOffender))
+    if (!DL_IsValidNpcObject(oWitness) || !DL_IsRuntimePlayer(oOffender))
     {
         return;
     }
 
     string sKey = DL_CR_KEY_PREFIX_SHOUT_CD + DL_CR_GetOffenderIdentityKey(oOffender);
     int nNowAbsMin = DL_GetAbsoluteMinute();
-    if (GetLocalInt(oWitness, sKey) > nNowAbsMin)
+    if (DL_IsMinuteCooldownActive(oWitness, sKey))
     {
         return;
     }
-    SetLocalInt(oWitness, sKey, nNowAbsMin + DL_CR_SHOUT_COOLDOWN_MIN);
+    DL_SetMinuteCooldown(oWitness, sKey, DL_CR_SHOUT_COOLDOWN_MIN);
 
     AssignCommand(oWitness, SpeakString("Помогите! Меня обокрали!", TALKVOLUME_SHOUT));
 }
@@ -306,7 +301,7 @@ int DL_CR_GetCrimeHeat(string sKind)
 
 void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return;
     }
@@ -381,8 +376,7 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
         SetLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD, oBestA);
         if (nLevel >= 3)
         {
-            AssignCommand(oBestA, ClearAllActions(TRUE));
-            AssignCommand(oBestA, ActionAttack(oOffender));
+            DL_CommandAttackResetQueue(oBestA, oOffender);
         }
         else
         {
@@ -394,21 +388,20 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     {
         SetLocalObject(oBestB, DL_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
         SetLocalInt(oBestB, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
-        AssignCommand(oBestB, ClearAllActions(TRUE));
         if (nLevel >= 3)
         {
-            AssignCommand(oBestB, ActionAttack(oOffender));
+            DL_CommandAttackResetQueue(oBestB, oOffender);
         }
         else
         {
-            AssignCommand(oBestB, ActionMoveToObject(oOffender, TRUE, 2.0));
+            DL_CommandMoveToObjectResetQueue(oBestB, oOffender, TRUE, 2.0);
         }
     }
 }
 
 void DL_CR_RecordCrimeEvent(object oOffender, object oArea, string sKind, int bWitnessed)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return;
     }
@@ -420,7 +413,7 @@ void DL_CR_RecordCrimeEvent(object oOffender, object oArea, string sKind, int bW
 
 void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, int bWitnessed, object oWitness)
 {
-    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
     {
         return;
     }
@@ -441,7 +434,7 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
 
 void DL_CR_HandleDisturbed(object oDisturbed)
 {
-    if (!GetIsObjectValid(oDisturbed))
+    if (!DL_IsValidNpcObject(oDisturbed))
     {
         return;
     }
@@ -490,7 +483,7 @@ void DL_CR_MarkPendingLockpick(object oTarget, object oActor)
 
 int DL_CR_ConsumePendingLockpick(object oTarget, object oOffender)
 {
-    if (!GetIsObjectValid(oTarget) || !DL_IsRuntimePlayer(oOffender))
+    if (!DL_IsValidDoorObject(oTarget) || !DL_IsRuntimePlayer(oOffender))
     {
         return FALSE;
     }
@@ -620,14 +613,13 @@ int DL_CR_TeleportToJail(object oPc)
     }
 
     object oWp = GetWaypointByTag(DL_CR_GetJailWaypointTag());
-    if (!GetIsObjectValid(oWp))
+    if (!DL_IsValidWaypointObject(oWp))
     {
         return FALSE;
     }
 
     // Crime flow intentionally uses a direct player jump to avoid transition-state side effects on PCs.
-    AssignCommand(oPc, ClearAllActions(TRUE));
-    AssignCommand(oPc, ActionJumpToLocation(GetLocation(oWp)));
+    DL_CommandJumpToLocationResetQueue(oPc, GetLocation(oWp));
     return TRUE;
 }
 
@@ -665,7 +657,6 @@ void DL_CR_HandleDetainRefused(object oPc, object oGuard)
 
     if (GetIsObjectValid(oGuard))
     {
-        AssignCommand(oGuard, ClearAllActions(TRUE));
-        AssignCommand(oGuard, ActionAttack(oPc));
+        DL_CommandAttackResetQueue(oGuard, oPc);
     }
 }

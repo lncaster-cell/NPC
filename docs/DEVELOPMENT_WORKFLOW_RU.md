@@ -9,14 +9,59 @@
 1. **Проверить штатные механики** NWN2/NWScript (NWN Lexicon) для задачи.
 2. Внести изменение в `daily_life/*.nss` минимальным безопасным диффом.
 3. Проверить инварианты: bounded execution, idempotent transitions, observability.
-4. Синхронизировать документацию:
+4. **Legacy Cleanup Pass (remove old paths)** — обязательный этап сразу после реализации.
+5. Синхронизировать документацию:
    - архитектурный контекст: `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`;
    - оперативный прогресс: `docs/DEVELOPMENT_STATUS_RU.md`.
 5. Каждый новый `docs/audits/post_refactor_audit_pass*.md` считается завершённым только после обновления `docs/audits/risk_register.md` в том же коммите.
 6. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
 7. Новые diagnostic-коды вводить только через contract-константы (канонический словарь в профильном `*_contract_inc.nss`), без raw-строк в runtime-логике.
+8. Любой новый fallback-путь обязан использовать единый протокол `DL_ReportFallback(...)` с полями `domain/reason_code/severity/next_action`; прямые локалки/сырые строки fallback-причин в бизнес-ветках запрещены.
 
 
+
+## Legacy Cleanup Pass (remove old paths)
+
+Этап обязателен для каждого PR с новой реализацией runtime-логики и выполняется **до merge**.
+
+### Чек-лист cleanup-pass
+
+- [ ] Нет дублирующих entrypoints с одинаковой ролью (старый и новый путь не живут параллельно без явной причины).
+- [ ] Нет raw literal-диагностик вне contract-слоя (`*_contract_inc.nss` / централизованный diag-contract).
+- [ ] Нет inline reset action-queue, если в проекте уже есть канонический helper для этого reset-сценария.
+
+### Merge-правило для новой реализации
+
+- Если в PR добавляется новый runtime-путь/реализация, старый путь должен быть:
+  1) удалён в том же PR, **или**
+  2) явно помечен как legacy с дедлайном удаления (конкретная дата) и задачей на удаление в backlog.
+
+PR без выполнения одного из этих условий считается неготовым к merge.
+
+### Обязательная фиксация cleanup-pass в статусе
+
+Для каждого cleanup-pass нужно обновить `docs/DEVELOPMENT_STATUS_RU.md` и перечислить:
+- какие legacy-функции/ветки удалены;
+- что временно оставлено как legacy и до какой даты будет удалено (если применимо).
+
+## Static grep-checks: legacy patterns (rg gate)
+
+Перед merge выполнить набор `rg`-проверок на типовые legacy-паттерны:
+
+```bash
+# 1) Потенциальные дубли entrypoint-ролей/legacy-теней
+rg -n "(legacy|old|deprecated).*(spawn|death|blocked|userdef|worker|resync)|\b(dl_spawn_old|dl_death_old|dl_worker_old|dl_resync_old)\b" daily_life
+
+# 2) Raw literal diagnostics вне contract-слоя
+rg -n "(WriteTimestampedLogEntry|SendMessageToPC|FloatingTextStringOnCreature)\(\s*"[A-Za-z0-9_:-]+" daily_life --glob "*.nss" --glob "!**/*contract*.nss"
+
+# 3) Inline action-queue reset при наличии канонического helper
+rg -n "\b(ClearAllActions|AssignCommand\(.*ClearAllActions|ActionDoCommand\(.*ClearAllActions)\b" daily_life --glob "*.nss"
+```
+
+Интерпретация:
+- пустой вывод (`exit 1`) — PASS;
+- непустой вывод — обязательный cleanup/refactor перед merge или документированное исключение с дедлайном удаления legacy.
 
 ## Runtime Regression Gates (Daily Life)
 
@@ -69,6 +114,7 @@ PR с runtime-правками **не считается завершённым*
 
 - Перед merge изменений в runtime-скриптах обязательно пройти policy: `docs/NWN_SCRIPTING_POLICY_RU.md`.
 - PR считается неготовым, если любой из mandatory review gates policy не выполнен.
+- PR не принимается, если оставляет дубль старого и нового пути без технического обоснования и переходного плана удаления (`remove-by` + owner).
 
 ## Минимальный Definition of Done
 
@@ -114,3 +160,14 @@ rg -n "DeleteLocal(Int|String|Object)\\(.*DL_L_AREA_(TIER|ENTER_RESYNC_(PENDING|
 Ожидаемое поведение:
 - пустой вывод (`exit 1`) — PASS (новых запрещённых reset-паттернов нет);
 - непустой вывод — FAIL, требуется приведение к политике из `UNIFIED_DESIGN_DOCUMENT_RU.md` (раздел reset-политики) или явный `COMPAT`-комментарий с планом удаления.
+
+## Static check: unused-symbol sweep после этапов унификации
+
+После каждого завершённого этапа унификации (contract dedupe / include dedupe / replacement migration) обязателен быстрый статический sweep:
+
+1. Выделить кандидаты на удаление (deprecated wrappers, legacy constants/helpers).
+2. Для каждого кандидата выполнить `rg -n "<symbol_name>" daily_life/*.nss`.
+3. Подтвердить call-site вручную:
+   - если найдено только объявление (и/или комментарий) — удалить символ в этом же PR;
+   - если есть активные вызовы старого пути — либо мигрировать их в этом же PR, либо добавить `remove-by` маркер с owner и обоснованием.
+4. Отразить удалённые legacy-фрагменты в `docs/DEVELOPMENT_STATUS_RU.md` (что удалено и чем заменено).

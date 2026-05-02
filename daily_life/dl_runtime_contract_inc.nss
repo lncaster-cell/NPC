@@ -8,6 +8,38 @@ const string DL_L_MODULE_CHAT_LOG_INIT = "dl_chat_log_init";
 const string DL_L_MODULE_RUNTIME_LOG = "dl_runtime_log";
 
 // Focus diagnostics contract (stable machine codes + canonical human messages).
+
+// Canonical runtime status codes.
+const string DL_STATUS_MISSING_WAYPOINTS = "missing_waypoints";
+const string DL_STATUS_MOVING_TO_ANCHOR = "moving_to_anchor";
+const string DL_STATUS_ON_ANCHOR = "on_anchor";
+const string DL_STATUS_MOVING_VIA_NAVIGATION = "moving_via_navigation";
+const string DL_STATUS_ON_BED = "on_bed";
+const string DL_STATUS_ON_CHILL_ANCHOR = "on_chill_anchor";
+const string DL_STATUS_SITTING_CHILL_ATTEMPT = "sitting_chill_attempt";
+
+// Canonical runtime diagnostic codes.
+const string DL_DIAG_SLEEP_WAYPOINTS_MISSING = "sleep_waypoints_missing";
+const string DL_DIAG_SLEEP_JUMP_INVALID_TARGET_LOCATION = "sleep_jump_invalid_target_location";
+const string DL_DIAG_WORK_NEED_FORGE_AND_CRAFT_WAYPOINTS = "need_forge_and_craft_waypoints";
+
+void DL_SetRuntimeState(object oNpc, string sStatusKey, string sStatus, string sDiagKey, string sDiagnostic)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    if (sStatusKey != "" && GetLocalString(oNpc, sStatusKey) != sStatus)
+    {
+        SetLocalString(oNpc, sStatusKey, sStatus);
+    }
+
+    if (sDiagKey != "" && GetLocalString(oNpc, sDiagKey) != sDiagnostic)
+    {
+        SetLocalString(oNpc, sDiagKey, sDiagnostic);
+    }
+}
 const string DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF = "social_partner_self";
 const string DL_DIAG_FOCUS_MISSING_MEAL_ANCHOR = "missing_meal_anchor";
 const string DL_DIAG_FOCUS_MISSING_CHILL_CHAIR = "missing_chill_chair";
@@ -75,6 +107,61 @@ const string DL_CR_DIAG_STATUS_DETAIN_ACCEPTED = "detain_accepted";
 const string DL_CR_DIAG_STATUS_DETAIN_REFUSED = "detain_refused";
 const string DL_CR_DIAG_STATUS_CRIME_WITNESSED = "crime_witnessed";
 
+// Unified fallback protocol contract.
+const string DL_L_NPC_FALLBACK_DOMAIN = "dl_npc_fallback_domain";
+const string DL_L_NPC_FALLBACK_REASON_CODE = "dl_npc_fallback_reason_code";
+const string DL_L_NPC_FALLBACK_SEVERITY = "dl_npc_fallback_severity";
+const string DL_L_NPC_FALLBACK_NEXT_ACTION = "dl_npc_fallback_next_action";
+const string DL_L_NPC_FALLBACK_LAST_EVENT = "dl_npc_fallback_last_event";
+
+const string DL_FB_DOMAIN_SOCIAL = "social";
+const string DL_FB_DOMAIN_TRANSITION = "transition";
+const string DL_FB_DOMAIN_REGISTRY = "registry";
+
+const string DL_FB_SEVERITY_INFO = "info";
+const string DL_FB_SEVERITY_WARN = "warn";
+
+const string DL_FB_NEXT_PUBLIC = "switch_public";
+const string DL_FB_NEXT_WAIT_RETRY = "wait_retry";
+const string DL_FB_NEXT_RECOVER_REGISTRY = "recover_registry";
+
+const string DL_FB_REASON_SOCIAL_ANCHOR_OR_PARTNER_MISSING = "social_anchor_or_partner_missing";
+const string DL_FB_REASON_SOCIAL_PARTNER_NOT_SOCIAL = "social_partner_not_social";
+const string DL_FB_REASON_SOCIAL_PARTNER_ANCHOR_MISSING = "social_partner_anchor_missing";
+const string DL_FB_REASON_TRANSITION_EXIT_MISSING = "transition_exit_missing";
+const string DL_FB_REASON_TRANSITION_DRIVER_MISSING = "transition_driver_missing";
+const string DL_FB_REASON_REGISTRY_UNREGISTER_SLOT_INVALID = "registry_unregister_slot_invalid";
+
+string DL_GetFallbackSeverityByDomain(string sDomain)
+{
+    if (sDomain == DL_FB_DOMAIN_REGISTRY)
+    {
+        return DL_FB_SEVERITY_WARN;
+    }
+    return DL_FB_SEVERITY_INFO;
+}
+
+void DL_ReportFallback(object oActor, string sDomain, string sReasonCode, string sNextAction)
+{
+    if (!GetIsObjectValid(oActor))
+    {
+        return;
+    }
+
+    string sSeverity = DL_GetFallbackSeverityByDomain(sDomain);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_DOMAIN, sDomain);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_REASON_CODE, sReasonCode);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_SEVERITY, sSeverity);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_NEXT_ACTION, sNextAction);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_LAST_EVENT, sDomain + ":" + sReasonCode + ":" + sSeverity + ":" + sNextAction);
+
+    DL_LogChatDebugEvent(
+        oActor,
+        "fallback",
+        "fallback domain=" + sDomain + " reason_code=" + sReasonCode + " severity=" + sSeverity + " next_action=" + sNextAction
+    );
+}
+
 int DL_IsRuntimeEnabled()
 {
     object oModule = GetModule();
@@ -101,6 +188,61 @@ void DL_LogRuntime(string sLog)
     // Temporary: global runtime logging is disabled.
 }
 
+void DL_CommandMoveToObject(object oActor, object oTarget, int bRun = TRUE, float fRange = 1.0)
+{
+    AssignCommand(oActor, ActionMoveToObject(oTarget, bRun, fRange));
+}
+
+void DL_CommandMoveToObjectResetQueue(object oActor, object oTarget, int bRun = TRUE, float fRange = 1.0)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandMoveToObject(oActor, oTarget, bRun, fRange);
+}
+
+void DL_CommandMoveToLocation(object oActor, location lTarget, int bRun = TRUE)
+{
+    AssignCommand(oActor, ActionMoveToLocation(lTarget, bRun));
+}
+
+void DL_CommandMoveToLocationResetQueue(object oActor, location lTarget, int bRun = TRUE)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandMoveToLocation(oActor, lTarget, bRun);
+}
+
+void DL_CommandJumpToLocation(object oActor, location lTarget)
+{
+    AssignCommand(oActor, ActionJumpToLocation(lTarget));
+}
+
+void DL_CommandJumpToLocationResetQueue(object oActor, location lTarget)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandJumpToLocation(oActor, lTarget);
+}
+
+void DL_CommandStartConversation(object oActor, object oListener, string sDialogResRef, int bPrivateConversation = TRUE, int bPlayHello = TRUE)
+{
+    AssignCommand(oActor, ActionStartConversation(oListener, sDialogResRef, bPrivateConversation, bPlayHello));
+}
+
+void DL_CommandStartConversationResetQueue(object oActor, object oListener, string sDialogResRef, int bPrivateConversation = TRUE, int bPlayHello = TRUE)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandStartConversation(oActor, oListener, sDialogResRef, bPrivateConversation, bPlayHello);
+}
+
+void DL_CommandAttack(object oActor, object oTarget)
+{
+    AssignCommand(oActor, ActionAttack(oTarget));
+}
+
+void DL_CommandAttackResetQueue(object oActor, object oTarget)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandAttack(oActor, oTarget);
+}
+
 void DL_InitModuleContract()
 {
     object oModule = GetModule();
@@ -121,24 +263,39 @@ void DL_InitModuleContract()
     }
 }
 
+
+// Canonical object validators for Daily Life modules.
+// NWScript object handles are typeless at compile time, so callers MUST validate
+// both handle validity (OBJECT_INVALID guard via GetIsObjectValid) and expected
+// runtime type before using type-specific APIs.
+int DL_IsValidDoorObject(object oObj)
+{
+    return GetIsObjectValid(oObj) && GetObjectType(oObj) == OBJECT_TYPE_DOOR;
+}
+
+int DL_IsValidNpcObject(object oObj)
+{
+    return GetIsObjectValid(oObj) && GetObjectType(oObj) == OBJECT_TYPE_CREATURE;
+}
+
+int DL_IsValidWaypointObject(object oObj)
+{
+    return GetIsObjectValid(oObj) && GetObjectType(oObj) == OBJECT_TYPE_WAYPOINT;
+}
+
+int DL_IsValidAreaObject(object oObj)
+{
+    return GetIsObjectValid(oObj) && GetObjectType(oObj) == OBJECT_TYPE_AREA;
+}
+
 int DL_IsAreaObject(object oObject)
 {
-    if (!GetIsObjectValid(oObject))
-    {
-        return FALSE;
-    }
-
-    return GetArea(oObject) == oObject;
+    return DL_IsValidAreaObject(oObject);
 }
 
 int DL_IsPipelineNpc(object oNpc)
 {
-    if (!GetIsObjectValid(oNpc))
-    {
-        return FALSE;
-    }
-
-    if (GetObjectType(oNpc) != OBJECT_TYPE_CREATURE)
+    if (!DL_IsValidNpcObject(oNpc))
     {
         return FALSE;
     }
@@ -173,7 +330,7 @@ int DL_IsActivePipelineNpc(object oNpc)
 
 int DL_IsRuntimePlayer(object oCreature)
 {
-    if (!GetIsObjectValid(oCreature))
+    if (!DL_IsValidNpcObject(oCreature))
     {
         return FALSE;
     }

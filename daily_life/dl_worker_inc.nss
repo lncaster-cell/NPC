@@ -46,6 +46,55 @@ int DL_GetCursorAdvance(int nNpcProcessed, int nCandidatesSeen, int nNpcSeen)
     return nAdvance;
 }
 
+// Telemetry contract:
+// - nProcessed: NPC count processed by the current pass in this tick.
+// - bNoBudget: TRUE when scheduler budget was exhausted before pass execution.
+// - bCountTick: TRUE when module worker tick counter must be incremented.
+// Semantics:
+// - Area/module LAST_PROCESSED are always synchronized in one place.
+// - When bNoBudget == TRUE, LAST_PROCESSED is force-reset to 0.
+// - Worker tick counter is incremented only when bCountTick == TRUE.
+void DL_WriteWorkerTelemetry(object oArea, int nProcessed, int bNoBudget, int bCountTick)
+{
+    object oModule = GetModule();
+
+    int nValue = nProcessed;
+    if (bNoBudget == TRUE)
+    {
+        nValue = 0;
+    }
+
+    if (bCountTick == TRUE)
+    {
+        // Heartbeat-level tick counter for worker scheduler throughput and idle-budget diagnostics.
+        DL_IncLocalInt(oModule, DL_L_MODULE_WORKER_TICKS);
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_WORKER_LAST_PROCESSED, nValue);
+    SetLocalInt(oModule, DL_L_MODULE_WORKER_LAST_PROCESSED, nValue);
+}
+
+// Telemetry contract:
+// - nProcessed: NPC count processed by enter-resync pass in this tick.
+// - bNoBudget: TRUE when resync budget was exhausted before pass execution.
+// Semantics:
+// - Area/module RESYNC_LAST_PROCESSED are always synchronized in one place.
+// - Enter-resync touched metric follows the same reset semantics for no-budget ticks.
+void DL_WriteResyncTelemetry(object oArea, int nProcessed, int bNoBudget)
+{
+    object oModule = GetModule();
+
+    int nValue = nProcessed;
+    if (bNoBudget == TRUE)
+    {
+        nValue = 0;
+    }
+
+    SetLocalInt(oArea, DL_L_AREA_ENTER_RESYNC_TOUCHED, nValue);
+    SetLocalInt(oArea, DL_L_AREA_RESYNC_LAST_PROCESSED, nValue);
+    SetLocalInt(oModule, DL_L_MODULE_RESYNC_LAST_PROCESSED, nValue);
+}
+
 void DL_MarkAreaRegistryRebuildPending(object oArea)
 {
     SetLocalInt(oArea, DL_L_AREA_REGISTRY_REBUILD_PENDING, TRUE);
