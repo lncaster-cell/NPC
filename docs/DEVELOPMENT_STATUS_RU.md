@@ -182,3 +182,8 @@
 - `docs/audits/post_refactor_audit_pass13.md`
 - `docs/audits/post_refactor_audit_pass14.md`
 - `docs/audits/audit_artifacts_closure_2026-05-02.md`
+
+## 7) Legacy cleanup log (remove-in-same-PR policy)
+
+- 2026-05-02: зафиксировано merge-правило «без необоснованного дублирования старого и нового пути»; для переходных случаев обязателен маркер `remove-by` + owner (процессное ужесточение, runtime-удалений в этом коммите нет).
+- 2026-05-02: добавлен обязательный post-unification `rg`-sweep неиспользуемых функций/констант в `daily_life/*.nss` с call-site проверкой и обязательной фиксацией удалённого legacy в этом статус-файле.

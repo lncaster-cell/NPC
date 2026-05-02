@@ -13,9 +13,12 @@
 5. Синхронизировать документацию:
    - архитектурный контекст: `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`;
    - оперативный прогресс: `docs/DEVELOPMENT_STATUS_RU.md`.
-6. Каждый новый `docs/audits/post_refactor_audit_pass*.md` считается завершённым только после обновления `docs/audits/risk_register.md` в том же коммите.
-7. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
-8. Новые diagnostic-коды вводить только через contract-константы (канонический словарь в профильном `*_contract_inc.nss`), без raw-строк в runtime-логике.
+5. Каждый новый `docs/audits/post_refactor_audit_pass*.md` считается завершённым только после обновления `docs/audits/risk_register.md` в том же коммите.
+6. Если меняется wiring/локалки/entrypoint-контракты — обновить `README.md` в том же коммите.
+7. Новые diagnostic-коды вводить только через contract-константы (канонический словарь в профильном `*_contract_inc.nss`), без raw-строк в runtime-логике.
+8. После **каждого этапа унификации** запускать статический поиск неиспользуемых функций/констант в `daily_life/*.nss` (`rg` по имени + ручная call-site проверка).
+9. Deprecated-функции удалять в **том же PR**, где введён replacement (долгое сосуществование старого и нового пути запрещено).
+10. Если временное сосуществование неизбежно, оставлять явный маркер `remove-by: <YYYY-MM-DD|version>; owner: <name>` рядом с transitional-кодом.
 
 
 
@@ -113,6 +116,7 @@ PR с runtime-правками **не считается завершённым*
 
 - Перед merge изменений в runtime-скриптах обязательно пройти policy: `docs/NWN_SCRIPTING_POLICY_RU.md`.
 - PR считается неготовым, если любой из mandatory review gates policy не выполнен.
+- PR не принимается, если оставляет дубль старого и нового пути без технического обоснования и переходного плана удаления (`remove-by` + owner).
 
 ## Минимальный Definition of Done
 
@@ -158,3 +162,14 @@ rg -n "DeleteLocal(Int|String|Object)\\(.*DL_L_AREA_(TIER|ENTER_RESYNC_(PENDING|
 Ожидаемое поведение:
 - пустой вывод (`exit 1`) — PASS (новых запрещённых reset-паттернов нет);
 - непустой вывод — FAIL, требуется приведение к политике из `UNIFIED_DESIGN_DOCUMENT_RU.md` (раздел reset-политики) или явный `COMPAT`-комментарий с планом удаления.
+
+## Static check: unused-symbol sweep после этапов унификации
+
+После каждого завершённого этапа унификации (contract dedupe / include dedupe / replacement migration) обязателен быстрый статический sweep:
+
+1. Выделить кандидаты на удаление (deprecated wrappers, legacy constants/helpers).
+2. Для каждого кандидата выполнить `rg -n "<symbol_name>" daily_life/*.nss`.
+3. Подтвердить call-site вручную:
+   - если найдено только объявление (и/или комментарий) — удалить символ в этом же PR;
+   - если есть активные вызовы старого пути — либо мигрировать их в этом же PR, либо добавить `remove-by` маркер с owner и обоснованием.
+4. Отразить удалённые legacy-фрагменты в `docs/DEVELOPMENT_STATUS_RU.md` (что удалено и чем заменено).
