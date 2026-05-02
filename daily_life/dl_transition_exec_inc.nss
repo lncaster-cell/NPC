@@ -52,8 +52,7 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
     }
 
     location lExit = GetLocation(oExitWp);
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "transitioning");
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, sDiagPrefix + "_transition_in_progress");
+    DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_TRANSITIONING, DL_TRANSITION_DIAG_IN_PROGRESS, sDiagPrefix);
     return DL_ExecuteTransitionDriver(oNpc, oEntryWp, lExit, oExitWp, "routed_transition_in_progress");
 }
 
