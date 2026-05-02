@@ -1,9 +1,3 @@
-const string DL_CR_EVT_PICKPOCKET = "pickpocket";
-const string DL_CR_EVT_CONTAINER_THEFT = "container_theft";
-const string DL_CR_EVT_DOOR_LOCKPICK = "door_lockpick";
-const string DL_CR_EVT_PLACEABLE_LOCKPICK = "placeable_lockpick";
-const string DL_CR_EVT_RESTRICTED_ENTRY = "restricted_entry";
-
 const string DL_L_MODULE_CR_WITNESS_RADIUS = "dl_cr_witness_radius";
 const string DL_L_MODULE_CR_GUARD_ALERT_RADIUS = "dl_cr_guard_alert_radius";
 const string DL_L_AREA_CR_RESTRICTED = "dl_cr_restricted";
@@ -27,6 +21,10 @@ const string DL_CR_KEY_PREFIX_SHOUT_CD = "dl_cr_shout_cd_";
 const string DL_CR_JAIL_WP_TAG_DEFAULT = "dl_jail_entry_wp";
 const float DL_CR_DISTANCE_INF = 1000000.0;
 const int DL_CR_LOCKPICK_MARK_TTL_MIN = 1;
+
+void DL_CR_SetDetainPending(object oPc, int nUntilAbsMin, string sReason);
+void DL_CR_ClearDetainPending(object oPc, string sResolution);
+int DL_CR_IsDetainPending(object oPc);
 
 float DL_CR_GetWitnessRadius()
 {
@@ -91,9 +89,77 @@ void DL_CR_ClearPursuitState(object oPc)
         return;
     }
 
-    DeleteLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING);
+    DL_CR_ClearDetainPending(oPc, "pursuit_cleared");
     DeleteLocalObject(oPc, DL_L_PC_CR_LAST_GUARD);
     DeleteLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+}
+
+int DL_CR_IsDetainPending(object oPc)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return FALSE;
+    }
+
+    return GetLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING) == TRUE;
+}
+
+void DL_CR_SetDetainPending(object oPc, int nUntilAbsMin, string sReason)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    int nNowAbsMin = DL_GetAbsoluteMinute();
+    int nCurrentUntil = GetLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+    int bAlreadyPending = DL_CR_IsDetainPending(oPc);
+    string sCurrentReason = GetLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_REASON);
+    if (nUntilAbsMin <= 0)
+    {
+        nUntilAbsMin = nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN;
+    }
+
+    if (bAlreadyPending && nCurrentUntil >= nUntilAbsMin && sCurrentReason == sReason)
+    {
+        return;
+    }
+
+    SetLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING, TRUE);
+    if (nCurrentUntil < nUntilAbsMin)
+    {
+        SetLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL, nUntilAbsMin);
+    }
+
+    if (sReason != "")
+    {
+        SetLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_REASON, sReason);
+    }
+    DeleteLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_RESOLUTION);
+    SetLocalInt(oPc, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, nNowAbsMin);
+}
+
+void DL_CR_ClearDetainPending(object oPc, string sResolution)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    if (!DL_CR_IsDetainPending(oPc))
+    {
+        return;
+    }
+
+    DeleteLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING);
+    DeleteLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+
+    DeleteLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_REASON);
+    if (sResolution != "")
+    {
+        SetLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_RESOLUTION, sResolution);
+    }
+    SetLocalInt(oPc, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, DL_GetAbsoluteMinute());
 }
 
 int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
@@ -197,23 +263,23 @@ void DL_CR_WitnessShout(object oWitness, object oOffender)
 
 int DL_CR_GetCrimeHeat(string sKind)
 {
-    if (sKind == DL_CR_EVT_PICKPOCKET)
+    if (sKind == DL_LG_CASE_KIND_PICKPOCKET)
     {
         return 15;
     }
-    if (sKind == DL_CR_EVT_CONTAINER_THEFT)
+    if (sKind == DL_LG_CASE_KIND_CONTAINER_THEFT)
     {
         return 20;
     }
-    if (sKind == DL_CR_EVT_DOOR_LOCKPICK)
+    if (sKind == DL_LG_CASE_KIND_DOOR_LOCKPICK)
     {
         return 25;
     }
-    if (sKind == DL_CR_EVT_PLACEABLE_LOCKPICK)
+    if (sKind == DL_LG_CASE_KIND_PLACEABLE_LOCKPICK)
     {
         return 20;
     }
-    if (sKind == DL_CR_EVT_RESTRICTED_ENTRY)
+    if (sKind == DL_LG_CASE_KIND_RESTRICTED_ENTRY)
     {
         return 15;
     }
@@ -289,22 +355,20 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     }
 
     int nNowAbsMin = DL_GetAbsoluteMinute();
-    string sDialogResRef = DL_CR_GetDetainDialogResRef();
 
     if (GetIsObjectValid(oBestA))
     {
         SetLocalObject(oBestA, DL_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
         SetLocalInt(oBestA, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
         SetLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD, oBestA);
-        AssignCommand(oBestA, ClearAllActions(TRUE));
         if (nLevel >= 3)
         {
+            AssignCommand(oBestA, ClearAllActions(TRUE));
             AssignCommand(oBestA, ActionAttack(oOffender));
         }
         else
         {
-            AssignCommand(oBestA, ActionMoveToObject(oOffender, TRUE, 2.0));
-            AssignCommand(oBestA, ActionStartConversation(oOffender, sDialogResRef, TRUE, TRUE));
+            DL_CR_StartDetainInteraction(oBestA, oOffender, "", TRUE);
         }
     }
 
@@ -350,7 +414,7 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
     }
 
     DL_LG_OnWitnessedIncident(oOffender, sKind, oArea, oWitness);
-    SetLocalInt(oOffender, DL_L_PC_CR_DETAIN_PENDING, TRUE);
+    DL_CR_SetDetainPending(oOffender, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, "witnessed_incident");
 
     int nHeat = DL_CR_GetCrimeHeat(sKind);
     DL_CR_RegisterIncident(oOffender, nHeat);
@@ -577,7 +641,7 @@ void DL_CR_HandleDetainRefused(object oPc, object oGuard)
         return;
     }
 
-    SetLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING, TRUE);
+    DL_CR_SetDetainPending(oPc, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, "detain_refused");
     DL_CR_RegisterIncident(oPc, 10);
     DL_LG_OnRefusedDetain(oPc, oGuard);
 
