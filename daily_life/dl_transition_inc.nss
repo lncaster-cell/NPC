@@ -1,4 +1,6 @@
 // Daily Life interzone transition helper layer.
+// Adapter policy: add wrappers only for explicit API contract compatibility;
+// no new pass-through adapters when canonical implementation exists.
 // Backward compatible modes:
 // 1) simple explicit mode: entry waypoint stores explicit exit tag in `dl_transition_exit_tag`
 // 2) builder-friendly nav mode: waypoint tag is `dl_nav_<from_zone>_to_<to_zone>`;
@@ -56,7 +58,9 @@ const string DL_TRANSITION_DRIVER_DOOR = "door";
 const string DL_TRANSITION_DRIVER_TRIGGER = "trigger";
 
 const float DL_TRANSITION_ENTRY_RADIUS = 1.60;
-const string DL_L_TRANSITION_DRIVER_LOOKUP_CAP = "dl_transition_driver_lookup_cap";
+const int DL_TRANSITION_DRIVER_LOOKUP_CAP = 4;
+const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MIN = 1;
+const int DL_TRANSITION_DRIVER_LOOKUP_CAP_MAX = 16;
 
 const string DL_L_AREA_NAV_READY = "dl_area_nav_ready";
 const string DL_L_AREA_NAV_COUNT = "dl_area_nav_count";
@@ -73,6 +77,8 @@ const int DL_NAV_TAG_SEPARATOR_LENGTH = 4;
 // Forward declarations for helpers provided by other include units.
 int DL_ClampInt(int nValue, int nMin, int nMax);
 int DL_GetAreaTick(object oArea);
+int DL_TryRouteToTarget(object oNpc, object oTarget);
+int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp);
 
 string DL_GetAreaNavigationSlotKey(int nSlot)
 {
@@ -628,12 +634,12 @@ int DL_IsTransitionDriverTypeMatch(string sDriverKind, object oDriver)
 
 int DL_GetTransitionDriverLookupCap()
 {
-    return DL_GetConfigInt(
-        DL_L_TRANSITION_DRIVER_LOOKUP_CAP,
-        DL_CFG_TRANSITION_DRIVER_LOOKUP_CAP_DEFAULT,
-        DL_CFG_TRANSITION_DRIVER_LOOKUP_CAP_MIN,
-        DL_CFG_TRANSITION_DRIVER_LOOKUP_CAP_MAX
-    );
+    int nCap = GetLocalInt(GetModule(), DL_L_MODULE_TRANSITION_DRIVER_LOOKUP_CAP);
+    if (nCap <= 0)
+    {
+        return DL_TRANSITION_DRIVER_LOOKUP_CAP;
+    }
+    return DL_ClampInt(nCap, DL_TRANSITION_DRIVER_LOOKUP_CAP_MIN, DL_TRANSITION_DRIVER_LOOKUP_CAP_MAX);
 }
 
 object DL_ResolveTransitionDriverObject(object oEntryWp)
@@ -731,7 +737,7 @@ int DL_JumpNpcToTransitionExit(object oNpc, location lExit, string sStatus = "",
 }
 
 
-int DL_ExecuteTransitionDriver(object oNpc, object oEntryWp, location lExit, object oExitWp, string sJumpDiagnostic = "transition_in_progress")
+int DL_ExecuteTransitionDriver(object oNpc, object oEntryWp, location lExit, object oExitWp, string sJumpDiagnostic = DL_TRANSITION_DIAG_IN_PROGRESS)
 {
     if (!DL_IsValidNpcObject(oNpc) || !DL_IsValidWaypointObject(oEntryWp))
     {
@@ -801,7 +807,7 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
 
     if (GetDistanceBetweenLocations(GetLocation(oNpc), GetLocation(oEntryWp)) > DL_TRANSITION_ENTRY_RADIUS)
     {
-        if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
+        if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != DL_TRANSITION_STATUS_MOVING_TO_ENTRY)
         {
             DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_MOVING_TO_ENTRY, DL_TRANSITION_DIAG_MOVING_TO_ENTRY, "");
             AssignCommand(oNpc, ClearAllActions(TRUE));
@@ -820,8 +826,8 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
 
     location lExit = GetLocation(oExitWp);
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, DL_TRANSITION_STATUS_TRANSITIONING);
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "transition_in_progress");
-    return DL_ExecuteTransitionDriver(oNpc, oEntryWp, lExit, oExitWp, "transition_in_progress");
+    DL_SetReasonAndDiagnostic(oNpc, DL_FB_DOMAIN_TRANSITION, DL_FB_REASON_TRANSITION_IN_PROGRESS, DL_L_NPC_TRANSITION_DIAGNOSTIC, DL_TRANSITION_DIAG_IN_PROGRESS);
+    return DL_ExecuteTransitionDriver(oNpc, oEntryWp, lExit, oExitWp, DL_TRANSITION_DIAG_IN_PROGRESS);
 }
 
 int DL_TryExecuteTransitionAtWaypoint(object oNpc, object oTargetWp)
@@ -922,7 +928,8 @@ object DL_FindDirectNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
 
     int nCount = DL_GetAreaNavigationRouteCount(oNpcArea);
     object oBestEntry = OBJECT_INVALID;
-    int nBestScore = 1000000;
+    int nBestScore = DL_SELECTION_SCORE_INF;
+    string sBestTie = "";
     int i = 0;
     while (i < nCount)
     {
@@ -935,10 +942,12 @@ object DL_FindDirectNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
             {
                 nScore = nScore + FloatToInt(GetDistanceBetween(oExit, oTarget) * 100.0);
             }
-            if (!GetIsObjectValid(oBestEntry) || nScore < nBestScore)
+            string sTie = DL_SelectionBuildTieKey(oEntry, oExit, i);
+            if (DL_SelectionCompare(nScore, nBestScore, sTie, sBestTie))
             {
                 oBestEntry = oEntry;
                 nBestScore = nScore;
+                sBestTie = sTie;
             }
         }
         i = i + 1;
@@ -957,7 +966,8 @@ object DL_FindTwoHopNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
 
     int nCount = DL_GetAreaNavigationRouteCount(oNpcArea);
     object oBestEntry = OBJECT_INVALID;
-    int nBestScore = 1000000;
+    int nBestScore = DL_SELECTION_SCORE_INF;
+    string sBestTie = "";
     int i = 0;
     while (i < nCount)
     {
@@ -980,10 +990,12 @@ object DL_FindTwoHopNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
                     {
                         nScore = nScore + FloatToInt(GetDistanceBetween(oExitB, oTarget) * 100.0);
                     }
-                    if (!GetIsObjectValid(oBestEntry) || nScore < nBestScore)
+                    string sTie = DL_SelectionBuildTieKey(oEntryA, oEntryB, i);
+                    if (DL_SelectionCompare(nScore, nBestScore, sTie, sBestTie))
                     {
                         oBestEntry = oEntryA;
                         nBestScore = nScore;
+                        sBestTie = sTie;
                     }
                 }
                 j = j + 1;
@@ -993,39 +1005,6 @@ object DL_FindTwoHopNavZoneEntry(object oNpc, object oTarget, string sFromZone, 
     }
 
     return oBestEntry;
-}
-
-int DL_TryUseNavZoneRouteToTarget(object oNpc, object oTarget)
-{
-    if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
-    {
-        return FALSE;
-    }
-
-    string sTargetZone = DL_GetWaypointNavZone(oTarget);
-    if (sTargetZone == "")
-    {
-        return FALSE;
-    }
-
-    string sCurrentZone = DL_InferNpcNavZoneFromAreaRoutes(oNpc);
-    if (sCurrentZone == "" || sCurrentZone == sTargetZone)
-    {
-        return FALSE;
-    }
-
-    object oEntry = DL_FindDirectNavZoneEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
-    if (!GetIsObjectValid(oEntry))
-    {
-        oEntry = DL_FindTwoHopNavZoneEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
-    }
-
-    if (!GetIsObjectValid(oEntry))
-    {
-        return FALSE;
-    }
-
-    return DL_TryExecuteTransitionEntryWaypoint(oNpc, oEntry);
 }
 
 int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
@@ -1041,14 +1020,15 @@ int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
         return FALSE;
     }
 
-    if (DL_TryUseNavZoneRouteToTarget(oNpc, oTarget))
+    if (DL_TryRouteToTarget(oNpc, oTarget))
     {
         return TRUE;
     }
 
     int nCount = DL_GetAreaNavigationRouteCount(oNpcArea);
     object oBestEntry = OBJECT_INVALID;
-    int nBestScore = 1000000;
+    int nBestScore = DL_SELECTION_SCORE_INF;
+    string sBestTie = "";
     int i = 0;
     while (i < nCount)
     {
@@ -1060,10 +1040,12 @@ int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
             {
                 int nScore = FloatToInt(GetDistanceBetween(oNpc, oEntry) * 100.0) +
                              FloatToInt(GetDistanceBetween(oExit, oTarget) * 100.0);
-                if (!GetIsObjectValid(oBestEntry) || nScore < nBestScore)
+                string sTie = DL_SelectionBuildTieKey(oEntry, oExit, i);
+                if (DL_SelectionCompare(nScore, nBestScore, sTie, sBestTie))
                 {
                     oBestEntry = oEntry;
                     nBestScore = nScore;
+                    sBestTie = sTie;
                 }
             }
         }
@@ -1075,5 +1057,5 @@ int DL_TryUseNavigationRouteToTarget(object oNpc, object oTarget)
         return FALSE;
     }
 
-    return DL_TryExecuteTransitionEntryWaypoint(oNpc, oBestEntry);
+    return DL_TryExecuteRoutedTransitionEntryWaypoint(oNpc, oBestEntry);
 }

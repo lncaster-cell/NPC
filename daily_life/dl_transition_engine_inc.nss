@@ -12,7 +12,7 @@ int DL_JumpNpcToTransitionExit(object oNpc, location lExit, string sStatus = "",
     }
 
     object oExitArea = GetAreaFromLocation(lExit);
-    if (!GetIsObjectValid(oExitArea) || GetObjectType(oExitArea) != OBJECT_TYPE_AREA)
+    if (!DL_CanRunTransitionForArea(oExitArea))
     {
         if (sStatus != "")
         {
@@ -26,7 +26,7 @@ int DL_JumpNpcToTransitionExit(object oNpc, location lExit, string sStatus = "",
     return TRUE;
 }
 
-int DL_ExecuteTransitionDriver(object oNpc, object oEntryWp, location lExit, object oExitWp, string sJumpDiagnostic = "transition_in_progress")
+int DL_ExecuteTransitionDriver(object oNpc, object oEntryWp, location lExit, object oExitWp, string sJumpDiagnostic = DL_TRANSITION_DIAG_IN_PROGRESS)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oEntryWp))
     {

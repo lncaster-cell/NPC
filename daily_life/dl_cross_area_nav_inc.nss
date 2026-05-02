@@ -1,4 +1,5 @@
 const int DL_CROSS_AREA_ROUTE_DEPTH = 4;
+const string DL_L_NPC_CACHE_CROSS_NAV_ENTRY = "dl_cache_cross_nav_entry";
 
 int DL_CrossNavEntryMatchesZone(object oEntry, string sFromZone)
 {
@@ -76,7 +77,8 @@ object DL_FindCrossAreaNavEntry(object oNpc, object oTarget, string sFromZone, s
 
     int nCount = DL_GetAreaNavigationRouteCount(oCurrentArea);
     object oBestEntry = OBJECT_INVALID;
-    int nBestScore = 1000000;
+    int nBestScore = DL_SELECTION_SCORE_INF;
+    string sBestTie = "";
     int i = 0;
     while (i < nCount)
     {
@@ -96,10 +98,12 @@ object DL_FindCrossAreaNavEntry(object oNpc, object oTarget, string sFromZone, s
                     {
                         nScore = nScore + FloatToInt(GetDistanceBetween(oExit, oTarget) * 100.0);
                     }
-                    if (!GetIsObjectValid(oBestEntry) || nScore < nBestScore)
+                    string sTie = DL_SelectionBuildTieKey(oEntry, oExit, i);
+                    if (DL_SelectionCompare(nScore, nBestScore, sTie, sBestTie))
                     {
                         oBestEntry = oEntry;
                         nBestScore = nScore;
+                        sBestTie = sTie;
                     }
                 }
             }
@@ -135,5 +139,28 @@ object DL_FindCrossAreaNavigationRouteEntryToTarget(object oNpc, object oTarget)
         return OBJECT_INVALID;
     }
 
-    return DL_FindCrossAreaNavEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
+    object oArea = GetArea(oNpc);
+    int nTier = DL_GetAreaTier(oArea);
+    int nLifecycleSeq = GetLocalInt(oNpc, DL_L_NPC_EVENT_SEQ);
+    string sCacheTag = GetTag(oTarget) + "|" + sCurrentZone + "|" + sTargetZone;
+    object oCached = DL_GetCachedObject(oNpc, DL_L_NPC_CACHE_CROSS_NAV_ENTRY, sCacheTag, OBJECT_TYPE_WAYPOINT, oArea, nTier, nLifecycleSeq);
+    if (GetIsObjectValid(oCached))
+    {
+        DL_RecordCacheMetric(oArea, "nav", TRUE);
+        return oCached;
+    }
+
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_CROSS_NAV_ENTRY);
+    object oResolved = DL_FindCrossAreaNavEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
+    if (GetIsObjectValid(oResolved))
+    {
+        DL_SetCachedObject(oNpc, DL_L_NPC_CACHE_CROSS_NAV_ENTRY, oResolved, sCacheTag, OBJECT_TYPE_WAYPOINT, oArea, nTier, nLifecycleSeq);
+        DL_RecordCacheMetric(oArea, "nav", FALSE);
+    }
+    else
+    {
+        DL_RecordCacheMetric(oArea, "nav", FALSE);
+    }
+
+    return oResolved;
 }

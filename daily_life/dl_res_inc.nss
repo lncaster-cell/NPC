@@ -140,6 +140,109 @@ const int DL_CHAT_STUCK_THRESHOLD_MIN = 5;
 const int DL_CHAT_STUCK_LOG_INTERVAL_MIN = 5;
 const int DL_CHAT_MARKUP_COOLDOWN_MIN = 120;
 
+const int DL_EXECUTOR_NONE = 0;
+const int DL_EXECUTOR_SLEEP = 1;
+const int DL_EXECUTOR_WORK = 2;
+const int DL_EXECUTOR_MEAL = 3;
+const int DL_EXECUTOR_SOCIAL = 4;
+const int DL_EXECUTOR_PUBLIC = 5;
+const int DL_EXECUTOR_CHILL = 6;
+const string DL_L_MODULE_EXECUTOR_MAP_ASSERTED = "dl_executor_map_asserted";
+
+int DL_ResolveDirectiveExecutor(int nDirective)
+{
+    if (nDirective == DL_DIR_SLEEP)
+    {
+        return DL_EXECUTOR_SLEEP;
+    }
+    if (nDirective == DL_DIR_WORK)
+    {
+        return DL_EXECUTOR_WORK;
+    }
+    if (nDirective == DL_DIR_MEAL)
+    {
+        return DL_EXECUTOR_MEAL;
+    }
+    if (nDirective == DL_DIR_SOCIAL)
+    {
+        return DL_EXECUTOR_SOCIAL;
+    }
+    if (nDirective == DL_DIR_PUBLIC)
+    {
+        return DL_EXECUTOR_PUBLIC;
+    }
+    if (nDirective == DL_DIR_CHILL)
+    {
+        return DL_EXECUTOR_CHILL;
+    }
+    return DL_EXECUTOR_NONE;
+}
+
+int DL_DirectivePreconditionsSatisfied(object oNpc, int nDirective)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return FALSE;
+    }
+
+    int nExecutor = DL_ResolveDirectiveExecutor(nDirective);
+    return nExecutor != DL_EXECUTOR_NONE;
+}
+
+void DL_AssertDirectiveExecutorMapping()
+{
+    object oModule = GetModule();
+    if (GetLocalInt(oModule, DL_L_MODULE_EXECUTOR_MAP_ASSERTED) == TRUE)
+    {
+        return;
+    }
+
+    int nDirective = DL_DIR_SLEEP;
+    while (nDirective <= DL_DIR_CHILL)
+    {
+        int nExecutor = DL_ResolveDirectiveExecutor(nDirective);
+        if (nExecutor == DL_EXECUTOR_NONE)
+        {
+            SetLocalInt(oModule, DL_L_MODULE_EXECUTOR_MAP_ASSERTED, TRUE);
+            return;
+        }
+        nDirective = nDirective + 1;
+    }
+
+    SetLocalInt(oModule, DL_L_MODULE_EXECUTOR_MAP_ASSERTED, TRUE);
+}
+
+void DL_DispatchDirectiveExecution(object oNpc, int nDirective)
+{
+    int nExecutor = DL_ResolveDirectiveExecutor(nDirective);
+
+    if (nExecutor == DL_EXECUTOR_SLEEP)
+    {
+        DL_ExecuteSleepDirective(oNpc);
+    }
+    else if (nExecutor == DL_EXECUTOR_WORK)
+    {
+        DL_ExecuteWorkDirective(oNpc);
+    }
+    else if (nExecutor == DL_EXECUTOR_MEAL)
+    {
+        DL_ExecuteMealDirective(oNpc);
+    }
+    else if (nExecutor == DL_EXECUTOR_SOCIAL)
+    {
+        DL_ExecuteSocialDirective(oNpc);
+    }
+    else if (nExecutor == DL_EXECUTOR_PUBLIC)
+    {
+        DL_ExecutePublicDirective(oNpc);
+    }
+    else if (nExecutor == DL_EXECUTOR_CHILL)
+    {
+        DL_ExecuteChillDirective(oNpc);
+    }
+}
+
+
 // Forward declarations for symbols implemented in includes that are
 // textually attached later in this file.
 int DL_IsActivePipelineNpc(object oNpc);
@@ -386,6 +489,7 @@ void DL_ApplyMaterializationSkeleton(object oNpc, int nDirective)
 }
 
 #include "dl_anchor_cache_inc"
+#include "dl_selection_inc"
 #include "dl_social_pool_inc"
 #include "dl_presentation_inc"
 #include "dl_sleep_inc"
@@ -455,22 +559,22 @@ void DL_ClearNpcWaypointCaches(object oNpc)
         return;
     }
 
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SLEEP_APPROACH);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SLEEP_BED);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_FORGE);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_CRAFT);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_POST);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_TRADE);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_PRIMARY);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_SECONDARY);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_FETCH);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_MEAL);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_A);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_B);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_PUBLIC);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_CHILL_SEAT);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SLEEP_APPROACH);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SLEEP_BED);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_FORGE);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_CRAFT);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_POST);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_TRADE);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_PRIMARY);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_SECONDARY);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_FETCH);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_MEAL);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_A);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_B);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_PUBLIC);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_CHILL_SEAT);
     DeleteLocalInt(oNpc, DL_L_NPC_CACHE_CHILL_SEAT_MISSING_UNTIL);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
     DL_ClearNpcSocialReservation(oNpc);
 }
 void DL_ClearNpcAreaCaches(object oNpc)
@@ -480,11 +584,11 @@ void DL_ClearNpcAreaCaches(object oNpc)
         return;
     }
 
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_HOME_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_WORK_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_MEAL_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_AREA);
-    DeleteLocalObject(oNpc, DL_L_NPC_CACHE_PUBLIC_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_HOME_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_WORK_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_MEAL_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_SOCIAL_AREA);
+    DL_InvalidateCachedObject(oNpc, DL_L_NPC_CACHE_PUBLIC_AREA);
 }
 void DL_ClearNpcRuntimeCaches(object oNpc)
 {
@@ -614,15 +718,20 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
 
     SetLocalInt(oNpc, DL_L_NPC_DIRECTIVE, nEffectiveDirective);
     DL_LogDirectiveChange(oNpc, nPrevDirective, nEffectiveDirective);
+    DL_AssertDirectiveExecutorMapping();
 
-    if (nEffectiveDirective == DL_DIR_SLEEP)
+    if (!DL_DirectivePreconditionsSatisfied(oNpc, nEffectiveDirective))
+    {
+        DL_ApplyIdleLikeDirectiveState(oNpc, FALSE);
+    }
+    else if (nEffectiveDirective == DL_DIR_SLEEP)
     {
         DL_ClearWorkExecutionState(oNpc);
         DL_ClearFocusExecutionState(oNpc);
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SLEEP);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SLEEP, DL_SERVICE_OFF);
         DL_ApplyArchiveActivityPresentation(oNpc, nEffectiveDirective);
-        DL_ExecuteSleepDirective(oNpc);
+        DL_DispatchDirectiveExecution(oNpc, nEffectiveDirective);
     }
     else if (nEffectiveDirective == DL_DIR_WORK)
     {
@@ -636,7 +745,7 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
 
         DL_ClearSleepExecutionState(oNpc);
         DL_ClearFocusExecutionState(oNpc);
-        DL_ExecuteWorkDirective(oNpc);
+        DL_DispatchDirectiveExecution(oNpc, nEffectiveDirective);
     }
     else if (nEffectiveDirective == DL_DIR_MEAL)
     {
@@ -644,7 +753,7 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         DL_ClearWorkExecutionState(oNpc);
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_MEAL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
-        DL_ExecuteMealDirective(oNpc);
+        DL_DispatchDirectiveExecution(oNpc, nEffectiveDirective);
         DL_ClearActivityPresentation(oNpc);
     }
     else if (nEffectiveDirective == DL_DIR_SOCIAL)
@@ -653,7 +762,7 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         DL_ClearWorkExecutionState(oNpc);
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
-        DL_ExecuteSocialDirective(oNpc);
+        DL_DispatchDirectiveExecution(oNpc, nEffectiveDirective);
         DL_ClearActivityPresentation(oNpc);
     }
     else if (nEffectiveDirective == DL_DIR_PUBLIC)
@@ -662,7 +771,7 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         DL_ClearWorkExecutionState(oNpc);
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
-        DL_ExecutePublicDirective(oNpc);
+        DL_DispatchDirectiveExecution(oNpc, nEffectiveDirective);
         DL_ClearActivityPresentation(oNpc);
     }
     else if (nEffectiveDirective == DL_DIR_CHILL)
@@ -671,7 +780,7 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         DL_ClearWorkExecutionState(oNpc);
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_CHILL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
-        DL_ExecuteChillDirective(oNpc);
+        DL_DispatchDirectiveExecution(oNpc, nEffectiveDirective);
         DL_ClearActivityPresentation(oNpc);
     }
     else

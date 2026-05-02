@@ -281,8 +281,10 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     int nMaxResponders = DL_CR_GetGuardRespondersMax();
     object oBestA = OBJECT_INVALID;
     object oBestB = OBJECT_INVALID;
-    float fBestA = DL_CR_DISTANCE_INF;
-    float fBestB = DL_CR_DISTANCE_INF;
+    int nBestA = DL_SELECTION_SCORE_INF;
+    int nBestB = DL_SELECTION_SCORE_INF;
+    string sBestTieA = "";
+    string sBestTieB = "";
 
     location lCenter = GetLocation(oOffender);
     object oObj = GetFirstObjectInShape(
@@ -308,17 +310,22 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
                 float fDist = GetDistanceBetween(oObj, oOffender);
                 if (fDist <= fRadius)
                 {
-                    if (fDist < fBestA)
+                    int nScore = FloatToInt(fDist * 100.0);
+                    string sTie = DL_SelectionBuildTieKey(oObj, oOffender, nChecked);
+                    if (DL_SelectionCompare(nScore, nBestA, sTie, sBestTieA))
                     {
                         oBestB = oBestA;
-                        fBestB = fBestA;
+                        nBestB = nBestA;
+                        sBestTieB = sBestTieA;
                         oBestA = oObj;
-                        fBestA = fDist;
+                        nBestA = nScore;
+                        sBestTieA = sTie;
                     }
-                    else if (fDist < fBestB)
+                    else if (DL_SelectionCompare(nScore, nBestB, sTie, sBestTieB))
                     {
                         oBestB = oObj;
-                        fBestB = fDist;
+                        nBestB = nScore;
+                        sBestTieB = sTie;
                     }
                 }
             }
@@ -398,7 +405,7 @@ void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, i
     }
 
     DL_LG_OnWitnessedIncident(oOffender, sKind, oArea, oWitness);
-    DL_CR_SetDetainPending(oOffender, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, "witnessed_incident");
+    DL_CR_SetDetainPending(oOffender, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, DL_FB_REASON_CRIME_DETAIN_PENDING_WITNESSED);
 
     int nHeat = DL_CR_GetCrimeHeat(sKind);
     DL_CR_RegisterIncident(oOffender, nHeat);
@@ -627,7 +634,7 @@ void DL_CR_HandleDetainRefused(object oPc, object oGuard)
         return;
     }
 
-    DL_CR_SetDetainPending(oPc, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, "detain_refused");
+    DL_CR_SetDetainPending(oPc, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, DL_FB_REASON_CRIME_DETAIN_REFUSED);
     DL_CR_RegisterIncident(oPc, 10);
     DL_LG_OnRefusedDetain(oPc, oGuard);
 

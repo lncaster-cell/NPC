@@ -7,6 +7,33 @@ const string DL_L_MODULE_CHAT_LOG = "dl_chat_log";
 const string DL_L_MODULE_CHAT_LOG_INIT = "dl_chat_log_init";
 const string DL_L_MODULE_RUNTIME_LOG = "dl_runtime_log";
 
+// Runtime local keys schema (single source of truth).
+// Format:
+// KEY | TYPE | OWNER | LIFECYCLE | RESET POLICY
+// DL_L_MODULE_WORKER_SEQ | int | worker | module-runtime | monotonic, never reset
+// DL_L_MODULE_WORKER_TICKS | int | worker | module-runtime | monotonic, never reset
+// DL_L_MODULE_WORKER_LAST_PROCESSED | int | worker | heartbeat | overwrite each tick
+// DL_L_MODULE_RESYNC_LAST_PROCESSED | int | resync | heartbeat | overwrite each tick
+// DL_L_MODULE_RESYNC_REQ | int | resync | module-runtime | monotonic, never reset
+// DL_L_NPC_RESYNC_PENDING | int(bool) | resync | npc-runtime | set/clear via accessors only
+// DL_L_NPC_RESYNC_REASON | int(enum) | resync | npc-runtime | overwrite on request, clear on consume
+// DL_L_NPC_TRANSITION_KIND | string | transition | npc-runtime | clear on transition clear
+// DL_L_NPC_TRANSITION_ID | string | transition | npc-runtime | clear on transition clear
+// DL_L_NPC_TRANSITION_TARGET | string | transition | npc-runtime | clear on transition clear
+// DL_L_NPC_TRANSITION_STATUS | string | transition | npc-runtime | overwrite by status helper
+// DL_L_NPC_TRANSITION_DIAGNOSTIC | string | transition | npc-runtime | overwrite by status helper
+// DL_L_NPC_NAV_ZONE | string | transition | npc-runtime/cache | overwrite/clear on zone updates
+// DL_L_NPC_SOCIAL_RESERVED_WP | object | social | npc-runtime | set on reserve, clear on release
+// DL_L_WP_SOCIAL_RESERVED_BY | object | social | wp-runtime | set on reserve, clear on release/expiry
+// DL_L_WP_SOCIAL_RESERVED_UNTIL | int(abs_min) | social | wp-runtime | set on reserve, clear on release/expiry
+// DL_L_PC_CR_DETAIN_PENDING | int(bool) | crime/legal | pc-case-runtime | set/clear via detain API only
+// DL_L_PC_CR_DETAIN_PENDING_REASON | string | crime/legal | pc-case-runtime | set on pending, clear on resolve
+// DL_L_PC_CR_DETAIN_PENDING_RESOLUTION | string | crime/legal | pc-case-runtime | overwrite on resolve
+// DL_L_PC_CR_LAST_GUARD | object | crime/legal | pc-case-runtime | set on witness, clear on pursuit clear
+// DL_L_NPC_CR_OFFENDER_UNTIL | int(abs_min) | crime/legal | pc-case-runtime | set on pending, clear on resolve
+// DL_L_NPC_CR_INVESTIGATE_TARGET | object | crime | npc-runtime | set on dispatch, implicit overwrite
+// DL_L_NPC_CR_INVESTIGATE_UNTIL | int(abs_min) | crime | npc-runtime | set on dispatch, implicit overwrite
+
 // Focus diagnostics contract (stable machine codes + canonical human messages).
 
 // Canonical runtime status codes.
@@ -116,6 +143,8 @@ const string DL_L_NPC_FALLBACK_LAST_EVENT = "dl_npc_fallback_last_event";
 
 const string DL_FB_DOMAIN_SOCIAL = "social";
 const string DL_FB_DOMAIN_TRANSITION = "transition";
+const string DL_FB_DOMAIN_CRIME = "crime";
+const string DL_FB_DOMAIN_WORKER = "worker";
 const string DL_FB_DOMAIN_REGISTRY = "registry";
 
 const string DL_FB_SEVERITY_INFO = "info";
@@ -130,7 +159,13 @@ const string DL_FB_REASON_SOCIAL_PARTNER_NOT_SOCIAL = "social_partner_not_social
 const string DL_FB_REASON_SOCIAL_PARTNER_ANCHOR_MISSING = "social_partner_anchor_missing";
 const string DL_FB_REASON_TRANSITION_EXIT_MISSING = "transition_exit_missing";
 const string DL_FB_REASON_TRANSITION_DRIVER_MISSING = "transition_driver_missing";
+const string DL_FB_REASON_TRANSITION_IN_PROGRESS = "transition_in_progress";
 const string DL_FB_REASON_REGISTRY_UNREGISTER_SLOT_INVALID = "registry_unregister_slot_invalid";
+const string DL_FB_REASON_CRIME_DETAIN_PENDING_WITNESSED = "crime_detain_pending_witnessed";
+const string DL_FB_REASON_CRIME_DETAIN_REFUSED = "crime_detain_refused";
+const string DL_FB_REASON_WORKER_REGISTRY_RECOVERY = "worker_registry_recovery";
+const string DL_FB_REASON_FOCUS_MISSING_MEAL_AREA = "focus_missing_meal_area";
+const string DL_FB_REASON_FOCUS_MISSING_MEAL_AND_WORK_AREA = "focus_missing_meal_and_work_area";
 
 string DL_GetFallbackSeverityByDomain(string sDomain)
 {
@@ -162,6 +197,27 @@ void DL_ReportFallback(object oActor, string sDomain, string sReasonCode, string
     );
 }
 
+void DL_SetReasonAndDiagnostic(
+    object oActor,
+    string sDomain,
+    string sReasonCode,
+    string sDiagnosticLocal,
+    string sDiagnosticCode
+)
+{
+    if (!GetIsObjectValid(oActor))
+    {
+        return;
+    }
+
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_DOMAIN, sDomain);
+    SetLocalString(oActor, DL_L_NPC_FALLBACK_REASON_CODE, sReasonCode);
+    if (sDiagnosticLocal != "")
+    {
+        SetLocalString(oActor, sDiagnosticLocal, sDiagnosticCode);
+    }
+}
+
 int DL_IsRuntimeEnabled()
 {
     object oModule = GetModule();
@@ -173,6 +229,73 @@ int DL_IsRuntimeEnabled()
     return GetLocalString(oModule, DL_L_MODULE_CONTRACT_VERSION) == DL_CONTRACT_VERSION_A0;
 }
 
+
+int DL_CanRunRuntimeForArea(object oArea)
+{
+    if (!DL_IsRuntimeEnabled())
+    {
+        return FALSE;
+    }
+
+    if (!GetIsObjectValid(oArea))
+    {
+        return FALSE;
+    }
+
+    return DL_IsAreaObject(oArea);
+}
+
+int DL_CanRunWorkerForArea(object oArea)
+{
+    if (!DL_CanRunRuntimeForArea(oArea))
+    {
+        return FALSE;
+    }
+
+    int nTier = DL_GetAreaTier(oArea);
+    return nTier == DL_TIER_HOT || nTier == DL_TIER_WARM;
+}
+
+int DL_CanRunWarmMaintenanceForArea(object oArea)
+{
+    if (!DL_CanRunRuntimeForArea(oArea))
+    {
+        return FALSE;
+    }
+
+    return DL_GetAreaTier(oArea) == DL_TIER_WARM;
+}
+
+int DL_CanRunResyncForArea(object oArea)
+{
+    if (!DL_CanRunRuntimeForArea(oArea))
+    {
+        return FALSE;
+    }
+
+    return DL_GetAreaTier(oArea) == DL_TIER_HOT;
+}
+
+int DL_CanRunCityResponseForArea(object oArea)
+{
+    if (!DL_CanRunRuntimeForArea(oArea))
+    {
+        return FALSE;
+    }
+
+    object oModule = GetModule();
+    if (GetLocalInt(oModule, "dl_city_response_enabled") != TRUE)
+    {
+        return FALSE;
+    }
+
+    return GetLocalInt(oArea, "dl_city_response_enabled") == TRUE;
+}
+
+int DL_CanRunTransitionForArea(object oArea)
+{
+    return DL_CanRunRuntimeForArea(oArea);
+}
 int DL_IsRuntimeLogEnabled()
 {
     return GetLocalInt(GetModule(), DL_L_MODULE_RUNTIME_LOG) == TRUE;
