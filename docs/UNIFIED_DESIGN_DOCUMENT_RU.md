@@ -419,6 +419,21 @@ dl_social_theater_2
 - Канонический факт: `legal witness lifecycle v1 scaffold` уже реализован (witnessed handoff + переходы `active -> detained/resolved`).
 - Полный судебный/расследовательский legal-контур зафиксирован как следующий этап, не входящий в текущий v1 runtime.
 
+### 2026-05-02 — canonical API для `detain pending` (crime/legal handoff)
+
+- Для флага `DL_L_PC_CR_DETAIN_PENDING` канонизирован единый helper-набор:
+  - `DL_CR_SetDetainPending(oPc, nUntilAbsMin, sReason)`;
+  - `DL_CR_ClearDetainPending(oPc, sResolution)`;
+  - `DL_CR_IsDetainPending(oPc)`.
+- Прямые записи/очистки `SetLocalInt/DeleteLocalInt` этого флага в crime flow заменяются на helper API.
+- Helper API синхронизирует legal-handoff поля:
+  - обновляет `DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN`;
+  - ведёт диагностические метки причины/резолюции (`DL_L_PC_CR_DETAIN_PENDING_REASON`, `DL_L_PC_CR_DETAIN_PENDING_RESOLUTION`);
+  - очищает/ведёт `DL_L_NPC_CR_OFFENDER_UNTIL` как TTL pending-состояния.
+- Закреплено требование идемпотентности:
+  - повторный `set` с тем же/менее строгим TTL и той же причиной не даёт дублирующего эффекта;
+  - повторный `clear` при уже очищенном состоянии — no-op.
+
 ### 2026-04-21 — процессная синхронизация документации (README + docs)
 
 - Зафиксирован обязательный процесс синхронизации документации в каждом runtime-коммите: `README` + `DEVELOPMENT_STATUS` + (при архитектурных изменениях) `UNIFIED`.
