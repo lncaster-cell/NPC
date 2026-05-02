@@ -69,8 +69,26 @@ object DL_ResolveSleepBedWaypoint(object oNpc)
         "dl_sleep_bed_" + IntToString(nSlot)
     );
 }
+void DL_StopSleepPresentationIfActive(object oNpc)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    if (GetLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE) <= 0 &&
+        GetLocalString(oNpc, DL_L_NPC_SLEEP_STATUS) == "" &&
+        GetLocalString(oNpc, DL_L_NPC_SLEEP_TARGET) == "")
+    {
+        return;
+    }
+
+    AssignCommand(oNpc, ClearAllActions(TRUE));
+    AssignCommand(oNpc, ActionPlayAnimation(ANIMATION_LOOPING_PAUSE, 1.0, 0.1));
+}
 void DL_ClearSleepExecutionState(object oNpc)
 {
+    DL_StopSleepPresentationIfActive(oNpc);
     DeleteLocalInt(oNpc, DL_L_NPC_SLEEP_PHASE);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_STATUS);
     DeleteLocalString(oNpc, DL_L_NPC_SLEEP_TARGET);
