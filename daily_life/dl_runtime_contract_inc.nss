@@ -83,6 +83,12 @@ const string DL_L_MODULE_LAST_EVENT_ACTOR = "dl_module_last_event_actor";
 const string DL_L_MODULE_SPAWN_COUNT = "dl_module_spawn_count";
 const string DL_L_MODULE_DEATH_COUNT = "dl_module_death_count";
 
+// Runtime local key taxonomy (canonical suffix policy):
+// - *_STATE: finite-state machine phase.
+// - *_PENDING/*_ACTIVE: boolean runtime flags.
+// - *_COUNT/*_SEQ: counters and monotonic sequence IDs.
+// - *_ABS_MIN/*_TICK: time stamps in absolute minutes or area/module ticks.
+
 // Canonical legal/crime contract values.
 const string DL_LG_CASE_KIND_KILL = "kill";
 const string DL_LG_CASE_KIND_ATTACK = "attack";
