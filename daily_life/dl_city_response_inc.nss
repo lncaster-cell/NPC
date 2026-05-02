@@ -19,6 +19,8 @@ const string DL_CR_KEY_PREFIX_GUARD_REACT = "dl_cr_guard_react_";
 const string DL_CR_KEY_UNKNOWN_IDENTITY = "unknown";
 const string DL_CR_DETAIN_DIALOG_DEFAULT = "dl_cr_guard_detain";
 
+int DL_CR_IsDetainPending(object oPc);
+
 int DL_CR_IsEnabledForArea(object oArea)
 {
     if (!DL_IsRuntimeEnabled())
@@ -289,7 +291,7 @@ void DL_CR_HandleGuardPerception(object oGuard)
     int nNowAbsMin = DL_GetAbsoluteMinute();
     if (nLevel < 3)
     {
-        if (GetLocalInt(oSeen, DL_L_PC_CR_DETAIN_PENDING) != TRUE)
+        if (!DL_CR_IsDetainPending(oSeen))
         {
             return;
         }
