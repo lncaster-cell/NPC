@@ -95,6 +95,61 @@ void DL_LogRuntime(string sLog)
     // Temporary: global runtime logging is disabled.
 }
 
+void DL_CommandMoveToObject(object oActor, object oTarget, int bRun = TRUE, float fRange = 1.0)
+{
+    AssignCommand(oActor, ActionMoveToObject(oTarget, bRun, fRange));
+}
+
+void DL_CommandMoveToObjectResetQueue(object oActor, object oTarget, int bRun = TRUE, float fRange = 1.0)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandMoveToObject(oActor, oTarget, bRun, fRange);
+}
+
+void DL_CommandMoveToLocation(object oActor, location lTarget, int bRun = TRUE)
+{
+    AssignCommand(oActor, ActionMoveToLocation(lTarget, bRun));
+}
+
+void DL_CommandMoveToLocationResetQueue(object oActor, location lTarget, int bRun = TRUE)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandMoveToLocation(oActor, lTarget, bRun);
+}
+
+void DL_CommandJumpToLocation(object oActor, location lTarget)
+{
+    AssignCommand(oActor, ActionJumpToLocation(lTarget));
+}
+
+void DL_CommandJumpToLocationResetQueue(object oActor, location lTarget)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandJumpToLocation(oActor, lTarget);
+}
+
+void DL_CommandStartConversation(object oActor, object oListener, string sDialogResRef, int bPrivateConversation = TRUE, int bPlayHello = TRUE)
+{
+    AssignCommand(oActor, ActionStartConversation(oListener, sDialogResRef, bPrivateConversation, bPlayHello));
+}
+
+void DL_CommandStartConversationResetQueue(object oActor, object oListener, string sDialogResRef, int bPrivateConversation = TRUE, int bPlayHello = TRUE)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandStartConversation(oActor, oListener, sDialogResRef, bPrivateConversation, bPlayHello);
+}
+
+void DL_CommandAttack(object oActor, object oTarget)
+{
+    AssignCommand(oActor, ActionAttack(oTarget));
+}
+
+void DL_CommandAttackResetQueue(object oActor, object oTarget)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandAttack(oActor, oTarget);
+}
+
 void DL_InitModuleContract()
 {
     object oModule = GetModule();

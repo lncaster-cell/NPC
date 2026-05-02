@@ -751,8 +751,7 @@ int DL_JumpNpcToTransitionExit(object oNpc, location lExit, string sStatus = "",
         return FALSE;
     }
 
-    AssignCommand(oNpc, ClearAllActions(TRUE));
-    AssignCommand(oNpc, ActionJumpToLocation(lExit));
+    DL_CommandJumpToLocationResetQueue(oNpc, lExit);
     return TRUE;
 }
 
@@ -830,8 +829,7 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
         if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
         {
             DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_MOVING_TO_ENTRY, DL_TRANSITION_DIAG_MOVING_TO_ENTRY, "");
-            AssignCommand(oNpc, ClearAllActions(TRUE));
-            AssignCommand(oNpc, ActionMoveToLocation(GetLocation(oEntryWp), TRUE));
+            DL_CommandMoveToLocationResetQueue(oNpc, GetLocation(oEntryWp), TRUE);
         }
         return TRUE;
     }
