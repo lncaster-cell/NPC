@@ -195,7 +195,7 @@ object DL_FindCrossAreaNavEntry(object oNpc, object oTarget, string sFromZone, s
 
 int DL_TryExecuteCrossAreaTransitionEntryWaypoint(object oNpc, object oEntryWp)
 {
-    return DL_ExecuteTransitionViaEntryWaypoint(oNpc, oEntryWp, "cross_area");
+    return DL_ExecuteTransitionViaEntryWaypoint(oNpc, oEntryWp, DL_DIAG_CTX_CROSS_AREA);
 }
 
 int DL_TryUseCrossAreaNavigationRouteToTarget(object oNpc, object oTarget)

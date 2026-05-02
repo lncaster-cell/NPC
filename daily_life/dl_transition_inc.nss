@@ -25,6 +25,26 @@ const string DL_L_NPC_TRANSITION_STATUS = "dl_npc_transition_status";
 const string DL_L_NPC_TRANSITION_DIAGNOSTIC = "dl_npc_transition_diagnostic";
 const string DL_L_NPC_NAV_ZONE = "dl_npc_nav_zone";
 
+// Transition diagnostic context prefixes.
+const string DL_DIAG_CTX_ROUTED = "routed";
+const string DL_DIAG_CTX_CROSS_AREA = "cross_area";
+
+// Canonical transition status values.
+const string DL_TRANSITION_STATUS_METADATA_MISSING = "metadata_missing";
+const string DL_TRANSITION_STATUS_MOVING_TO_ENTRY = "moving_to_entry";
+const string DL_TRANSITION_STATUS_EXIT_MISSING = "exit_missing";
+const string DL_TRANSITION_STATUS_TRANSITIONING = "transitioning";
+const string DL_TRANSITION_STATUS_DRIVER_MISSING = "driver_missing";
+const string DL_TRANSITION_STATUS_DRIVER_UNKNOWN = "driver_unknown";
+
+// Canonical transition diagnostic codes (suffix-only; context is added via helper).
+const string DL_TRANSITION_DIAG_METADATA_REQUIRED = "need_transition_exit_tag_or_kind_id_on_entry_waypoint";
+const string DL_TRANSITION_DIAG_MOVING_TO_ENTRY = "moving_to_transition_entry";
+const string DL_TRANSITION_DIAG_EXIT_REQUIRED = "need_valid_transition_exit_waypoint";
+const string DL_TRANSITION_DIAG_IN_PROGRESS = "transition_in_progress";
+const string DL_TRANSITION_DIAG_DRIVER_REQUIRED = "need_valid_transition_door";
+const string DL_TRANSITION_DIAG_DRIVER_UNKNOWN = "unknown_transition_driver";
+
 const string DL_TRANSITION_KIND_AREA_LINK = "area_link";
 const string DL_TRANSITION_KIND_LOCAL_JUMP = "local_jump";
 
@@ -249,6 +269,30 @@ void DL_SetNpcNavZoneFromWaypoint(object oNpc, object oWp)
     {
         DL_SetNpcNavZone(oNpc, sZone);
     }
+}
+
+// Canonical transition state setter contract.
+// Any new transition branches must set status/diagnostic only through this helper.
+void DL_SetTransitionState(object oNpc, string sStatus, string sDiagnostic, string sDiagContext)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, sStatus);
+    if (sDiagnostic == "")
+    {
+        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "");
+        return;
+    }
+
+    string sDiagnosticValue = sDiagnostic;
+    if (sDiagContext != "")
+    {
+        sDiagnosticValue = sDiagContext + "_" + sDiagnostic;
+    }
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, sDiagnosticValue);
 }
 
 string DL_GetResolvedTransitionExitTag(object oEntryWp)
@@ -644,11 +688,7 @@ int DL_JumpNpcToTransitionExit(object oNpc, location lExit, string sStatus = "",
     {
         if (sStatus != "")
         {
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, sStatus);
-        }
-        if (sDiagnostic != "")
-        {
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, sDiagnostic);
+            DL_SetTransitionState(oNpc, sStatus, sDiagnostic, "");
         }
         return FALSE;
     }
@@ -682,8 +722,7 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
 
     if (sExitTag == "" && (sKind == "" || sTransitionId == "") && !DL_IsAutoNavTag(GetTag(oEntryWp)))
     {
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "metadata_missing");
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_transition_exit_tag_or_kind_id_on_entry_waypoint");
+        DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_METADATA_MISSING, DL_TRANSITION_DIAG_METADATA_REQUIRED, "");
         return TRUE;
     }
 
@@ -691,8 +730,7 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
     {
         if (GetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS) != "moving_to_entry")
         {
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "moving_to_entry");
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "moving_to_transition_entry");
+            DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_MOVING_TO_ENTRY, DL_TRANSITION_DIAG_MOVING_TO_ENTRY, "");
             AssignCommand(oNpc, ClearAllActions(TRUE));
             AssignCommand(oNpc, ActionMoveToLocation(GetLocation(oEntryWp), TRUE));
         }
@@ -702,19 +740,17 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
     object oExitWp = DL_ResolveTransitionExitWaypointFromEntry(oEntryWp);
     if (!GetIsObjectValid(oExitWp))
     {
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "exit_missing");
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_valid_transition_exit_waypoint");
+        DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_EXIT_MISSING, DL_TRANSITION_DIAG_EXIT_REQUIRED, "");
         return TRUE;
     }
 
     location lExit = GetLocation(oExitWp);
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "transitioning");
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "transition_in_progress");
+    DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_TRANSITIONING, DL_TRANSITION_DIAG_IN_PROGRESS, "");
 
     if (sDriver == "" || sDriver == DL_TRANSITION_DRIVER_NONE || sDriver == DL_TRANSITION_DRIVER_TRIGGER)
     {
         DL_SetNpcNavZoneFromWaypoint(oNpc, oExitWp);
-        DL_JumpNpcToTransitionExit(oNpc, lExit, "transitioning", "transition_in_progress");
+        DL_JumpNpcToTransitionExit(oNpc, lExit, DL_TRANSITION_STATUS_TRANSITIONING, DL_TRANSITION_DIAG_IN_PROGRESS);
         return TRUE;
     }
 
@@ -723,8 +759,7 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
         object oDoor = DL_ResolveTransitionDriverObject(oEntryWp);
         if (!GetIsObjectValid(oDoor) || GetObjectType(oDoor) != OBJECT_TYPE_DOOR)
         {
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "driver_missing");
-            SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "need_valid_transition_door");
+            DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_DRIVER_MISSING, DL_TRANSITION_DIAG_DRIVER_REQUIRED, "");
             return TRUE;
         }
 
@@ -734,12 +769,11 @@ int DL_TryExecuteTransitionEntryWaypoint(object oNpc, object oEntryWp)
         {
             AssignCommand(oNpc, DoDoorAction(oDoor, DOOR_ACTION_OPEN));
         }
-        DL_JumpNpcToTransitionExit(oNpc, lExit, "transitioning", "transition_in_progress");
+        DL_JumpNpcToTransitionExit(oNpc, lExit, DL_TRANSITION_STATUS_TRANSITIONING, DL_TRANSITION_DIAG_IN_PROGRESS);
         return TRUE;
     }
 
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "driver_unknown");
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "unknown_transition_driver");
+    DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_DRIVER_UNKNOWN, DL_TRANSITION_DIAG_DRIVER_UNKNOWN, "");
     return TRUE;
 }
 
