@@ -214,6 +214,8 @@ blacksmith_house:hall
 
 Маршрутизация должна быть bounded: ограниченная глубина поиска, ограниченное число transition-кандидатов, без полного поиска мира в hot path.
 
+Жёсткий контракт слоя: функции nav-модуля (`dl_cross_area_nav_inc.nss`, `dl_nav_router_inc.nss`) делают только planning/validation маршрута и возвращают entry waypoint; любые `AssignCommand`/`Action*`/`DoDoorAction` запрещены в nav-слое.
+
 ### 4.6 Transition Executor
 
 **Ответственность:** выполнить один выбранный переход.
@@ -229,6 +231,8 @@ blacksmith_house:hall
 ```
 
 Существующий transition layer сохраняется именно как `Transition Executor`. Новая маршрутизация должна вызывать executor, а не дублировать его механику и не конкурировать с ним.
+
+Жёсткий контракт слоя: фактическое исполнение перехода (подход, door driver, jump/teleport, очистка action queue) выполняется только в `dl_transition_exec_inc.nss` / `dl_transition_inc.nss`.
 
 ### 4.7 Action / Animation
 
