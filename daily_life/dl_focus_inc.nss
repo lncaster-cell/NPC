@@ -11,7 +11,7 @@ const string DL_CHILL_ANIM_SIT_IDLE = "sitidle";
 
 const string DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC = "fallback_social_public";
 const string DL_EVT_FOCUS_SOCIAL_PARTNER_LOOKUP = "social_partner_lookup";
-const string DL_FOCUS_STATUS_MOVING_TO_ANCHOR = "moving_to_anchor";
+const string DL_FOCUS_STATUS_MOVING_TO_ANCHOR = DL_STATUS_MOVING_TO_ANCHOR;
 
 void DL_ClearFocusExecutionState(object oNpc)
 {
@@ -40,36 +40,35 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
         return oCached;
     }
 
-    int bTagFound = FALSE;
+    int bTagFound = GetIsObjectValid(GetObjectByTag(sPartnerTag, 0));
     int bTagFoundOutsideArea = FALSE;
-    object oPartner = OBJECT_INVALID;
-    int nTagIndex = 0;
-    object oCandidate = GetObjectByTag(sPartnerTag, nTagIndex);
-    while (GetIsObjectValid(oCandidate) && nTagIndex < DL_SOCIAL_PARTNER_TAG_SEARCH_CAP)
+
+    object oSelfCandidate = DL_FindObjectByTagWithChecks(sPartnerTag, DL_SOCIAL_PARTNER_TAG_SEARCH_CAP, OBJECT_TYPE_CREATURE, OBJECT_INVALID, OBJECT_INVALID, FALSE);
+    if (GetIsObjectValid(oSelfCandidate) && oSelfCandidate == oNpc)
     {
-        bTagFound = TRUE;
+        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
+        DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=" + DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
+    }
 
-        if (oCandidate == oNpc)
-        {
-            SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
-            DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=" + DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
-        }
-        else if (!DL_IsActivePipelineNpc(oCandidate))
-        {
-            // Keep scanning for a suitable active pipeline NPC.
-        }
-        else if (GetArea(oCandidate) == GetArea(oNpc))
-        {
-            oPartner = oCandidate;
-            break;
-        }
-        else
-        {
-            bTagFoundOutsideArea = TRUE;
-        }
-
-        nTagIndex = nTagIndex + 1;
-        oCandidate = GetObjectByTag(sPartnerTag, nTagIndex);
+    object oPartner = DL_FindObjectByTagWithChecks(
+        sPartnerTag,
+        DL_SOCIAL_PARTNER_TAG_SEARCH_CAP,
+        OBJECT_TYPE_CREATURE,
+        GetArea(oNpc),
+        oNpc,
+        TRUE
+    );
+    if (!GetIsObjectValid(oPartner) && bTagFound)
+    {
+        object oAnyAreaPartner = DL_FindObjectByTagWithChecks(
+            sPartnerTag,
+            DL_SOCIAL_PARTNER_TAG_SEARCH_CAP,
+            OBJECT_TYPE_CREATURE,
+            OBJECT_INVALID,
+            oNpc,
+            TRUE
+        );
+        bTagFoundOutsideArea = GetIsObjectValid(oAnyAreaPartner);
     }
 
     if (!GetIsObjectValid(oPartner))
@@ -427,7 +426,7 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
     {
         DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
         DeleteLocalInt(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL);
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, "on_chill_anchor");
+        DL_SetRuntimeState(oNpc, DL_L_NPC_FOCUS_STATUS, DL_STATUS_ON_CHILL_ANCHOR, "", "");
         SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oSeat));
         DL_LogChatDebugEvent(oNpc, "on_chill_anchor", "on_chill_anchor chair=" + GetTag(oChair));
         return TRUE;
@@ -443,13 +442,13 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
 
     int nNowAbs = DL_GetAbsoluteMinute();
     int nRetryUntil = GetLocalInt(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL);
-    if (GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) == "sitting_chill_attempt" && nRetryUntil > nNowAbs)
+    if (GetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS) == DL_STATUS_SITTING_CHILL_ATTEMPT && nRetryUntil > nNowAbs)
     {
         return TRUE;
     }
 
     DeleteLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC);
-    SetLocalString(oNpc, DL_L_NPC_FOCUS_STATUS, "sitting_chill_attempt");
+    DL_SetRuntimeState(oNpc, DL_L_NPC_FOCUS_STATUS, DL_STATUS_SITTING_CHILL_ATTEMPT, "", "");
     SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oSeat));
     SetLocalInt(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL, nNowAbs + DL_CHILL_SIT_RETRY_MINUTES);
     AssignCommand(oNpc, ClearAllActions(TRUE));
@@ -550,7 +549,7 @@ void DL_ExecuteSocialDirective(object oNpc)
 
     if (DL_ShouldFallbackSocialToPublicLocal(oNpc))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, "social_fallback_to_public");
+        DL_SetRuntimeState(oNpc, "", "", DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
         DL_LogChatDebugEvent(oNpc, "fallback_social_public", "fallback social->public reason=partner_not_social");
         DL_ExecutePublicDirective(oNpc);
         return;

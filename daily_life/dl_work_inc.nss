@@ -162,8 +162,7 @@ string DL_ResolveBlacksmithWorkKindAtHour(object oNpc)
 void DL_SetWorkMissingState(object oNpc, string sKind, string sDiagnostic)
 {
     SetLocalString(oNpc, DL_L_NPC_WORK_KIND, sKind);
-    SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "missing_waypoints");
-    SetLocalString(oNpc, DL_L_NPC_WORK_DIAGNOSTIC, sDiagnostic);
+    DL_SetRuntimeState(oNpc, DL_L_NPC_WORK_STATUS, DL_STATUS_MISSING_WAYPOINTS, DL_L_NPC_WORK_DIAGNOSTIC, sDiagnostic);
     DeleteLocalString(oNpc, DL_L_NPC_WORK_TARGET);
     DL_ClearActivityPresentation(oNpc);
     DL_ClearTransitionExecutionState(oNpc);
@@ -206,16 +205,16 @@ int DL_ProgressWorkAtTarget(object oNpc, object oTarget)
     location lTarget = GetLocation(oTarget);
     if (GetDistanceBetween(oNpc, oTarget) > DL_WORK_ANCHOR_RADIUS)
     {
-        if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != "moving_to_anchor")
+        if (GetLocalString(oNpc, DL_L_NPC_WORK_STATUS) != DL_STATUS_MOVING_TO_ANCHOR)
         {
-            SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "moving_to_anchor");
+            DL_SetRuntimeState(oNpc, DL_L_NPC_WORK_STATUS, DL_STATUS_MOVING_TO_ANCHOR, "", "");
             DL_QueueMoveAction(oNpc, lTarget, TRUE);
         }
         return TRUE;
     }
 
     DL_ClearTransitionExecutionState(oNpc);
-    SetLocalString(oNpc, DL_L_NPC_WORK_STATUS, "on_anchor");
+    DL_SetRuntimeState(oNpc, DL_L_NPC_WORK_STATUS, DL_STATUS_ON_ANCHOR, "", "");
     DL_FaceWorkTargetOrientation(oNpc, oTarget);
     DL_ApplyArchiveActivityPresentation(oNpc, DL_DIR_WORK);
     DL_PlayWorkAnimation(oNpc);
@@ -249,7 +248,7 @@ void DL_ExecuteWorkDirective(object oNpc)
 
         if (!GetIsObjectValid(oForge) || !GetIsObjectValid(oCraft))
         {
-            DL_SetWorkMissingState(oNpc, sKind, "need_forge_and_craft_waypoints");
+            DL_SetWorkMissingState(oNpc, sKind, DL_DIAG_WORK_NEED_FORGE_AND_CRAFT_WAYPOINTS);
             return;
         }
 
