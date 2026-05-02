@@ -1,5 +1,8 @@
 #include "dl_activity_archive_anim_inc"
 #include "dl_transition_inc"
+#include "dl_cross_area_nav_inc"
+#include "dl_transition_exec_inc"
+#include "dl_nav_router_inc"
 
 // Step 05+: resolver/materialization skeleton.
 string DL_GetNpcProblemSummary(object oNpc);
