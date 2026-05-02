@@ -173,3 +173,5 @@
 - `docs/audits/post_refactor_audit_pass11.md`
 - `docs/audits/post_refactor_audit_pass12.md`
 - `docs/audits/post_refactor_audit_pass13.md`
+- `docs/audits/post_refactor_audit_pass14.md`
+- `docs/audits/audit_artifacts_closure_2026-05-02.md`
