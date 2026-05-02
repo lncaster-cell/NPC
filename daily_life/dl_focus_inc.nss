@@ -47,7 +47,7 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
     if (GetIsObjectValid(oSelfCandidate) && oSelfCandidate == oNpc)
     {
         SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
-        DL_LogChatDebugEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, DL_MSG_FOCUS_FALLBACK_SOCIAL_PUBLIC + " reason=" + DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
+        DL_LogSocialEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, "reason=" + DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF);
     }
 
     object oPartner = DL_FindObjectByTagWithChecks(
@@ -76,18 +76,18 @@ object DL_ResolveSocialPartnerObject(object oNpc, string sPartnerTag)
         DeleteLocalObject(oNpc, DL_L_NPC_CACHE_SOCIAL_PARTNER_OBJ);
         if (bTagFoundOutsideArea)
         {
-            DL_LogChatDebugEvent(
+            DL_LogSocialEvent(
                 oNpc,
                 DL_EVT_FOCUS_SOCIAL_PARTNER_LOOKUP,
-                DL_MSG_FOCUS_SOCIAL_PARTNER_LOOKUP + " tag=" + sPartnerTag + " result=" + DL_MSG_RESULT_FOUND_OUTSIDE_AREA
+                "tag=" + sPartnerTag + " result=" + DL_MSG_RESULT_FOUND_OUTSIDE_AREA
             );
         }
         else if (!bTagFound)
         {
-            DL_LogChatDebugEvent(
+            DL_LogSocialEvent(
                 oNpc,
                 DL_EVT_FOCUS_SOCIAL_PARTNER_LOOKUP,
-                DL_MSG_FOCUS_SOCIAL_PARTNER_LOOKUP + " tag=" + sPartnerTag + " result=" + DL_MSG_RESULT_TAG_NOT_FOUND
+                "tag=" + sPartnerTag + " result=" + DL_MSG_RESULT_TAG_NOT_FOUND
             );
         }
         return OBJECT_INVALID;
@@ -163,7 +163,7 @@ int DL_ProgressFocusAtTarget(object oNpc, object oTarget, string sOnAnchorStatus
     {
         PlayCustomAnimation(oNpc, sAnim, TRUE);
     }
-    DL_LogChatDebugEvent(oNpc, sOnAnchorStatus, sOnAnchorStatus + " anchor=" + GetTag(oTarget));
+    DL_LogSocialEvent(oNpc, sOnAnchorStatus, "anchor=" + GetTag(oTarget));
     return TRUE;
 }
 string DL_ResolveMealKind(object oNpc)
@@ -207,10 +207,10 @@ object DL_ResolveMealWaypoint(object oNpc, string sMealKind)
             oTargetArea = DL_GetWorkArea(oNpc);
             if (GetIsObjectValid(oTargetArea))
             {
-                DL_LogChatDebugEvent(
+                DL_LogSocialEvent(
                     oNpc,
                     "fallback_meal_work",
-                    DL_MSG_FOCUS_FALLBACK_MEAL_WORK + " reason=missing_meal_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
+                    "reason=missing_meal_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
                 );
             }
         }
@@ -221,10 +221,10 @@ object DL_ResolveMealWaypoint(object oNpc, string sMealKind)
         oTargetArea = DL_GetHomeArea(oNpc);
         if (GetIsObjectValid(oTargetArea) && sMealKind == DL_MEAL_KIND_LUNCH)
         {
-            DL_LogChatDebugEvent(
+            DL_LogSocialEvent(
                 oNpc,
                 "fallback_meal_home",
-                DL_MSG_FOCUS_FALLBACK_MEAL_HOME + " reason=missing_meal_and_work_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
+                "reason=missing_meal_and_work_area kind=" + sMealKind + " area=" + GetTag(oTargetArea)
             );
         }
     }
@@ -363,7 +363,7 @@ void DL_ExecuteMealDirective(object oNpc)
         sAnim = "sitdrink";
     }
 
-    DL_LogChatDebugEvent(
+    DL_LogSocialEvent(
         oNpc,
         "target_meal",
         "target dir=MEAL area=" + GetTag(GetArea(oMeal)) + " anchor=" + GetTag(oMeal) + " kind=" + sMealKind
@@ -424,7 +424,7 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
         DeleteLocalInt(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL);
         DL_SetRuntimeState(oNpc, DL_L_NPC_FOCUS_STATUS, DL_STATUS_ON_CHILL_ANCHOR, "", "");
         SetLocalString(oNpc, DL_L_NPC_FOCUS_TARGET, GetTag(oSeat));
-        DL_LogChatDebugEvent(oNpc, "on_chill_anchor", "on_chill_anchor chair=" + GetTag(oChair));
+        DL_LogSocialEvent(oNpc, "on_chill_anchor", "chair=" + GetTag(oChair));
         return TRUE;
     }
 
@@ -448,7 +448,7 @@ int DL_ProgressChillAtSeat(object oNpc, object oSeat)
     DL_SetMinuteCooldown(oNpc, DL_L_NPC_CHILL_SIT_RETRY_UNTIL, DL_CHILL_SIT_RETRY_MINUTES);
     AssignCommand(oNpc, ClearAllActions(TRUE));
     AssignCommand(oNpc, ActionSit(oChair));
-    DL_LogChatDebugEvent(oNpc, "sitting_chill_attempt", "sitting_chill_attempt chair=" + GetTag(oChair));
+    DL_LogSocialEvent(oNpc, "sitting_chill_attempt", "chair=" + GetTag(oChair));
     return TRUE;
 }
 void DL_ExecuteChillDirective(object oNpc)
@@ -460,7 +460,7 @@ void DL_ExecuteChillDirective(object oNpc)
         return;
     }
 
-    DL_LogChatDebugEvent(
+    DL_LogSocialEvent(
         oNpc,
         "target_chill",
         "target dir=CHILL area=" + GetTag(GetArea(oSeat)) + " anchor=" + GetTag(oSeat)
@@ -481,7 +481,7 @@ void DL_ExecutePublicDirective(object oNpc)
     {
         sAnim = "talk01";
     }
-    DL_LogChatDebugEvent(
+    DL_LogSocialEvent(
         oNpc,
         "target_public",
         "target dir=PUBLIC area=" + GetTag(GetArea(oPublic)) + " anchor=" + GetTag(oPublic)
@@ -500,21 +500,21 @@ int DL_ShouldFallbackSocialToPublicLocal(object oNpc)
     string sPartnerTag = GetLocalString(oNpc, DL_L_NPC_SOCIAL_PARTNER_TAG);
     if (!GetIsObjectValid(oMe) || sPartnerTag == "")
     {
-        DL_ReportFallback(oNpc, DL_FB_DOMAIN_SOCIAL, DL_FB_REASON_SOCIAL_ANCHOR_OR_PARTNER_MISSING, DL_FB_NEXT_PUBLIC);
+        DL_LogSocialEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, "reason=missing_social_anchor_or_partner");
         return TRUE;
     }
 
     object oPartner = DL_ResolveSocialPartnerObject(oNpc, sPartnerTag);
     if (!GetIsObjectValid(oPartner) || GetLocalInt(oPartner, DL_L_NPC_DIRECTIVE) != DL_DIR_SOCIAL)
     {
-        DL_ReportFallback(oNpc, DL_FB_DOMAIN_SOCIAL, DL_FB_REASON_SOCIAL_PARTNER_NOT_SOCIAL, DL_FB_NEXT_PUBLIC);
+        DL_LogSocialEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, "reason=partner_not_social");
         return TRUE;
     }
 
     object oPartnerWp = DL_ResolveSocialWaypoint(oPartner);
     if (!GetIsObjectValid(oPartnerWp))
     {
-        DL_ReportFallback(oNpc, DL_FB_DOMAIN_SOCIAL, DL_FB_REASON_SOCIAL_PARTNER_ANCHOR_MISSING, DL_FB_NEXT_PUBLIC);
+        DL_LogSocialEvent(oNpc, DL_EVT_FOCUS_FALLBACK_SOCIAL_PUBLIC, "reason=partner_missing_social_anchor");
         return TRUE;
     }
 
@@ -543,7 +543,7 @@ void DL_ExecuteSocialDirective(object oNpc)
         }
 
         string sAnim = DL_GetStandaloneSocialAnimation(sKind);
-        DL_LogChatDebugEvent(
+        DL_LogSocialEvent(
             oNpc,
             "target_social_" + sKind,
             "target dir=SOCIAL kind=" + sKind + " area=" + GetTag(GetArea(oSocial)) + " anchor=" + GetTag(oSocial)
@@ -554,7 +554,8 @@ void DL_ExecuteSocialDirective(object oNpc)
 
     if (DL_ShouldFallbackSocialToPublicLocal(oNpc))
     {
-        SetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
+        DL_SetRuntimeState(oNpc, "", "", DL_L_NPC_FOCUS_DIAGNOSTIC, DL_DIAG_FOCUS_SOCIAL_FALLBACK_TO_PUBLIC);
+        DL_LogSocialEvent(oNpc, "fallback_social_public", "reason=partner_not_social");
         DL_ExecutePublicDirective(oNpc);
         return;
     }
@@ -584,7 +585,7 @@ void DL_ExecuteSocialDirective(object oNpc)
         }
     }
 
-    DL_LogChatDebugEvent(
+    DL_LogSocialEvent(
         oNpc,
         "target_social",
         "target dir=SOCIAL area=" + GetTag(GetArea(oMe)) + " anchor=" + GetTag(oMe) +

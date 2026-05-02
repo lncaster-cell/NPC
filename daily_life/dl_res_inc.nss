@@ -200,22 +200,38 @@ string DL_GetDirectiveDebugLabel(int nDirective)
     }
     return "NONE";
 }
-void DL_LogChatDebugEvent(object oNpc, string sKind, string sPayload)
+void DL_LogDomainDebugEvent(object oNpc, string sDomain, string sEventCode, string sKeyContext)
 {
     if (!GetIsObjectValid(oNpc) || !DL_IsChatDebugEnabledForNpc(oNpc))
     {
         return;
     }
 
-    string sSig = sKind + "|" + sPayload;
+    string sNpcTag = GetTag(oNpc);
+    string sPayload = "domain=" + sDomain + " event_code=" + sEventCode + " npc_tag=" + sNpcTag + " key_context=" + sKeyContext;
+    string sSig = sDomain + "|" + sEventCode + "|" + sNpcTag + "|" + sKeyContext;
     if (GetLocalString(oNpc, DL_L_NPC_CHAT_LAST_EVENT_SIG) == sSig)
     {
         return;
     }
 
     SetLocalString(oNpc, DL_L_NPC_CHAT_LAST_EVENT_SIG, sSig);
-    DL_LogChat("npc=" + GetTag(oNpc) + " " + sPayload);
+    DL_LogChat(sPayload);
 }
+
+void DL_LogTransitionEvent(object oNpc, string sEventCode, string sKeyContext)
+{
+    DL_LogDomainDebugEvent(oNpc, "transition", sEventCode, sKeyContext);
+}
+void DL_LogSocialEvent(object oNpc, string sEventCode, string sKeyContext)
+{
+    DL_LogDomainDebugEvent(oNpc, "social", sEventCode, sKeyContext);
+}
+void DL_LogCrimeEvent(object oNpc, string sEventCode, string sKeyContext)
+{
+    DL_LogDomainDebugEvent(oNpc, "crime", sEventCode, sKeyContext);
+}
+
 void DL_LogDirectiveChange(object oNpc, int nPrevDirective, int nDirective)
 {
     if (nDirective == nPrevDirective)
@@ -223,7 +239,7 @@ void DL_LogDirectiveChange(object oNpc, int nPrevDirective, int nDirective)
         return;
     }
 
-    DL_LogChatDebugEvent(
+    DL_LogTransitionEvent(
         oNpc,
         "directive",
         "dir=" + DL_GetDirectiveDebugLabel(nDirective) +
@@ -291,10 +307,7 @@ void DL_LogStuckState(object oNpc, int nDirective)
     }
 
     SetLocalInt(oNpc, DL_L_NPC_CHAT_STUCK_LAST_LOG, nNowAbsMin);
-    DL_LogChat("npc=" + GetTag(oNpc) +
-              " stuck dir=" + DL_GetDirectiveDebugLabel(nDirective) +
-              " state=" + sState +
-              " target=" + sTarget);
+    DL_LogTransitionEvent(oNpc, "stuck_state", "dir=" + DL_GetDirectiveDebugLabel(nDirective) + " state=" + sState + " target=" + sTarget);
 }
 void DL_LogMarkupIssueOnce(object oNpc, string sKey, string sMessage)
 {
