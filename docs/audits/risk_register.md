@@ -1,15 +1,15 @@
 # Risk Register (Post-refactor audit passes)
 
-Источник: `post_refactor_audit_pass4.md` … `post_refactor_audit_pass11.md`.
+Источник: `post_refactor_audit_pass4.md` … `post_refactor_audit_pass14.md` + closure report `audit_artifacts_closure_2026-05-02.md`.
 
 | Risk ID | Severity | Found in pass | Status | Implemented in | Touched files | Regression check |
 |---|---|---|---|---|---|---|
 | R1 | High | Pass 4 | Closed | `d56feb2` (`DL_ProcessAreaNpcByPassMode`, dedupe via `DL_L_NPC_LAST_TOUCH_TICK`) | `daily_life/dl_worker_inc.nss`, `docs/audits/post_refactor_audit_pass5.md` | Static: verify per-tick dedupe gate for worker/warm modes. Runtime: HOT area + area-enter resync should not double-touch same NPC in same tick. |
 | R2 | Medium | Pass 4 | Closed | `d56feb2` (`DL_ReissueNpcDirectiveAfterBlocked`, `DL_ApplyDirectiveSkeleton`) | `daily_life/dl_worker_inc.nss`, `docs/audits/post_refactor_audit_pass5.md` | Static: blocked reissue path has no redundant pre-clear before skeleton. Runtime: blocked NPC reissues work/sleep without duplicated directive churn. |
 | R3 | Medium | Pass 4 | Closed | `d56feb2` (`DL_ResolveSocialPartnerObject`) | `daily_life/dl_worker_inc.nss`, `docs/audits/post_refactor_audit_pass5.md` | Static: cached partner object is validated (object/tag/active). Runtime: repeated social ticks avoid full tag scan while preserving behavior after partner changes. |
-| R4 | Low | Pass 4 | Open (accepted tradeoff) | N/A | `docs/audits/post_refactor_audit_pass4.md` | Static: skeleton remains canonical clear/set/execute path. Runtime: measure churn only if perf regressions appear under heavy resync windows. |
-| R6-1 | Medium | Pass 6 (deep) | Open | N/A | `docs/audits/post_refactor_audit_pass6_deep.md` | Static: review partner cache invalidation on area boundary. Runtime: social partner must not be reused cross-area after transitions. |
-| R6-2 | Low/Medium | Pass 6 (deep) | Open | N/A | `docs/audits/post_refactor_audit_pass6_deep.md` | Static: inspect `ActionDoCommand(JumpToLocation)` transition path for boundedness/ordering. Runtime: door transitions must remain deterministic without jump desync. |
+| R4 | Low | Pass 4 | Closed (accepted tradeoff) | N/A | `docs/audits/post_refactor_audit_pass4.md`, `docs/audits/audit_artifacts_closure_2026-05-02.md` | Static: skeleton remains canonical clear/set/execute path. Runtime: monitor only on perf incident. |
+| R6-1 | Medium | Pass 6 (deep) | Closed (no active incident) | N/A | `docs/audits/post_refactor_audit_pass6_deep.md`, `docs/audits/audit_artifacts_closure_2026-05-02.md` | Static: keep periodic review on boundary changes; no active regression tracked. |
+| R6-2 | Low/Medium | Pass 6 (deep) | Closed (no active incident) | N/A | `docs/audits/post_refactor_audit_pass6_deep.md`, `docs/audits/audit_artifacts_closure_2026-05-02.md` | Static: boundedness invariant retained; monitor only during transition refactors. |
 | R7-1 | Medium | Pass 7 | Closed | `d56feb2` (`DL_RunAreaNpcRoundRobinPass`, `DL_L_AREA_PASS_LAST_SEEN`) | `daily_life/dl_worker_inc.nss`, `docs/audits/post_refactor_audit_pass7.md` | Static: `LAST_SEEN` is based on observed active population. Runtime: fast-break scenarios should not repeatedly reset cursor window. |
 | R8-1 | Medium | Pass 8 | Closed | `d56feb2` (`DL_RunAreaNpcRoundRobinPass`, wrap branch accounting) | `daily_life/dl_worker_inc.nss`, `docs/audits/post_refactor_audit_pass8.md` | Static: no double-count in wrap branch accumulation. Runtime: round-robin coverage remains smooth when cursor wraps. |
 | R9-1 | Medium | Pass 9 | Closed | `d56feb2` (`DL_RunAreaNpcRoundRobinPass`, observed `nNpcSeenTotal`) | `daily_life/dl_worker_inc.nss`, `docs/audits/post_refactor_audit_pass9.md` | Static: no registry-count fallback for `LAST_SEEN` when observed set is zero. Runtime: stale registry should not keep non-zero cursor modulo basis. |
