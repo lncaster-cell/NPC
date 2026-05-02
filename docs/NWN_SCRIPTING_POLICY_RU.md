@@ -11,6 +11,8 @@
 1. **Сначала ищем штатную функцию NWScript/NWN2 (Lexicon)**.
 2. **Нельзя вводить новый local-state key, если уже есть существующий canonical key/helper**.
 3. **Любой fallback должен быть детерминирован и документирован**.
+4. **Deprecated путь удаляется в том же PR, где введён replacement**, если нет подтверждённого технического ограничения.
+5. **PR блокируется, если одновременно оставляет старый и новый путь без технического обоснования** (и без transition-маркера удаления).
 
 ## Правила применения
 
@@ -20,6 +22,10 @@
   - не вводить скрытого nondeterministic state;
   - быть явно описан в документации (минимум в `docs/DEVELOPMENT_STATUS_RU.md` при оперативной правке, при архитектурном влиянии — в `docs/UNIFIED_DESIGN_DOCUMENT_RU.md`).
 - Новый local key разрешён только при доказанном отсутствии существующего canonical helper/контракта.
+- Для неизбежного временного перехода обязателен явный маркер:
+  - `remove-by: <YYYY-MM-DD|version>; owner: <name>`;
+  - причина, почему нельзя удалить legacy-путь в текущем PR;
+  - ссылка на follow-up задачу/этап.
 
 ## Примеры из текущего кода
 
@@ -37,3 +43,15 @@
 - [ ] Проверен Lexicon/штатный NWScript путь и зафиксирован выбор built-in механики.
 - [ ] Не добавлены дублирующие local-state keys при наличии canonical helper.
 - [ ] Все fallback-ветки детерминированы и задокументированы.
+
+## Canonical time-gates (обязательно к применению)
+
+- **Minute-based cooldown (gameplay / межсобытийная логика)**:
+  - Проверка: `DL_IsMinuteCooldownActive(oTarget, sKey)`.
+  - Установка: `DL_SetMinuteCooldown(oTarget, sKey, nDurationMinutes)`.
+  - Применять для gameplay state, где важен абсолютный момент времени (например, реакция охраны, повтор эпизода, retry-окна поведения NPC).
+- **Area tick interval (worker scheduling / планировщик)**:
+  - Проверка интервала: `DL_ShouldRunByAreaTickInterval(nNowTick, nLastTick, nInterval)`.
+  - Применять только в worker/resync-пайплайне и прочем tick-driven scheduling.
+
+Запрещено дублировать inline-формулы вида `GetLocalInt(...) > now` и `tick - lastTick < interval` вне этих helper-функций.

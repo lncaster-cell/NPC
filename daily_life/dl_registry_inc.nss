@@ -163,7 +163,7 @@ void DL_MaybeReconcileAreaPlayerCount(object oArea)
 
     int nNowTick = GetLocalInt(oArea, DL_L_AREA_WORKER_TICK);
     int nLastTick = GetLocalInt(oArea, DL_L_AREA_PLAYER_COUNT_RECONCILE_TICK);
-    if (nNowTick >= nLastTick && (nNowTick - nLastTick) < DL_PLAYER_COUNT_RECONCILE_INTERVAL_TICKS)
+    if (!DL_ShouldRunByAreaTickInterval(nNowTick, nLastTick, DL_PLAYER_COUNT_RECONCILE_INTERVAL_TICKS))
     {
         return;
     }

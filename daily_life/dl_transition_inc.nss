@@ -268,10 +268,9 @@ void DL_SetTransitionState(object oNpc, string sStatus, string sDiagnostic, stri
         return;
     }
 
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, sStatus);
     if (sDiagnostic == "")
     {
-        SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, "");
+        DL_SetRuntimeState(oNpc, DL_L_NPC_TRANSITION_STATUS, sStatus, DL_L_NPC_TRANSITION_DIAGNOSTIC, "");
         return;
     }
 
@@ -280,7 +279,7 @@ void DL_SetTransitionState(object oNpc, string sStatus, string sDiagnostic, stri
     {
         sDiagnosticValue = sDiagContext + "_" + sDiagnostic;
     }
-    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, sDiagnosticValue);
+    DL_SetRuntimeState(oNpc, DL_L_NPC_TRANSITION_STATUS, sStatus, DL_L_NPC_TRANSITION_DIAGNOSTIC, sDiagnosticValue);
 }
 
 string DL_GetResolvedTransitionExitTag(object oEntryWp)
@@ -485,21 +484,10 @@ object DL_GetCrossNavAreaByTag(string sAreaTag)
         return OBJECT_INVALID;
     }
 
-    int nNth = 0;
-    while (nNth < DL_CROSS_AREA_TAG_SEARCH_CAP)
+    object oCandidate = DL_FindObjectByTagWithChecks(sAreaTag, DL_CROSS_AREA_TAG_SEARCH_CAP, -1, OBJECT_INVALID, OBJECT_INVALID, FALSE);
+    if (GetIsObjectValid(oCandidate) && DL_IsAreaObject(oCandidate))
     {
-        object oCandidate = GetObjectByTag(sAreaTag, nNth);
-        if (!GetIsObjectValid(oCandidate))
-        {
-            break;
-        }
-
-        if (DL_IsAreaObject(oCandidate))
-        {
-            return oCandidate;
-        }
-
-        nNth = nNth + 1;
+        return oCandidate;
     }
 
     return OBJECT_INVALID;

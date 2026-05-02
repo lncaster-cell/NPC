@@ -8,6 +8,38 @@ const string DL_L_MODULE_CHAT_LOG_INIT = "dl_chat_log_init";
 const string DL_L_MODULE_RUNTIME_LOG = "dl_runtime_log";
 
 // Focus diagnostics contract (stable machine codes + canonical human messages).
+
+// Canonical runtime status codes.
+const string DL_STATUS_MISSING_WAYPOINTS = "missing_waypoints";
+const string DL_STATUS_MOVING_TO_ANCHOR = "moving_to_anchor";
+const string DL_STATUS_ON_ANCHOR = "on_anchor";
+const string DL_STATUS_MOVING_VIA_NAVIGATION = "moving_via_navigation";
+const string DL_STATUS_ON_BED = "on_bed";
+const string DL_STATUS_ON_CHILL_ANCHOR = "on_chill_anchor";
+const string DL_STATUS_SITTING_CHILL_ATTEMPT = "sitting_chill_attempt";
+
+// Canonical runtime diagnostic codes.
+const string DL_DIAG_SLEEP_WAYPOINTS_MISSING = "sleep_waypoints_missing";
+const string DL_DIAG_SLEEP_JUMP_INVALID_TARGET_LOCATION = "sleep_jump_invalid_target_location";
+const string DL_DIAG_WORK_NEED_FORGE_AND_CRAFT_WAYPOINTS = "need_forge_and_craft_waypoints";
+
+void DL_SetRuntimeState(object oNpc, string sStatusKey, string sStatus, string sDiagKey, string sDiagnostic)
+{
+    if (!GetIsObjectValid(oNpc))
+    {
+        return;
+    }
+
+    if (sStatusKey != "" && GetLocalString(oNpc, sStatusKey) != sStatus)
+    {
+        SetLocalString(oNpc, sStatusKey, sStatus);
+    }
+
+    if (sDiagKey != "" && GetLocalString(oNpc, sDiagKey) != sDiagnostic)
+    {
+        SetLocalString(oNpc, sDiagKey, sDiagnostic);
+    }
+}
 const string DL_DIAG_FOCUS_SOCIAL_PARTNER_SELF = "social_partner_self";
 const string DL_DIAG_FOCUS_MISSING_MEAL_ANCHOR = "missing_meal_anchor";
 const string DL_DIAG_FOCUS_MISSING_CHILL_CHAIR = "missing_chill_chair";
@@ -148,6 +180,61 @@ void DL_LogRuntime(string sLog)
     }
 
     // Temporary: global runtime logging is disabled.
+}
+
+void DL_CommandMoveToObject(object oActor, object oTarget, int bRun = TRUE, float fRange = 1.0)
+{
+    AssignCommand(oActor, ActionMoveToObject(oTarget, bRun, fRange));
+}
+
+void DL_CommandMoveToObjectResetQueue(object oActor, object oTarget, int bRun = TRUE, float fRange = 1.0)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandMoveToObject(oActor, oTarget, bRun, fRange);
+}
+
+void DL_CommandMoveToLocation(object oActor, location lTarget, int bRun = TRUE)
+{
+    AssignCommand(oActor, ActionMoveToLocation(lTarget, bRun));
+}
+
+void DL_CommandMoveToLocationResetQueue(object oActor, location lTarget, int bRun = TRUE)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandMoveToLocation(oActor, lTarget, bRun);
+}
+
+void DL_CommandJumpToLocation(object oActor, location lTarget)
+{
+    AssignCommand(oActor, ActionJumpToLocation(lTarget));
+}
+
+void DL_CommandJumpToLocationResetQueue(object oActor, location lTarget)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandJumpToLocation(oActor, lTarget);
+}
+
+void DL_CommandStartConversation(object oActor, object oListener, string sDialogResRef, int bPrivateConversation = TRUE, int bPlayHello = TRUE)
+{
+    AssignCommand(oActor, ActionStartConversation(oListener, sDialogResRef, bPrivateConversation, bPlayHello));
+}
+
+void DL_CommandStartConversationResetQueue(object oActor, object oListener, string sDialogResRef, int bPrivateConversation = TRUE, int bPlayHello = TRUE)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandStartConversation(oActor, oListener, sDialogResRef, bPrivateConversation, bPlayHello);
+}
+
+void DL_CommandAttack(object oActor, object oTarget)
+{
+    AssignCommand(oActor, ActionAttack(oTarget));
+}
+
+void DL_CommandAttackResetQueue(object oActor, object oTarget)
+{
+    AssignCommand(oActor, ClearAllActions(TRUE));
+    DL_CommandAttack(oActor, oTarget);
 }
 
 void DL_InitModuleContract()
