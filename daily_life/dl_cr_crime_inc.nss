@@ -289,22 +289,20 @@ void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
     }
 
     int nNowAbsMin = DL_GetAbsoluteMinute();
-    string sDialogResRef = DL_CR_GetDetainDialogResRef();
 
     if (GetIsObjectValid(oBestA))
     {
         SetLocalObject(oBestA, DL_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
         SetLocalInt(oBestA, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
         SetLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD, oBestA);
-        AssignCommand(oBestA, ClearAllActions(TRUE));
         if (nLevel >= 3)
         {
+            AssignCommand(oBestA, ClearAllActions(TRUE));
             AssignCommand(oBestA, ActionAttack(oOffender));
         }
         else
         {
-            AssignCommand(oBestA, ActionMoveToObject(oOffender, TRUE, 2.0));
-            AssignCommand(oBestA, ActionStartConversation(oOffender, sDialogResRef, TRUE, TRUE));
+            DL_CR_StartDetainInteraction(oBestA, oOffender, "", TRUE);
         }
     }
 
