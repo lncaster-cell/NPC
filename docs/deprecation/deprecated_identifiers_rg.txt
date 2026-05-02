@@ -1,0 +1,4 @@
+\bDL_TryUseNavZoneRouteToTarget\b
+\bDL_TryUseCrossAreaNavigationRouteToTarget\b
+\bDL_TryUseNavigationRouteToTarget\b
+\bDL_TryExecuteTransitionEntryWaypoint\b

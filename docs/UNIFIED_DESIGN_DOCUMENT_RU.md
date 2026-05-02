@@ -97,6 +97,20 @@
 1) Если чтение кода зависит от `наличия` ключа — `DeleteLocal*`.
 2) Если чтение кода зависит только от `значения` ключа — `SetLocal*` в канонический reset.
 
+### 3.5 Canonical runtime key taxonomy (worker/resync/transition/social/crime/legal)
+
+- **State:** `*_STATE`.
+- **Flag:** `*_PENDING`, `*_ACTIVE`.
+- **Counters/sequence:** `*_COUNT`, `*_SEQ`.
+- **Timestamps:** `*_ABS_MIN`, `*_TICK`.
+
+Применённые уточнения доменов:
+- `worker`: `..._WORKER_TICKS` → `..._WORKER_TICK_COUNT`; `..._LAST_PROCESSED` → `..._LAST_PROCESSED_TICK`.
+- `social`: `..._RESERVED_UNTIL` → `..._RESERVED_ABS_MIN`.
+- `crime`: `..._LOCKPICK_MARK_UNTIL` → `..._LOCKPICK_MARK_ABS_MIN`.
+
+Совместимость миграции — короткоживущая: на этапе перехода допускается одноразовая перекладка legacy key в canonical key с последующим `DeleteLocal*` legacy-ключа.
+
 Временный переходный режим допускает dual-style только с явным `COMPAT`-комментарием рядом с кодом и с планом удаления legacy-ветки.
 
 ### 3.3 Рекомендуемая событийная архитектура
@@ -255,6 +269,23 @@ blacksmith_house:hall
 `dl_transition_exec_inc.nss` — только thin adapter к Engine (routing-context), `dl_transition_inc.nss` — только API/metadata helpers и backward-compatible adapter-вход.
 
 ### 4.7 Action / Animation
+
+### 4.8 Ownership-матрица доменов (обязательный gate)
+
+Это обязательный архитектурный gate для любого изменения Daily Life/Legal runtime.
+
+| Домен | Owner-модуль | Что разрешено owner | Что в не-owner только как адаптер |
+|---|---|---|---|
+| Transition Engine (execution) | `daily_life/dl_transition_engine_inc.nss` | Исполнение перехода: подход к entry, driver (door/trigger/none), jump, sync `dl_npc_nav_zone`, transition status/diag. | `dl_transition_exec_inc.nss` — thin wrapper вызова engine; `dl_transition_inc.nss` — metadata/lookup helpers, без исполнения `Action*`/`AssignCommand`. |
+| Nav (route discovery) | `daily_life/dl_nav_router_inc.nss` + `daily_life/dl_cross_area_nav_inc.nss` | Route planning/validation: выбор следующего entry (same-area/cross-area), bounded поиск, без side effects исполнения. | Остальные модули могут только запрашивать route entry; нельзя дублировать route search/перебор переходов. |
+| Social (pairing + behavior) | `daily_life/dl_focus_inc.nss` + `daily_life/dl_social_pool_inc.nss` | Pairing, social pool reservation, SOCIAL execution и fallback `SOCIAL -> PUBLIC`. | В `dl_res_inc.nss` и других — только вызов `DL_ExecuteSocialDirective`; без локальных fallback-предикатов и без дублирования reservation logic. |
+| Crime / CityResponse (law enforcement flow) | `daily_life/dl_cr_crime_inc.nss` + `daily_life/dl_city_response_inc.nss` + `daily_life/dl_legal_inc.nss` | Crime qualification, heat/escalation, detain pending lifecycle, legal handoff/resolution. | Другие домены отправляют только сигнал/контекст события; без прямой записи legal/crime state ключей. |
+
+Gate-правила (обязательно перед merge):
+- Любой helper для status setters / driver handlers / fallback checks должен существовать в owner-домене; кросс-доменные копии запрещены.
+- Include-зависимости направлены от orchestration к owner API; циклические «исторические» include-связи запрещены.
+- Новые public API фиксируются здесь (таблица ownership) в том же коммите, где меняется runtime-код.
+
 
 **Ответственность:** нижний NWScript/NWN2 слой действий.
 
@@ -426,6 +457,7 @@ dl_social_theater_2
 ### 2026-05-02 — фиксация Daily Life vNext pipeline-контракта
 
 - Зафиксирован канонический pipeline: `Schedule -> Directive -> Activity / Scene -> Destination Resolver -> Nav Router -> Transition Executor -> Action / Animation`.
+- Для runtime-директив обязателен внутренний шаблон шагов: `Validate -> Resolve -> Prepare -> Execute -> Finalize`; новые директивы не должны вводить локальные mini-state-machine вне этого шаблона.
 - Старый transition layer переопределён как низкоуровневый `Transition Executor`, а не как конкурирующая навигационная система.
 - `SOCIAL` зафиксирован как social destination/activity layer: `paired_chat`, `theater`, `tavern`, `public`.
 - Разметка должна принадлежать location/area, а не конкретному NPC; замена NPC не должна требовать перестановки waypoint-разметки.
@@ -587,6 +619,16 @@ dl_social_theater_2
   https://www.nwnlexicon.com/DelayCommand
 - NWN Lexicon: `SignalEvent` — модель исполнения событийного сигнала.<br>
   https://nwnlexicon.com/SignalEvent
+
+
+### 9.6 Guard-order policy (runtime area domains)
+
+- Для всех area-domain веток (worker/resync/warm/city-response/transition) используется единый guard-order:
+  1) runtime gate (`DL_IsRuntimeEnabled` через `DL_CanRunRuntimeForArea`),
+  2) object validity (`GetIsObjectValid`/`DL_IsAreaObject` внутри helper),
+  3) domain toggle/tier (например, HOT/WARM или area-local domain flag).
+- Inline guard-цепочки в рабочих ветках считаются anti-pattern: использовать только канонические helper API `DL_CanRun*ForArea`.
+- Цель policy: исключить рассинхрон precondition-порядка между доменами и уменьшить риск дрейфа проверок при дальнейших refactor-итерациях.
 
 ### 9.5 Применено в runtime (2026-04-14)
 

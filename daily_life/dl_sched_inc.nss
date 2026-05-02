@@ -41,6 +41,37 @@ int DL_GetAbsoluteMinute()
     int nDays = (GetCalendarYear() * 12 * 28) + (GetCalendarMonth() * 28) + GetCalendarDay();
     return (nDays * 1440) + DL_GetNowMinuteOfDay();
 }
+
+int DL_IsMinuteCooldownActive(object oTarget, string sKey)
+{
+    return GetLocalInt(oTarget, sKey) > DL_GetAbsoluteMinute();
+}
+
+void DL_SetMinuteCooldown(object oTarget, string sKey, int nDurationMinutes)
+{
+    if (nDurationMinutes < 0)
+    {
+        nDurationMinutes = 0;
+    }
+
+    SetLocalInt(oTarget, sKey, DL_GetAbsoluteMinute() + nDurationMinutes);
+}
+
+int DL_ShouldRunByAreaTickInterval(int nNowTick, int nLastTick, int nInterval)
+{
+    if (nInterval <= 0)
+    {
+        return TRUE;
+    }
+
+    if (nNowTick < nLastTick)
+    {
+        return TRUE;
+    }
+
+    return (nNowTick - nLastTick) >= nInterval;
+}
+
 int DL_ClampInt(int nValue, int nMin, int nMax)
 {
     if (nValue < nMin)
