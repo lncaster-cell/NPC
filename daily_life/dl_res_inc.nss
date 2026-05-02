@@ -547,10 +547,6 @@ int DL_ShouldFallbackSocialToPublic(object oNpc)
 {
     return FALSE;
 }
-int DL_ShouldRunSocialFallbackToPublicLocal(object oNpc)
-{
-    return GetLocalString(oNpc, DL_L_NPC_FOCUS_DIAGNOSTIC) == "social_fallback_to_public";
-}
 int DL_ShouldUseDirectiveFastPath(object oNpc, int nEffectiveDirective)
 {
     if (!GetIsObjectValid(oNpc))
@@ -658,13 +654,6 @@ void DL_ApplyDirectiveSkeleton(object oNpc, int nDirective)
         SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_SOCIAL);
         DL_SetInteractionModes(oNpc, DL_DIALOGUE_SOCIAL, DL_SERVICE_OFF);
         DL_ExecuteSocialDirective(oNpc);
-        if (DL_ShouldRunSocialFallbackToPublicLocal(oNpc))
-        {
-            SetLocalInt(oNpc, DL_L_NPC_DIRECTIVE, DL_DIR_PUBLIC);
-            SetLocalString(oNpc, DL_L_NPC_STATE, DL_STATE_PUBLIC);
-            DL_SetInteractionModes(oNpc, DL_DIALOGUE_IDLE, DL_SERVICE_OFF);
-            DL_ExecutePublicDirective(oNpc);
-        }
         DL_ClearActivityPresentation(oNpc);
     }
     else if (nEffectiveDirective == DL_DIR_PUBLIC)
