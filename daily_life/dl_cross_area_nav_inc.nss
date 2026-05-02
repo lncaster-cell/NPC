@@ -111,12 +111,7 @@ object DL_FindCrossAreaNavEntry(object oNpc, object oTarget, string sFromZone, s
     return oBestEntry;
 }
 
-int DL_TryExecuteCrossAreaTransitionEntryWaypoint(object oNpc, object oEntryWp)
-{
-    return DL_ExecuteTransitionViaEntryWaypoint(oNpc, oEntryWp, DL_DIAG_CTX_CROSS_AREA);
-}
-
-int DL_TryUseCrossAreaNavigationRouteToTarget(object oNpc, object oTarget)
+object DL_FindCrossAreaNavigationRouteEntryToTarget(object oNpc, object oTarget)
 {
     if (!GetIsObjectValid(oNpc) || !GetIsObjectValid(oTarget))
     {
@@ -141,10 +136,4 @@ int DL_TryUseCrossAreaNavigationRouteToTarget(object oNpc, object oTarget)
     }
 
     return DL_FindCrossAreaNavEntry(oNpc, oTarget, sCurrentZone, sTargetZone);
-}
-
-int DL_TryUseCrossAreaNavigationRouteToTarget(object oNpc, object oTarget)
-{
-    object oEntry = DL_FindCrossAreaNavigationRouteEntryToTarget(oNpc, oTarget);
-    return GetIsObjectValid(oEntry);
 }
