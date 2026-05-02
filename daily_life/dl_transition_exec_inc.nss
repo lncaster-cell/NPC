@@ -23,8 +23,6 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
     string sKind = DL_GetWaypointTransitionKind(oEntryWp);
     string sTransitionId = DL_GetWaypointTransitionId(oEntryWp);
     string sExitTag = DL_GetWaypointTransitionExitTag(oEntryWp);
-    string sDriver = DL_GetWaypointTransitionDriver(oEntryWp);
-
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_KIND, sKind);
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_ID, sTransitionId);
     SetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET, GetTag(oEntryWp));
@@ -54,35 +52,9 @@ int DL_ExecuteTransitionViaEntryWaypoint(object oNpc, object oEntryWp, string sD
     }
 
     location lExit = GetLocation(oExitWp);
-    DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_TRANSITIONING, DL_TRANSITION_DIAG_IN_PROGRESS, sDiagPrefix);
-    DL_SetNpcNavZoneFromWaypoint(oNpc, oExitWp);
-
-    if (sDriver == "" || sDriver == DL_TRANSITION_DRIVER_NONE || sDriver == DL_TRANSITION_DRIVER_TRIGGER)
-    {
-        DL_JumpNpcToTransitionExit(oNpc, lExit, DL_TRANSITION_STATUS_TRANSITIONING, sDiagPrefix + "_" + DL_TRANSITION_DIAG_IN_PROGRESS);
-        return TRUE;
-    }
-
-    if (sDriver == DL_TRANSITION_DRIVER_DOOR)
-    {
-        object oDoor = DL_ResolveTransitionDriverObject(oEntryWp);
-        if (!GetIsObjectValid(oDoor) || GetObjectType(oDoor) != OBJECT_TYPE_DOOR)
-        {
-            DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_DRIVER_MISSING, DL_TRANSITION_DIAG_DRIVER_REQUIRED, sDiagPrefix);
-            return TRUE;
-        }
-
-        AssignCommand(oNpc, ClearAllActions(TRUE));
-        if (GetIsDoorActionPossible(oDoor, DOOR_ACTION_OPEN))
-        {
-            AssignCommand(oNpc, DoDoorAction(oDoor, DOOR_ACTION_OPEN));
-        }
-        DL_JumpNpcToTransitionExit(oNpc, lExit, DL_TRANSITION_STATUS_TRANSITIONING, sDiagPrefix + "_" + DL_TRANSITION_DIAG_IN_PROGRESS);
-        return TRUE;
-    }
-
-    DL_SetTransitionState(oNpc, DL_TRANSITION_STATUS_DRIVER_UNKNOWN, DL_TRANSITION_DIAG_DRIVER_UNKNOWN, sDiagPrefix);
-    return TRUE;
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_STATUS, "transitioning");
+    SetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC, sDiagPrefix + "_transition_in_progress");
+    return DL_ExecuteTransitionDriver(oNpc, oEntryWp, lExit, oExitWp, "routed_transition_in_progress");
 }
 
 int DL_TryExecuteRoutedTransitionEntryWaypoint(object oNpc, object oEntryWp)
