@@ -125,10 +125,23 @@ void DL_QueueMoveAction(object oNpc, location lTarget, int bRun)
     AssignCommand(oNpc, ClearAllActions(TRUE));
     AssignCommand(oNpc, ActionMoveToLocation(lTarget, bRun));
 }
-void DL_QueueJumpAction(object oNpc, location lTarget)
+int DL_QueueJumpAction(object oNpc, location lTarget)
 {
+    if (!GetIsObjectValid(oNpc))
+    {
+        return FALSE;
+    }
+
+    object oTargetArea = GetAreaFromLocation(lTarget);
+    if (!GetIsObjectValid(oTargetArea) || GetObjectType(oTargetArea) != OBJECT_TYPE_AREA)
+    {
+        SetLocalString(oNpc, DL_L_NPC_SLEEP_DIAGNOSTIC, "sleep_jump_invalid_target_location");
+        return FALSE;
+    }
+
     AssignCommand(oNpc, ClearAllActions(TRUE));
     AssignCommand(oNpc, ActionJumpToLocation(lTarget));
+    return TRUE;
 }
 void DL_MarkSleepNavigationInProgress(object oNpc, string sTargetTag)
 {

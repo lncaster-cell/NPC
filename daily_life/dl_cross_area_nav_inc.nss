@@ -246,12 +246,12 @@ int DL_TryExecuteCrossAreaTransitionEntryWaypoint(object oNpc, object oEntryWp)
         {
             AssignCommand(oNpc, DoDoorAction(oDoor, DOOR_ACTION_OPEN));
         }
-        AssignCommand(oNpc, ActionJumpToLocation(lExit));
+        DL_JumpNpcToTransitionExit(oNpc, lExit, "transitioning", "cross_area_transition_in_progress");
         return TRUE;
     }
 
     AssignCommand(oNpc, ClearAllActions(TRUE));
-    AssignCommand(oNpc, ActionJumpToLocation(lExit));
+    DL_JumpNpcToTransitionExit(oNpc, lExit, "transitioning", "cross_area_transition_in_progress");
     return TRUE;
 }
 
