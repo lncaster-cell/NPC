@@ -38,6 +38,13 @@
 - `docs/DEVELOPMENT_STATUS_RU.md` — краткий оперативный статус и ближайшие шаги.
 - `docs/DEVELOPMENT_WORKFLOW_RU.md` — правила сопровождения, чек-листы изменений и синхронизации docs/code.
 
+
+## PR checklist (recommended)
+
+- [ ] Lexicon/built-in mechanism validated.
+- [ ] No duplicate ad-hoc local-state keys/timers without canonical helper.
+- [ ] Deterministic fallback behavior documented when used.
+
 ## Политика обновления документации и README
 
 - Любая runtime-правка в `daily_life/*.nss` сопровождается синхронизацией:
