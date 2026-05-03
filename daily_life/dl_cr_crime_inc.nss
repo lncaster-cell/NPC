@@ -1,0 +1,713 @@
+const string DL_L_MODULE_CR_WITNESS_RADIUS = "dl_cr_witness_radius";
+const string DL_L_MODULE_CR_GUARD_ALERT_RADIUS = "dl_cr_guard_alert_radius";
+const string DL_L_AREA_CR_RESTRICTED = "dl_cr_restricted";
+const string DL_L_EVT_CR_KIND = "dl_cr_evt_kind";
+const string DL_L_EVT_CR_WITNESSED = "dl_cr_evt_witnessed";
+const string DL_L_EVT_CR_AREA_TAG = "dl_cr_evt_area_tag";
+const string DL_L_MODULE_CR_GUARD_RESPONDERS_MAX = "dl_cr_guard_responders_max";
+const string DL_L_MODULE_CR_JAIL_WP_TAG = "dl_cr_jail_wp_tag";
+const string DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN = "dl_cr_lockpick_mark_abs_min";
+const string DL_L_OBJ_CR_LOCKPICK_MARK_BY = "dl_cr_lockpick_mark_by";
+const string DL_L_MODULE_CR_LEGACY_LOCKPICK_MIGRATION = "dl_cr_legacy_lockpick_migration";
+const string DL_L_MODULE_CR_LEGACY_LOCKPICK_HIT_COUNT = "dl_cr_legacy_lockpick_hit_count";
+
+const int DL_CR_GUARD_RESPONDERS_MAX_CAP = 2;
+const int DL_CR_INVESTIGATE_TTL_MIN = 3;
+const int DL_CR_SHOUT_COOLDOWN_MIN = 1;
+const int DL_CR_WITNESS_SCAN_CAP = 24;
+const int DL_CR_GUARD_SCAN_CAP = 24;
+const string DL_CR_KEY_PREFIX_SHOUT_CD = "dl_cr_shout_cd_";
+const float DL_CR_DISTANCE_INF = 1000000.0;
+const int DL_CR_LOCKPICK_MARK_TTL_MIN = 1;
+
+const int DL_CR_DETAIN_ACTION_ACCEPT = 1;
+const int DL_CR_DETAIN_ACTION_REFUSE = 2;
+
+int DL_CR_IsLegacyLockpickMigrationMode()
+{
+    object oModule = GetModule();
+    if (GetLocalInt(oModule, DL_L_MODULE_CR_LEGACY_LOCKPICK_MIGRATION) == TRUE)
+    {
+        return TRUE;
+    }
+
+    // COMPAT removal criterion:
+    // keep fallback only while module still runs A0 contract or explicit migration mode.
+    // Remove when all live saves are confirmed on DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN
+    // and legacy hit counter stays at zero through the observation window.
+    return GetLocalString(oModule, DL_L_MODULE_CONTRACT_VERSION) == DL_CONTRACT_VERSION_A0;
+}
+
+int DL_CR_GetLockpickMarkAbsMin(object oTarget)
+{
+    int nAbsMin = GetLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN);
+    if (nAbsMin > 0)
+    {
+        return nAbsMin;
+    }
+
+    if (!DL_CR_IsLegacyLockpickMigrationMode())
+    {
+        return 0;
+    }
+
+    nAbsMin = GetLocalInt(oTarget, "dl_cr_lockpick_mark_until");
+    if (nAbsMin <= 0)
+    {
+        return 0;
+    }
+
+    SetLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN, nAbsMin);
+    DeleteLocalInt(oTarget, "dl_cr_lockpick_mark_until");
+
+    object oModule = GetModule();
+    DL_AddLocalInt(oModule, DL_L_MODULE_CR_LEGACY_LOCKPICK_HIT_COUNT, 1);
+    if (DL_IsRuntimeLogEnabled())
+    {
+        DL_LogRuntime("crime legacy_lockpick_key_migrated target=" + GetTag(oTarget));
+    }
+    return nAbsMin;
+}
+
+void DL_CR_SetDetainPending(object oPc, int nUntilAbsMin, string sReason);
+void DL_CR_ClearDetainPending(object oPc, string sResolution);
+int DL_CR_IsDetainPending(object oPc);
+
+float DL_CR_GetWitnessRadius()
+{
+    return DL_GetConfigFloat(DL_L_MODULE_CR_WITNESS_RADIUS, DL_CFG_CR_WITNESS_RADIUS_DEFAULT);
+}
+
+float DL_CR_GetGuardAlertRadius()
+{
+    return DL_GetConfigFloat(DL_L_MODULE_CR_GUARD_ALERT_RADIUS, DL_CFG_CR_GUARD_ALERT_RADIUS_DEFAULT);
+}
+
+int DL_CR_GetGuardRespondersMax()
+{
+    return DL_GetConfigInt(
+        DL_L_MODULE_CR_GUARD_RESPONDERS_MAX,
+        DL_CFG_CR_GUARD_RESPONDERS_MAX_DEFAULT,
+        1,
+        DL_CR_GUARD_RESPONDERS_MAX_CAP
+    );
+}
+
+string DL_CR_GetJailWaypointTag()
+{
+    return DL_GetConfigString(DL_L_MODULE_CR_JAIL_WP_TAG, DL_CFG_CR_JAIL_WP_TAG_DEFAULT);
+}
+
+void DL_CR_ClearPursuitState(object oPc)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    DL_CR_ClearDetainPending(oPc, "pursuit_cleared");
+    DeleteLocalObject(oPc, DL_L_PC_CR_LAST_GUARD);
+    DeleteLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+}
+
+int DL_CR_IsDetainPending(object oPc)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return FALSE;
+    }
+
+    return GetLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING) == TRUE;
+}
+
+void DL_CR_SetDetainPending(object oPc, int nUntilAbsMin, string sReason)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    int nNowAbsMin = DL_GetAbsoluteMinute();
+    int nCurrentUntil = GetLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+    int bAlreadyPending = DL_CR_IsDetainPending(oPc);
+    string sCurrentReason = GetLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_REASON);
+    if (nUntilAbsMin <= 0)
+    {
+        nUntilAbsMin = nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN;
+    }
+
+    if (bAlreadyPending && nCurrentUntil >= nUntilAbsMin && sCurrentReason == sReason)
+    {
+        return;
+    }
+
+    SetLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING, TRUE);
+    if (nCurrentUntil < nUntilAbsMin)
+    {
+        SetLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL, nUntilAbsMin);
+    }
+
+    if (sReason != "")
+    {
+        SetLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_REASON, sReason);
+    }
+    DeleteLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_RESOLUTION);
+    SetLocalInt(oPc, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, nNowAbsMin);
+}
+
+void DL_CR_ClearDetainPending(object oPc, string sResolution)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    if (!DL_CR_IsDetainPending(oPc))
+    {
+        return;
+    }
+
+    DeleteLocalInt(oPc, DL_L_PC_CR_DETAIN_PENDING);
+    DeleteLocalInt(oPc, DL_L_NPC_CR_OFFENDER_UNTIL);
+
+    DeleteLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_REASON);
+    if (sResolution != "")
+    {
+        SetLocalString(oPc, DL_L_PC_CR_DETAIN_PENDING_RESOLUTION, sResolution);
+    }
+    SetLocalInt(oPc, DL_L_PC_LG_CASE_LAST_UPDATE_ABS_MIN, DL_GetAbsoluteMinute());
+}
+
+int DL_CR_IsWitnessCandidate(object oWitness, object oOffender, object oArea)
+{
+    if (!DL_IsValidNpcObject(oWitness) || !DL_IsValidNpcObject(oOffender) || !DL_IsValidAreaObject(oArea))
+    {
+        return FALSE;
+    }
+
+    if (oWitness == oOffender)
+    {
+        return FALSE;
+    }
+
+    if (!DL_IsActivePipelineNpc(oWitness))
+    {
+        return FALSE;
+    }
+
+    if (GetArea(oWitness) != oArea)
+    {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+object DL_CR_FindWitness(object oOffender, object oArea, float fRadius)
+{
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
+    {
+        return OBJECT_INVALID;
+    }
+
+    object oBest = OBJECT_INVALID;
+    float fBestDist = DL_CR_DISTANCE_INF;
+    location lCenter = GetLocation(oOffender);
+
+    object oObj = GetFirstObjectInShape(
+        SHAPE_SPHERE,
+        fRadius,
+        lCenter,
+        FALSE,
+        OBJECT_TYPE_CREATURE
+    );
+    int nChecked = 0;
+    while (GetIsObjectValid(oObj))
+    {
+        if (nChecked >= DL_CR_WITNESS_SCAN_CAP)
+        {
+            break;
+        }
+        nChecked = nChecked + 1;
+
+        if (DL_CR_IsWitnessCandidate(oObj, oOffender, oArea))
+        {
+            if (GetObjectSeen(oObj, oOffender) || GetObjectHeard(oObj, oOffender))
+            {
+                float fDist = GetDistanceBetween(oObj, oOffender);
+                if (fDist <= fRadius && fDist < fBestDist)
+                {
+                    oBest = oObj;
+                    fBestDist = fDist;
+                }
+            }
+        }
+        oObj = GetNextObjectInShape(
+            SHAPE_SPHERE,
+            fRadius,
+            lCenter,
+            FALSE,
+            OBJECT_TYPE_CREATURE
+        );
+    }
+
+    return oBest;
+}
+
+void DL_CR_WitnessShout(object oWitness, object oOffender)
+{
+    if (!DL_IsValidNpcObject(oWitness) || !DL_IsRuntimePlayer(oOffender))
+    {
+        return;
+    }
+
+    string sKey = DL_CR_KEY_PREFIX_SHOUT_CD + DL_CR_GetOffenderIdentityKey(oOffender);
+    int nNowAbsMin = DL_GetAbsoluteMinute();
+    if (DL_IsMinuteCooldownActive(oWitness, sKey))
+    {
+        return;
+    }
+    DL_SetMinuteCooldown(oWitness, sKey, DL_CR_SHOUT_COOLDOWN_MIN);
+
+    AssignCommand(oWitness, SpeakString("Помогите! Меня обокрали!", TALKVOLUME_SHOUT));
+}
+
+int DL_CR_GetCrimeHeat(string sKind)
+{
+    if (sKind == DL_LG_CASE_KIND_PICKPOCKET)
+    {
+        return 15;
+    }
+    if (sKind == DL_LG_CASE_KIND_CONTAINER_THEFT)
+    {
+        return 20;
+    }
+    if (sKind == DL_LG_CASE_KIND_DOOR_LOCKPICK)
+    {
+        return 25;
+    }
+    if (sKind == DL_LG_CASE_KIND_PLACEABLE_LOCKPICK)
+    {
+        return 20;
+    }
+    if (sKind == DL_LG_CASE_KIND_RESTRICTED_ENTRY)
+    {
+        return 15;
+    }
+    return 10;
+}
+
+void DL_CR_AlertNearbyGuards(object oOffender, object oArea)
+{
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
+    {
+        return;
+    }
+
+    int nLevel = GetLocalInt(GetModule(), DL_L_MODULE_CR_LEVEL);
+    if (nLevel < 1)
+    {
+        nLevel = 1;
+    }
+
+    float fRadius = DL_CR_GetGuardAlertRadius();
+    int nMaxResponders = DL_CR_GetGuardRespondersMax();
+    object oBestA = OBJECT_INVALID;
+    object oBestB = OBJECT_INVALID;
+    int nBestA = DL_SELECTION_SCORE_INF;
+    int nBestB = DL_SELECTION_SCORE_INF;
+    string sBestTieA = "";
+    string sBestTieB = "";
+
+    location lCenter = GetLocation(oOffender);
+    object oObj = GetFirstObjectInShape(
+        SHAPE_SPHERE,
+        fRadius,
+        lCenter,
+        FALSE,
+        OBJECT_TYPE_CREATURE
+    );
+    int nChecked = 0;
+    while (GetIsObjectValid(oObj))
+    {
+        if (nChecked >= DL_CR_GUARD_SCAN_CAP)
+        {
+            break;
+        }
+        nChecked = nChecked + 1;
+
+        if (DL_IsActivePipelineNpc(oObj) && DL_CR_IsGuardVictim(oObj))
+        {
+            if (GetObjectSeen(oObj, oOffender) || GetObjectHeard(oObj, oOffender))
+            {
+                float fDist = GetDistanceBetween(oObj, oOffender);
+                if (fDist <= fRadius)
+                {
+                    int nScore = FloatToInt(fDist * 100.0);
+                    string sTie = DL_SelectionBuildTieKey(oObj, oOffender, nChecked);
+                    if (DL_SelectionCompare(nScore, nBestA, sTie, sBestTieA))
+                    {
+                        oBestB = oBestA;
+                        nBestB = nBestA;
+                        sBestTieB = sBestTieA;
+                        oBestA = oObj;
+                        nBestA = nScore;
+                        sBestTieA = sTie;
+                    }
+                    else if (DL_SelectionCompare(nScore, nBestB, sTie, sBestTieB))
+                    {
+                        oBestB = oObj;
+                        nBestB = nScore;
+                        sBestTieB = sTie;
+                    }
+                }
+            }
+        }
+        oObj = GetNextObjectInShape(
+            SHAPE_SPHERE,
+            fRadius,
+            lCenter,
+            FALSE,
+            OBJECT_TYPE_CREATURE
+        );
+    }
+
+    int nNowAbsMin = DL_GetAbsoluteMinute();
+
+    if (GetIsObjectValid(oBestA))
+    {
+        SetLocalObject(oBestA, DL_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
+        SetLocalInt(oBestA, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
+        SetLocalObject(oOffender, DL_L_PC_CR_LAST_GUARD, oBestA);
+        if (nLevel >= 3)
+        {
+            DL_OrchestrateRuntimeAction(oBestA, DL_ORCH_ACT_ATTACK, oOffender, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_attack_primary", DL_GetAbsoluteMinute());
+        }
+        else
+        {
+            DL_CR_StartDetainInteraction(oBestA, oOffender, "", TRUE);
+        }
+    }
+
+    if (nMaxResponders >= 2 && GetIsObjectValid(oBestB))
+    {
+        SetLocalObject(oBestB, DL_L_NPC_CR_INVESTIGATE_TARGET, oOffender);
+        SetLocalInt(oBestB, DL_L_NPC_CR_INVESTIGATE_UNTIL, nNowAbsMin + DL_CR_INVESTIGATE_TTL_MIN);
+        if (nLevel >= 3)
+        {
+            DL_OrchestrateRuntimeAction(oBestB, DL_ORCH_ACT_ATTACK, oOffender, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_attack_secondary", DL_GetAbsoluteMinute());
+        }
+        else
+        {
+            DL_OrchestrateRuntimeAction(oBestB, DL_ORCH_ACT_MOVE_OBJECT, oOffender, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_move_secondary", DL_GetAbsoluteMinute(), TRUE, 2.0);
+        }
+    }
+}
+
+void DL_CR_RecordCrimeEvent(object oOffender, object oArea, string sKind, int bWitnessed)
+{
+    if (!DL_IsRuntimePlayer(oOffender) || !DL_IsValidAreaObject(oArea))
+    {
+        return;
+    }
+
+    SetLocalString(oOffender, DL_L_EVT_CR_KIND, sKind);
+    SetLocalInt(oOffender, DL_L_EVT_CR_WITNESSED, bWitnessed);
+    SetLocalString(oOffender, DL_L_EVT_CR_AREA_TAG, GetTag(oArea));
+}
+
+void DL_CR_RegisterCrimeIncident(object oOffender, object oArea, string sKind, int bWitnessed, object oWitness)
+{
+    // Validate
+    if (!DL_IsRuntimePlayer(oOffender) || !GetIsObjectValid(oArea))
+    {
+        return;
+    }
+
+    // Resolve
+    string sResolvedKind = sKind;
+
+    // Prepare
+    DL_PipelineUpdateDiagnostic(oOffender, DL_L_EVT_CR_KIND, "");
+
+    // Execute
+    DL_CR_RecordCrimeEvent(oOffender, oArea, sResolvedKind, bWitnessed);
+    if (!bWitnessed)
+    {
+        return;
+    }
+
+    DL_LG_OnWitnessedIncident(oOffender, sKind, oArea, oWitness);
+    DL_CR_SetDetainPending(oOffender, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, DL_FB_REASON_CRIME_DETAIN_PENDING_WITNESSED);
+
+    int nHeat = DL_CR_GetCrimeHeat(sKind);
+    DL_CR_RegisterIncident(oOffender, nHeat);
+    DL_CR_AlertNearbyGuards(oOffender, oArea);
+
+    // Finalize
+    DL_PipelineUpdateDiagnostic(oOffender, DL_L_EVT_CR_KIND, sResolvedKind);
+}
+
+void DL_CR_HandleDisturbed(object oDisturbed)
+{
+    if (!DL_IsValidNpcObject(oDisturbed))
+    {
+        return;
+    }
+
+    object oArea = GetArea(oDisturbed);
+    if (!DL_CR_IsEnabledForArea(oArea))
+    {
+        return;
+    }
+
+    object oDisturber = DL_CR_ResolveResponsibleActor(GetLastDisturbed());
+    if (!DL_IsRuntimePlayer(oDisturber))
+    {
+        return;
+    }
+
+    float fRadius = DL_CR_GetWitnessRadius();
+    object oWitness = DL_CR_FindWitness(oDisturber, oArea, fRadius);
+    int bWitnessed = GetIsObjectValid(oWitness);
+    if (bWitnessed)
+    {
+        DL_CR_WitnessShout(oWitness, oDisturber);
+    }
+    string sKind = GetObjectType(oDisturbed) == OBJECT_TYPE_CREATURE ? DL_CR_EVT_PICKPOCKET : DL_CR_EVT_CONTAINER_THEFT;
+
+    DL_CR_RegisterCrimeIncident(oDisturber, oArea, sKind, bWitnessed, oWitness);
+}
+
+void DL_CR_MarkPendingLockpick(object oTarget, object oActor)
+{
+    if (!GetIsObjectValid(oTarget))
+    {
+        return;
+    }
+
+    object oOffender = DL_CR_ResolveResponsibleActor(oActor);
+    if (!DL_IsRuntimePlayer(oOffender))
+    {
+        return;
+    }
+
+    int nNowAbsMin = DL_GetAbsoluteMinute();
+    SetLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN, nNowAbsMin + DL_CR_LOCKPICK_MARK_TTL_MIN);
+    SetLocalString(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_BY, DL_CR_GetOffenderIdentityKey(oOffender));
+}
+
+int DL_CR_ConsumePendingLockpick(object oTarget, object oOffender)
+{
+    if (!DL_IsValidDoorObject(oTarget) || !DL_IsRuntimePlayer(oOffender))
+    {
+        return FALSE;
+    }
+
+    int nUntilAbsMin = DL_CR_GetLockpickMarkAbsMin(oTarget);
+    if (nUntilAbsMin <= 0)
+    {
+        return FALSE;
+    }
+
+    int nNowAbsMin = DL_GetAbsoluteMinute();
+    if (nUntilAbsMin < nNowAbsMin)
+    {
+        DeleteLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN);
+        DeleteLocalString(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_BY);
+        return FALSE;
+    }
+
+    string sMarkedBy = GetLocalString(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_BY);
+    if (sMarkedBy == "" || sMarkedBy != DL_CR_GetOffenderIdentityKey(oOffender))
+    {
+        return FALSE;
+    }
+
+    DeleteLocalInt(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_ABS_MIN);
+    DeleteLocalString(oTarget, DL_L_OBJ_CR_LOCKPICK_MARK_BY);
+    return TRUE;
+}
+
+void DL_CR_HandleOpenObject(object oOpened)
+{
+    if (!GetIsObjectValid(oOpened))
+    {
+        return;
+    }
+
+    object oArea = GetArea(oOpened);
+    if (!DL_CR_IsEnabledForArea(oArea))
+    {
+        return;
+    }
+
+    object oOpener = DL_CR_ResolveResponsibleActor(GetLastOpenedBy());
+    if (!DL_IsRuntimePlayer(oOpener))
+    {
+        return;
+    }
+
+    int bRestricted = GetLocalInt(oOpened, DL_L_AREA_CR_RESTRICTED) == TRUE;
+    int bLockpick = DL_CR_ConsumePendingLockpick(oOpened, oOpener);
+    if (!bRestricted && !bLockpick)
+    {
+        return;
+    }
+
+    string sKind = "";
+    if (bLockpick)
+    {
+        int nOpenedType = GetObjectType(oOpened);
+        if (nOpenedType == OBJECT_TYPE_DOOR)
+        {
+            sKind = DL_CR_EVT_DOOR_LOCKPICK;
+        }
+        else if (nOpenedType == OBJECT_TYPE_PLACEABLE)
+        {
+            sKind = DL_CR_EVT_PLACEABLE_LOCKPICK;
+        }
+    }
+
+    if (sKind == "" && bRestricted)
+    {
+        sKind = DL_CR_EVT_RESTRICTED_ENTRY;
+    }
+
+    if (sKind == "")
+    {
+        return;
+    }
+
+    float fRadius = DL_CR_GetWitnessRadius();
+    object oWitness = DL_CR_FindWitness(oOpener, oArea, fRadius);
+    int bWitnessed = GetIsObjectValid(oWitness);
+    if (bWitnessed)
+    {
+        DL_CR_WitnessShout(oWitness, oOpener);
+    }
+
+    DL_CR_RegisterCrimeIncident(oOpener, oArea, sKind, bWitnessed, oWitness);
+}
+
+void DL_CR_HandleRestrictedEntry(object oActor, object oSource)
+{
+    object oOffender = DL_CR_ResolveResponsibleActor(oActor);
+    if (!DL_IsRuntimePlayer(oOffender))
+    {
+        return;
+    }
+
+    object oArea = GetArea(oSource);
+    if (!DL_CR_IsEnabledForArea(oArea))
+    {
+        return;
+    }
+
+    int bRestrictedByTrigger = GetLocalInt(oSource, DL_L_AREA_CR_RESTRICTED) == TRUE;
+    int bRestrictedByArea = GetLocalInt(oArea, DL_L_AREA_CR_RESTRICTED) == TRUE;
+    if (!bRestrictedByTrigger && !bRestrictedByArea)
+    {
+        return;
+    }
+
+    float fRadius = DL_CR_GetWitnessRadius();
+    object oWitness = DL_CR_FindWitness(oOffender, oArea, fRadius);
+    int bWitnessed = GetIsObjectValid(oWitness);
+    if (bWitnessed)
+    {
+        DL_CR_WitnessShout(oWitness, oOffender);
+    }
+    DL_CR_RegisterCrimeIncident(oOffender, oArea, DL_CR_EVT_RESTRICTED_ENTRY, bWitnessed, oWitness);
+}
+
+void DL_CR_HandleDetainAccepted(object oPc, object oGuard);
+void DL_CR_HandleDetainRefused(object oPc, object oGuard);
+
+void DL_CR_RunDetainDialogAction(int nActionType)
+{
+    object oGuard = OBJECT_SELF;
+    if (!DL_IsValidNpcObject(oGuard))
+    {
+        return;
+    }
+
+    object oPc = GetPCSpeaker();
+    if (!GetIsObjectValid(oPc))
+    {
+        oPc = GetLastSpeaker();
+    }
+
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    if (nActionType == DL_CR_DETAIN_ACTION_ACCEPT)
+    {
+        DL_CR_HandleDetainAccepted(oPc, oGuard);
+        return;
+    }
+
+    if (nActionType == DL_CR_DETAIN_ACTION_REFUSE)
+    {
+        DL_CR_HandleDetainRefused(oPc, oGuard);
+        return;
+    }
+}
+
+int DL_CR_TeleportToJail(object oPc)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return FALSE;
+    }
+
+    object oWp = GetWaypointByTag(DL_CR_GetJailWaypointTag());
+    if (!DL_IsValidWaypointObject(oWp))
+    {
+        return FALSE;
+    }
+
+    // Crime flow intentionally uses a direct player jump to avoid transition-state side effects on PCs.
+    DL_OrchestrateRuntimeAction(oPc, DL_ORCH_ACT_JUMP_LOCATION, OBJECT_INVALID, GetLocation(oWp), "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "pc_jail_jump", DL_GetAbsoluteMinute());
+    return TRUE;
+}
+
+void DL_CR_HandleDetainAccepted(object oPc, object oGuard)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    DL_CR_ClearPursuitState(oPc);
+    DL_LG_OnDetained(oPc, oGuard);
+
+    if (!DL_CR_TeleportToJail(oPc))
+    {
+        SendMessageToPC(oPc, "[DL] Не найден jail waypoint. Проверьте local dl_cr_jail_wp_tag.");
+    }
+
+    if (GetIsObjectValid(oGuard))
+    {
+        DL_OrchestrateRuntimeAction(oGuard, DL_ORCH_ACT_NONE, OBJECT_INVALID, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_queue_reset_only", DL_GetAbsoluteMinute());
+    }
+}
+
+void DL_CR_HandleDetainRefused(object oPc, object oGuard)
+{
+    if (!DL_IsRuntimePlayer(oPc))
+    {
+        return;
+    }
+
+    DL_CR_SetDetainPending(oPc, DL_GetAbsoluteMinute() + DL_CR_INVESTIGATE_TTL_MIN, DL_FB_REASON_CRIME_DETAIN_REFUSED);
+    DL_CR_RegisterIncident(oPc, 10);
+    DL_LG_OnRefusedDetain(oPc, oGuard);
+
+    if (GetIsObjectValid(oGuard))
+    {
+        DL_OrchestrateRuntimeAction(oGuard, DL_ORCH_ACT_ATTACK, oPc, LOCATION_INVALID, "", TRUE, "", "", "", "", "", "", "", "", "dl_cr_action", "guard_attack_refused", DL_GetAbsoluteMinute());
+    }
+}
