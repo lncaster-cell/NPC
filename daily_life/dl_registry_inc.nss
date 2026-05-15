@@ -65,6 +65,7 @@ const int DL_MODULE_WORKER_PRESSURE_CAP = 3;
 const int DL_MODULE_RESYNC_PRESSURE_CAP = 1;
 
 // Forward declarations for mutually-recursive registration helpers.
+void DL_RegisterNpc(object oNpc);
 void DL_ReconcileNpcAreaRegistration(object oNpc);
 void DL_UnregisterNpc(object oNpc);
 
@@ -680,6 +681,21 @@ void DL_OnAreaEnterBootstrap(object oArea, object oEnter)
     }
 
     DL_BootstrapAreaTier(oArea);
+
+    if (DL_IsActivePipelineNpc(oEnter))
+    {
+        // NPC area transitions do not go through spawn again.  Reconcile/register
+        // immediately on the destination area's OnEnter so the area worker can see
+        // the NPC without waiting for the stale source-area slot to be visited.
+        if (GetLocalInt(oEnter, DL_L_NPC_REG_ON) == TRUE)
+        {
+            DL_ReconcileNpcAreaRegistration(oEnter);
+        }
+        else
+        {
+            DL_RegisterNpc(oEnter);
+        }
+    }
 }
 
 void DL_OnAreaExitBootstrap(object oArea, object oExit)
@@ -804,10 +820,10 @@ void DL_UnregisterNpc(object oNpc)
     int nNpcSlot = GetLocalInt(oNpc, DL_L_NPC_REG_SLOT);
     DeleteLocalInt(oNpc, DL_L_NPC_REG_ON);
 
-    object oArea = GetArea(oNpc);
+    object oArea = GetLocalObject(oNpc, DL_L_NPC_REG_AREA);
     if (!GetIsObjectValid(oArea))
     {
-        oArea = GetLocalObject(oNpc, DL_L_NPC_REG_AREA);
+        oArea = GetArea(oNpc);
     }
 
     if (GetIsObjectValid(oArea))

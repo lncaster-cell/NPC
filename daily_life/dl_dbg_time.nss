@@ -146,4 +146,21 @@ void main()
                          " transition_target=" + GetLocalString(oNpc, DL_L_NPC_TRANSITION_TARGET) +
                          " transition_diag=" + GetLocalString(oNpc, DL_L_NPC_TRANSITION_DIAGNOSTIC);
     DL_DbgSay(oPC, sTransition);
+
+    object oCurrentArea = GetArea(oNpc);
+    object oRegisteredArea = GetLocalObject(oNpc, DL_L_NPC_REG_AREA);
+    object oModule = GetModule();
+    string sWorker = "[DL DEBUG] worker npc_seq=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_WORKER_SEQ)) +
+                     " module_seq=" + IntToString(GetLocalInt(oModule, DL_L_MODULE_WORKER_SEQ)) +
+                     " module_ticks=" + IntToString(GetLocalInt(oModule, DL_L_MODULE_WORKER_TICKS)) +
+                     " area_last_processed=" + IntToString(GetLocalInt(oCurrentArea, DL_L_AREA_WORKER_LAST_PROCESSED));
+    DL_DbgSay(oPC, sWorker);
+
+    string sRegistry = "[DL DEBUG] reg_on=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_REG_ON)) +
+                       " reg_slot=" + IntToString(GetLocalInt(oNpc, DL_L_NPC_REG_SLOT)) +
+                       " current_area=" + GetTag(oCurrentArea) +
+                       " reg_area=" + GetTag(oRegisteredArea) +
+                       " reg_count=" + IntToString(GetLocalInt(oCurrentArea, DL_L_AREA_REG_COUNT)) +
+                       " reg_area_count=" + IntToString(GetLocalInt(oRegisteredArea, DL_L_AREA_REG_COUNT));
+    DL_DbgSay(oPC, sRegistry);
 }
