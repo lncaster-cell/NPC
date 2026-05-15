@@ -804,10 +804,13 @@ void DL_UnregisterNpc(object oNpc)
     int nNpcSlot = GetLocalInt(oNpc, DL_L_NPC_REG_SLOT);
     DeleteLocalInt(oNpc, DL_L_NPC_REG_ON);
 
-    object oArea = GetArea(oNpc);
+    // Registry removal must target the area that owns the slot.
+    // After cross-area jumps GetArea(oNpc) is already the destination,
+    // while DL_L_NPC_REG_AREA still points to the old registry owner.
+    object oArea = GetLocalObject(oNpc, DL_L_NPC_REG_AREA);
     if (!GetIsObjectValid(oArea))
     {
-        oArea = GetLocalObject(oNpc, DL_L_NPC_REG_AREA);
+        oArea = GetArea(oNpc);
     }
 
     if (GetIsObjectValid(oArea))
