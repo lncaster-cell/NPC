@@ -195,6 +195,9 @@ int DL_RunAreaRegistryFallbackCatchupScan(object oArea, int nTickStamp, int nSca
         if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
         {
             nScannedActive = nScannedActive + 1;
+            // Catchup discovers physically present NPCs; reconcile handles
+            // stale registrations left behind by cross-area transitions.
+            DL_ReconcileNpcAreaRegistration(oObj);
             if (GetLocalInt(oObj, DL_L_NPC_REG_ON) != TRUE)
             {
                 DL_RegisterNpc(oObj);
