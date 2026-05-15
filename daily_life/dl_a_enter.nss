@@ -7,6 +7,12 @@ void main()
 
     DL_OnAreaEnterBootstrap(oArea, oEnter);
 
+    if (DL_IsActivePipelineNpc(oEnter))
+    {
+        DL_RequestResync(oEnter, DL_RESYNC_AREA_ENTER);
+        DL_ProcessResync(oEnter);
+    }
+
     if (DL_IsRuntimeLogEnabled())
     {
         string sActor = GetIsObjectValid(oEnter) ? GetName(oEnter) : "<invalid>";

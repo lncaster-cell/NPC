@@ -112,13 +112,26 @@ int DL_RunAreaRegistryFallbackIntegrityRepair(object oArea, int nRepairBudget)
                          GetObjectType(oCandidate) == OBJECT_TYPE_CREATURE &&
                          GetIsPC(oCandidate) == FALSE &&
                          GetIsDM(oCandidate) == FALSE &&
+                         GetArea(oCandidate) == oArea &&
                          GetLocalInt(oCandidate, DL_L_NPC_REG_ON) == TRUE &&
                          GetLocalObject(oCandidate, DL_L_NPC_REG_AREA) == oArea &&
                          GetLocalInt(oCandidate, DL_L_NPC_REG_SLOT) == nSlot;
 
         if (!bSlotValid)
         {
-            DL_RepairAreaRegistrySlot(oArea, nSlot, nCount);
+            if (GetIsObjectValid(oCandidate) &&
+                GetObjectType(oCandidate) == OBJECT_TYPE_CREATURE &&
+                GetIsPC(oCandidate) == FALSE &&
+                GetIsDM(oCandidate) == FALSE &&
+                GetLocalInt(oCandidate, DL_L_NPC_REG_ON) == TRUE)
+            {
+                DL_ReconcileNpcAreaRegistration(oCandidate);
+            }
+            else
+            {
+                DL_RepairAreaRegistrySlot(oArea, nSlot, nCount);
+            }
+
             nCount = GetLocalInt(oArea, DL_L_AREA_REG_COUNT);
             bMutated = TRUE;
             if (nCount <= 0)
@@ -195,10 +208,11 @@ int DL_RunAreaRegistryFallbackCatchupScan(object oArea, int nTickStamp, int nSca
         if (GetObjectType(oObj) == OBJECT_TYPE_CREATURE && DL_IsActivePipelineNpc(oObj))
         {
             nScannedActive = nScannedActive + 1;
-            // Catchup discovers physically present NPCs; reconcile handles
-            // stale registrations left behind by cross-area transitions.
-            DL_ReconcileNpcAreaRegistration(oObj);
-            if (GetLocalInt(oObj, DL_L_NPC_REG_ON) != TRUE)
+            if (GetLocalInt(oObj, DL_L_NPC_REG_ON) == TRUE)
+            {
+                DL_ReconcileNpcAreaRegistration(oObj);
+            }
+            else
             {
                 DL_RegisterNpc(oObj);
             }
@@ -334,6 +348,7 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
             if (GetObjectType(oCandidate) == OBJECT_TYPE_CREATURE &&
                 GetIsPC(oCandidate) == FALSE &&
                 GetIsDM(oCandidate) == FALSE &&
+                GetArea(oCandidate) == oArea &&
                 GetLocalInt(oCandidate, DL_L_NPC_REG_ON) == TRUE &&
                 GetLocalObject(oCandidate, DL_L_NPC_REG_AREA) == oArea &&
                 GetLocalInt(oCandidate, DL_L_NPC_REG_SLOT) == nSlot &&
@@ -346,7 +361,7 @@ int DL_RunAreaNpcRoundRobinPass(object oArea, int nCursor, int nBudget, int nPas
             }
             else if (GetLocalInt(oCandidate, DL_L_NPC_REG_ON) == TRUE)
             {
-                DL_UnregisterNpc(oCandidate);
+                DL_ReconcileNpcAreaRegistration(oCandidate);
                 bFallbackNeeded = TRUE;
             }
         }
